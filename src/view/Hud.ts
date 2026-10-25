@@ -44,7 +44,8 @@ export class Hud {
     pause.add(add.circle(0, 0, 40, hex(C.lavender)))
     pause.add(add.rectangle(-10, 0, 9, 32, 0xffffff).setOrigin(0.5))
     pause.add(add.rectangle(10, 0, 9, 32, 0xffffff).setOrigin(0.5))
-    pause.setSize(90, 90).setInteractive().on('pointerup', () => this.setPaused(true))
+    // thumb-sized hit area, larger than the drawn circle
+    pause.setSize(130, 130).setInteractive().on('pointerup', () => this.setPaused(true))
 
     // pause overlay
     this.overlay = add.container(0, 0).setDepth(DEPTH + 100).setVisible(false)

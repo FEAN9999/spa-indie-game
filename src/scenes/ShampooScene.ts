@@ -60,7 +60,8 @@ export class ShampooScene extends Phaser.Scene {
     this.revealed = false
 
     const colors = lookColors(this.params.look)
-    this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0)
+    // interactive so taps stop here instead of reaching the spa's HUD underneath
+    this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0).setInteractive()
     this.add.graphics().fillStyle(0xfffaf4, 1).fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
     this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head').setTint(colors.skin)
