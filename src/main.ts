@@ -3,6 +3,7 @@ import '@fontsource/be-vietnam-pro/800.css'
 import * as Phaser from 'phaser'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
+import { PauseScene } from './scenes/PauseScene'
 import { ShampooScene } from './scenes/ShampooScene'
 import { SpaScene } from './scenes/SpaScene'
 import { SummaryScene } from './scenes/SummaryScene'
@@ -20,9 +21,12 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, SpaScene, ShampooScene, SummaryScene],
+    scene: [BootScene, SpaScene, ShampooScene, SummaryScene, PauseScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }
+
+// ask the browser not to clear the saves when space runs low
+navigator.storage?.persist?.()
 
 start()

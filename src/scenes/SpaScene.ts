@@ -1,8 +1,11 @@
 import * as Phaser from 'phaser'
 import { C, lookColors, OWNER_COLORS } from '../art/palette'
-import { ARRIVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
+import { SaveSession } from '../save/session'
+import { openStore, type SaveStore } from '../save/store'
 import { onBed } from '../sim/grid'
 import { createRng } from '../sim/rng'
+import { SaveError, type SaveData } from '../sim/save'
 import { SpaSim } from '../sim/spa'
 import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
@@ -11,6 +14,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
+import type { PauseData, PausePanel } from './PauseScene'
 import type { ShampooData } from './ShampooScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -40,18 +44,69 @@ export class SpaScene extends Phaser.Scene {
   private hud!: Hud
   private owner!: CharacterView
   private customers = new Map<number, CustomerSprite>()
+  private store!: SaveStore
+  private session!: SaveSession
+  /** A service that became ready while paused; the mini-game opens on resume. */
+  private pendingService: ShampooData | null = null
 
   constructor() {
     super('SpaScene')
   }
 
   create() {
-    this.sim = new SpaSim({ rng: createRng(Date.now()) })
+    this.customers = new Map()
+    this.pendingService = null
+    this.store = openStore()
+    this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
+    const saved = this.store.load(this.session.slot)
+    this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
     this.owner = new CharacterView(this, OWNER_COLORS)
-    this.hud = new Hud(this, this.sim)
+    for (const c of this.sim.customers) this.addCustomerSprite(c)
+    this.hud = new Hud(this, this.sim, () => this.pause())
     this.input.on('pointerup', this.onTap, this)
-    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this })
+
+    this.time.addEvent({ delay: AUTOSAVE_MS, loop: true, callback: () => this.session.saveNow() })
+    const saveOnHide = () => {
+      if (document.visibilityState === 'hidden') this.session.saveNow()
+    }
+    const saveOnLeave = () => this.session.saveNow()
+    document.addEventListener('visibilitychange', saveOnHide)
+    window.addEventListener('pagehide', saveOnLeave)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      document.removeEventListener('visibilitychange', saveOnHide)
+      window.removeEventListener('pagehide', saveOnLeave)
+    })
+
+    // a reopened shop waits on the pause card; an ended day reopens its summary by itself
+    if (saved && !this.sim.dayOver) this.pause()
+    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
+  }
+
+  private openShop(saved: SaveData | null): SpaSim {
+    const rng = createRng(Date.now())
+    if (saved) {
+      try {
+        return SpaSim.fromSave(saved, { rng })
+      } catch (e) {
+        if (!(e instanceof SaveError)) throw e
+      }
+    }
+    return new SpaSim({ rng })
+  }
+
+  pause(panel: PausePanel = 'menu'): void {
+    this.sim.paused = true
+    const data: PauseData = { sim: this.sim, store: this.store, session: this.session, panel, onResume: () => this.resume() }
+    this.scene.launch('PauseScene', data)
+  }
+
+  private resume(): void {
+    this.sim.paused = false
+    if (this.pendingService) {
+      this.scene.launch('ShampooScene', this.pendingService)
+      this.pendingService = null
+    }
   }
 
   update(time: number, delta: number) {
@@ -78,13 +133,7 @@ export class SpaScene extends Phaser.Scene {
     switch (e.type) {
       case 'customerArrived': {
         const c = this.sim.customers.find(x => x.id === e.id)
-        if (!c) return
-        this.customers.set(c.id, {
-          view: new CharacterView(this, lookColors(c.look)),
-          bar: this.add.graphics(),
-          ripple: this.add.image(0, 0, 'ripple').setVisible(false),
-          bubble: null,
-        })
+        if (c) this.addCustomerSprite(c)
         return
       }
       case 'customerLeft': {
@@ -102,7 +151,8 @@ export class SpaScene extends Phaser.Scene {
         if (!c) return
         this.hud.hideHint()
         const data: ShampooData = { look: c.look, onDone: stars => this.sim.completeService(c.id, stars) }
-        this.scene.launch('ShampooScene', data)
+        if (this.sim.paused) this.pendingService = data
+        else this.scene.launch('ShampooScene', data)
         return
       }
       case 'paid':
@@ -115,11 +165,27 @@ export class SpaScene extends Phaser.Scene {
         this.hud.toast(t(e.key))
         return
       case 'dayEnded': {
-        const data: SummaryData = { sim: this.sim, onNewDay: () => this.sim.startDay() }
+        this.session.saveNow()
+        const data: SummaryData = {
+          sim: this.sim,
+          onNewDay: () => {
+            this.sim.startDay()
+            this.session.saveNow()
+          },
+        }
         this.scene.launch('SummaryScene', data)
         return
       }
     }
+  }
+
+  private addCustomerSprite(c: Customer): void {
+    this.customers.set(c.id, {
+      view: new CharacterView(this, lookColors(c.look)),
+      bar: this.add.graphics(),
+      ripple: this.add.image(0, 0, 'ripple').setVisible(false),
+      bubble: null,
+    })
   }
 
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number): void {

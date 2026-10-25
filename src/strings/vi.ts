@@ -5,7 +5,7 @@ export const vi = {
   stationsBusy: 'Giường gội đầu đang bận',
   comingSoon: 'Tính năng này có ở bản sau',
   paused: 'Tạm dừng',
-  tapToResume: 'Chạm để chơi tiếp',
+  resume: 'Chơi tiếp',
   shampooFoam: 'Vuốt qua lại trên tóc để tạo bọt',
   shampooRinse: 'Giữ ngón tay trên tóc để xả nước',
   shampooDry: 'Vuốt để lau khô bằng khăn',

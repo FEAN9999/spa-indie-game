@@ -40,3 +40,6 @@ export const EXIT_MS = 1500 // walking out to the street
 export const STEP_MS = 50
 export const MAX_FRAME_MS = 250
 export const OWNER_START = { x: 9, y: 13 } as const
+
+// Saving
+export const AUTOSAVE_MS = 10_000

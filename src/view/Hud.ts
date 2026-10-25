@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
-import { GAME_H, GAME_W } from '../config'
+import { GAME_W } from '../config'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
@@ -17,19 +17,19 @@ const NAV: { key: StringKey; icon: string }[] = [
   { key: 'navQuests', icon: 'icon-quests' },
 ]
 
-/** Top bar, pause overlay, bottom nav, first-customer hint and toasts. Every element swallows its taps. */
+/** Top bar, pause button, bottom nav, first-customer hint and toasts. Every element swallows its taps. */
 export class Hud {
   private readonly money: Phaser.GameObjects.Text
   private readonly star: Phaser.GameObjects.Image
   private readonly rating: Phaser.GameObjects.Text
   private readonly dayTime: Phaser.GameObjects.Text
-  private readonly overlay: Phaser.GameObjects.Container
   private readonly hint: Phaser.GameObjects.Container
   private toastBox: Phaser.GameObjects.Container | null = null
 
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly sim: SpaSim,
+    onPause: () => void,
   ) {
     const add = scene.add
 
@@ -54,14 +54,7 @@ export class Hud {
     pause.add(add.rectangle(-10, 0, 9, 32, hex(C.paper)).setOrigin(0.5))
     pause.add(add.rectangle(10, 0, 9, 32, hex(C.paper)).setOrigin(0.5))
     // thumb-sized hit area, larger than the drawn circle
-    pause.setSize(130, 130).setInteractive().on('pointerup', () => this.setPaused(true))
-
-    // pause overlay
-    this.overlay = add.container(0, 0).setDepth(DEPTH + 100).setVisible(false)
-    this.overlay.add(add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive())
-    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 - 50, t('paused'), textStyle(96, '800', C.paper)).setOrigin(0.5))
-    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 + 60, t('tapToResume'), textStyle(48, '600', C.paper)).setOrigin(0.5))
-    this.overlay.list[0].on('pointerup', () => this.setPaused(false))
+    pause.setSize(130, 130).setInteractive().on('pointerup', onPause)
 
     // bottom bar
     add
@@ -91,7 +84,8 @@ export class Hud {
       .fillRoundedRect(-hintText.width / 2 - 36, -38, hintText.width + 72, 76, 12)
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-hintText.width / 2 - 36, -38, hintText.width + 72, 76, 12)
-    this.hint = add.container(GAME_W / 2, 1880, [hintBg, hintText]).setDepth(DEPTH)
+    // only until the first service ever, not again on a reopened shop
+    this.hint = add.container(GAME_W / 2, 1880, [hintBg, hintText]).setDepth(DEPTH).setVisible(sim.day === 1 && sim.stats.served === 0)
     scene.tweens.add({ targets: this.hint, y: 1870, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
   }
 
@@ -127,10 +121,5 @@ export class Hud {
         if (this.toastBox === box) this.toastBox = null
       },
     })
-  }
-
-  private setPaused(paused: boolean): void {
-    this.sim.paused = paused
-    this.overlay.setVisible(paused)
   }
 }
