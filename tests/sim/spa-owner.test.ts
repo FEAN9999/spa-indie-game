@@ -133,7 +133,7 @@ describe('SpaSim owner and service', () => {
 
   it('tapping an empty bed slot says it is coming soon and leaves the owner where they are', () => {
     const sim = fresh()
-    for (const y of [2, 3, 4]) {
+    for (const y of [1, 2, 3, 4]) {
       sim.tapTile({ x: 6, y })
       expect(sim.drainEvents()).toContainEqual({ type: 'toast', key: 'comingSoon' })
     }

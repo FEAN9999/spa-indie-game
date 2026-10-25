@@ -1,3 +1,4 @@
+import { fillsOnly, linesOnly } from './outline'
 import { svgDoc } from './svg'
 
 /**
@@ -101,14 +102,28 @@ const parts: Record<string, Part> = {
   'hair1-side': hair(path(longSide), strandsFront),
 }
 
-/** Phaser origin for each part, derived from its viewBox so (0,0) in chibi units is the pivot. */
+/** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. */
+const TINTED = /^(leg|arm|body|head|hair\d)/
+
+const textures: Record<string, Part> = Object.fromEntries(
+  Object.entries(parts).flatMap(([key, p]) =>
+    TINTED.test(key)
+      ? [
+          [key, { viewBox: p.viewBox, body: fillsOnly(p.body) }],
+          [`${key}-line`, { viewBox: p.viewBox, body: linesOnly(p.body) }],
+        ]
+      : [[key, p]],
+  ),
+)
+
+/** Phaser origin for each texture, derived from its viewBox so (0,0) in chibi units is the pivot. */
 export const PART_ANCHORS: Record<string, { ox: number; oy: number }> = Object.fromEntries(
-  Object.entries(parts).map(([key, p]) => {
+  Object.entries(textures).map(([key, p]) => {
     const [x, y, w, h] = p.viewBox
     return [key, { ox: -x / w, oy: -y / h }]
   }),
 )
 
 export function chibiTextures(): Record<string, string> {
-  return Object.fromEntries(Object.entries(parts).map(([key, p]) => [key, svgDoc(p.viewBox, CHIBI_PX, p.body)]))
+  return Object.fromEntries(Object.entries(textures).map(([key, p]) => [key, svgDoc(p.viewBox, CHIBI_PX, p.body)]))
 }

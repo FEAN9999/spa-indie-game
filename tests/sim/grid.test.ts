@@ -32,9 +32,9 @@ describe('grid', () => {
     expect(tileRuns(tiles)).toEqual([{ left: 1, right: 3, row: 6 }, { left: 7, right: 8, row: 6 }, { left: 4, right: 4, row: 9 }])
   })
 
-  it('treats a bed slot and the two tiles below it as the slot', () => {
+  it('treats a bed slot, its basin above and the two tiles below as the slot', () => {
     const g = parseLayout(SPA_LAYOUT_1A)
-    expect([2, 3, 4, 5].map(y => isBedSlot(g, { x: 6, y }))).toEqual([true, true, true, false])
+    expect([0, 1, 2, 3, 4, 5].map(y => isBedSlot(g, { x: 6, y }))).toEqual([false, true, true, true, true, false])
     expect(isBedSlot(g, { x: 7, y: 3 })).toBe(false)
   })
 

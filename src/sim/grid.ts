@@ -105,9 +105,9 @@ export function isWalkable(grid: Grid, t: Tile): boolean {
   return cell === 'floor' || cell === 'door' || cell === 'work'
 }
 
-/** An empty bed slot covers its head tile and the two tiles below, like a bed. */
+/** An empty bed slot covers its dashed basin on the wall above, its head tile and the two tiles below, like a bed. */
 export function isBedSlot(grid: Grid, t: Tile): boolean {
-  return grid.bedSlots.some(s => s.x === t.x && t.y >= s.y && t.y <= s.y + 2)
+  return grid.bedSlots.some(s => s.x === t.x && t.y >= s.y - 1 && t.y <= s.y + 2)
 }
 
 /** True on a bed's middle tile and while stepping on or off it from either side. */

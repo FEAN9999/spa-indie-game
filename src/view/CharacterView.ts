@@ -34,6 +34,8 @@ export class CharacterView {
   private readonly face: Phaser.GameObjects.Image
   private readonly hair: Phaser.GameObjects.Image
   private readonly hairStyle: number
+  /** Each tinted part's untinted brown outline, drawn on top and kept in step by syncLines. */
+  private readonly lines = new Map<Phaser.GameObjects.Image, Phaser.GameObjects.Image>()
   private facing: Facing | null = null
   private pose: Pose = 'stand'
   private timeMs = 0
@@ -41,9 +43,14 @@ export class CharacterView {
   constructor(scene: Phaser.Scene, colors: CharacterColors) {
     const part = (key: string, x: number, y: number, tint?: number) => {
       const img = scene.add.image(x, y, key).setOrigin(PART_ANCHORS[key].ox, PART_ANCHORS[key].oy)
-      if (tint !== undefined) img.setTint(tint)
+      if (tint !== undefined) {
+        img.setTint(tint)
+        this.lines.set(img, scene.add.image(x, y, `${key}-line`).setOrigin(PART_ANCHORS[key].ox, PART_ANCHORS[key].oy))
+      }
       return img
     }
+    // each tinted part followed by its outline
+    const withLines = (imgs: Phaser.GameObjects.Image[]) => imgs.flatMap(img => [img, ...(this.lines.has(img) ? [this.lines.get(img)!] : [])])
     this.hairStyle = colors.hairStyle
     this.shadow = scene.add.image(0, 0, 'shadow')
     this.legs = [part('leg', -3.5 * U, HIP_Y, PANTS), part('leg', 3.5 * U, HIP_Y, PANTS)]
@@ -52,10 +59,19 @@ export class CharacterView {
     this.head = part('head', 0, HEAD_Y, colors.skin)
     this.face = part('face-down', 0, HEAD_Y)
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
-    this.upper = scene.add.container(0, 0, [this.body, ...this.arms, this.head, this.face, this.hair])
+    this.upper = scene.add.container(0, 0, withLines([this.body, ...this.arms, this.head, this.face, this.hair]))
     this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
-    this.container = scene.add.container(0, 0, [this.shadow, ...this.legs, this.blanket, this.upper])
+    this.container = scene.add.container(0, 0, [this.shadow, ...withLines(this.legs), this.blanket, this.upper])
     this.setFacing('down')
+  }
+
+  /** Copies each tinted part's texture, place, turn, flip and visibility to its outline. */
+  private syncLines(): void {
+    for (const [fill, line] of this.lines) {
+      const key = `${fill.texture.key}-line`
+      if (line.texture.key !== key) line.setTexture(key)
+      line.setPosition(fill.x, fill.y).setRotation(fill.rotation).setScale(fill.scaleX, fill.scaleY).setFlipX(fill.flipX).setVisible(fill.visible)
+    }
   }
 
   setFacing(f: Facing): void {
@@ -72,6 +88,7 @@ export class CharacterView {
     this.legs[1].x = (side ? 1.5 : 3.5) * U
     this.arms[0].setVisible(!side && !lying)
     this.arms[1].x = (side ? 0 : 9) * U
+    this.syncLines()
   }
 
   setPose(p: Pose): void {
@@ -89,6 +106,7 @@ export class CharacterView {
     const f = this.facing
     this.facing = null
     if (f) this.setFacing(f)
+    this.syncLines()
   }
 
   update(dtMs: number): void {
@@ -104,5 +122,6 @@ export class CharacterView {
     } else if (this.pose === 'stand') {
       this.body.setScale(1, 1 + 0.015 * Math.sin(t * Math.PI))
     }
+    this.syncLines()
   }
 }
