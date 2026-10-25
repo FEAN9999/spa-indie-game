@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C, lookColors, OWNER_COLORS } from '../art/palette'
 import { ARRIVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
+import { onBed } from '../sim/grid'
 import { createRng } from '../sim/rng'
 import { SpaSim } from '../sim/spa'
 import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
@@ -127,8 +128,8 @@ export class SpaScene extends Phaser.Scene {
     const sitting = c.state === 'waiting'
     const street = this.streetPlacement(c)
     const p: Placement = street ?? { ...this.room.tileToWorld(c.pos), facing: c.facing, alpha: 1 }
-    // a lying customer draws over the bed, whose anchor is one tile lower
-    const depth = lying ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
+    // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
+    const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
     s.view.setFacing(lying || sitting ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isBedSlot, isWalkable, parseLayout, tileRuns } from '../../src/sim/grid'
+import { isBedSlot, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('grid', () => {
@@ -36,6 +36,13 @@ describe('grid', () => {
     const g = parseLayout(SPA_LAYOUT_1A)
     expect([2, 3, 4, 5].map(y => isBedSlot(g, { x: 6, y }))).toEqual([true, true, true, false])
     expect(isBedSlot(g, { x: 7, y: 3 })).toBe(false)
+  })
+
+  it('counts a position on a bed, or stepping on or off it, as on the bed', () => {
+    const g = parseLayout(SPA_LAYOUT_1A)
+    const on = (x: number, y: number) => onBed(g, { x, y })
+    expect([on(2, 3), on(2.5, 3), on(1.5, 3), on(4, 3)]).toEqual([true, true, true, true]) // on bed 1, stepping to its work tile, from its left, on bed 2
+    expect([on(1, 3), on(3, 3), on(2, 5), on(6, 3)]).toEqual([false, false, false, false]) // beside bed 1, its work tile, below it, a bed slot
   })
 
   it('rejects ragged layouts', () => {

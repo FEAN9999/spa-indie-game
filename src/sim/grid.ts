@@ -1,4 +1,4 @@
-import type { Tile } from './types'
+import type { Tile, Vec } from './types'
 
 export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'bed' | 'bedEnd' | 'work' | 'desk' | 'plant' | 'decor'
 
@@ -108,6 +108,11 @@ export function isWalkable(grid: Grid, t: Tile): boolean {
 /** An empty bed slot covers its head tile and the two tiles below, like a bed. */
 export function isBedSlot(grid: Grid, t: Tile): boolean {
   return grid.bedSlots.some(s => s.x === t.x && t.y >= s.y && t.y <= s.y + 2)
+}
+
+/** True on a bed's middle tile and while stepping on or off it from either side. */
+export function onBed(grid: Grid, p: Vec): boolean {
+  return grid.beds.some(b => Math.abs(p.x - b.x) < 1 && Math.abs(p.y - b.y) < 0.5)
 }
 
 /** Groups tiles given in reading order (row, then x) into horizontal runs. */
