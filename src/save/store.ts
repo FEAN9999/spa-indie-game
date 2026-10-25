@@ -45,6 +45,11 @@ export class SaveStore {
     return this.write(slotKey(slot), JSON.stringify(data))
   }
 
+  /** The slot exactly as stored, to notice when another page has written it. */
+  raw(slot: SlotId): string | null {
+    return this.read(slotKey(slot))
+  }
+
   info(slot: SlotId): SlotInfo | null {
     const d = this.load(slot)
     return d && { day: d.day, money: d.money }

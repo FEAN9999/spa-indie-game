@@ -63,7 +63,7 @@ export class SpaScene extends Phaser.Scene {
     this.holding = false
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
-    const saved = this.store.load(this.session.slot)
+    const saved = this.session.load()
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
     this.owner = new CharacterView(this, OWNER_COLORS)
@@ -78,7 +78,11 @@ export class SpaScene extends Phaser.Scene {
     const saveOnLeave = () => this.session.saveNow()
     document.addEventListener('visibilitychange', saveOnHide)
     window.addEventListener('pagehide', saveOnLeave)
-    const stopWatching = onReturn(() => void this.checkForUpdate())
+    // back in the game: first the shop another page may have saved meanwhile, then a newer version
+    const stopWatching = onReturn(() => {
+      this.session.reloadIfChangedElsewhere()
+      void this.checkForUpdate()
+    })
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       document.removeEventListener('visibilitychange', saveOnHide)
       window.removeEventListener('pagehide', saveOnLeave)

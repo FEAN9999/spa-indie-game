@@ -38,6 +38,52 @@ describe('save session', () => {
     expect([store.load(1)?.money, reloads.length]).toEqual([5, 1])
   })
 
+  it('never writes over a shop another page saved, and opens that one instead', () => {
+    const store = new SaveStore(new MemStorage())
+    const reloads: string[] = []
+    const old = new SaveSession(store, () => shop(1), () => reloads.push('old'))
+    old.load()
+    new SaveSession(store, () => shop(9), () => reloads.push('new')).saveNow()
+    old.saveNow()
+    old.switchTo(2)
+    old.reloadForUpdate()
+    expect([store.load(1)?.money, store.currentSlot(), reloads]).toEqual([9, 1, ['old']])
+  })
+
+  it('a page that falls behind still switches slots without writing its old shop', () => {
+    const store = new SaveStore(new MemStorage())
+    const reloads: string[] = []
+    const old = new SaveSession(store, () => shop(1), () => reloads.push('old'))
+    old.load()
+    new SaveSession(store, () => shop(9), () => reloads.push('new')).saveNow()
+    old.switchTo(2)
+    expect([store.load(1)?.money, store.currentSlot(), reloads]).toEqual([9, 2, ['old']])
+  })
+
+  it('on coming back, opens the newer shop only when another page saved meanwhile', () => {
+    const store = new SaveStore(new MemStorage())
+    const reloads: string[] = []
+    const page = new SaveSession(store, () => shop(1), () => reloads.push('page'))
+    page.load()
+    page.saveNow()
+    page.reloadIfChangedElsewhere()
+    expect(reloads).toEqual([])
+    new SaveSession(store, () => shop(9), () => reloads.push('other')).saveNow()
+    page.reloadIfChangedElsewhere()
+    expect([store.load(1)?.money, reloads]).toEqual([9, ['page']])
+  })
+
+  it('loads the slot in use, setting aside a save it cannot read without reloading over it', () => {
+    const mem = new MemStorage()
+    mem.setItem('spa.slot.1', '{oops')
+    const store = new SaveStore(mem)
+    const reloads: string[] = []
+    const session = new SaveSession(store, () => shop(3), () => reloads.push('reload'))
+    expect(session.load()).toBeNull()
+    session.saveNow()
+    expect([store.load(1)?.money, reloads]).toEqual([3, []])
+  })
+
   it('saves before reloading for a new version, and not after', () => {
     const { store, session, reloads, play } = setup()
     play(7)
