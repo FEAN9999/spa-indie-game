@@ -13,4 +13,9 @@ describe('strings', () => {
     expect(t('summaryTitle', { day: 3 })).toBe('Tổng kết ngày 3')
     expect(t('newDay')).toBe('Ngày mới')
   })
+
+  it('fills the save screen strings', () => {
+    expect(t('slotDetail', { day: 5, money: formatMoney(340000) })).toBe('Ngày 5 · 340.000 đ')
+    expect(t('importConfirm', { n: 2, day: 5 })).toBe('Tiệm trong ô 2 (Ngày 5) sẽ bị thay bằng tiệm trong mã. Tiếp tục?')
+  })
 })

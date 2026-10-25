@@ -15,6 +15,8 @@ async function start() {
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
+    // HTML text boxes for save codes sit over the canvas and scale with it
+    dom: { createContainer: true },
     width: GAME_W,
     height: GAME_H,
     backgroundColor: '#F3E6D3',
