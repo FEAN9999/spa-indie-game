@@ -1,0 +1,409 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="390" height="844" viewBox="0 0 390 844">
+<defs>
+<pattern id="tile" width="24" height="24" patternUnits="userSpaceOnUse" x="22" y="316">
+<rect width="24" height="24" fill="#F6ECDB"/>
+<path d="M0,0 h6 a6,6 0 0 1 -6,6Z M24,0 v6 a6,6 0 0 1 -6,-6Z M0,24 v-6 a6,6 0 0 1 6,6Z M24,24 h-6 a6,6 0 0 1 6,-6Z" fill="#C65D3B"/>
+<path d="M12,4.5 Q15.2,9 12,12 Q8.8,9 12,4.5Z M19.5,12 Q15,15.2 12,12 Q15,8.8 19.5,12Z M12,19.5 Q8.8,15 12,12 Q15.2,15 12,19.5Z M4.5,12 Q9,8.8 12,12 Q9,15.2 4.5,12Z" fill="#2F7D6E"/>
+<circle cx="12" cy="12" r="1.7" fill="#E3A73B"/>
+<path d="M12,0 L13.4,1.6 L12,3.2 L10.6,1.6Z M12,24 L13.4,22.4 L12,20.8 L10.6,22.4Z M0,12 L1.6,10.6 L3.2,12 L1.6,13.4Z M24,12 L22.4,10.6 L20.8,12 L22.4,13.4Z" fill="#E3A73B"/>
+<rect width="24" height="24" fill="none" stroke="#E2D3BC" stroke-width="0.6"/>
+</pattern>
+<pattern id="planks" width="96" height="32" patternUnits="userSpaceOnUse" x="22" y="140">
+<rect width="96" height="32" fill="#C99A6A"/>
+<path d="M0,15.5 H96 M0,31.5 H96" stroke="#A87A4E" stroke-width="1"/>
+<path d="M30,0 V15.5 M78,16 V31.5" stroke="#A87A4E" stroke-width=".9"/>
+</pattern>
+<pattern id="weave" width="6" height="6" patternUnits="userSpaceOnUse">
+<rect width="6" height="6" fill="#D9A866"/>
+<path d="M0,3 H6 M3,0 V6" stroke="#B98544" stroke-width="0.8"/>
+</pattern>
+<pattern id="mat" width="8" height="8" patternUnits="userSpaceOnUse">
+<rect width="8" height="8" fill="#EBD29E"/>
+<path d="M0,2 H8 M0,6 H8" stroke="#D9B577" stroke-width="1"/>
+</pattern>
+</defs>
+<rect width="390" height="844" fill="#F3E6D3"/>
+
+<!-- floors: calm wood in the service room, gach bong out front -->
+<rect x="22" y="140" width="346" height="160" fill="url(#planks)"/>
+<rect x="22" y="296" width="346" height="378" fill="url(#tile)"/>
+<rect x="22" y="140" width="346" height="7" fill="#4A2E22" opacity=".14"/>
+
+<!-- runner from the door to the service room, mat under the waiting bench -->
+<rect x="180" y="314" width="30" height="360" fill="url(#mat)" stroke="#4A2E22" stroke-width="1"/>
+<path d="M184,314 V674 M206,314 V674" stroke="#C65D3B" stroke-width="1.6"/>
+<rect x="28" y="508" width="134" height="112" rx="4" fill="url(#mat)" stroke="#4A2E22" stroke-width="1.1"/>
+<rect x="33" y="513" width="124" height="102" rx="2" fill="none" stroke="#C65D3B" stroke-width="2"/>
+
+<!-- back wall -->
+<rect x="14" y="78" width="362" height="62" fill="#F2CC6B" stroke="#4A2E22" stroke-width="1.5"/>
+<rect x="14" y="126" width="362" height="14" fill="#E0B04F" stroke="#4A2E22" stroke-width="1.2"/>
+<g transform="translate(302,84)">
+<rect width="44" height="30" rx="2" fill="#3E9682" stroke="#4A2E22" stroke-width="1.2"/>
+<path d="M22,0 V30" stroke="#4A2E22" stroke-width="1.2"/>
+<path d="M4,5 H18 M4,10 H18 M4,15 H18 M4,20 H18 M4,25 H18 M26,5 H40 M26,10 H40 M26,15 H40 M26,20 H40 M26,25 H40" stroke="#2A6B5C" stroke-width="1.6" stroke-linecap="round"/>
+</g>
+<g transform="translate(218,98)">
+<circle r="10" fill="#FBF7EE" stroke="#4A2E22" stroke-width="1.4"/>
+<path d="M0,0 V-6 M0,0 H4" stroke="#4A2E22" stroke-width="1.3" stroke-linecap="round"/>
+</g>
+<g transform="translate(90,78)" stroke="#4A2E22">
+<path d="M0,0 V10" stroke-width="1"/>
+<rect x="-4" y="9" width="8" height="3" rx="1" fill="#E3A73B" stroke-width=".8"/>
+<ellipse cx="0" cy="20" rx="9" ry="9" fill="#D8463A" stroke-width="1.1"/>
+<path d="M-4.5,12.5 Q-6.5,20 -4.5,27.5 M4.5,12.5 Q6.5,20 4.5,27.5 M0,11 V29" stroke="#A8302A" stroke-width=".8" fill="none"/>
+<rect x="-4" y="28" width="8" height="3" rx="1" fill="#E3A73B" stroke-width=".8"/>
+<path d="M-2,31 V37 M0,31 V38 M2,31 V37" stroke="#E3A73B" stroke-width="1"/>
+</g>
+<g transform="translate(154,78)" stroke="#4A2E22">
+<path d="M0,0 V10" stroke-width="1"/>
+<rect x="-4" y="9" width="8" height="3" rx="1" fill="#E3A73B" stroke-width=".8"/>
+<ellipse cx="0" cy="20" rx="9" ry="9" fill="#D8463A" stroke-width="1.1"/>
+<path d="M-4.5,12.5 Q-6.5,20 -4.5,27.5 M4.5,12.5 Q6.5,20 4.5,27.5 M0,11 V29" stroke="#A8302A" stroke-width=".8" fill="none"/>
+<rect x="-4" y="28" width="8" height="3" rx="1" fill="#E3A73B" stroke-width=".8"/>
+<path d="M-2,31 V37 M0,31 V38 M2,31 V37" stroke="#E3A73B" stroke-width="1"/>
+</g>
+
+<!-- side walls -->
+<rect x="14" y="78" width="8" height="604" fill="#E0B04F" stroke="#4A2E22" stroke-width="1.2"/>
+<rect x="368" y="78" width="8" height="604" fill="#E0B04F" stroke="#4A2E22" stroke-width="1.2"/>
+
+<!-- wall basins for the two beds -->
+<g transform="translate(58,0)" stroke="#4A2E22" stroke-linejoin="round">
+<rect x="-18" y="122" width="36" height="24" rx="8" fill="#FBF7EE" stroke-width="1.2"/>
+<ellipse cx="0" cy="133" rx="12" ry="5.5" fill="#BFE3F2" stroke-width=".8"/>
+<path d="M-16,141 H16" stroke="#2D5FA8" stroke-width="1.8"/>
+<rect x="-2" y="118" width="4" height="7" rx="1" fill="#E3A73B" stroke-width=".8"/>
+</g>
+<g transform="translate(122,0)" stroke="#4A2E22" stroke-linejoin="round">
+<rect x="-18" y="122" width="36" height="24" rx="8" fill="#FBF7EE" stroke-width="1.2"/>
+<ellipse cx="0" cy="133" rx="12" ry="5.5" fill="#BFE3F2" stroke-width=".8"/>
+<path d="M-16,141 H16" stroke="#2D5FA8" stroke-width="1.8"/>
+<rect x="-2" y="118" width="4" height="7" rx="1" fill="#E3A73B" stroke-width=".8"/>
+</g>
+
+<!-- empty bed slots to buy later -->
+<g fill="#FBF7EE" fill-opacity=".4" stroke="#4A2E22" stroke-opacity=".5" stroke-width="1.2" stroke-dasharray="4 3">
+<rect x="168" y="122" width="36" height="22" rx="8"/>
+<rect x="168" y="148" width="36" height="88" rx="6"/>
+<rect x="232" y="122" width="36" height="22" rx="8"/>
+<rect x="232" y="148" width="36" height="88" rx="6"/>
+</g>
+<g transform="translate(186,192)">
+<circle r="10" fill="#FBF7EE" stroke="#C65D3B" stroke-width="1.6"/>
+<path d="M0,-6 V6 M-6,0 H6" stroke="#C65D3B" stroke-width="2" stroke-linecap="round"/>
+</g>
+<g transform="translate(250,192)">
+<circle r="10" fill="#FBF7EE" stroke="#C65D3B" stroke-width="1.6"/>
+<path d="M0,-6 V6 M-6,0 H6" stroke="#C65D3B" stroke-width="2" stroke-linecap="round"/>
+</g>
+
+<!-- towel cabinet -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="284" y="120" width="78" height="16" rx="3" fill="#A86E45" stroke-width="1.3"/>
+<rect x="286" y="134" width="74" height="40" rx="3" fill="#8A5634" stroke-width="1.3"/>
+<rect x="291" y="139" width="31" height="30" rx="2" fill="none" stroke="#6B4027" stroke-width="1.2"/>
+<rect x="324" y="139" width="31" height="30" rx="2" fill="none" stroke="#6B4027" stroke-width="1.2"/>
+<circle cx="318" cy="154" r="1.5" fill="#E3A73B" stroke-width=".7"/>
+<circle cx="328" cy="154" r="1.5" fill="#E3A73B" stroke-width=".7"/>
+</g>
+<g stroke="#4A2E22" stroke-width=".9">
+<rect x="291" y="123" width="14" height="8" rx="4" fill="#FBF7EE"/>
+<rect x="307" y="123" width="14" height="8" rx="4" fill="#3E9682"/>
+<rect x="323" y="123" width="14" height="8" rx="4" fill="#FBF7EE"/>
+<rect x="339" y="123" width="14" height="8" rx="4" fill="#C65D3B"/>
+</g>
+<path d="M298,123.5 V130.5 M330,123.5 V130.5" stroke="#C65D3B" stroke-width="1.2"/>
+
+<!-- shampoo beds -->
+<g transform="translate(58,0)" stroke="#4A2E22" stroke-linejoin="round">
+<rect x="-18" y="146" width="36" height="84" rx="6" fill="#8A5634" stroke-width="1.3"/>
+<rect x="-15" y="148" width="30" height="78" rx="5" fill="#3E9682" stroke-width="1"/>
+<rect x="-18" y="226" width="36" height="9" rx="3" fill="#6B4027" stroke-width="1.2"/>
+<rect x="-16" y="234" width="4" height="6" fill="#6B4027" stroke-width=".9"/>
+<rect x="12" y="234" width="4" height="6" fill="#6B4027" stroke-width=".9"/>
+</g>
+<g transform="translate(122,0)" stroke="#4A2E22" stroke-linejoin="round">
+<rect x="-18" y="146" width="36" height="84" rx="6" fill="#8A5634" stroke-width="1.3"/>
+<rect x="-15" y="148" width="30" height="78" rx="5" fill="#3E9682" stroke-width="1"/>
+<rect x="-18" y="226" width="36" height="9" rx="3" fill="#6B4027" stroke-width="1.2"/>
+<rect x="-16" y="234" width="4" height="6" fill="#6B4027" stroke-width=".9"/>
+<rect x="12" y="234" width="4" height="6" fill="#6B4027" stroke-width=".9"/>
+<rect x="-11" y="150" width="22" height="9" rx="4" fill="#FBF7EE" stroke-width=".9"/>
+<rect x="-11" y="204" width="22" height="14" rx="2" fill="#C65D3B" stroke-width=".9"/>
+<path d="M-11,209 H11" stroke="#FBF7EE" stroke-width="1.4"/>
+</g>
+<!-- customer lying in bed 1, foam on hair -->
+<g transform="translate(58,0)" stroke="#4A2E22" stroke-width="1" stroke-linejoin="round">
+<ellipse cx="0" cy="142" rx="11" ry="7" fill="#3A2A22"/>
+<circle cx="0" cy="153" r="8.5" fill="#F7D5B8"/>
+<path d="M-3.8,154 Q-2.6,155.4 -1.4,154 M1.4,154 Q2.6,155.4 3.8,154" fill="none" stroke-width=".8"/>
+<rect x="-11" y="162" width="22" height="16" rx="7" fill="#E3A73B"/>
+<rect x="-13" y="172" width="26" height="48" rx="6" fill="#C65D3B"/>
+<path d="M-13,180 H13" stroke="#FBF7EE" stroke-width="1.6"/>
+<g fill="#FFFFFF" stroke-width=".6">
+<circle cx="-6" cy="140" r="3.4"/>
+<circle cx="-1" cy="137" r="3.8"/>
+<circle cx="5" cy="139.5" r="3.3"/>
+<circle cx="2" cy="144" r="2.6"/>
+</g>
+</g>
+
+<!-- owner in ao ba ba, working between the beds -->
+<g transform="translate(90,216)" stroke="#4A2E22" stroke-width="1.1" stroke-linejoin="round">
+<ellipse cx="0" cy="0" rx="11" ry="3.2" fill="#4A2E22" opacity=".18" stroke="none"/>
+<rect x="-6.5" y="-14" width="5.5" height="14" rx="2.6" fill="#3B2B26"/>
+<rect x="1" y="-14" width="5.5" height="14" rx="2.6" fill="#3B2B26"/>
+<rect x="-9" y="-29" width="18" height="18" rx="6" fill="#2F7D6E"/>
+<path d="M-3,-29 V-26.5 H3 V-29" fill="none" stroke-width=".9"/>
+<path d="M0,-26.5 V-12" fill="none" stroke-width=".8"/>
+<rect x="-12" y="-27.5" width="4.5" height="13" rx="2.2" fill="#F7D5B8"/>
+<rect x="7.5" y="-27.5" width="4.5" height="13" rx="2.2" fill="#F7D5B8"/>
+<circle cx="-12.4" cy="-39" r="2.6" fill="#F7D5B8"/>
+<circle cx="12.4" cy="-39" r="2.6" fill="#F7D5B8"/>
+<circle cx="0" cy="-40" r="12" fill="#F7D5B8"/>
+<path d="M-12.6,-39 A12.6,12.6 0 0 1 12.6,-39 Q11.4,-44.5 6,-45 Q3,-42 0,-44 Q-3,-42 -6,-45 Q-11.4,-44.5 -12.6,-39Z M-12.6,-40 Q-13.4,-33 -10.6,-31.5 L-10,-40Z M12.6,-40 Q13.4,-33 10.6,-31.5 L10,-40Z" fill="#2B201C"/>
+<ellipse cx="-4.2" cy="-38.5" rx="1.4" ry="1.9" fill="#2B201C" stroke="none"/>
+<ellipse cx="4.2" cy="-38.5" rx="1.4" ry="1.9" fill="#2B201C" stroke="none"/>
+<ellipse cx="-7.2" cy="-34.5" rx="2.2" ry="1.2" fill="#F09A86" opacity=".75" stroke="none"/>
+<ellipse cx="7.2" cy="-34.5" rx="2.2" ry="1.2" fill="#F09A86" opacity=".75" stroke="none"/>
+<path d="M-1.8,-33.6 Q0,-32 1.8,-33.6" fill="none" stroke-width=".8"/>
+</g>
+
+<!-- plant in the service room -->
+<g transform="translate(348,282)" stroke="#4A2E22" stroke-width="1" stroke-linejoin="round">
+<path d="M0,-14 Q-16,-28 -20,-40 Q-8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q16,-28 20,-40 Q8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q-6,-34 -2,-46 Q4,-32 0,-14Z" fill="#5FAE7B"/>
+<path d="M-9,-15 H9 Q9,-2 6,0 H-6 Q-9,-2 -9,-15Z" fill="#FBF7EE"/>
+<path d="M-8.4,-10 H8.4" stroke="#2D5FA8" stroke-width="1.6"/>
+</g>
+
+<!-- rattan screen between the service room and the front, open at the runner -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="22" y="292" width="150" height="22" fill="url(#weave)" stroke-width="1.2"/>
+<rect x="218" y="292" width="150" height="22" fill="url(#weave)" stroke-width="1.2"/>
+<rect x="20" y="287" width="154" height="6" rx="2" fill="#6B4027" stroke-width="1.2"/>
+<rect x="216" y="287" width="154" height="6" rx="2" fill="#6B4027" stroke-width="1.2"/>
+<rect x="22" y="312" width="150" height="4" fill="#6B4027" stroke-width="1"/>
+<rect x="218" y="312" width="150" height="4" fill="#6B4027" stroke-width="1"/>
+<rect x="70" y="291" width="4" height="23" fill="#8A5634" stroke-width=".9"/>
+<rect x="120" y="291" width="4" height="23" fill="#8A5634" stroke-width=".9"/>
+<rect x="266" y="291" width="4" height="23" fill="#8A5634" stroke-width=".9"/>
+<rect x="316" y="291" width="4" height="23" fill="#8A5634" stroke-width=".9"/>
+<rect x="168" y="284" width="6" height="34" rx="2" fill="#8A5634" stroke-width="1.1"/>
+<rect x="216" y="284" width="6" height="34" rx="2" fill="#8A5634" stroke-width="1.1"/>
+</g>
+
+<!-- product shelf against the screen -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="40" y="322" width="110" height="10" rx="2" fill="#A86E45" stroke-width="1.2"/>
+<rect x="42" y="330" width="106" height="22" rx="2" fill="#8A5634" stroke-width="1.2"/>
+<rect x="47" y="334" width="30" height="14" rx="2" fill="none" stroke="#6B4027" stroke-width="1.1"/>
+<rect x="80" y="334" width="30" height="14" rx="2" fill="none" stroke="#6B4027" stroke-width="1.1"/>
+<rect x="113" y="334" width="30" height="14" rx="2" fill="none" stroke="#6B4027" stroke-width="1.1"/>
+</g>
+<g stroke="#4A2E22" stroke-width=".9" stroke-linejoin="round">
+<rect x="52.5" y="309" width="4" height="4" fill="#FBF7EE"/>
+<rect x="50" y="312" width="9" height="15" rx="2.5" fill="#2D5FA8"/>
+<rect x="65.5" y="311" width="4" height="4" fill="#FBF7EE"/>
+<rect x="63" y="314" width="9" height="13" rx="2.5" fill="#3E9682"/>
+<rect x="78.5" y="309" width="4" height="4" fill="#FBF7EE"/>
+<rect x="76" y="312" width="9" height="15" rx="2.5" fill="#C65D3B"/>
+<rect x="94" y="316" width="16" height="11" rx="3" fill="#FBF7EE"/>
+<path d="M94.5,321 H109.5" stroke="#2D5FA8" stroke-width="1.4"/>
+<rect x="120.5" y="309" width="4" height="4" fill="#FBF7EE"/>
+<rect x="118" y="312" width="9" height="15" rx="2.5" fill="#E3A73B"/>
+<rect x="133.5" y="311" width="4" height="4" fill="#FBF7EE"/>
+<rect x="131" y="314" width="9" height="13" rx="2.5" fill="#2D5FA8"/>
+</g>
+
+<!-- lotus basin against the screen -->
+<g transform="translate(296,342)" stroke="#4A2E22" stroke-linejoin="round">
+<path d="M-30,-2 V8 A30,12 0 0 0 30,8 V-2Z" fill="#2D5FA8" stroke-width="1.2"/>
+<path d="M-30,3 A30,12 0 0 0 30,3" fill="none" stroke="#FBF7EE" stroke-width="1.6"/>
+<ellipse cx="0" cy="-2" rx="30" ry="12" fill="#FBF7EE" stroke-width="1.2"/>
+<ellipse cx="0" cy="-2" rx="25" ry="9" fill="#7FC4D8" stroke-width=".9"/>
+<path d="M-12,-3 m-5,0 a5,3.4 0 1 0 10,0 a5,3.4 0 1 0 -10,0" fill="#4E9A6B" stroke-width=".8"/>
+<path d="M13,1 m-4.5,0 a4.5,3 0 1 0 9,0 a4.5,3 0 1 0 -9,0" fill="#5FAE7B" stroke-width=".8"/>
+<g transform="translate(2,-3)" stroke-width=".8">
+<path d="M0,0 Q-7,-2 -7,-8 Q-2,-6 0,0Z" fill="#F28CA0"/>
+<path d="M0,0 Q7,-2 7,-8 Q2,-6 0,0Z" fill="#F28CA0"/>
+<path d="M0,0 Q-3.2,-6 0,-12 Q3.2,-6 0,0Z" fill="#E8708A"/>
+</g>
+</g>
+
+<!-- peach blossom vase -->
+<g transform="translate(346,472)" stroke="#4A2E22" stroke-linejoin="round">
+<path d="M0,-22 Q-6,-34 -14,-40 M0,-22 Q4,-36 12,-44 M2,-30 Q8,-32 14,-30" fill="none" stroke="#6B4027" stroke-width="1.2" stroke-linecap="round"/>
+<g fill="#F28CA0" stroke-width=".6">
+<circle cx="-14" cy="-40" r="2.4"/><circle cx="-9" cy="-35" r="2"/><circle cx="12" cy="-44" r="2.4"/>
+<circle cx="7" cy="-38" r="2"/><circle cx="14" cy="-30" r="2.2"/><circle cx="-4" cy="-30" r="1.8"/>
+</g>
+<path d="M-8,0 Q-12,-10 -6,-18 V-22 H6 V-18 Q12,-10 8,0Z" fill="#FBF7EE" stroke-width="1.1"/>
+<path d="M-10.4,-9 H10.4" stroke="#2D5FA8" stroke-width="2"/>
+</g>
+
+<!-- waiting bench, facing the shop window -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="38" y="520" width="114" height="17" rx="5" fill="#8A5634" stroke-width="1.3"/>
+<path d="M46,525 H144" stroke="#6B4027" stroke-width="1"/>
+<rect x="40" y="535" width="110" height="24" rx="6" fill="url(#weave)" stroke-width="1.3"/>
+<rect x="44" y="537" width="32" height="18" rx="6" fill="#C65D3B" stroke-width="1"/>
+<rect x="79" y="537" width="32" height="18" rx="6" fill="#C65D3B" stroke-width="1"/>
+<rect x="114" y="537" width="32" height="18" rx="6" fill="#C65D3B" stroke-width="1"/>
+<rect x="40" y="557" width="110" height="7" rx="3" fill="#8A5634" stroke-width="1.2"/>
+<rect x="33" y="526" width="9" height="36" rx="4" fill="#6B4027" stroke-width="1.2"/>
+<rect x="148" y="526" width="9" height="36" rx="4" fill="#6B4027" stroke-width="1.2"/>
+<rect x="45" y="563" width="4" height="8" fill="#6B4027" stroke-width=".9"/>
+<rect x="141" y="563" width="4" height="8" fill="#6B4027" stroke-width=".9"/>
+</g>
+<!-- waiting customer: ripple, seated, patience bar -->
+<ellipse cx="60" cy="532" rx="25" ry="25" fill="none" stroke="#FFFFFF" stroke-width="2.4" opacity=".9"/>
+<ellipse cx="60" cy="532" rx="31" ry="31" fill="none" stroke="#FFFFFF" stroke-width="1.4" opacity=".45"/>
+<g transform="translate(60,554)" stroke="#4A2E22" stroke-width="1.1" stroke-linejoin="round">
+<path d="M-13,-29 Q-15,-12 -11.5,-9 Q0,-7 11.5,-9 Q15,-12 13,-29Z" fill="#5B3A29"/>
+<rect x="-8.5" y="-4" width="17" height="7" rx="3" fill="#3B2B26"/>
+<rect x="-9" y="-20" width="18" height="18" rx="6" fill="#C65D3B"/>
+<rect x="-11" y="-17" width="4.5" height="12" rx="2.2" fill="#EBC3A0"/>
+<rect x="6.5" y="-17" width="4.5" height="12" rx="2.2" fill="#EBC3A0"/>
+<g transform="translate(0,9)">
+<circle cx="-12.4" cy="-39" r="2.6" fill="#EBC3A0"/>
+<circle cx="12.4" cy="-39" r="2.6" fill="#EBC3A0"/>
+<circle cx="0" cy="-40" r="12" fill="#EBC3A0"/>
+<path d="M-12.6,-39 A12.6,12.6 0 0 1 12.6,-39 Q11.4,-44.5 6,-45 Q3,-42 0,-44 Q-3,-42 -6,-45 Q-11.4,-44.5 -12.6,-39Z" fill="#5B3A29"/>
+<ellipse cx="-4.2" cy="-38.5" rx="1.4" ry="1.9" fill="#2B201C" stroke="none"/>
+<ellipse cx="4.2" cy="-38.5" rx="1.4" ry="1.9" fill="#2B201C" stroke="none"/>
+<ellipse cx="-7.2" cy="-34.5" rx="2.2" ry="1.2" fill="#F09A86" opacity=".75" stroke="none"/>
+<ellipse cx="7.2" cy="-34.5" rx="2.2" ry="1.2" fill="#F09A86" opacity=".75" stroke="none"/>
+<path d="M-1.8,-33.6 Q0,-32 1.8,-33.6" fill="none" stroke-width=".8"/>
+</g>
+</g>
+<rect x="45" y="496" width="30" height="7" rx="3.5" fill="#FBF3E4" stroke="#4A2E22" stroke-width=".9"/>
+<rect x="46.5" y="497.5" width="19" height="4" rx="2" fill="#6DB36A"/>
+
+<!-- tea table -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="70" y="584" width="60" height="16" rx="4" fill="#8A5634" stroke-width="1.3"/>
+<rect x="72" y="598" width="56" height="8" rx="3" fill="#6B4027" stroke-width="1.2"/>
+</g>
+<g transform="translate(92,594)" stroke="#4A2E22" stroke-width=".9" stroke-linejoin="round">
+<path d="M6,-4 Q10,-6 10.5,-9" fill="none" stroke-width="1.4"/>
+<ellipse cx="0" cy="-3" rx="7" ry="5" fill="#FBF7EE"/>
+<path d="M-5.5,-2 H5.5" stroke="#2D5FA8" stroke-width="1.1"/>
+<circle cx="0" cy="-8.5" r="1.5" fill="#2D5FA8"/>
+</g>
+<g stroke="#4A2E22" stroke-width=".8">
+<ellipse cx="110" cy="591" rx="3.6" ry="2.6" fill="#FBF7EE"/>
+<ellipse cx="120" cy="591" rx="3.6" ry="2.6" fill="#FBF7EE"/>
+</g>
+
+<!-- reception desk by the door -->
+<ellipse cx="300" cy="532" rx="9" ry="4.5" fill="#A86E45" stroke="#4A2E22" stroke-width="1.1"/>
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="236" y="540" width="104" height="22" rx="5" fill="#8A5634" stroke-width="1.4"/>
+<path d="M242,545 H334" stroke="#A86E45" stroke-width="1.4"/>
+<rect x="238" y="558" width="100" height="28" rx="4" fill="#6B4027" stroke-width="1.4"/>
+<rect x="245" y="564" width="26" height="16" rx="3" fill="none" stroke="#8A5634" stroke-width="1.2"/>
+<rect x="275" y="564" width="26" height="16" rx="3" fill="none" stroke="#8A5634" stroke-width="1.2"/>
+<rect x="305" y="564" width="26" height="16" rx="3" fill="none" stroke="#8A5634" stroke-width="1.2"/>
+</g>
+<g transform="translate(250,556)" stroke="#4A2E22" stroke-width=".9" stroke-linejoin="round">
+<path d="M-4,0 Q-6,-6 -3,-9 H3 Q6,-6 4,0Z" fill="#FBF7EE"/>
+<path d="M-4.6,-4 H4.6" stroke="#2D5FA8" stroke-width="1.2"/>
+<path d="M0,-9 Q-6,-14 -3,-19 Q0,-15 0,-9Z M0,-9 Q6,-14 3,-19 Q0,-15 0,-9Z" fill="#F28CA0"/>
+<path d="M0,-9 Q-2.5,-15 0,-21 Q2.5,-15 0,-9Z" fill="#E8708A"/>
+</g>
+<g transform="rotate(-5 280 550)" stroke="#4A2E22" stroke-width=".9">
+<rect x="268" y="544" width="24" height="13" rx="1.5" fill="#FBF7EE"/>
+<path d="M271,548 H288 M271,552 H284" stroke="#C65D3B" stroke-width=".8"/>
+</g>
+<g transform="translate(322,556)" stroke="#4A2E22" stroke-width=".9" stroke-linejoin="round">
+<path d="M-6,-1 A6,6 0 0 1 6,-1Z" fill="#E3A73B"/>
+<rect x="-8" y="-1.5" width="16" height="3" rx="1.5" fill="#C78A22"/>
+<circle cx="0" cy="-7.5" r="1.5" fill="#C78A22"/>
+</g>
+
+<!-- slipper rack by the door -->
+<g stroke="#4A2E22" stroke-linejoin="round">
+<rect x="122" y="638" width="46" height="8" rx="2" fill="#A86E45" stroke-width="1.1"/>
+<rect x="124" y="645" width="42" height="18" rx="2" fill="#8A5634" stroke-width="1.1"/>
+<path d="M124,654 H166" stroke="#6B4027" stroke-width="1"/>
+</g>
+<g stroke="#4A2E22" stroke-width=".7">
+<ellipse cx="129" cy="641" rx="2.6" ry="4" fill="#3E9682"/>
+<ellipse cx="135" cy="641" rx="2.6" ry="4" fill="#3E9682"/>
+<ellipse cx="145" cy="641" rx="2.6" ry="4" fill="#C65D3B"/>
+<ellipse cx="151" cy="641" rx="2.6" ry="4" fill="#C65D3B"/>
+<ellipse cx="159" cy="641" rx="2.6" ry="4" fill="#E3A73B"/>
+<ellipse cx="165" cy="641" rx="2.6" ry="4" fill="#E3A73B"/>
+</g>
+
+<!-- customer walking in along the runner -->
+<g transform="translate(195,646)" stroke="#4A2E22" stroke-width="1.1" stroke-linejoin="round">
+<ellipse cx="0" cy="0" rx="11" ry="3.2" fill="#4A2E22" opacity=".18" stroke="none"/>
+<rect x="-6.5" y="-15" width="5.5" height="15" rx="2.6" fill="#3B2B26" transform="rotate(12 -3.75 -14)"/>
+<rect x="1" y="-14" width="5.5" height="14" rx="2.6" fill="#3B2B26" transform="rotate(-12 3.75 -14)"/>
+<rect x="-9" y="-29" width="18" height="18" rx="6" fill="#2D5FA8"/>
+<rect x="-12" y="-27.5" width="4.5" height="13" rx="2.2" fill="#F2CBA8" transform="rotate(-14 -9.75 -27)"/>
+<rect x="7.5" y="-27.5" width="4.5" height="13" rx="2.2" fill="#F2CBA8" transform="rotate(14 9.75 -27)"/>
+<circle cx="0" cy="-40" r="12.6" fill="#7A4A2F"/>
+<path d="M-13,-42 Q-14.5,-24 -11,-21 Q0,-19 11,-21 Q14.5,-24 13,-42Z" fill="#7A4A2F"/>
+<path d="M-6,-48 Q0,-50 6,-48 M-8,-38 Q0,-36 8,-38" fill="none" stroke="#5C3520" stroke-width=".9"/>
+</g>
+
+<!-- plants by the shop window -->
+<g transform="translate(38,668)" stroke="#4A2E22" stroke-width="1" stroke-linejoin="round">
+<path d="M0,-14 Q-16,-28 -20,-40 Q-8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q16,-28 20,-40 Q8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q-6,-34 -2,-46 Q4,-32 0,-14Z" fill="#5FAE7B"/>
+<path d="M-9,-15 H9 Q9,-2 6,0 H-6 Q-9,-2 -9,-15Z" fill="#FBF7EE"/>
+<path d="M-8.4,-10 H8.4" stroke="#2D5FA8" stroke-width="1.6"/>
+</g>
+<g transform="translate(352,668)" stroke="#4A2E22" stroke-width="1" stroke-linejoin="round">
+<path d="M0,-14 Q-16,-28 -20,-40 Q-8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q16,-28 20,-40 Q8,-32 0,-16Z" fill="#4E9A6B"/>
+<path d="M0,-14 Q-6,-34 -2,-46 Q4,-32 0,-14Z" fill="#5FAE7B"/>
+<path d="M-9,-15 H9 Q9,-2 6,0 H-6 Q-9,-2 -9,-15Z" fill="#FBF7EE"/>
+<path d="M-8.4,-10 H8.4" stroke="#2D5FA8" stroke-width="1.6"/>
+</g>
+
+<!-- glass shop front, door, street -->
+<rect x="14" y="668" width="160" height="14" fill="#CFE8F0" stroke="#4A2E22" stroke-width="1.2"/>
+<rect x="216" y="668" width="160" height="14" fill="#CFE8F0" stroke="#4A2E22" stroke-width="1.2"/>
+<path d="M34,668 V682 M54,668 V682 M74,668 V682 M94,668 V682 M114,668 V682 M134,668 V682 M154,668 V682 M236,668 V682 M256,668 V682 M276,668 V682 M296,668 V682 M316,668 V682 M336,668 V682 M356,668 V682" stroke="#3E9682" stroke-width="2"/>
+<path d="M15,669 H173 M217,669 H375" stroke="#3E9682" stroke-width="3"/>
+<path d="M20,680 L26,672 M100,680 L106,672 M240,680 L246,672 M320,680 L326,672" stroke="#FFFFFF" stroke-width="1.2" opacity=".85"/>
+<rect x="180" y="674" width="30" height="8" rx="2" fill="#C65D3B" stroke="#4A2E22" stroke-width=".8"/>
+<rect x="170" y="664" width="6" height="20" rx="2" fill="#8A5634" stroke="#4A2E22" stroke-width="1"/>
+<rect x="214" y="664" width="6" height="20" rx="2" fill="#8A5634" stroke="#4A2E22" stroke-width="1"/>
+<rect x="0" y="684" width="390" height="28" fill="#E9DCC8"/>
+<path d="M13,684 V712 M39,684 V712 M65,684 V712 M91,684 V712 M117,684 V712 M143,684 V712 M169,684 V712 M221,684 V712 M247,684 V712 M273,684 V712 M299,684 V712 M325,684 V712 M351,684 V712 M377,684 V712" stroke="#D8C8B0" stroke-width="1"/>
+<rect x="0" y="712" width="390" height="32" fill="#D4C5B1"/>
+<path d="M0,728 H390" stroke="#FBF7EE" stroke-width="2" stroke-dasharray="14 10"/>
+
+<!-- HUD -->
+<rect x="12" y="14" width="366" height="46" rx="23" fill="#FBF3E4" stroke="#4A2E22" stroke-width="1.6"/>
+<g transform="translate(36,37)" stroke="#4A2E22">
+<circle r="13" fill="#E3A73B" stroke-width="1.4"/>
+<circle r="9.5" fill="none" stroke="#C78A22" stroke-width="1"/>
+<rect x="-3.6" y="-3.6" width="7.2" height="7.2" fill="#FBF3E4" stroke-width="1.1"/>
+</g>
+<path transform="translate(168,27.4) scale(.2)" d="M50,6 L62,36 L94,38 L69,58 L78,90 L50,72 L22,90 L31,58 L6,38 L38,36Z" fill="#E3A73B" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+<g transform="translate(354,37)">
+<circle r="15" fill="#2F7D6E" stroke="#4A2E22" stroke-width="1.4"/>
+<rect x="-5.5" y="-6.5" width="4" height="13" rx="1.2" fill="#FBF3E4"/>
+<rect x="1.5" y="-6.5" width="4" height="13" rx="1.2" fill="#FBF3E4"/>
+</g>
+<path d="M0,844 V772 Q0,752 20,752 H370 Q390,752 390,772 V844Z" fill="#FBF3E4" stroke="#4A2E22" stroke-width="1.6"/>
+<g stroke="#2D5FA8">
+<circle cx="60" cy="790" r="24" fill="#FBF7EE" stroke-width="2"/><circle cx="60" cy="790" r="19.5" fill="none" stroke-width=".8"/>
+<circle cx="150" cy="790" r="24" fill="#FBF7EE" stroke-width="2"/><circle cx="150" cy="790" r="19.5" fill="none" stroke-width=".8"/>
+<circle cx="240" cy="790" r="24" fill="#FBF7EE" stroke-width="2"/><circle cx="240" cy="790" r="19.5" fill="none" stroke-width=".8"/>
+<circle cx="330" cy="790" r="24" fill="#FBF7EE" stroke-width="2"/><circle cx="330" cy="790" r="19.5" fill="none" stroke-width=".8"/>
+</g>
+<g transform="translate(48.5,778.5) scale(.36)" stroke="#4A2E22" stroke-width="2.6"><g transform="rotate(-40 32 32)"><rect x="28.5" y="22" width="7" height="36" rx="3.5" fill="#8A5634"/><rect x="16" y="9" width="32" height="15" rx="5" fill="#C65D3B"/></g></g>
+<g transform="translate(138.5,778.5) scale(.36)" stroke="#4A2E22" stroke-width="2.6"><circle cx="43" cy="22" r="7" fill="#E3A73B"/><rect x="33" y="31" width="20" height="21" rx="9" fill="#E3A73B"/><circle cx="23" cy="21" r="8" fill="#2F7D6E"/><rect x="12" y="31" width="23" height="23" rx="10" fill="#2F7D6E"/></g>
+<g transform="translate(228.5,778.5) scale(.36)" stroke="#4A2E22" stroke-width="2.6"><ellipse cx="21" cy="36" rx="7" ry="15" fill="#F28CA0" transform="rotate(-38 21 36)"/><ellipse cx="43" cy="36" rx="7" ry="15" fill="#F28CA0" transform="rotate(38 43 36)"/><ellipse cx="32" cy="31" rx="8" ry="18" fill="#E8708A"/><rect x="14" y="49" width="36" height="5" rx="2.5" fill="#2F7D6E"/></g>
+<g transform="translate(318.5,778.5) scale(.36)" stroke="#4A2E22" stroke-width="2.6"><rect x="13" y="10" width="38" height="47" rx="6" fill="#C65D3B"/><rect x="18" y="16" width="28" height="36" rx="3" fill="#FBF7EE"/><rect x="24" y="5" width="16" height="10" rx="3" fill="#E3A73B"/><path d="M23,27 H41 M23,35 H41 M23,43 H34" stroke="#C65D3B" stroke-width="3" stroke-linecap="round"/></g>
+</svg>

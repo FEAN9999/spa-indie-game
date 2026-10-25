@@ -1,7 +1,7 @@
 # Thiết kế game quản lý tiệm spa
 
 - Ngày: 2026-10-25
-- Trạng thái: anh đã duyệt (2026-10-25)
+- Trạng thái: anh đã duyệt (2026-10-25). Cập nhật cùng ngày: phong cách hình A và cách xếp tiệm mới (mục 4.4 và 7), chờ anh duyệt.
 - Tên game: chưa đặt (xem mục 10)
 
 Cách đọc: chỗ ghi **(anh chọn)** là điều anh đã quyết trong lúc trao đổi. Chỗ ghi **(em đề xuất)** là em tự điền, anh sửa được. Chỗ không ghi gì là hệ quả trực tiếp của hai loại trên.
@@ -87,6 +87,18 @@ Người chơi mở một tiệm spa nhỏ, tự tay phục vụ từng khách, 
 | **Chủ tiệm là một nhân vật đi lại trên màn hình, chọn được tóc và quần áo** | **Anh chọn** |
 | Chủ tiệm chỉ là "bàn tay", chạm vào khách là bắt đầu phục vụ ngay | Không chọn |
 
+### 4.4 Đưa phong cách A vào game
+
+Anh đã chọn nét vẽ và cách xếp tiệm trên bảng Claude Design (mục 7). Có ba cách đưa vào game:
+
+| Cách | Được | Mất | Kết quả |
+|---|---|---|---|
+| **Vẽ lại bằng code, giữ cách làm của bước 1a** | Mọi hình vẫn sinh từ SVG trong code, nên nét sắc ở mọi cỡ màn hình và đồng đều với nhau. Nhân vật vẫn ghép bộ phận, tô màu bằng code. Không thêm công cụ hay thư viện hình. | Phải vẽ lại từng món bằng tay theo bản vẽ mẫu, tốn công nhất. | **Em chọn** |
+| Xuất hình từ Claude Design thành ảnh rồi nạp vào | Phòng có ngay, giống hệt bản vẽ. | Nhân vật không ghép bộ phận được nữa. Ảnh mờ khi phóng to. Mỗi lần sửa phải xuất lại. | Loại |
+| Dùng nguyên bản vẽ mẫu làm ảnh nền | Nhanh nhất. | Đồ đạc dính vào nền nên không che nhân vật đúng lớp. Bước 1b kê đồ theo ô không làm được. | Loại |
+
+Em chọn cách đầu vì nó giữ được hai thứ đã chốt: nhân vật ghép bộ phận (mục 7.2) và kê đồ theo ô ở bước 1b. Phần luật chơi chỉ đổi đúng chỗ cần cho giường gội (mục 7.3).
+
 ## 5. Thiết kế game
 
 ### 5.1 Vòng chơi chính (em đề xuất, anh đồng ý)
@@ -166,7 +178,7 @@ Khách VIP và khách khó tính có phiên bản khó hơn của cùng mini-gam
 ### 5.9 Dịch vụ và nguyên liệu (nhóm 3)
 
 - Dịch vụ mở dần theo cây: gội đầu, đắp mặt nạ, massage, rồi đá nóng, tắm bùn, xông hơi. Đợt 1 chỉ có 3 dịch vụ đầu.
-- Mỗi dịch vụ cần đúng loại đồ đạc mới làm được, ví dụ ghế gội đầu, giường massage.
+- Mỗi dịch vụ cần đúng loại đồ đạc mới làm được, ví dụ giường gội đầu, giường massage.
 - Có kho nguyên liệu (tinh dầu, mặt nạ, khăn), dùng hết thì phải nhập hàng.
 - Để sau: tự pha công thức để mở dịch vụ cao cấp.
 
@@ -271,16 +283,91 @@ Em đề xuất chia đợt này làm hai bước:
 
 ## 7. Phong cách hình ảnh
 
-- **Nét vẽ:** vector phẳng, bo tròn, màu pastel ấm, gồm kem, hồng đào, xanh bạc hà, tím lavender, vàng. Bảng màu lấy theo bản phác thảo.
-- **Nhân vật:** kiểu chibi đầu to, má hồng, đường nét đơn giản.
+Anh chọn hướng **A · Gạch bông Sài Gòn** trên bảng Claude Design, rồi duyệt cách xếp tiệm vẽ lại trên bảng đó. **(anh chọn, 2026-10-25)** Bản vẽ mẫu đã duyệt nằm ở `docs/art/style-a-board.svg`, khung điện thoại 390 × 844. Hình trong game vẽ theo bản này.
+
+### 7.1 Nét vẽ
+
+- **Chất liệu Sài Gòn xưa:** gạch bông, mây tre, gỗ nâu, sứ xanh trắng, đèn lồng đỏ, cửa chớp xanh, hoa sen, hoa đào. **(anh chọn)**
+- **Viền nâu đậm cho mọi hình:** đồ đạc, nhân vật, nút bấm, hiệu ứng đều có viền màu #4A2E22. Nhờ viền chung, món vẽ sau vẫn khớp với món vẽ trước. **(anh chọn)**
+- **Màu phẳng, không tô bóng mềm.** Bóng dưới chân nhân vật là một hình elip nâu mờ.
+- **Độ dày nét (em đề xuất):** viền ngoài dày khoảng 4 điểm ảnh trên khung game rộng 1080, nét chi tiết bên trong khoảng 2–3 điểm ảnh. Trên bản vẽ 390 thì là 1,5 và 1 điểm.
+- **Bảng màu (lấy từ bản vẽ mẫu):**
+
+| Màu | Mã | Dùng cho |
+|---|---|---|
+| Nâu viền | #4A2E22 | viền, chữ |
+| Kem | #FBF7EE, #FBF3E4 | sứ, thanh trên và dưới, ô gợi ý |
+| Cát | #F3E6D3 | nền ngoài khung game |
+| Đất nung | #C65D3B | gạch bông, nệm ghế chờ, khăn |
+| Xanh ngọc | #2F7D6E, #3E9682, #2A6B5C | áo bà ba, nệm giường, cửa chớp, nút tạm dừng |
+| Vàng nghệ | #E3A73B, #C78A22 | đồng xu, sao, đồ đồng thau |
+| Tường vàng | #F2CC6B, #E0B04F | tường |
+| Xanh men | #2D5FA8 | sứ xanh trắng, viền nút thanh dưới |
+| Gỗ | #8A5634, #6B4027, #A86E45 | giường, quầy, kệ, tủ |
+| Sàn gỗ | #C99A6A, vân #A87A4E | phòng gội |
+| Đèn lồng | #D8463A, #A8302A | đèn lồng, mặt bực |
+| Sen, đào | #F28CA0, #E8708A | hoa |
+| Lá | #4E9A6B, #5FAE7B | cây |
+| Nước, kính | #BFE3F2, #7FC4D8, #CFE8F0 | chậu gội, bể sen, mặt tiền kính |
+| Mây đan | #D9A866, sợi #B98544 | bình phong, ghế chờ |
+| Chiếu cói | #EBD29E, sợi #D9B577 | thảm lối đi, thảm dưới ghế chờ |
+
+- **Gạch bông:** viên vuông nền kem #F6ECDB, bốn góc là bốn phần tư hình tròn đất nung, giữa là hoa bốn cánh xanh ngọc, nhụy và hình thoi ở mép màu vàng nghệ, ron #E2D3BC. Mỗi viên đúng bằng một ô lưới, để người chơi nhìn ra ô khi kê đồ ở bước 1b. **(em đề xuất)**
+- **Chữ:** Be Vietnam Pro, độ đậm 600 và 800, thay cho Baloo 2. Phông miễn phí (giấy phép OFL), làm cho tiếng Việt nên dấu chồng như ặ, ố, ữ hiện đẹp. **(em đề xuất)**
+- **Thanh trên, thanh dưới và nút:** nền kem, viền nâu. Đồng xu vàng có lỗ vuông như xu xưa. Sao vàng viền nâu. Nút tạm dừng tròn xanh ngọc. Bốn nút thanh dưới là hình tròn kem, viền đôi xanh men như đĩa sứ. Ô gợi ý nền kem, góc bo nhỏ, viền nâu. Thanh kiên nhẫn của khách nền kem viền nâu.
+- **Hiệu ứng:** hơi nước bốc lên, tiền bay lên, sao lấp lánh, bong bóng biểu cảm, vòng gợi ý chỗ chạm. Bong bóng nền kem viền nâu, vòng gợi ý màu trắng.
+- **Đồ đạc:** vẽ theo góc nhìn chéo từ trên xuống, khớp với ô lưới.
+
+### 7.2 Nhân vật
+
+- **Nhân vật:** kiểu chibi đầu to, má hồng, đường nét đơn giản, viền nâu như đồ đạc.
+- **Trang phục (em đề xuất):** chủ tiệm mặc áo bà ba xanh ngọc, quần nâu. Khách mặc áo đất nung, vàng nghệ, xanh men, hồng sen hoặc kem. Không khách nào mặc xanh ngọc, để liếc qua là nhận ra chủ tiệm. Da và tóc lấy từ tông trong bản vẽ mẫu.
 - **Nhân vật ghép từ bộ phận (em đề xuất):** đầu, tóc, mặt, áo, tay, chân vẽ riêng. Nhờ vậy:
   - Đổi tóc và quần áo cho chủ tiệm được.
   - Sinh ra nhiều khách khác nhau từ ít hình.
   - Cử động bằng cách xoay, nhún các bộ phận, không phải vẽ từng khung hình. Rẻ hơn và mượt hơn.
 - **Hướng nhìn:** mỗi nhân vật có mặt trước, sau lưng và bên hông. Hướng bên kia lật hình lại.
-- **Cử động tối thiểu:** đi, đứng làm việc, ngồi chờ, nằm trên giường, biểu cảm vui hoặc bực.
-- **Hiệu ứng:** hơi nước bốc lên, tiền bay lên, sao lấp lánh, bong bóng biểu cảm, vòng sáng gợi ý chỗ chạm.
-- **Đồ đạc:** vẽ theo góc nhìn chéo từ trên xuống, khớp với ô lưới.
+- **Cử động tối thiểu:** đi, đứng làm việc, ngồi chờ, nằm trên giường, biểu cảm vui hoặc bực. Khách nằm ngửa trên giường gội, đắp khăn, mắt nhắm.
+
+### 7.3 Cách xếp tiệm lúc mới mở (anh duyệt, 2026-10-25)
+
+Đồ đạc xếp theo đường đi của khách, từ ngoài cửa vào trong:
+
+- **Mặt tiền:** cửa kính hai bên, cửa ra vào ở giữa có thảm đỏ. Kệ dép cạnh cửa. Hai chậu cây ở hai góc.
+- **Lễ tân:** quầy gỗ bên phải cửa, trên quầy có bình hoa sen, sổ và chuông đồng. Đầu ngày chủ tiệm đứng sau quầy. **(em đề xuất)**
+- **Lối đi:** thảm cói chạy thẳng từ cửa vào tới khe hở của bình phong.
+- **Chỗ chờ:** ghế dài 3 chỗ, nệm đất nung, quay mặt ra cửa kính, trên thảm cói. Bàn trà có ấm và chén ở phía trước ghế, chừa một hàng ô để đi.
+- **Bồn cây thấp sau lưng ghế chờ (em đề xuất, chưa có trên bảng):** chắn để khách không đi xuyên qua lưng ghế và chủ tiệm không đứng sau lưng ghế để mời khách. Khách vào và ra khỏi ghế từ phía trước hoặc hai đầu ghế.
+- **Bình phong mây** chia đôi tiệm, chừa khe hở ở giữa thẳng với cửa. Sát bình phong phía ngoài: kệ sản phẩm bên trái, bể sen sứ xanh bên phải. Góc phải có bình hoa đào.
+- **Phòng gội phía trong, sàn gỗ:** 2 giường gội đặt dọc, đầu giường sát chậu sứ gắn tường. Chủ tiệm đứng bên phải giường để gội. Hai chỗ giường trống vẽ viền đứt có dấu +, gợi ý mua thêm giường sau. Ở bước 1a chưa mua được: chạm vào thì hiện "Tính năng này có ở bản sau", giống các nút thanh dưới. **(em đề xuất)** Tủ khăn ở góc phải, cửa chớp xanh phía trên. Đèn lồng đỏ treo giữa các giường, đồng hồ giữa tường. Một chậu cây ở góc phải.
+- **Khách nằm thay vì ngồi:** khách được gội nằm trên giường. Bước 1a đổi ghế gội thành giường gội.
+
+Sơ đồ ô của tiệm (13 cột × 18 hàng; hàng 0–1 là tường sau, hàng 17 là mặt tiền):
+
+```
+#############
+#############
+#.B.B.E.EKKK#
+#.CWCW......#
+#.B.B.......#
+#..........P#
+#HHHHH.HHHHH#
+#.LLL....OO.#
+#...........#
+#...........#
+#...........#
+#..........V#
+#.YYY.......#
+#.SSS.......#
+#.......RRR.#
+#..TT.......#
+#P..GG.....P#
+######D######
+```
+
+Ký hiệu: `#` tường, `.` sàn, `D` cửa, `S` chỗ ngồi chờ, `C` giữa giường gội (khách nằm ở ô này), `B` đầu và chân giường, `W` chỗ chủ tiệm đứng gội (bên phải giường), `E` đầu một chỗ giường trống (vẫn đi qua được), `R` quầy lễ tân, `P` chậu cây, `H` bình phong, `K` tủ khăn, `L` kệ sản phẩm, `O` bể sen, `V` bình hoa đào, `T` bàn trà, `G` kệ dép, `Y` bồn cây.
+
+- **Nhịp chơi (em đề xuất):** đường từ ghế chờ vào giường giờ dài hơn bước 1a. Từ lúc chạm vào khách đang chờ tới lúc mở mini-game không quá 8 giây, kể cả khi khách ngồi chỗ xa nhất và chủ tiệm đang đứng ở quầy. Muốn vậy thì khách đi nhanh hơn trước.
 
 ## 8. Kiểm tra và tiêu chí xong
 
