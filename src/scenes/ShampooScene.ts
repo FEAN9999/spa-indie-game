@@ -21,6 +21,7 @@ const MAX_FOAM = 90
 const DROP_EVERY_MS = 45
 const BEADS = 14
 const STAR_Y = 1330
+const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 const INSTRUCTION: Record<ShampooPhase, StringKey> = { foam: 'shampooFoam', rinse: 'shampooRinse', dry: 'shampooDry', done: 'shampooDone' }
 
@@ -61,8 +62,13 @@ export class ShampooScene extends Phaser.Scene {
 
     const colors = lookColors(this.params.look)
     // interactive so taps stop here instead of reaching the spa's HUD underneath
-    this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0).setInteractive()
-    this.add.graphics().fillStyle(0xfffaf4, 1).fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
+    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    this.add
+      .graphics()
+      .fillStyle(hex(C.paper), 1)
+      .fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
     this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head').setTint(colors.skin)
     this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
@@ -179,8 +185,8 @@ export class ShampooScene extends Phaser.Scene {
       g.fillStyle(track, 1).fillRoundedRect(BAR.x, y, BAR.w, BAR.h, BAR.h / 2)
       if (k > 0) g.fillStyle(fill, 1).fillRoundedRect(BAR.x, y, Math.max(BAR.h, BAR.w * k), BAR.h, BAR.h / 2)
     }
-    bar(BAR.progressY, 0xe8f4ef, Phaser.Display.Color.HexStringToColor(C.mint).color, progress)
-    bar(BAR.timeY, 0xf6ecdc, Phaser.Display.Color.HexStringToColor(C.gold).color, left)
+    bar(BAR.progressY, hex(C.tileSeam), hex(C.teal), progress)
+    bar(BAR.timeY, hex(C.tileSeam), hex(C.mustard), left)
   }
 
   private onHair(x: number, y: number): boolean {

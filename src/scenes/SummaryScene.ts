@@ -14,6 +14,7 @@ export interface SummaryData {
 const COUNT_MS = 800
 const ROW_Y = 690
 const ROW_STEP = 120
+const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 /** End-of-day card: the day's numbers count up, then the player starts the next day. */
 export class SummaryScene extends Phaser.Scene {
@@ -40,14 +41,19 @@ export class SummaryScene extends Phaser.Scene {
       { label: 'rating', value: rating ?? 0, show: v => (rating === null ? t('noRating') : v.toFixed(1)) },
     ]
 
-    this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.55).setOrigin(0).setInteractive()
-    const card = this.add.graphics().fillStyle(0xfffaf4, 1).fillRoundedRect(90, 420, 900, 1300, 60)
+    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    const card = this.add
+      .graphics()
+      .fillStyle(hex(C.paper), 1)
+      .fillRoundedRect(90, 420, 900, 1300, 60)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(90, 420, 900, 1300, 60)
     this.add.text(GAME_W / 2, 545, t('summaryTitle', { day: sim.day }), textStyle(64)).setOrigin(0.5)
 
     const values = rows.map((row, i) => {
       const y = ROW_Y + i * ROW_STEP
-      if (i > 0) card.lineStyle(3, 0xefe2d4, 1).lineBetween(170, y - ROW_STEP / 2, 910, y - ROW_STEP / 2)
-      this.add.text(170, y, t(row.label), textStyle(44, '600', C.textSoft)).setOrigin(0, 0.5)
+      if (i > 0) card.lineStyle(3, hex(C.tileSeam), 1).lineBetween(170, y - ROW_STEP / 2, 910, y - ROW_STEP / 2)
+      this.add.text(170, y, t(row.label), textStyle(44, '600')).setOrigin(0, 0.5)
       return this.add.text(910, y, row.show(0), textStyle(50)).setOrigin(1, 0.5)
     })
     this.tweens.addCounter({
@@ -59,8 +65,15 @@ export class SummaryScene extends Phaser.Scene {
     })
 
     const button = this.add.container(GAME_W / 2, 1545)
-    button.add(this.add.graphics().fillStyle(Phaser.Display.Color.HexStringToColor(C.mint).color, 1).fillRoundedRect(-300, -75, 600, 150, 75))
-    button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', '#2f6f62')).setOrigin(0.5))
+    button.add(
+      this.add
+        .graphics()
+        .fillStyle(hex(C.teal), 1)
+        .fillRoundedRect(-300, -75, 600, 150, 75)
+        .lineStyle(4, hex(C.ink))
+        .strokeRoundedRect(-300, -75, 600, 150, 75),
+    )
+    button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', C.paper)).setOrigin(0.5))
     button.setSize(600, 150).setInteractive().on('pointerup', () => {
       onNewDay()
       this.scene.stop()

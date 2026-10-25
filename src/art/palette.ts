@@ -39,26 +39,6 @@ export const C = {
   sidewalkLine: '#D8C8B0',
   road: '#D4C5B1',
   green: '#6DB36A',
-  // legacy pastel: removed in Task 7
-  gold: '#f5c242',
-  goldDark: '#e0a82e',
-  lavender: '#c9b6e4',
-  lavenderLight: '#d9cbef',
-  lavenderDark: '#b9a2dc',
-  mint: '#9fd8c7',
-  mintLight: '#e2f3ec',
-  pink: '#f4a6b8',
-  pinkDark: '#e48aa0',
-  desk: '#f2c4a4',
-  deskDark: '#e5a985',
-  floor: '#ecd3b4',
-  wallCap: '#f0cdb8',
-  wallLine: '#e5c3ad',
-  sky: '#cfe9f5',
-  rugCream: '#f7e3c8',
-  text: '#5a4a42',
-  textSoft: '#8a776a',
-  red: '#e86a6a',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e]
