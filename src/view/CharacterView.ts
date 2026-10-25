@@ -11,7 +11,7 @@ const HIP_Y = -11 * U
 const SHOULDER_Y = -24 * U
 const HEAD_Y = -37 * U
 const SWING = Phaser.Math.DegToRad(25)
-const STEP_HZ = 4 // one full leg cycle is two steps, so 8 steps a second
+const STEP_HZ = 5 // one full leg cycle is two steps, so 10 steps a second at 5 tiles a second
 const BOB_PX = 3
 const SIT_DROP_PX = 12
 // lying on the shampoo bed: the feet origin is the bottom of the bed's middle tile

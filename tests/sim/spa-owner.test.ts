@@ -163,4 +163,20 @@ describe('SpaSim owner and service', () => {
     }
     expect(ms).toBeLessThanOrEqual(8_000)
   })
+
+  it('brings the next customer from the far end of the bench onto a bed within 8 seconds right after a service', () => {
+    const sim = fresh()
+    const first = startService(sim)
+    sim.completeService(first.id, 3)
+    const c = seatAndWait(sim)
+    expect(c.seat).toEqual({ x: 2, y: 13 })
+    expect(sim.ownerTile()).toEqual(sim.stations[0].work) // the owner is still beside the bed they just used
+    sim.tapTile(c.seat!)
+    let ms = 0
+    while (c.state !== 'inService' && ms <= 20_000) {
+      sim.advance(100)
+      ms += 100
+    }
+    expect(ms).toBeLessThanOrEqual(8_000)
+  })
 })
