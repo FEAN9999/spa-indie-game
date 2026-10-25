@@ -5,6 +5,7 @@ import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { ShampooScene } from './scenes/ShampooScene'
 import { SpaScene } from './scenes/SpaScene'
+import { SummaryScene } from './scenes/SummaryScene'
 
 async function start() {
   // Canvas text never re-renders after a late font load, so load both weights, Vietnamese glyphs included, first.
@@ -19,7 +20,7 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, SpaScene, ShampooScene],
+    scene: [BootScene, SpaScene, ShampooScene, SummaryScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }

@@ -11,6 +11,7 @@ import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import type { ShampooData } from './ShampooScene'
+import type { SummaryData } from './SummaryScene'
 
 const FX_DEPTH = 9000
 const TAP_SLOP_PX = 20
@@ -110,10 +111,11 @@ export class SpaScene extends Phaser.Scene {
       case 'toast':
         this.hud.toast(t(e.key))
         return
-      case 'dayEnded':
-        // Until the summary scene exists, the next day starts straight away.
-        this.sim.startDay()
+      case 'dayEnded': {
+        const data: SummaryData = { sim: this.sim, onNewDay: () => this.sim.startDay() }
+        this.scene.launch('SummaryScene', data)
         return
+      }
     }
   }
 
