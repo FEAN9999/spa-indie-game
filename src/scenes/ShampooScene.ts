@@ -1,0 +1,188 @@
+import * as Phaser from 'phaser'
+import { C, lookColors } from '../art/palette'
+import { GAME_H, GAME_W, SHAMPOO_TIME_LIMIT_MS } from '../config'
+import type { Stars } from '../sim/economy'
+import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
+import type { Look } from '../sim/types'
+import { t, type StringKey } from '../strings/vi'
+import { textStyle } from '../view/text'
+
+export interface ShampooData {
+  look: Look
+  onDone: (stars: Stars) => void
+}
+
+const CARD = { x: 60, y: 260, w: 960, h: 1440 }
+/** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
+const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
+const BAR = { x: 140, w: 800, h: 28, progressY: 420, timeY: 1612 }
+const FOAM_STEP_PX = 28
+const MAX_FOAM = 90
+const DROP_EVERY_MS = 45
+const BEADS = 14
+const STAR_Y = 1330
+
+const INSTRUCTION: Record<ShampooPhase, StringKey> = { foam: 'shampooFoam', rinse: 'shampooRinse', dry: 'shampooDry', done: 'shampooDone' }
+
+/** Close-up shampoo mini-game over the frozen spa: foam by swiping, rinse by holding, dry by swiping. */
+export class ShampooScene extends Phaser.Scene {
+  private params!: ShampooData
+  private rules!: ShampooGame
+  private phase: ShampooPhase = 'foam'
+  private pointer: Phaser.Input.Pointer | null = null
+  private last = { x: 0, y: 0 }
+  private trail = 0
+  private dropMs = 0
+  private foam: Phaser.GameObjects.Image[] = []
+  private beads: Phaser.GameObjects.Image[] = []
+  private instruction!: Phaser.GameObjects.Text
+  private bars!: Phaser.GameObjects.Graphics
+  private shower!: Phaser.GameObjects.Image
+  private towel!: Phaser.GameObjects.Image
+  private revealed = false
+
+  constructor() {
+    super('ShampooScene')
+  }
+
+  init(data: ShampooData) {
+    this.params = data
+  }
+
+  create() {
+    this.rules = new ShampooGame()
+    this.phase = 'foam'
+    this.pointer = null
+    this.trail = 0
+    this.dropMs = 0
+    this.foam = []
+    this.beads = []
+    this.revealed = false
+
+    const colors = lookColors(this.params.look)
+    this.add.rectangle(0, 0, GAME_W, GAME_H, 0x000000, 0.6).setOrigin(0)
+    this.add.graphics().fillStyle(0xfffaf4, 1).fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
+    this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
+    this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head').setTint(colors.skin)
+    this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
+    this.instruction = this.add
+      .text(GAME_W / 2, 345, t('shampooFoam'), { ...textStyle(46), align: 'center', wordWrap: { width: 860 } })
+      .setOrigin(0.5)
+    this.bars = this.add.graphics()
+    this.shower = this.add.image(0, 0, 'sh-shower').setOrigin(0.5, 0.25).setVisible(false).setDepth(10)
+    this.towel = this.add.image(0, 0, 'sh-towel').setVisible(false).setDepth(10)
+
+    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
+      this.pointer = p
+      this.last = { x: p.x, y: p.y }
+    })
+    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p))
+    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => (this.pointer = null))
+  }
+
+  update(time: number, delta: number) {
+    if (this.revealed) return
+    const p = this.pointer
+    if (this.rules.phase === 'rinse') this.rules.hold(delta, p !== null && this.onHair(p.x, p.y))
+    this.rules.tick(delta)
+    if (this.rules.phase !== this.phase) this.enterPhase(this.rules.phase)
+    if (this.revealed) return
+
+    const progress = this.rules.progress()
+    this.shower.setVisible(this.phase === 'rinse' && p !== null)
+    this.towel.setVisible(this.phase === 'dry' && p !== null)
+    if (p && this.phase === 'rinse') {
+      this.shower.setPosition(p.x, p.y - 110)
+      this.dropMs += delta
+      for (; this.dropMs >= DROP_EVERY_MS; this.dropMs -= DROP_EVERY_MS) this.spawnDrop(p.x, p.y)
+    }
+    if (p && this.phase === 'dry') this.towel.setPosition(p.x, p.y).setRotation(Math.sin(time / 90) * 0.15)
+    if (this.phase === 'rinse') for (const f of this.foam) f.setAlpha(1 - progress)
+    if (this.phase === 'dry') for (const b of this.beads) b.setAlpha(1 - progress)
+    this.drawBars(progress)
+  }
+
+  /** Dev builds only: jump to the star reveal so headless checks can finish a service. */
+  __finishForTest(stars: Stars): void {
+    if (!import.meta.env.DEV || this.revealed) return
+    this.reveal(stars)
+  }
+
+  private onMove(p: Phaser.Input.Pointer): void {
+    if (!this.pointer || this.revealed) return
+    const dist = Phaser.Math.Distance.Between(this.last.x, this.last.y, p.x, p.y)
+    this.last = { x: p.x, y: p.y }
+    const onHair = this.onHair(p.x, p.y)
+    if (this.phase === 'foam' || this.phase === 'dry') this.rules.swipe(dist / (HAIR.rx * 2), onHair)
+    if (this.phase !== 'foam' || !onHair) return
+    this.trail += dist
+    for (; this.trail >= FOAM_STEP_PX; this.trail -= FOAM_STEP_PX) {
+      if (this.foam.length >= MAX_FOAM) break
+      const bubble = this.add.image(p.x, p.y, 'sh-foam').setScale(0).setRotation(Math.random() * Math.PI)
+      this.tweens.add({ targets: bubble, scale: 0.7 + Math.random() * 0.5, duration: 180, ease: 'Back.easeOut' })
+      this.foam.push(bubble)
+    }
+  }
+
+  private enterPhase(next: ShampooPhase): void {
+    this.phase = next
+    if (next === 'done') {
+      this.reveal(this.rules.stars() ?? 1)
+      return
+    }
+    this.instruction.setText(t(INSTRUCTION[next]))
+    if (next === 'dry') {
+      for (const f of this.foam) f.destroy()
+      this.foam = []
+      for (let i = 0; i < BEADS; i++) {
+        const a = Math.random() * Math.PI * 2
+        const r = Math.sqrt(Math.random()) * 0.85
+        this.beads.push(this.add.image(HAIR.x + Math.cos(a) * r * HAIR.rx, HAIR.y + Math.sin(a) * r * HAIR.ry, 'sh-drop').setScale(0.9))
+      }
+    }
+  }
+
+  private spawnDrop(x: number, y: number): void {
+    const drop = this.add.image(x + Phaser.Math.Between(-40, 40), y - 80, 'sh-drop').setDepth(9)
+    this.tweens.add({ targets: drop, y: y + 40, alpha: 0, duration: 380, onComplete: () => drop.destroy() })
+  }
+
+  private reveal(stars: Stars): void {
+    this.revealed = true
+    this.shower.setVisible(false)
+    this.towel.setVisible(false)
+    // the hair is clean and dry, whatever phase the reveal interrupted
+    for (const img of [...this.foam, ...this.beads]) img.destroy()
+    this.foam = []
+    this.beads = []
+    this.instruction.setText(t('shampooDone'))
+    this.drawBars(1)
+    ;[-1, 0, 1].forEach((offset, i) => {
+      const slot = this.add.image(GAME_W / 2 + offset * 170, STAR_Y, 'star-empty').setScale(1.4)
+      if (i >= stars) return
+      this.time.delayedCall(300 + i * 400, () => {
+        slot.setTexture('star').setScale(0.6)
+        this.tweens.add({ targets: slot, scale: 1.4, duration: 250, ease: 'Back.easeOut' })
+      })
+    })
+    this.time.delayedCall(1900, () => {
+      this.params.onDone(stars)
+      this.scene.stop()
+    })
+  }
+
+  private drawBars(progress: number): void {
+    const left = Math.max(0, 1 - this.rules.elapsedMs / SHAMPOO_TIME_LIMIT_MS)
+    const g = this.bars.clear()
+    const bar = (y: number, track: number, fill: number, k: number) => {
+      g.fillStyle(track, 1).fillRoundedRect(BAR.x, y, BAR.w, BAR.h, BAR.h / 2)
+      if (k > 0) g.fillStyle(fill, 1).fillRoundedRect(BAR.x, y, Math.max(BAR.h, BAR.w * k), BAR.h, BAR.h / 2)
+    }
+    bar(BAR.progressY, 0xe8f4ef, Phaser.Display.Color.HexStringToColor(C.mint).color, progress)
+    bar(BAR.timeY, 0xf6ecdc, Phaser.Display.Color.HexStringToColor(C.gold).color, left)
+  }
+
+  private onHair(x: number, y: number): boolean {
+    return ((x - HAIR.x) / HAIR.rx) ** 2 + ((y - HAIR.y) / HAIR.ry) ** 2 <= 1
+  }
+}

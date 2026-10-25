@@ -10,6 +10,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
+import type { ShampooData } from './ShampooScene'
 
 const FX_DEPTH = 9000
 const TAP_SLOP_PX = 20
@@ -92,11 +93,14 @@ export class SpaScene extends Phaser.Scene {
         this.customers.delete(e.id)
         return
       }
-      case 'serviceReady':
-        // Until the shampoo mini-game exists, every service finishes at once with 2 stars.
+      case 'serviceReady': {
+        const c = this.sim.customers.find(x => x.id === e.customerId)
+        if (!c) return
         this.hud.hideHint()
-        this.sim.completeService(e.customerId, 2)
+        const data: ShampooData = { look: c.look, onDone: stars => this.sim.completeService(c.id, stars) }
+        this.scene.launch('ShampooScene', data)
         return
+      }
       case 'paid':
         this.floatMoney(e.tile, e.amount + e.tip)
         return
