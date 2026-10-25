@@ -184,6 +184,8 @@ export class SpaSim {
     this.stats = emptyStats()
     this.dayOver = false
     this.untilArrivalMs = FIRST_ARRIVAL_MS
+    // spec 7.3: each day starts with the owner behind the reception desk
+    this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
   }
 
   private step(dt: number): void {

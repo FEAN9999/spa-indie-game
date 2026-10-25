@@ -130,6 +130,18 @@ describe('SpaSim owner and service', () => {
     expect(sim.grid.desks).toContainEqual({ x: o.x, y: o.y + 1 })
   })
 
+  it('starts the next day with the owner back behind the reception desk', () => {
+    const sim = fresh()
+    const start = sim.ownerTile()
+    sim.tapTile({ x: 2, y: 14 })
+    advanceUntil(sim, () => tileEq(sim.ownerTile(), { x: 2, y: 14 }) && sim.owner.path.length === 0)
+    advanceUntil(sim, () => sim.dayOver, 900_000)
+    sim.startDay()
+    expect(sim.ownerTile()).toEqual(start)
+    expect(sim.owner.path).toEqual([])
+    expect(sim.owner.facing).toBe('down')
+  })
+
   it('tapping an empty bed slot says it is coming soon and leaves the owner where they are', () => {
     const sim = fresh()
     for (const y of [2, 3, 4]) {
