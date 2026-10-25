@@ -1,6 +1,8 @@
 import type { Tile } from './types'
 
-export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'chair' | 'work' | 'desk' | 'plant'
+export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'bed' | 'bedEnd' | 'work' | 'desk' | 'plant' | 'decor'
+
+export type DecorKind = 'screen' | 'cabinet' | 'shelf' | 'lotus' | 'vase' | 'tea' | 'slippers' | 'planter'
 
 export interface Grid {
   cols: number
@@ -9,10 +11,21 @@ export interface Grid {
   cells: Cell[][]
   door: Tile
   seats: Tile[]
-  chairs: Tile[]
+  /** The middle tile of each bed, where the customer lies. */
+  beds: Tile[]
   works: Tile[]
   desks: Tile[]
   plants: Tile[]
+  /** Head tile of each empty bed slot; see isBedSlot. */
+  bedSlots: Tile[]
+  decor: Record<DecorKind, Tile[]>
+}
+
+/** Tiles in one row with consecutive x. */
+export interface TileRun {
+  left: number
+  right: number
+  row: number
 }
 
 const LEGEND: Record<string, Cell> = {
@@ -20,26 +33,58 @@ const LEGEND: Record<string, Cell> = {
   '.': 'floor',
   D: 'door',
   S: 'seat',
-  C: 'chair',
+  C: 'bed',
+  B: 'bedEnd',
   W: 'work',
+  E: 'floor',
   R: 'desk',
   P: 'plant',
+}
+
+const DECOR: Record<string, DecorKind> = {
+  H: 'screen',
+  K: 'cabinet',
+  L: 'shelf',
+  O: 'lotus',
+  V: 'vase',
+  T: 'tea',
+  G: 'slippers',
+  Y: 'planter',
 }
 
 export function parseLayout(rows: string[]): Grid {
   const cols = rows[0]?.length ?? 0
   if (rows.some(r => r.length !== cols)) throw new Error('Layout rows must have equal length')
 
-  const grid: Grid = { cols, rows: rows.length, cells: [], door: { x: -1, y: -1 }, seats: [], chairs: [], works: [], desks: [], plants: [] }
+  const decor = Object.fromEntries(Object.values(DECOR).map(k => [k, []])) as unknown as Record<DecorKind, Tile[]>
+  const grid: Grid = {
+    cols,
+    rows: rows.length,
+    cells: [],
+    door: { x: -1, y: -1 },
+    seats: [],
+    beds: [],
+    works: [],
+    desks: [],
+    plants: [],
+    bedSlots: [],
+    decor,
+  }
   rows.forEach((row, y) => {
     grid.cells.push(
       [...row].map((ch, x) => {
+        const t = { x, y }
+        const kind = DECOR[ch]
+        if (kind) {
+          grid.decor[kind].push(t)
+          return 'decor'
+        }
         const cell = LEGEND[ch]
         if (!cell) throw new Error(`Unknown layout character '${ch}' at ${x},${y}`)
-        const t = { x, y }
-        if (cell === 'door') grid.door = t
+        if (ch === 'E') grid.bedSlots.push(t)
+        else if (cell === 'door') grid.door = t
         else if (cell === 'seat') grid.seats.push(t)
-        else if (cell === 'chair') grid.chairs.push(t)
+        else if (cell === 'bed') grid.beds.push(t)
         else if (cell === 'work') grid.works.push(t)
         else if (cell === 'desk') grid.desks.push(t)
         else if (cell === 'plant') grid.plants.push(t)
@@ -58,6 +103,22 @@ export function isWalkable(grid: Grid, t: Tile): boolean {
   if (!inBounds(grid, t)) return false
   const cell = grid.cells[t.y][t.x]
   return cell === 'floor' || cell === 'door' || cell === 'work'
+}
+
+/** An empty bed slot covers its head tile and the two tiles below, like a bed. */
+export function isBedSlot(grid: Grid, t: Tile): boolean {
+  return grid.bedSlots.some(s => s.x === t.x && t.y >= s.y && t.y <= s.y + 2)
+}
+
+/** Groups tiles given in reading order (row, then x) into horizontal runs. */
+export function tileRuns(tiles: Tile[]): TileRun[] {
+  const runs: TileRun[] = []
+  for (const t of tiles) {
+    const last = runs[runs.length - 1]
+    if (last && last.row === t.y && last.right + 1 === t.x) last.right = t.x
+    else runs.push({ left: t.x, right: t.x, row: t.y })
+  }
+  return runs
 }
 
 export function tileEq(a: Tile, b: Tile): boolean {

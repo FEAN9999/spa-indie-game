@@ -2,7 +2,7 @@ export const vi = {
   loading: 'Đang tải...',
   dayLabel: 'Ngày {day}',
   hintFirstCustomer: 'Chạm vào khách đang chờ để mời gội đầu',
-  stationsBusy: 'Ghế gội đầu đang bận',
+  stationsBusy: 'Giường gội đầu đang bận',
   comingSoon: 'Tính năng này có ở bản sau',
   paused: 'Tạm dừng',
   tapToResume: 'Chạm để chơi tiếp',

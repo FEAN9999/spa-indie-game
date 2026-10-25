@@ -15,7 +15,7 @@ import {
 } from '../config'
 import { DayClock } from './clock'
 import { arrivalIntervalMs, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
-import { isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
+import { isBedSlot, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
@@ -81,10 +81,10 @@ export class SpaSim {
     this.rng = rng
     this.autoSpawn = autoSpawn
     this.grid = parseLayout(layout)
-    this.stations = this.grid.chairs.map((chair, id) => {
-      const work = { x: chair.x, y: chair.y + 1 }
-      if (!this.grid.works.some(w => tileEq(w, work))) throw new Error(`Chair at ${chair.x},${chair.y} has no work tile below it`)
-      return { id, chair, work, customerId: null }
+    this.stations = this.grid.beds.map((bed, id) => {
+      const work = { x: bed.x + 1, y: bed.y }
+      if (!this.grid.works.some(w => tileEq(w, work))) throw new Error(`Bed at ${bed.x},${bed.y} has no work tile on its right`)
+      return { id, bed, work, customerId: null }
     })
     this.seats = this.grid.seats.map(tile => ({ tile, customerId: null }))
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
@@ -137,6 +137,11 @@ export class SpaSim {
       return
     }
 
+    if (isBedSlot(this.grid, t)) {
+      this.emit({ type: 'toast', key: 'comingSoon' })
+      return
+    }
+
     if (!isWalkable(this.grid, t)) return
     const path = findPath(this.grid, from, x => tileEq(x, t))
     if (!path) return
@@ -153,7 +158,7 @@ export class SpaSim {
     this.stats.income += SHAMPOO_PRICE
     this.stats.tips += tip
     this.stats.served++
-    this.emit({ type: 'paid', customerId, amount: SHAMPOO_PRICE, tip, tile: station.chair })
+    this.emit({ type: 'paid', customerId, amount: SHAMPOO_PRICE, tip, tile: station.bed })
     this.addReview(customerId, reviewScore(stars))
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null
@@ -253,14 +258,14 @@ export class SpaSim {
       station.customerId = c.id
       c.stationId = station.id
       this.freeSeat(c)
-      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.chair)) ?? []
+      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.bed)) ?? []
       this.setState(c, 'toStation')
       this.owner.path = findPath(this.grid, this.ownerTile(), t => tileEq(t, station.work)) ?? []
       this.owner.task = { kind: 'serve', customerId: c.id, stationId: station.id }
       return
     }
 
-    // serve: wait until the customer has also reached the chair
+    // serve: wait until the customer has also reached the bed
     if (c && c.state === 'toStation' && c.path.length === 0) {
       this.setState(c, 'inService')
       this.servingCustomerId = c.id

@@ -47,7 +47,7 @@ export interface Owner {
 
 export interface Station {
   id: number
-  chair: Tile
+  bed: Tile
   work: Tile
   customerId: number | null
 }
@@ -72,5 +72,5 @@ export type SimEvent =
   | { type: 'serviceReady'; customerId: number; stationId: number }
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
-  | { type: 'toast'; key: 'stationsBusy' }
+  | { type: 'toast'; key: 'stationsBusy' | 'comingSoon' }
   | { type: 'dayEnded'; stats: DayStats }

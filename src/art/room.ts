@@ -25,7 +25,7 @@ function roomBody(grid: Grid): string {
   }
 
   // rugs: lavender under the shampoo chairs, cream under the sofa, mint in the open floor
-  const chairXs = grid.chairs.map(c => c.x)
+  const chairXs = grid.beds.map(c => c.x)
   if (chairXs.length) out.push(rect(Math.min(...chairXs) - 1, 2.15, Math.max(...chairXs) - Math.min(...chairXs) + 3, 2.2, C.lavenderLight, 'rx="0.3"'))
   const seatXs = grid.seats.map(s => s.x)
   if (seatXs.length) {
@@ -46,7 +46,7 @@ function roomBody(grid: Grid): string {
   out.push(`<circle cx="${cols / 2}" cy="0.85" r="0.34" fill="#ffffff" stroke="${C.wallLine}" stroke-width="0.07"/>`)
   out.push(`<path d="M${cols / 2},0.85 V0.62 M${cols / 2},0.85 H${cols / 2 + 0.18}" stroke="${C.textSoft}" stroke-width="0.05" stroke-linecap="round"/>`)
   // between the first two chairs so the basins do not cover it
-  const lx = grid.chairs.length > 1 ? (grid.chairs[0].x + grid.chairs[1].x + 1) / 2 : cols / 2
+  const lx = grid.beds.length > 1 ? (grid.beds[0].x + grid.beds[1].x + 1) / 2 : cols / 2
   out.push(
     `<g transform="translate(${lx},1.3)" opacity="0.85">` +
       `<ellipse cx="-0.22" cy="0" rx="0.12" ry="0.26" fill="${C.pink}" transform="rotate(-35 -0.22 0)"/>` +

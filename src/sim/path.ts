@@ -10,7 +10,7 @@ const DIRS = [
 
 /**
  * Breadth-first search to the nearest tile matching `isGoal`.
- * Goal tiles may be entered even when not walkable (seats, chairs).
+ * Goal tiles may be entered even when not walkable (seats, beds).
  * Returns the tiles after `from` up to and including the goal, or null.
  */
 export function findPath(grid: Grid, from: Tile, isGoal: (t: Tile) => boolean): Tile[] | null {

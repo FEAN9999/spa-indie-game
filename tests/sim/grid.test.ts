@@ -1,26 +1,41 @@
 import { describe, expect, it } from 'vitest'
-import { isWalkable, parseLayout } from '../../src/sim/grid'
+import { isBedSlot, isWalkable, parseLayout, tileRuns } from '../../src/sim/grid'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('grid', () => {
-  it('parses the 1a layout', () => {
+  it('parses the shop layout', () => {
     const g = parseLayout(SPA_LAYOUT_1A)
     expect([g.cols, g.rows]).toEqual([13, 18])
     expect(g.door).toEqual({ x: 6, y: 17 })
-    expect(g.seats).toEqual([{ x: 2, y: 10 }, { x: 3, y: 10 }, { x: 4, y: 10 }])
-    expect(g.chairs).toEqual([{ x: 3, y: 2 }, { x: 6, y: 2 }])
-    expect(g.works).toEqual([{ x: 3, y: 3 }, { x: 6, y: 3 }])
+    expect(g.seats).toEqual([{ x: 2, y: 13 }, { x: 3, y: 13 }, { x: 4, y: 13 }])
+    expect(g.beds).toEqual([{ x: 2, y: 3 }, { x: 4, y: 3 }])
+    expect(g.works).toEqual([{ x: 3, y: 3 }, { x: 5, y: 3 }])
+    expect(g.desks).toEqual([{ x: 8, y: 14 }, { x: 9, y: 14 }, { x: 10, y: 14 }])
+    expect(g.bedSlots).toEqual([{ x: 6, y: 2 }, { x: 8, y: 2 }])
+    expect(g.decor.screen).toHaveLength(10)
+    expect(g.decor.cabinet).toEqual([{ x: 9, y: 2 }, { x: 10, y: 2 }, { x: 11, y: 2 }])
+    expect(g.decor.planter).toEqual([{ x: 2, y: 12 }, { x: 3, y: 12 }, { x: 4, y: 12 }])
+    expect(g.decor.vase).toEqual([{ x: 11, y: 11 }])
   })
 
   it('knows what can be walked on', () => {
     const g = parseLayout(SPA_LAYOUT_1A)
-    expect(isWalkable(g, { x: 5, y: 5 })).toBe(true) // floor
-    expect(isWalkable(g, { x: 6, y: 17 })).toBe(true) // door
-    expect(isWalkable(g, { x: 3, y: 3 })).toBe(true) // work
-    expect(isWalkable(g, { x: 0, y: 5 })).toBe(false) // wall
-    expect(isWalkable(g, { x: 7, y: 7 })).toBe(false) // desk
-    expect(isWalkable(g, { x: 2, y: 10 })).toBe(false) // seat
-    expect(isWalkable(g, { x: -1, y: 0 })).toBe(false) // out of bounds
+    const walk = (x: number, y: number) => isWalkable(g, { x, y })
+    expect([walk(5, 9), walk(6, 17), walk(3, 3), walk(6, 2), walk(6, 6)]).toEqual([true, true, true, true, true]) // floor, door, work, bed slot, screen opening
+    expect([walk(0, 5), walk(2, 3), walk(2, 2), walk(2, 4), walk(5, 6), walk(8, 14), walk(2, 13), walk(3, 12), walk(-1, 0)]).toEqual(
+      [false, false, false, false, false, false, false, false, false], // wall, bed, bed head, bed foot, screen, desk, seat, planter, out of bounds
+    )
+  })
+
+  it('groups tiles into horizontal runs', () => {
+    const tiles = [{ x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }, { x: 4, y: 9 }]
+    expect(tileRuns(tiles)).toEqual([{ left: 1, right: 3, row: 6 }, { left: 7, right: 8, row: 6 }, { left: 4, right: 4, row: 9 }])
+  })
+
+  it('treats a bed slot and the two tiles below it as the slot', () => {
+    const g = parseLayout(SPA_LAYOUT_1A)
+    expect([2, 3, 4, 5].map(y => isBedSlot(g, { x: 6, y }))).toEqual([true, true, true, false])
+    expect(isBedSlot(g, { x: 7, y: 3 })).toBe(false)
   })
 
   it('rejects ragged layouts', () => {

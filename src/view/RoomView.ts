@@ -12,7 +12,7 @@ export class RoomView {
       const bottom = MAP_Y + (row + 1) * TILE
       scene.add.image(MAP_X + ((left + right + 1) / 2) * TILE, bottom, key).setOrigin(0.5, 1).setDepth(bottom)
     }
-    for (const c of grid.chairs) place('chair-shampoo', c.x, c.x, c.y)
+    for (const c of grid.beds) place('chair-shampoo', c.x, c.x, c.y)
     for (const s of grid.seats) place('seat', s.x, s.x, s.y)
     for (const p of grid.plants) place('plant', p.x, p.x, p.y)
     if (grid.desks.length) {
