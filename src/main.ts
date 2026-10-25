@@ -2,19 +2,8 @@ import '@fontsource/baloo-2/500.css'
 import '@fontsource/baloo-2/700.css'
 import * as Phaser from 'phaser'
 import { GAME_H, GAME_W } from './config'
-import { t } from './strings/vi'
-
-class LoadingScene extends Phaser.Scene {
-  constructor() {
-    super('Loading')
-  }
-
-  create() {
-    this.add
-      .text(GAME_W / 2, GAME_H / 2, t('loading'), { fontFamily: '"Baloo 2"', fontStyle: '500', fontSize: '56px', color: '#5a4a42' })
-      .setOrigin(0.5)
-  }
-}
+import { BootScene } from './scenes/BootScene'
+import { SpaScene } from './scenes/SpaScene'
 
 async function start() {
   // Canvas text never re-renders after a late font load, so load both weights, Vietnamese glyphs included, first.
@@ -29,7 +18,7 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [LoadingScene],
+    scene: [BootScene, SpaScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }
