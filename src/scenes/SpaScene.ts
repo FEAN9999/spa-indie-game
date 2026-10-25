@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
+import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, lookColors, OWNER_COLORS } from '../art/palette'
-import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
 import { onBed } from '../sim/grid'
@@ -49,6 +50,8 @@ export class SpaScene extends Phaser.Scene {
   private session!: SaveSession
   /** A service that became ready while paused; the mini-game opens on resume. */
   private pendingService: ShampooData | null = null
+  /** Frozen while asking for a newer version on return, so nothing happens that the reload would drop. */
+  private holding = false
 
   constructor() {
     super('SpaScene')
@@ -57,6 +60,7 @@ export class SpaScene extends Phaser.Scene {
   create() {
     this.customers = new Map()
     this.pendingService = null
+    this.holding = false
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
     const saved = this.store.load(this.session.slot)
@@ -74,9 +78,11 @@ export class SpaScene extends Phaser.Scene {
     const saveOnLeave = () => this.session.saveNow()
     document.addEventListener('visibilitychange', saveOnHide)
     window.addEventListener('pagehide', saveOnLeave)
+    const stopWatching = onReturn(() => void this.checkForUpdate())
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       document.removeEventListener('visibilitychange', saveOnHide)
       window.removeEventListener('pagehide', saveOnLeave)
+      stopWatching()
     })
 
     // a reopened shop waits on the pause card; an ended day reopens its summary by itself
@@ -101,6 +107,15 @@ export class SpaScene extends Phaser.Scene {
     return new SpaSim({ rng })
   }
 
+  /** Coming back to the game moves it to a newer version, unless a service is in progress. */
+  private async checkForUpdate(): Promise<void> {
+    if (BUILD_ID === 'dev' || this.sim.servingCustomerId !== null) return
+    this.holding = true
+    const latest = await latestVersion(UPDATE_WAIT_MS)
+    if (shouldReload(BUILD_ID, latest, this.sim.servingCustomerId !== null)) this.session.reloadForUpdate()
+    else this.holding = false
+  }
+
   pause(panel: PausePanel = 'menu'): void {
     this.sim.paused = true
     const data: PauseData = { sim: this.sim, store: this.store, session: this.session, panel, onResume: () => this.resume() }
@@ -116,7 +131,7 @@ export class SpaScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
-    this.sim.update(delta)
+    if (!this.holding) this.sim.update(delta)
     for (const e of this.sim.drainEvents()) this.handle(e)
 
     const dt = this.sim.paused ? 0 : delta
@@ -273,7 +288,7 @@ export class SpaScene extends Phaser.Scene {
   }
 
   private onTap(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
-    if (over.length > 0) return
+    if (this.holding || over.length > 0) return
     if (Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
     // A seated customer's head covers the tile above the seat, so test the figure before the floor.
     const hit = this.sim.customers.find(c => {

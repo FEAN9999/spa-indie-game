@@ -43,3 +43,6 @@ export const OWNER_START = { x: 9, y: 13 } as const
 
 // Saving
 export const AUTOSAVE_MS = 10_000
+
+// Updates
+export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json when the player comes back

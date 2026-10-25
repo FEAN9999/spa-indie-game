@@ -2,6 +2,7 @@ import '@fontsource/be-vietnam-pro/600.css'
 import '@fontsource/be-vietnam-pro/800.css'
 import * as Phaser from 'phaser'
 import { captureInstallPrompt } from './app/install'
+import { BUILD_ID, registerServiceWorker } from './app/update'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { PauseScene } from './scenes/PauseScene'
@@ -33,5 +34,8 @@ async function start() {
 captureInstallPrompt()
 // ask the browser not to clear the saves when space runs low
 navigator.storage?.persist?.()
+registerServiceWorker()
+// which version is running, for checking a deploy from the browser
+document.documentElement.dataset.build = BUILD_ID
 
 start()
