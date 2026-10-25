@@ -33,26 +33,26 @@ export class Hud {
   ) {
     const add = scene.add
 
-    // top bar
+    // top bar on two rows: money, star and rating, then the day and time; it ends above the room (MAP_Y 210)
     add
       .graphics()
       .setDepth(DEPTH)
       .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(24, 40, GAME_W - 48, 110, 55)
+      .fillRoundedRect(24, 30, GAME_W - 48, 170, 52)
       .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(24, 40, GAME_W - 48, 110, 55)
-    add.zone(24, 40, GAME_W - 48, 110).setOrigin(0).setInteractive().setDepth(DEPTH)
-    add.image(95, 95, 'coin').setScale(1.15).setDepth(DEPTH)
+      .strokeRoundedRect(24, 30, GAME_W - 48, 170, 52)
+    add.zone(24, 30, GAME_W - 48, 170).setOrigin(0).setInteractive().setDepth(DEPTH)
+    add.image(95, 84, 'coin').setScale(1.25).setDepth(DEPTH)
     // star and rating x are set each frame by layoutTopBar
-    this.money = add.text(TOP_BAR.moneyX, 95, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
-    this.star = add.image(0, 95, 'star').setScale(0.42).setDepth(DEPTH)
-    this.rating = add.text(0, 95, '', textStyle(36)).setOrigin(0, 0.5).setDepth(DEPTH)
-    this.dayTime = add.text(TOP_BAR.dayRight, 95, '', textStyle(32, '600')).setOrigin(1, 0.5).setDepth(DEPTH)
+    this.money = add.text(TOP_BAR.moneyX, 84, '', textStyle(52)).setOrigin(0, 0.5).setDepth(DEPTH)
+    this.star = add.image(0, 84, 'star').setScale(0.5).setDepth(DEPTH)
+    this.rating = add.text(0, 84, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
+    this.dayTime = add.text(TOP_BAR.moneyX, 152, '', textStyle(40, '600')).setOrigin(0, 0.5).setDepth(DEPTH)
 
-    const pause = add.container(995, 95).setDepth(DEPTH)
-    pause.add(add.circle(0, 0, 40, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
-    pause.add(add.rectangle(-10, 0, 9, 32, hex(C.paper)).setOrigin(0.5))
-    pause.add(add.rectangle(10, 0, 9, 32, hex(C.paper)).setOrigin(0.5))
+    const pause = add.container(995, 115).setDepth(DEPTH)
+    pause.add(add.circle(0, 0, 44, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
+    pause.add(add.rectangle(-11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
+    pause.add(add.rectangle(11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     // thumb-sized hit area, larger than the drawn circle
     pause.setSize(130, 130).setInteractive().on('pointerup', onPause)
 
@@ -94,7 +94,7 @@ export class Hud {
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${this.sim.clock.label()}`)
-    const row = layoutTopBar(this.money.width, this.rating.width, this.dayTime.width)
+    const row = layoutTopBar(this.money.width, this.rating.width)
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
     this.rating.x = row.ratingX

@@ -2,31 +2,21 @@ import { describe, expect, it } from 'vitest'
 import { layoutTopBar, TOP_BAR } from '../../src/view/topBar'
 
 // widths in canvas px, measured in the game at the HUD's font sizes
-const gaps = (moneyW: number, ratingW: number, dayW: number) => {
-  const l = layoutTopBar(moneyW, ratingW, dayW)
-  return {
-    moneyToStar: l.starX - TOP_BAR.starW / 2 - (TOP_BAR.moneyX + moneyW * l.moneyScale),
-    ratingToDay: TOP_BAR.dayRight - dayW - (l.ratingX + ratingW),
-    moneyScale: l.moneyScale,
-  }
-}
-
 describe('top bar layout', () => {
   it('keeps the star where the board has it while the money is short', () => {
-    expect(layoutTopBar(232, 150, 226)).toEqual({ moneyScale: 1, starX: 460, ratingX: 495 }) // 100.000 đ, Chưa có, Ngày 1
+    expect(layoutTopBar(260, 170)).toEqual({ moneyScale: 1, starX: 463.5, ratingX: 502 })
   })
 
-  it('moves the star and rating right of money in the tens of millions', () => {
-    const g = gaps(321, 55, 270) // 99.999.999 đ, 4.5, Ngày 100
-    expect(g.moneyScale).toBe(1)
-    expect(g.moneyToStar).toBeGreaterThanOrEqual(16)
-    expect(g.ratingToDay).toBeGreaterThanOrEqual(24)
+  it('moves the star right of money in the hundreds of millions', () => {
+    const l = layoutTopBar(415, 78) // 999.999.999 đ at 52 px, 4.5 at 44 px
+    expect(l.moneyScale).toBe(1)
+    expect(l.starX - TOP_BAR.starW / 2 - (TOP_BAR.moneyX + 415)).toBe(16)
   })
 
-  it('shrinks the money only when the row would reach the day and time', () => {
-    const g = gaps(400, 150, 270)
-    expect(g.moneyScale).toBeLessThan(1)
-    expect(g.moneyToStar).toBeGreaterThanOrEqual(16)
-    expect(g.ratingToDay).toBeGreaterThanOrEqual(24 - 1e-9)
+  it('shrinks the money only when the rating would pass the pause button', () => {
+    const l = layoutTopBar(800, 170)
+    expect(l.moneyScale).toBeLessThan(1)
+    expect(l.ratingX + 170).toBeCloseTo(TOP_BAR.rowRight)
+    expect(l.starX - TOP_BAR.starW / 2 - (TOP_BAR.moneyX + 800 * l.moneyScale)).toBeCloseTo(16)
   })
 })
