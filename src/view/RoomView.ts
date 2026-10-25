@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { MAP_X, MAP_Y, TILE } from '../config'
-import type { Grid } from '../sim/grid'
+import { tileRuns, type Grid } from '../sim/grid'
 import type { Tile, Vec } from '../sim/types'
 
 /** Draws the room image and its furniture, and converts between tiles and world pixels. */
@@ -12,13 +12,15 @@ export class RoomView {
       const bottom = MAP_Y + (row + 1) * TILE
       scene.add.image(MAP_X + ((left + right + 1) / 2) * TILE, bottom, key).setOrigin(0.5, 1).setDepth(bottom)
     }
-    for (const c of grid.beds) place('chair-shampoo', c.x, c.x, c.y)
-    for (const s of grid.seats) place('seat', s.x, s.x, s.y)
-    for (const p of grid.plants) place('plant', p.x, p.x, p.y)
-    if (grid.desks.length) {
-      const xs = grid.desks.map(d => d.x)
-      place('desk', Math.min(...xs), Math.max(...xs), grid.desks[0].y)
+    const placeRuns = (key: string, tiles: Tile[]) => {
+      for (const r of tileRuns(tiles)) place(key, r.left, r.right, r.row)
     }
+    // a bed is anchored at the bottom of its foot tile, one below the tile the customer lies on
+    for (const b of grid.beds) place('bed', b.x, b.x, b.y + 1)
+    placeRuns('bench', grid.seats)
+    placeRuns('desk', grid.desks)
+    placeRuns('plant', grid.plants)
+    for (const [kind, tiles] of Object.entries(grid.decor)) placeRuns(`decor-${kind}`, tiles)
   }
 
   /** Bottom-centre of the tile, in world pixels. */
