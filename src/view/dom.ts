@@ -38,11 +38,17 @@ export function codeBox(
 }
 
 /** A real button, for actions the browser only allows straight from a tap (clipboard, install prompt). */
-export function domButton(scene: Phaser.Scene, x: number, y: number, label: string, onClick: () => void): Phaser.GameObjects.DOMElement {
+export function domButton(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  label: string,
+  onClick: (button: HTMLButtonElement) => void,
+): Phaser.GameObjects.DOMElement {
   const root = document.createElement('div')
   root.className = 'spa-dom'
   const btn = button(label)
-  btn.addEventListener('click', onClick)
+  btn.addEventListener('click', () => onClick(btn))
   root.append(btn)
   return scene.add.dom(x, y, root)
 }

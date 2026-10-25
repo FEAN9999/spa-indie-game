@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { currentInstallEnv, installPlatform } from '../app/install'
 import { C, lookColors, OWNER_COLORS } from '../art/palette'
 import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
 import { SaveSession } from '../save/session'
@@ -80,6 +81,11 @@ export class SpaScene extends Phaser.Scene {
 
     // a reopened shop waits on the pause card; an ended day reopens its summary by itself
     if (saved && !this.sim.dayOver) this.pause()
+    // a new shop on a phone asks once to be installed, before any progress could be lost
+    else if (!saved && installPlatform(currentInstallEnv()) && !this.store.flag('installCardSeen')) {
+      this.store.setFlag('installCardSeen')
+      this.pause('install')
+    }
     if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
   }
 

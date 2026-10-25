@@ -1,6 +1,7 @@
 import '@fontsource/be-vietnam-pro/600.css'
 import '@fontsource/be-vietnam-pro/800.css'
 import * as Phaser from 'phaser'
+import { captureInstallPrompt } from './app/install'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { PauseScene } from './scenes/PauseScene'
@@ -28,6 +29,8 @@ async function start() {
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }
 
+// Chrome offers the install prompt once, early; keep it for the "Cài" button
+captureInstallPrompt()
 // ask the browser not to clear the saves when space runs low
 navigator.storage?.persist?.()
 

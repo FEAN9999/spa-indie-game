@@ -68,5 +68,12 @@ export function fxTextures(): Record<string, string> {
         `<rect x="24" y="5" width="16" height="10" rx="3" fill="${C.mustard}"/>` +
         `<path d="M23,27 H41 M23,35 H41 M23,43 H34" stroke="${C.terracotta}" stroke-width="3" stroke-linecap="round"/></g>`,
     ),
+    // Safari's share button, for the install steps: an open box with an arrow out of the top
+    'icon-share': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<g fill="none" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">` +
+        `<path d="M24,26 H19 Q15,26 15,30 V52 Q15,56 19,56 H45 Q49,56 49,52 V30 Q49,26 45,26 H40"/><path d="M32,40 V7 M23,16 L32,7 L41,16"/></g>`,
+    ),
   }
 }

@@ -13,15 +13,18 @@ const LINE = 0.05
 const FINE = 0.03
 const outline = (w = LINE) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
 
-/** One gạch bông per grid tile: the board's 24-unit pattern scaled into a 1×1 tile. */
-const GACH_BONG =
-  `<pattern id="gachbong" width="1" height="1" patternUnits="userSpaceOnUse" viewBox="0 0 24 24">` +
+/** The board's gạch bông, one tile in 24 units. The flower is classed so the app icon can outline it. */
+export const GACH_BONG_TILE =
   `<rect width="24" height="24" fill="${C.tile}"/>` +
   `<path d="M0,0 h6 a6,6 0 0 1 -6,6Z M24,0 v6 a6,6 0 0 1 -6,-6Z M0,24 v-6 a6,6 0 0 1 6,6Z M24,24 h-6 a6,6 0 0 1 6,-6Z" fill="${C.terracotta}"/>` +
-  `<path d="M12,4.5 Q15.2,9 12,12 Q8.8,9 12,4.5Z M19.5,12 Q15,15.2 12,12 Q15,8.8 19.5,12Z M12,19.5 Q8.8,15 12,12 Q15.2,15 12,19.5Z M4.5,12 Q9,8.8 12,12 Q9,15.2 4.5,12Z" fill="${C.teal}"/>` +
-  `<circle cx="12" cy="12" r="1.7" fill="${C.mustard}"/>` +
+  `<path class="flower" d="M12,4.5 Q15.2,9 12,12 Q8.8,9 12,4.5Z M19.5,12 Q15,15.2 12,12 Q15,8.8 19.5,12Z M12,19.5 Q8.8,15 12,12 Q15.2,15 12,19.5Z M4.5,12 Q9,8.8 12,12 Q9,15.2 4.5,12Z" fill="${C.teal}"/>` +
+  `<circle class="flower" cx="12" cy="12" r="1.7" fill="${C.mustard}"/>` +
   `<path d="M12,0 L13.4,1.6 L12,3.2 L10.6,1.6Z M12,24 L13.4,22.4 L12,20.8 L10.6,22.4Z M0,12 L1.6,10.6 L3.2,12 L1.6,13.4Z M24,12 L22.4,10.6 L20.8,12 L22.4,13.4Z" fill="${C.mustard}"/>` +
-  `<rect width="24" height="24" fill="none" stroke="${C.tileSeam}" stroke-width="0.6"/></pattern>`
+  `<rect width="24" height="24" fill="none" stroke="${C.tileSeam}" stroke-width="0.6"/>`
+
+/** One gạch bông per grid tile: the 24-unit tile scaled into a 1×1 tile. */
+const GACH_BONG =
+  `<pattern id="gachbong" width="1" height="1" patternUnits="userSpaceOnUse" viewBox="0 0 24 24">${GACH_BONG_TILE}</pattern>`
 
 /** Wood planks 0.5 tile tall with staggered joints. */
 const PLANKS =
