@@ -1,9 +1,10 @@
 import * as Phaser from 'phaser'
 import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
 import { PANTS, type CharacterColors } from '../art/palette'
+import { TILE } from '../config'
 import type { Facing } from '../sim/types'
 
-export type Pose = 'stand' | 'walk' | 'sit'
+export type Pose = 'stand' | 'walk' | 'sit' | 'lie'
 
 const U = CHIBI_PX
 const HIP_Y = -11 * U
@@ -13,6 +14,9 @@ const SWING = Phaser.Math.DegToRad(25)
 const STEP_HZ = 4 // one full leg cycle is two steps, so 8 steps a second
 const BOB_PX = 3
 const SIT_DROP_PX = 12
+// lying on the shampoo bed: the feet origin is the bottom of the bed's middle tile
+const BLANKET_TOP = -1.1 * TILE
+const LIE_HEAD_Y = -1.45 * TILE
 
 /** From the feet to the top of the hair. */
 export const CHARACTER_HEIGHT_PX = 51 * U
@@ -21,6 +25,8 @@ export const CHARACTER_HEIGHT_PX = 51 * U
 export class CharacterView {
   readonly container: Phaser.GameObjects.Container
   private readonly upper: Phaser.GameObjects.Container
+  private readonly shadow: Phaser.GameObjects.Image
+  private readonly blanket: Phaser.GameObjects.Image
   private readonly legs: Phaser.GameObjects.Image[]
   private readonly arms: Phaser.GameObjects.Image[]
   private readonly body: Phaser.GameObjects.Image
@@ -39,7 +45,7 @@ export class CharacterView {
       return img
     }
     this.hairStyle = colors.hairStyle
-    const shadow = scene.add.image(0, 0, 'shadow')
+    this.shadow = scene.add.image(0, 0, 'shadow')
     this.legs = [part('leg', -3.5 * U, HIP_Y, PANTS), part('leg', 3.5 * U, HIP_Y, PANTS)]
     this.body = part('body', 0, -27 * U, colors.shirt)
     this.arms = [part('arm', -9 * U, SHOULDER_Y, colors.skin), part('arm', 9 * U, SHOULDER_Y, colors.skin)]
@@ -47,7 +53,8 @@ export class CharacterView {
     this.face = part('face-down', 0, HEAD_Y)
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
     this.upper = scene.add.container(0, 0, [this.body, ...this.arms, this.head, this.face, this.hair])
-    this.container = scene.add.container(0, 0, [shadow, ...this.legs, this.upper])
+    this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
+    this.container = scene.add.container(0, 0, [this.shadow, ...this.legs, this.blanket, this.upper])
     this.setFacing('down')
   }
 
@@ -57,12 +64,13 @@ export class CharacterView {
     const side = f === 'left' || f === 'right'
     const dir = side ? 'side' : f
     this.hair.setTexture(`hair${this.hairStyle}-${dir}`)
-    this.face.setTexture(side ? 'face-side' : 'face-down').setVisible(f !== 'up')
+    const lying = this.pose === 'lie'
+    this.face.setTexture(lying ? 'face-rest' : side ? 'face-side' : 'face-down').setVisible(f !== 'up')
     for (const img of [this.head, this.face, this.hair]) img.setFlipX(f === 'left')
     // seen from the side the legs overlap and only the near arm shows
     this.legs[0].x = (side ? -1.5 : -3.5) * U
     this.legs[1].x = (side ? 1.5 : 3.5) * U
-    this.arms[0].setVisible(!side)
+    this.arms[0].setVisible(!side && !lying)
     this.arms[1].x = (side ? 0 : 9) * U
   }
 
@@ -70,10 +78,17 @@ export class CharacterView {
     if (p === this.pose) return
     this.pose = p
     this.timeMs = 0
-    for (const leg of this.legs) leg.setVisible(p !== 'sit').setRotation(0)
-    for (const arm of this.arms) arm.setRotation(0)
-    this.body.setScale(1)
-    this.upper.y = p === 'sit' ? SIT_DROP_PX : 0
+    const lying = p === 'lie'
+    this.shadow.setVisible(!lying)
+    this.blanket.setVisible(lying)
+    for (const leg of this.legs) leg.setVisible(p !== 'sit' && !lying).setRotation(0)
+    for (const arm of this.arms) arm.setVisible(!lying).setRotation(0)
+    this.body.setVisible(!lying).setScale(1)
+    this.upper.y = lying ? LIE_HEAD_Y - HEAD_Y : p === 'sit' ? SIT_DROP_PX : 0
+    // re-apply the facing so the face and the near arm follow the pose
+    const f = this.facing
+    this.facing = null
+    if (f) this.setFacing(f)
   }
 
   update(dtMs: number): void {

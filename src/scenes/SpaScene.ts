@@ -59,7 +59,8 @@ export class SpaScene extends Phaser.Scene {
     const dt = this.sim.paused ? 0 : delta
     const o = this.sim.owner
     const at = this.room.tileToWorld(o.pos)
-    this.owner.setFacing(o.facing)
+    // serving: face the bed on the left of the work tile
+    this.owner.setFacing(o.task?.kind === 'serve' && o.path.length === 0 ? 'left' : o.facing)
     this.owner.setPose(o.path.length > 0 ? 'walk' : 'stand')
     this.owner.container.setPosition(at.x, at.y).setDepth(at.y)
     this.owner.update(dt)
@@ -120,13 +121,16 @@ export class SpaScene extends Phaser.Scene {
   }
 
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number): void {
-    const sitting = c.state === 'waiting' || c.state === 'inService'
+    // on the bed from arrival until the owner finishes, waiting or being served
+    const lying = c.stationId !== null && c.path.length === 0
+    const sitting = c.state === 'waiting'
     const street = this.streetPlacement(c)
     const p: Placement = street ?? { ...this.room.tileToWorld(c.pos), facing: c.facing, alpha: 1 }
-    const depth = sitting ? p.y + 1 : p.y
+    // a lying customer draws over the bed, whose anchor is one tile lower
+    const depth = lying ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
-    s.view.setFacing(sitting ? 'down' : p.facing)
-    s.view.setPose(sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
+    s.view.setFacing(lying || sitting ? 'down' : p.facing)
+    s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha)
     s.view.update(dt)
 

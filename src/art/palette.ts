@@ -61,10 +61,10 @@ export const C = {
   red: '#e86a6a',
 } as const
 
-export const SKIN = [0xffe2cc, 0xf5cfae, 0xe0b08a]
-export const HAIR = [0x3b2a22, 0x5b3b2a, 0x7a4a2f, 0x2f2a2a, 0xc98b5a]
-export const SHIRT = [0xf4a6b8, 0xf6c87a, 0xc9b6e4, 0x9fd8c7, 0x8fc1e8]
-export const PANTS = 0x6d5a50
+export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e]
+export const HAIR = [0x2b201c, 0x5b3a29, 0x7a4a2f, 0x9a5b36, 0xc98b5a]
+export const SHIRT = [0xc65d3b, 0xe3a73b, 0x2d5fa8, 0xf28ca0, 0xfbf7ee]
+export const PANTS = 0x3b2b26
 
 export interface CharacterColors {
   skin: number
@@ -73,7 +73,7 @@ export interface CharacterColors {
   shirt: number
 }
 
-export const OWNER_COLORS: CharacterColors = { skin: 0xffe2cc, hair: 0x2f2a2a, hairStyle: 0, shirt: 0x5fb3a1 }
+export const OWNER_COLORS: CharacterColors = { skin: 0xf7d5b8, hair: 0x2b201c, hairStyle: 0, shirt: 0x2f7d6e }
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
