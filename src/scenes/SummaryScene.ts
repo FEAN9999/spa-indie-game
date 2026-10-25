@@ -47,7 +47,7 @@ export class SummaryScene extends Phaser.Scene {
     const values = rows.map((row, i) => {
       const y = ROW_Y + i * ROW_STEP
       if (i > 0) card.lineStyle(3, 0xefe2d4, 1).lineBetween(170, y - ROW_STEP / 2, 910, y - ROW_STEP / 2)
-      this.add.text(170, y, t(row.label), textStyle(44, '500', C.textSoft)).setOrigin(0, 0.5)
+      this.add.text(170, y, t(row.label), textStyle(44, '600', C.textSoft)).setOrigin(0, 0.5)
       return this.add.text(910, y, row.show(0), textStyle(50)).setOrigin(1, 0.5)
     })
     this.tweens.addCounter({
@@ -60,7 +60,7 @@ export class SummaryScene extends Phaser.Scene {
 
     const button = this.add.container(GAME_W / 2, 1545)
     button.add(this.add.graphics().fillStyle(Phaser.Display.Color.HexStringToColor(C.mint).color, 1).fillRoundedRect(-300, -75, 600, 150, 75))
-    button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '700', '#2f6f62')).setOrigin(0.5))
+    button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', '#2f6f62')).setOrigin(0.5))
     button.setSize(600, 150).setInteractive().on('pointerup', () => {
       onNewDay()
       this.scene.stop()

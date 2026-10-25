@@ -8,6 +8,7 @@ import { GAME_H, GAME_W } from '../config'
 import { parseLayout } from '../sim/grid'
 import { SPA_LAYOUT_1A } from '../sim/layout'
 import { t } from '../strings/vi'
+import { textStyle } from '../view/text'
 
 export class BootScene extends Phaser.Scene {
   constructor() {
@@ -16,7 +17,7 @@ export class BootScene extends Phaser.Scene {
 
   async create() {
     this.add
-      .text(GAME_W / 2, GAME_H / 2, t('loading'), { fontFamily: '"Baloo 2"', fontStyle: '500', fontSize: '56px', color: '#5a4a42' })
+      .text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600'))
       .setOrigin(0.5)
     await loadSvgTextures(this, {
       room: roomTexture(parseLayout(SPA_LAYOUT_1A)),

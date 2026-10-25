@@ -38,7 +38,7 @@ export class Hud {
     this.money = add.text(135, 95, '', textStyle(48)).setOrigin(0, 0.5).setDepth(DEPTH)
     add.image(450, 95, 'star').setScale(0.42).setDepth(DEPTH)
     this.rating = add.text(485, 95, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
-    this.dayTime = add.text(925, 95, '', textStyle(42, '500', C.textSoft)).setOrigin(1, 0.5).setDepth(DEPTH)
+    this.dayTime = add.text(925, 95, '', textStyle(42, '600', C.textSoft)).setOrigin(1, 0.5).setDepth(DEPTH)
 
     const pause = add.container(995, 95).setDepth(DEPTH)
     pause.add(add.circle(0, 0, 40, hex(C.lavender)))
@@ -50,8 +50,8 @@ export class Hud {
     // pause overlay
     this.overlay = add.container(0, 0).setDepth(DEPTH + 100).setVisible(false)
     this.overlay.add(add.rectangle(0, 0, GAME_W, GAME_H, 0x2b2320, 0.55).setOrigin(0).setInteractive())
-    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 - 50, t('paused'), textStyle(96, '700', '#ffffff')).setOrigin(0.5))
-    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 + 60, t('tapToResume'), textStyle(48, '500', '#ffffff')).setOrigin(0.5))
+    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 - 50, t('paused'), textStyle(96, '800', '#ffffff')).setOrigin(0.5))
+    this.overlay.add(add.text(GAME_W / 2, GAME_H / 2 + 60, t('tapToResume'), textStyle(48, '600', '#ffffff')).setOrigin(0.5))
     this.overlay.list[0].on('pointerup', () => this.setPaused(false))
 
     // bottom bar
@@ -63,11 +63,11 @@ export class Hud {
       btn.add(add.circle(0, 0, 62, n.bg))
       btn.add(add.image(0, 0, n.icon).setScale(1.3))
       btn.setSize(130, 130).setInteractive().on('pointerup', () => this.toast(t('comingSoon')))
-      add.text(x, 2112, t(n.key), textStyle(34, '500', C.textSoft)).setOrigin(0.5).setDepth(DEPTH)
+      add.text(x, 2112, t(n.key), textStyle(34, '600', C.textSoft)).setOrigin(0.5).setDepth(DEPTH)
     })
 
     // first-customer hint
-    const hintText = add.text(0, 0, t('hintFirstCustomer'), textStyle(38, '500')).setOrigin(0.5)
+    const hintText = add.text(0, 0, t('hintFirstCustomer'), textStyle(38, '600')).setOrigin(0.5)
     const hintBg = add.graphics().fillStyle(0xffffff, 0.92).fillRoundedRect(-hintText.width / 2 - 36, -38, hintText.width + 72, 76, 38)
     this.hint = add.container(GAME_W / 2, 1880, [hintBg, hintText]).setDepth(DEPTH)
     scene.tweens.add({ targets: this.hint, y: 1870, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
@@ -86,7 +86,7 @@ export class Hud {
 
   toast(text: string): void {
     this.toastBox?.destroy()
-    const label = this.scene.add.text(0, 0, text, textStyle(40, '500', '#ffffff')).setOrigin(0.5)
+    const label = this.scene.add.text(0, 0, text, textStyle(40, '600', '#ffffff')).setOrigin(0.5)
     const bg = this.scene.add.graphics().fillStyle(hex(C.text), 0.92).fillRoundedRect(-label.width / 2 - 40, -40, label.width + 80, 80, 40)
     const box = this.scene.add.container(GAME_W / 2, 1790, [bg, label]).setDepth(DEPTH + 50).setAlpha(0)
     this.toastBox = box
