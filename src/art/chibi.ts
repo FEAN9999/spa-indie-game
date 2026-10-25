@@ -4,7 +4,7 @@ import { svgDoc } from './svg'
  * Character parts in "chibi units" (feet at 0,0, y up is negative), drawn white or grey
  * so `setTint` colors them. CharacterView assembles them using PART_ANCHORS and CHIBI_PX.
  */
-export const CHIBI_PX = 1.75 // canvas pixels per chibi unit (character ~86px tall)
+export const CHIBI_PX = 2.4 // canvas pixels per chibi unit (character ~122px, about 1.5 tiles tall)
 
 type Part = { viewBox: [number, number, number, number]; body: string }
 

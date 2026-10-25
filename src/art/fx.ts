@@ -39,5 +39,30 @@ export function fxTextures(): Record<string, string> {
       0.9,
       `<path d="${STAR_PATH}" fill="#efe6dc" stroke="#d9cbbd" stroke-width="5" stroke-linejoin="round"/>`,
     ),
+    // bottom bar icons
+    'icon-build': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<g transform="rotate(-40 32 32)"><rect x="28.5" y="22" width="7" height="36" rx="3.5" fill="${C.deskDark}"/><rect x="16" y="9" width="32" height="15" rx="5" fill="${C.red}"/></g>`,
+    ),
+    'icon-staff': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<circle cx="43" cy="22" r="7" fill="#8fd3c0"/><rect x="33" y="31" width="20" height="21" rx="9" fill="#8fd3c0"/>` +
+        `<circle cx="23" cy="21" r="8" fill="${C.teal}"/><rect x="12" y="31" width="23" height="23" rx="10" fill="${C.teal}"/>`,
+    ),
+    'icon-services': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<ellipse cx="21" cy="36" rx="7" ry="15" fill="#c9b6e4" transform="rotate(-38 21 36)"/><ellipse cx="43" cy="36" rx="7" ry="15" fill="#c9b6e4" transform="rotate(38 43 36)"/>` +
+        `<ellipse cx="32" cy="31" rx="8" ry="18" fill="#a98fd6"/><rect x="14" y="49" width="36" height="5" rx="2.5" fill="#a98fd6"/>`,
+    ),
+    'icon-quests': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<rect x="13" y="10" width="38" height="47" rx="6" fill="${C.gold}"/><rect x="18" y="16" width="28" height="36" rx="3" fill="#ffffff"/>` +
+        `<rect x="24" y="5" width="16" height="10" rx="3" fill="${C.goldDark}"/>` +
+        `<path d="M23,27 H41 M23,35 H41 M23,43 H34" stroke="#e8cf98" stroke-width="3" stroke-linecap="round"/>`,
+    ),
   }
 }
