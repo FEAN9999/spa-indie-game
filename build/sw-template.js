@@ -4,7 +4,8 @@ const CACHE = `spa-${VERSION}`
 const NAV_TIMEOUT_MS = 3000
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)))
+  // from the network, never an older copy the browser kept in its HTTP cache
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))))
   self.skipWaiting()
 })
 self.addEventListener('activate', e => {
@@ -24,14 +25,11 @@ self.addEventListener('fetch', e => {
   else e.respondWith(caches.match(req, { ignoreVary: true }).then(hit => hit ?? fetch(req)))
 })
 
-// Newest page when the network answers within NAV_TIMEOUT_MS, else the cached one.
+// Newest page when the network answers within NAV_TIMEOUT_MS, else the precached one. The newest page
+// is not cached here: its scripts belong to the next version, whose worker precaches both together.
 async function page(req) {
-  const cache = await caches.open(CACHE)
-  const fresh = fetch(req.url, { cache: 'no-cache' }).then(res => {
-    if (res.ok) cache.put('./', res.clone())
-    return res
-  })
+  const fresh = fetch(req.url, { cache: 'no-cache' })
   const late = new Promise(resolve => setTimeout(resolve, NAV_TIMEOUT_MS, null))
   const res = await Promise.race([fresh.catch(() => null), late])
-  return res ?? (await cache.match('./')) ?? fresh
+  return res ?? (await (await caches.open(CACHE)).match('./')) ?? fresh
 }
