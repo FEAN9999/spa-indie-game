@@ -5,6 +5,7 @@ import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
+import { layoutTopBar, TOP_BAR } from './topBar'
 
 const DEPTH = 10000
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -19,6 +20,7 @@ const NAV: { key: StringKey; icon: string }[] = [
 /** Top bar, pause overlay, bottom nav, first-customer hint and toasts. Every element swallows its taps. */
 export class Hud {
   private readonly money: Phaser.GameObjects.Text
+  private readonly star: Phaser.GameObjects.Image
   private readonly rating: Phaser.GameObjects.Text
   private readonly dayTime: Phaser.GameObjects.Text
   private readonly overlay: Phaser.GameObjects.Container
@@ -41,10 +43,11 @@ export class Hud {
       .strokeRoundedRect(24, 40, GAME_W - 48, 110, 55)
     add.zone(24, 40, GAME_W - 48, 110).setOrigin(0).setInteractive().setDepth(DEPTH)
     add.image(95, 95, 'coin').setScale(1.15).setDepth(DEPTH)
-    this.money = add.text(135, 95, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
-    add.image(460, 95, 'star').setScale(0.42).setDepth(DEPTH)
-    this.rating = add.text(495, 95, '', textStyle(36)).setOrigin(0, 0.5).setDepth(DEPTH)
-    this.dayTime = add.text(935, 95, '', textStyle(32, '600')).setOrigin(1, 0.5).setDepth(DEPTH)
+    // star and rating x are set each frame by layoutTopBar
+    this.money = add.text(TOP_BAR.moneyX, 95, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
+    this.star = add.image(0, 95, 'star').setScale(0.42).setDepth(DEPTH)
+    this.rating = add.text(0, 95, '', textStyle(36)).setOrigin(0, 0.5).setDepth(DEPTH)
+    this.dayTime = add.text(TOP_BAR.dayRight, 95, '', textStyle(32, '600')).setOrigin(1, 0.5).setDepth(DEPTH)
 
     const pause = add.container(995, 95).setDepth(DEPTH)
     pause.add(add.circle(0, 0, 40, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
@@ -97,6 +100,10 @@ export class Hud {
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${this.sim.clock.label()}`)
+    const row = layoutTopBar(this.money.width, this.rating.width, this.dayTime.width)
+    this.money.setScale(row.moneyScale)
+    this.star.x = row.starX
+    this.rating.x = row.ratingX
   }
 
   hideHint(): void {
