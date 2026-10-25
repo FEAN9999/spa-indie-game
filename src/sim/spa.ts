@@ -9,12 +9,13 @@ import {
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
+  SHAMPOO_PRICE,
   STARTING_MONEY,
   STEP_MS,
 } from '../config'
 import { DayClock } from './clock'
-import { arrivalIntervalMs, rating as ratingOf } from './economy'
-import { parseLayout, tileEq, type Grid } from './grid'
+import { arrivalIntervalMs, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
+import { isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
@@ -121,6 +122,47 @@ export class SpaSim {
     return tileOf(this.owner.pos)
   }
 
+  /** A tap on the shop floor: fetch the waiting customer sitting there, or walk there. */
+  tapTile(t: Tile): void {
+    if (this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
+    const from = this.ownerTile()
+
+    const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
+    if (waiting) {
+      const seat = waiting.seat!
+      const path = findPath(this.grid, from, x => isWalkable(this.grid, x) && manhattan(x, seat) === 1)
+      if (!path) return
+      this.owner.task = { kind: 'fetch', customerId: waiting.id }
+      this.owner.path = path
+      return
+    }
+
+    if (!isWalkable(this.grid, t)) return
+    const path = findPath(this.grid, from, x => tileEq(x, t))
+    if (!path) return
+    this.owner.task = null
+    this.owner.path = path
+  }
+
+  completeService(customerId: number, stars: Stars): void {
+    const c = this.customers.find(x => x.id === customerId)
+    if (!c || c.state !== 'inService' || c.stationId === null) return
+    const station = this.stations[c.stationId]
+    const tip = tipFor(SHAMPOO_PRICE, stars)
+    this.money += SHAMPOO_PRICE + tip
+    this.stats.income += SHAMPOO_PRICE
+    this.stats.tips += tip
+    this.stats.served++
+    this.emit({ type: 'paid', customerId, amount: SHAMPOO_PRICE, tip, tile: station.chair })
+    this.addReview(customerId, reviewScore(stars))
+    c.mood = stars >= 2 ? 'happy' : 'ok'
+    station.customerId = null
+    c.stationId = null
+    this.servingCustomerId = null
+    this.owner.task = null
+    this.startLeaving(c)
+  }
+
   rating(): number | null {
     return ratingOf(this.reviews)
   }
@@ -154,6 +196,7 @@ export class SpaSim {
 
     moveAlong(this.owner, OWNER_SPEED, dt)
     for (const c of [...this.customers]) this.updateCustomer(c, dt)
+    this.updateOwnerTask()
 
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
@@ -188,6 +231,40 @@ export class SpaSim {
           this.emit({ type: 'customerLeft', id: c.id, angry: c.mood === 'angry' })
         }
         break
+    }
+  }
+
+  private updateOwnerTask(): void {
+    const task = this.owner.task
+    if (!task || this.owner.path.length > 0) return
+    const c = this.customers.find(x => x.id === task.customerId)
+
+    if (task.kind === 'fetch') {
+      if (!c || c.state !== 'waiting') {
+        this.owner.task = null
+        return
+      }
+      const station = this.stations.find(s => s.customerId === null)
+      if (!station) {
+        this.emit({ type: 'toast', key: 'stationsBusy' })
+        this.owner.task = null
+        return
+      }
+      station.customerId = c.id
+      c.stationId = station.id
+      this.freeSeat(c)
+      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.chair)) ?? []
+      this.setState(c, 'toStation')
+      this.owner.path = findPath(this.grid, this.ownerTile(), t => tileEq(t, station.work)) ?? []
+      this.owner.task = { kind: 'serve', customerId: c.id, stationId: station.id }
+      return
+    }
+
+    // serve: wait until the customer has also reached the chair
+    if (c && c.state === 'toStation' && c.path.length === 0) {
+      this.setState(c, 'inService')
+      this.servingCustomerId = c.id
+      this.emit({ type: 'serviceReady', customerId: c.id, stationId: task.stationId })
     }
   }
 
