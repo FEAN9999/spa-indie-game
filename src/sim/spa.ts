@@ -9,6 +9,7 @@ import {
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
+  RATING_WINDOW,
   SHAMPOO_PRICE,
   STARTING_MONEY,
   STEP_MS,
@@ -19,6 +20,7 @@ import { isBedSlot, isWalkable, manhattan, parseLayout, tileEq, type Grid } from
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
+import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import type { Customer, CustomerState, DayStats, Facing, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
 
 interface Mover {
@@ -176,6 +178,52 @@ export class SpaSim {
     const out = this.events
     this.events = []
     return out
+  }
+
+  /** The whole shop as plain JSON; a deep copy. */
+  toSave(): SaveData {
+    return structuredClone({
+      v: SAVE_VERSION,
+      day: this.day,
+      minutes: this.clock.minutes,
+      money: this.money,
+      reviews: this.reviews.slice(-RATING_WINDOW),
+      stats: this.stats,
+      dayOver: this.dayOver,
+      servingCustomerId: this.servingCustomerId,
+      owner: this.owner,
+      customers: this.customers,
+      stationCustomers: this.stations.map(s => s.customerId),
+      seatCustomers: this.seats.map(s => s.customerId),
+      nextId: this.nextId,
+      untilArrivalMs: this.untilArrivalMs,
+    })
+  }
+
+  /** Rebuilds a saved shop, unpaused; re-announces a pending service or an ended day so the view reopens it. */
+  static fromSave(data: SaveData, options: SpaSimOptions): SpaSim {
+    const sim = new SpaSim(options)
+    const d = structuredClone(data)
+    if (d.stationCustomers.length !== sim.stations.length || d.seatCustomers.length !== sim.seats.length)
+      throw new SaveError('the save does not match the shop layout')
+    sim.day = d.day
+    sim.clock.minutes = d.minutes
+    sim.money = d.money
+    sim.reviews = d.reviews
+    sim.stats = d.stats
+    sim.dayOver = d.dayOver
+    sim.servingCustomerId = d.servingCustomerId
+    sim.owner = d.owner
+    sim.customers = d.customers
+    d.stationCustomers.forEach((id, i) => (sim.stations[i].customerId = id))
+    d.seatCustomers.forEach((id, i) => (sim.seats[i].customerId = id))
+    sim.nextId = d.nextId
+    sim.untilArrivalMs = d.untilArrivalMs
+
+    const serving = sim.customers.find(c => c.id === d.servingCustomerId)
+    if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })
+    if (sim.dayOver) sim.emit({ type: 'dayEnded', stats: { ...sim.stats } })
+    return sim
   }
 
   startDay(): void {

@@ -3,20 +3,9 @@ import { isWalkable, tileEq } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil } from './helpers'
+import { advanceUntil, seatAndWait, startService } from './helpers'
 
 const fresh = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
-const seatAndWait = (sim: SpaSim) => {
-  const c = sim.spawnCustomer()
-  advanceUntil(sim, () => c.state === 'waiting')
-  return c
-}
-const startService = (sim: SpaSim) => {
-  const c = seatAndWait(sim)
-  sim.tapTile(c.seat!)
-  advanceUntil(sim, () => c.state === 'inService')
-  return c
-}
 
 describe('SpaSim owner and service', () => {
   it('tapping a floor tile walks the owner there', () => {
