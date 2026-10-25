@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser'
-import { lookColors, OWNER_COLORS } from '../art/palette'
+import { C, lookColors, OWNER_COLORS } from '../art/palette'
 import { ARRIVE_MS, EXIT_MS, PATIENCE_MS, TILE } from '../config'
 import { createRng } from '../sim/rng'
 import { SpaSim } from '../sim/spa'
@@ -17,6 +17,7 @@ const FX_DEPTH = 9000
 const TAP_SLOP_PX = 20
 const STREET_SIDE_TILES = 4.5
 const RIPPLE_MS = 1200
+const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 interface CustomerSprite {
   view: CharacterView
@@ -80,7 +81,7 @@ export class SpaScene extends Phaser.Scene {
         this.customers.set(c.id, {
           view: new CharacterView(this, lookColors(c.look)),
           bar: this.add.graphics(),
-          ripple: this.add.image(0, 0, 'ripple').setTint(0x5fb3a1).setVisible(false),
+          ripple: this.add.image(0, 0, 'ripple').setVisible(false),
           bubble: null,
         })
         return
@@ -137,10 +138,11 @@ export class SpaScene extends Phaser.Scene {
     s.bar.clear()
     if (c.state === 'waiting') {
       const f = Math.max(0, c.patienceMs / PATIENCE_MS)
-      const color = f > 0.5 ? 0x7dcf8f : f > 0.25 ? 0xf5c242 : 0xe86a6a
+      const color = hex(f > 0.5 ? C.green : f > 0.25 ? C.mustard : C.lantern)
       const x = p.x - 36
       const y = p.y - CHARACTER_HEIGHT_PX - 8
-      s.bar.fillStyle(0xffffff, 0.95).fillRoundedRect(x - 4, y - 4, 80, 20, 10)
+      s.bar.fillStyle(hex(C.paper), 1).fillRoundedRect(x - 4, y - 4, 80, 20, 10)
+      s.bar.lineStyle(3, hex(C.ink)).strokeRoundedRect(x - 4, y - 4, 80, 20, 10)
       s.bar.fillStyle(color, 1).fillRoundedRect(x, y, Math.max(12, 72 * f), 12, 6)
       s.bar.setDepth(FX_DEPTH)
     }
@@ -179,7 +181,7 @@ export class SpaScene extends Phaser.Scene {
 
   private floatMoney(tile: Tile, amount: number): void {
     const at = this.room.tileToWorld(tile)
-    const label = this.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: '#ffffff', strokeThickness: 10 }).setOrigin(0, 0.5)
+    const label = this.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
     const width = 48 + 8 + label.width
     const coin = this.add.image(-width / 2 + 24, 0, 'coin')
     label.x = -width / 2 + 56
