@@ -71,7 +71,9 @@ export class ShampooScene extends Phaser.Scene {
       .strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
     this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head').setTint(colors.skin)
+    this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head-line')
     this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
+    this.add.image(HAIR.x, HAIR.y, 'sh-hair-line')
     this.instruction = this.add
       .text(GAME_W / 2, 345, t('shampooFoam'), { ...textStyle(46), align: 'center', wordWrap: { width: 860 } })
       .setOrigin(0.5)

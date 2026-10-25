@@ -1,3 +1,4 @@
+import { fillsOnly, linesOnly } from './outline'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -8,6 +9,17 @@ const OUTLINE = `stroke="${C.ink}" stroke-width="4" stroke-linejoin="round"`
 const INNER = `stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"`
 
 export function shampooTextures(): Record<string, string> {
+  // face from above, eyes closed; tinted with the skin color
+  const head =
+    `<ellipse cx="30" cy="200" rx="24" ry="36" fill="#f0f0f0" ${OUTLINE}/><ellipse cx="330" cy="200" rx="24" ry="36" fill="#f0f0f0" ${OUTLINE}/>` +
+    `<ellipse cx="180" cy="190" rx="160" ry="180" fill="#ffffff" ${OUTLINE}/>` +
+    `<path d="M110,235 Q130,250 150,235 M210,235 Q230,250 250,235" stroke="#2B201C" stroke-width="9" fill="none" stroke-linecap="round"/>` +
+    `<ellipse cx="95" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/><ellipse cx="265" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/>` +
+    `<path d="M160,300 Q180,318 200,300" stroke="${C.ink}" stroke-width="7" fill="none" stroke-linecap="round"/>`
+  // hair spread towards the basin; tinted with the hair color
+  const hair =
+    `<path d="M30,250 Q0,120 90,50 Q210,-20 330,50 Q420,120 390,250 Q360,200 300,215 Q250,170 210,200 Q170,170 120,215 Q60,200 30,250Z" fill="#ffffff" ${OUTLINE}/>` +
+    `<path d="M110,80 Q160,40 210,60 M220,55 Q280,40 320,90 M90,140 Q140,100 190,120 M230,120 Q290,100 330,150" stroke="#dcdcdc" stroke-width="8" fill="none" stroke-linecap="round"/>`
   return {
     // porcelain basin and headrest seen from above; the customer's head lies with the hair towards the basin
     'sh-basin': svgDoc(
@@ -21,23 +33,11 @@ export function shampooTextures(): Record<string, string> {
         `<rect x="150" y="330" width="460" height="225" rx="90" fill="${C.wood}" ${OUTLINE}/>` +
         `<rect x="200" y="360" width="360" height="170" rx="70" fill="${C.tealLight}" ${INNER}/>`,
     ),
-    // face from above, eyes closed; tinted with the skin color
-    'sh-head': svgDoc(
-      [0, 0, 360, 380],
-      1,
-      `<ellipse cx="30" cy="200" rx="24" ry="36" fill="#f0f0f0" ${OUTLINE}/><ellipse cx="330" cy="200" rx="24" ry="36" fill="#f0f0f0" ${OUTLINE}/>` +
-        `<ellipse cx="180" cy="190" rx="160" ry="180" fill="#ffffff" ${OUTLINE}/>` +
-        `<path d="M110,235 Q130,250 150,235 M210,235 Q230,250 250,235" stroke="#2B201C" stroke-width="9" fill="none" stroke-linecap="round"/>` +
-        `<ellipse cx="95" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/><ellipse cx="265" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/>` +
-        `<path d="M160,300 Q180,318 200,300" stroke="${C.ink}" stroke-width="7" fill="none" stroke-linecap="round"/>`,
-    ),
-    // hair spread towards the basin; tinted with the hair color
-    'sh-hair': svgDoc(
-      [0, 0, 420, 300],
-      1,
-      `<path d="M30,250 Q0,120 90,50 Q210,-20 330,50 Q420,120 390,250 Q360,200 300,215 Q250,170 210,200 Q170,170 120,215 Q60,200 30,250Z" fill="#ffffff" ${OUTLINE}/>` +
-        `<path d="M110,80 Q160,40 210,60 M220,55 Q280,40 320,90 M90,140 Q140,100 190,120 M230,120 Q290,100 330,150" stroke="#dcdcdc" stroke-width="8" fill="none" stroke-linecap="round"/>`,
-    ),
+    // tinted parts keep their brown lines in a `-line` texture, drawn untinted on top
+    'sh-head': svgDoc([0, 0, 360, 380], 1, fillsOnly(head)),
+    'sh-head-line': svgDoc([0, 0, 360, 380], 1, linesOnly(head)),
+    'sh-hair': svgDoc([0, 0, 420, 300], 1, fillsOnly(hair)),
+    'sh-hair-line': svgDoc([0, 0, 420, 300], 1, linesOnly(hair)),
     'sh-foam': svgDoc(
       [0, 0, 90, 80],
       1,
