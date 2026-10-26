@@ -106,6 +106,21 @@ export function itemsFromLayout(rows: string[]): Item[] {
   return items.map((it, i) => ({ ...it, id: i + 1 }))
 }
 
+/** How many of a set's 6 kinds the shop holds. */
+export function setProgress(items: Item[], set: SetId): number {
+  return new Set(items.filter(i => ITEMS[i.kind].set === set).map(i => i.kind)).size
+}
+
+/** Sum of every item's beauty; items of a complete set count half again. */
+export function beautyOf(items: Item[]): number {
+  const full = new Set<SetId>()
+  for (const set of ['saigon', 'bamboo'] as const) if (setProgress(items, set) === 6) full.add(set)
+  return items.reduce((sum, i) => {
+    const { beauty, set } = ITEMS[i.kind]
+    return sum + (set && full.has(set) ? beauty * 1.5 : beauty)
+  }, 0)
+}
+
 /** The layout with every item char blanked out, leaving walls, door, screen and desk. */
 export function shellOf(rows: string[]): string[] {
   return rows.map(r => [...r].map(ch => (ITEM_CHARS.has(ch) ? '.' : ch)).join(''))

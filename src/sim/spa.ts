@@ -17,9 +17,9 @@ import {
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { DayClock } from './clock'
-import { arrivalIntervalMs, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
+import { arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
 import { bedSlotAt, buildGrid, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
-import { ITEMS, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
@@ -200,6 +200,10 @@ export class SpaSim {
     this.servingCustomerId = null
     this.owner.task = null
     this.startLeaving(c)
+  }
+
+  beauty(): number {
+    return beautyOf(this.items)
   }
 
   rating(): number | null {
@@ -425,7 +429,7 @@ export class SpaSim {
       if (this.untilArrivalMs <= 0) {
         this.spawnCustomer()
         const [lo, hi] = ARRIVAL_JITTER
-        this.untilArrivalMs = arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * (lo + (hi - lo) * this.rng())
+        this.untilArrivalMs = arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * (lo + (hi - lo) * this.rng())
       }
     }
 

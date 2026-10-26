@@ -52,6 +52,11 @@ export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json 
 /** The day each feature button opens. */
 export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5 } as const
 
+/** Beauty of the default shop, the beauty where the speed-up tops out, and the most it can shorten the arrival gap. */
+export const BEAUTY_BASE = 21
+export const BEAUTY_TOP = 81
+export const BEAUTY_MAX_SPEEDUP = 0.2
+
 /** Gentler first days: more patience, more mini-game time, fewer customers on day 1. */
 export const DAY_EASE = [
   { patience: 1.6, miniGameExtraMs: 10_000, arrival: 1.3 },

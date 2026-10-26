@@ -1,4 +1,4 @@
-import { DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
+import { BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
 
 export type Stars = 1 | 2 | 3
 
@@ -21,6 +21,12 @@ export function rating(reviews: number[]): number | null {
 export function arrivalIntervalMs(r: number | null): number {
   const seconds = 40 - ((r ?? 3) - 3) * 6
   return Math.min(50, Math.max(25, seconds)) * 1000
+}
+
+/** Multiplies the arrival gap: 1 at the default shop's beauty, down to 0.8 at the prettiest. */
+export function beautyArrivalFactor(beauty: number): number {
+  const t = Math.min(1, Math.max(0, (beauty - BEAUTY_BASE) / (BEAUTY_TOP - BEAUTY_BASE)))
+  return 1 - BEAUTY_MAX_SPEEDUP * t
 }
 
 export interface DayEase {

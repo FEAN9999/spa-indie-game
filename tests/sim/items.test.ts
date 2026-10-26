@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('items', () => {
@@ -49,5 +49,22 @@ describe('items', () => {
     expect(ITEMS.bed.set).toBeUndefined()
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'saigon')).toHaveLength(6)
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
+  })
+
+  it('scores the default shop 21 with Sài Gòn xưa at 4 of 6', () => {
+    expect(beautyOf(DEFAULT_ITEMS)).toBe(21)
+    expect(setProgress(DEFAULT_ITEMS, 'saigon')).toBe(4)
+    expect(setProgress(DEFAULT_ITEMS, 'bamboo')).toBe(0)
+  })
+
+  it('adds half again for a full set', () => {
+    const items = [
+      ...DEFAULT_ITEMS,
+      { id: 100, kind: 'teaChest' as const, x: 0, y: 0, flip: false },
+      { id: 101, kind: 'jar' as const, x: 0, y: 0, flip: false },
+    ]
+    expect(setProgress(items, 'saigon')).toBe(6)
+    expect(beautyOf(items)).toBe(21 + 5 + 3 + (3 + 3 + 4 + 2 + 5 + 3) * 0.5)
+    expect(beautyOf(items)).toBe(39)
   })
 })
