@@ -286,6 +286,10 @@ export class SpaSim {
       ownerLook: this.ownerLook,
       profileDone: this.profileDone,
       hints: this.hints,
+      staff: this.staff,
+      candidates: this.candidates,
+      candidatesDay: this.candidatesDay,
+      nextStaffId: this.nextStaffId,
     })
   }
 
@@ -325,6 +329,23 @@ export class SpaSim {
     sim.ownerLook = d.ownerLook
     sim.profileDone = d.profileDone
     sim.hints = d.hints
+    sim.staff = d.staff
+    sim.candidates = d.candidates
+    sim.candidatesDay = d.candidatesDay
+    // never hand out an id a damaged save already uses
+    sim.nextStaffId = Math.max(d.nextStaffId, ...d.staff.map(s => s.id + 1))
+    // a task that names a customer who is no longer there is dropped; a leaver with no task walks out on the next step
+    for (const s of sim.staff) {
+      const task = s.task
+      const c = task && 'customerId' in task ? sim.customers.find(x => x.id === task.customerId) : undefined
+      if (task?.kind === 'fetch' && c?.state !== 'waiting') s.task = null
+      if (task?.kind === 'serve' && (!c || c.stationId !== task.stationId)) {
+        const station = sim.stations.find(x => x.id === task.stationId)
+        if (station?.customerId === task.customerId) station.customerId = null
+        s.task = null
+      }
+    }
+    if (sim.day >= UNLOCK_DAY.staff && sim.candidatesDay !== sim.day) sim.refreshCandidates()
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })

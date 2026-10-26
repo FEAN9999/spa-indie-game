@@ -10,7 +10,7 @@ import { TUTORIAL_HINTS } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
 import v2 from '../fixtures/save-v2.json'
 import v3 from '../fixtures/save-v3.json'
-import { advanceUntil, busyShop, startService } from './helpers'
+import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
@@ -71,12 +71,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([3, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([4, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(3)
+    expect(sim.toSave().v).toBe(4)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -208,10 +208,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 3', () => {
+  it('still leaves alone only saves newer than version 4', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 3 }).v).toBe(3)
-    expect(() => parseSave({ ...good, v: 4 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 4 }).v).toBe(4)
+    expect(() => parseSave({ ...good, v: 5 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -226,5 +226,119 @@ describe('save version 3 as saved by batch 3', () => {
     expect(sim.stations.map(s => s.customerId)).toEqual(sim.stations.map(s => v3.customers.find(c => c.stationId === s.id)?.id ?? null))
     const served = sim.customers.find(c => c.id === v3.servingCustomerId)!
     expect(sim.drainEvents()).toEqual([{ type: 'serviceReady', customerId: served.id, stationId: served.stationId }])
+  })
+})
+
+/** Day 3 with its candidates drawn. */
+const dayThree = () => {
+  const sim = new SpaSim({ rng: createRng(5), autoSpawn: false })
+  sim.startDay()
+  sim.startDay()
+  return sim
+}
+
+describe('save version 4', () => {
+  it('opens batch-1, 2 and 3 shops with no staff', () => {
+    for (const raw of [v1, v2, v3]) {
+      const sim = open(raw)
+      expect(sim.staff).toEqual([])
+      expect(sim.stats.wages).toBe(0)
+      expect(sim.customers.every(c => c.greet === 0)).toBe(true)
+    }
+    const sim = open(v3)
+    expect([sim.candidates.length, sim.candidatesDay]).toEqual([3, 4])
+  })
+
+  it('opens an old shop to day end with the money unchanged', () => {
+    for (const raw of [v1, v2, v3]) {
+      const sim = open(raw)
+      sim.customers = []
+      sim.servingCustomerId = null
+      sim.owner.task = null
+      const before = sim.money
+      advanceUntil(sim, () => sim.dayOver, 8 * 60_000)
+      expect(Number.isFinite(sim.money)).toBe(true)
+      expect(sim.money).toBe(before)
+    }
+  })
+
+  it('keeps a technician in the middle of a service', () => {
+    const sim = dayThree()
+    const c = seatAndWait(sim)
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => c.state === 'inService')
+    const copy = viaJson(sim)
+    const t = copy.staff[0]
+    expect([t.id, t.name, t.stats, t.level, t.xp, t.wage, t.pos, t.task]).toEqual([tech.id, tech.name, tech.stats, tech.level, tech.xp, tech.wage, tech.pos, tech.task])
+    expect(t.task).toMatchObject({ kind: 'serve', customerId: c.id })
+    const bed = copy.stations.find(s => s.id === c.stationId)!
+    expect([copy.customers[0].stationId, bed.customerId]).toEqual([c.stationId, c.id])
+    expect(copy.candidates.map(x => x.name)).toEqual(sim.candidates.map(x => x.name))
+    const before = copy.money
+    advanceUntil(copy, () => copy.stats.served === 1)
+    expect(copy.money).toBeGreaterThan(before)
+  })
+
+  it('keeps a resting receptionist and a technician walking out', () => {
+    const sim = dayThree()
+    const rec = hireStaff(sim, 'receptionist')
+    const tech = hireStaff(sim, 'technician')
+    sim.advance(100)
+    Object.assign(rec, { task: { kind: 'rest', leftMs: 20_000 }, path: [], sinceRest: 4 })
+    sim.fire(tech.id)
+    const copy = viaJson(sim)
+    expect(copy.staff).toEqual(sim.staff)
+    expect(copy.staff[0].task).toEqual({ kind: 'rest', leftMs: 20_000 })
+    expect(copy.staff[1]).toMatchObject({ leaving: true, task: { kind: 'exit' } })
+    advanceUntil(copy, () => copy.staff.length === 1)
+    advanceUntil(copy, () => copy.staff[0].task === null, 25_000)
+    expect(copy.staff[0].sinceRest).toBe(0)
+    expect(copy.toSave().nextStaffId).toBe(3)
+  })
+
+  it('drops a saved task whose customer is gone', () => {
+    const sim = dayThree()
+    hireStaff(sim, 'technician')
+    hireStaff(sim, 'technician')
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    save.staff[0].task = { kind: 'fetch', customerId: 999 }
+    save.staff[1].task = { kind: 'serve', customerId: 999, stationId: save.items.find((i: { kind: string }) => i.kind === 'bed').id, leftMs: 5000, totalMs: 9000 }
+    const copy = SpaSim.fromSave(parseSave(save), opts())
+    expect(copy.staff.map(s => s.task)).toEqual([null, null])
+    expect(copy.stations.every(s => s.customerId === null)).toBe(true)
+  })
+
+  it('lets a let-go technician whose customer is gone walk out', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician')
+    sim.advance(100)
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    save.staff[0].leaving = true
+    save.staff[0].task = { kind: 'serve', customerId: 999, stationId: save.items.find((i: { kind: string }) => i.kind === 'bed').id, leftMs: 5000, totalMs: 9000 }
+    const copy = SpaSim.fromSave(parseSave(save), opts())
+    expect(copy.staff[0].task).toBeNull()
+    advanceUntil(copy, () => copy.staff.length === 0)
+    expect(tech.id).toBe(1)
+  })
+
+  it('rejects staff that are not staff', () => {
+    const sim = dayThree()
+    hireStaff(sim, 'technician')
+    hireStaff(sim, 'technician')
+    const good = JSON.parse(JSON.stringify(sim.toSave()))
+    const bad = (i: number, o: object) => ({ ...good, staff: good.staff.map((s: object, j: number) => (j === i ? { ...s, ...o } : s)) })
+    for (const raw of [
+      bad(0, { role: 'boss' }),
+      bad(0, { stats: { ...good.staff[0].stats, skill: 7 } }),
+      bad(0, { level: 6 }),
+      bad(0, { leaving: 'no' }),
+      bad(0, { pos: { x: 1 } }),
+      bad(1, { id: good.staff[0].id }),
+      { ...good, staff: 'many' },
+      { ...good, candidates: [{ ...good.candidates[0], role: 'boss' }] },
+      { ...good, candidatesDay: 'x' },
+      { ...good, nextStaffId: null },
+    ])
+      expect(() => parseSave(raw)).toThrow(SaveError)
   })
 })
