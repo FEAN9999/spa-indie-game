@@ -133,9 +133,9 @@ export class SpaScene extends Phaser.Scene {
     return new SpaSim({ rng })
   }
 
-  /** Coming back to the game moves it to a newer version, unless a service is in progress. */
+  /** Coming back to the game moves it to a newer version, unless a service is in progress or the shop has no owner yet. */
   private async checkForUpdate(): Promise<void> {
-    if (BUILD_ID === 'dev' || this.sim.servingCustomerId !== null) return
+    if (BUILD_ID === 'dev' || !this.sim.profileDone || this.sim.servingCustomerId !== null) return
     this.holding = true
     const latest = await latestVersion(UPDATE_WAIT_MS)
     if (shouldReload(BUILD_ID, latest, this.sim.servingCustomerId !== null)) this.session.reloadForUpdate()
