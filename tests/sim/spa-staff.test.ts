@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
-import { OWNER_START, PATIENCE_MS } from '../../src/config'
+import { DAY_END_MIN, OWNER_START, PATIENCE_MS, STAFF_REST_MS } from '../../src/config'
 import { dayEase, tipFor } from '../../src/sim/economy'
-import { tileEq } from '../../src/sim/grid'
+import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
+import { footprint } from '../../src/sim/items'
 import { SpaSim } from '../../src/sim/spa'
 import { greetPatience, tipFactor, workMs } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
@@ -206,5 +207,201 @@ describe('the receptionist', () => {
     sim.drainEvents()
     sim.completeService(c.id, 3)
     expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 12_000 }))
+  })
+})
+
+const tired = () => ({ skill: 3, speed: 5, friendly: 3, stamina: 1 })
+
+const tileOf = (m: { pos: { x: number; y: number } }) => ({ x: Math.round(m.pos.x), y: Math.round(m.pos.y) })
+
+/** Tiles of every towel cabinet. */
+const cabinetTiles = (sim: SpaSim) => sim.items.filter(i => i.kind === 'cabinet').flatMap(footprint)
+
+const served = (c: Customer) => c.state === 'leaving' || c.state === 'exiting'
+
+describe('rest', () => {
+  it('a tired technician rests by the towel cabinet for 35 s, then works again', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', tired())
+    for (const c of seated(sim, 3)) advanceUntil(sim, () => served(c), 90_000)
+    expect(sim.stats.served).toBe(3)
+    expect(tech.task?.kind).toBe('rest')
+    advanceUntil(sim, () => tech.path.length === 0)
+    expect(cabinetTiles(sim).some(c => manhattan(c, tileOf(tech)) === 1)).toBe(true)
+    expect(tech.task).toMatchObject({ kind: 'rest' })
+    expect((tech.task as { leftMs: number }).leftMs).toBeGreaterThan(STAFF_REST_MS - 1_000)
+    const next = seatAndWait(sim)
+    sim.advance((tech.task as { leftMs: number }).leftMs - 1_000)
+    expect(next.state).toBe('waiting')
+    expect(tech.task?.kind).toBe('rest')
+    advanceUntil(sim, () => tech.task?.kind === 'fetch', 5_000)
+    expect(tech.sinceRest).toBe(0)
+  })
+
+  it('with no towel cabinet a tired technician rests where they stand', () => {
+    const sim = dayThree()
+    for (const i of sim.items.filter(x => x.kind === 'cabinet')) expect(sim.sell(i.id)).toBeNull()
+    const tech = hireStaff(sim, 'technician', tired())
+    for (const c of seated(sim, 3)) advanceUntil(sim, () => served(c), 90_000)
+    expect(tech.task?.kind).toBe('rest')
+    expect(tech.path).toEqual([])
+    const spot = tileOf(tech)
+    sim.advance(5_000)
+    expect(tileOf(tech)).toEqual(spot)
+  })
+
+  it('the receptionist rests after twice as many greetings', () => {
+    const sim = dayThree()
+    const rec = hireStaff(sim, 'receptionist', tired())
+    const atSpot = () => rec.task === null && rec.path.length === 0 && tileEq(rec.pos, sim.receptionSpot())
+    advanceUntil(sim, atSpot)
+    for (let i = 0; i < 5; i++) sim.spawnCustomer()
+    expect(rec.task).toBeNull()
+    sim.spawnCustomer()
+    expect(rec.task?.kind).toBe('rest')
+    expect(sim.spawnCustomer().greet).toBe(0)
+    advanceUntil(sim, () => rec.task === null, 60_000)
+    advanceUntil(sim, atSpot)
+    expect(rec.sinceRest).toBe(0)
+    expect(sim.spawnCustomer().greet).toBe(rec.stats.friendly)
+  })
+})
+
+describe('levels and wages', () => {
+  const closeDay = (sim: SpaSim): SimEvent[] => {
+    sim.clock.minutes = DAY_END_MIN
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => sim.dayOver, 5_000, ev)
+    ev.push(...sim.drainEvents())
+    return ev
+  }
+
+  it('each customer earns experience', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician')
+    tech.xp = 2
+    const wage = tech.wage
+    seated(sim, 1)
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => ev.some(e => e.type === 'levelUp'), 60_000, ev)
+    expect(ev).toContainEqual({ type: 'levelUp', staffId: tech.id, level: 2 })
+    expect(tech.wage).toBe(wage + 5000)
+  })
+
+  it('wages are taken when the day ends', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician')
+    const money = sim.money
+    const ended = closeDay(sim).find(e => e.type === 'dayEnded')
+    if (ended?.type !== 'dayEnded') throw new Error('no dayEnded')
+    expect(ended.stats.wages).toBe(tech.wage)
+    expect(sim.money).toBe(money - tech.wage)
+  })
+
+  it('a shop with no staff pays no wages', () => {
+    const sim = dayThree()
+    const money = sim.money
+    closeDay(sim)
+    expect([sim.stats.wages, sim.money]).toEqual([0, money])
+  })
+
+  it('money below zero does not stop the shop', () => {
+    const sim = dayThree()
+    sim.money = 10_000
+    for (let i = 0; i < 3; i++) hireStaff(sim, 'technician')
+    closeDay(sim)
+    expect(sim.money).toBeLessThan(0)
+    sim.startDay()
+    const c = seatAndWait(sim)
+    const before = sim.money
+    advanceUntil(sim, () => served(c), 90_000)
+    expect(sim.money).toBeGreaterThan(before)
+    sim.candidates.push({ ...sim.staff[0], name: 'Extra', role: 'receptionist' })
+    expect(sim.hire(sim.candidates.length - 1)).toBe('money')
+    sim.money = 0
+    expect(sim.hire(sim.candidates.length - 1)).toBeNull()
+  })
+
+  it('each new day starts with staff at home and rested', () => {
+    const sim = dayThree()
+    const rec = hireStaff(sim, 'receptionist')
+    const techs = [hireStaff(sim, 'technician'), hireStaff(sim, 'technician')]
+    for (const s of sim.staff) {
+      s.pos = { x: 1, y: 8 }
+      s.path = [{ x: 2, y: 8 }]
+      s.task = { kind: 'rest', leftMs: 100 }
+      s.sinceRest = 4
+      s.facing = 'left'
+    }
+    sim.startDay()
+    expect(tileEq(rec.pos, sim.receptionSpot())).toBe(true)
+    expect(tileEq(techs[0].pos, techs[1].pos)).toBe(false)
+    for (const s of sim.staff) expect([s.task, s.sinceRest, s.path, s.facing]).toEqual([null, 0, [], 'down'])
+  })
+})
+
+describe('letting go', () => {
+  it('lets a technician finish the customer on the bed, then leave', () => {
+    const sim = dayThree()
+    const [a] = seated(sim, 1)
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => a.state === 'inService')
+    const wage = tech.wage
+    sim.fire(tech.id)
+    expect(tech.leaving).toBe(true)
+    expect(tech.task?.kind).toBe('serve')
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => ev.some(e => e.type === 'paid'), 60_000, ev)
+    expect(tech.task?.kind).toBe('exit')
+    advanceUntil(sim, () => sim.staff.length === 0, 30_000)
+    expect(sim.stats.wages).toBe(wage)
+    const money = sim.money
+    sim.clock.minutes = DAY_END_MIN
+    advanceUntil(sim, () => sim.dayOver, 120_000)
+    expect(sim.stats.wages).toBe(wage)
+    expect(sim.money).toBe(money - wage)
+  })
+
+  it('lets an idle or fetching staff member go at once', () => {
+    const sim = dayThree()
+    const idle = hireStaff(sim, 'technician')
+    sim.fire(idle.id)
+    expect(idle.task?.kind).toBe('exit')
+    advanceUntil(sim, () => sim.staff.length === 0, 30_000)
+
+    const [a] = seated(sim, 1)
+    const fetcher = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => fetcher.task?.kind === 'fetch')
+    sim.fire(fetcher.id)
+    expect(fetcher.task?.kind).toBe('exit')
+    advanceUntil(sim, () => sim.staff.length === 0, 30_000)
+    expect(a.state).toBe('waiting')
+    expect(sim.stats.wages).toBe(idle.wage + fetcher.wage)
+  })
+
+  it('frees the bed when the customer of a serve task has gone', () => {
+    const sim = dayThree()
+    const [a] = seated(sim, 1)
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => a.state === 'inService')
+    sim.customers = sim.customers.filter(c => c !== a)
+    sim.advance(100)
+    expect(tech.task).toBeNull()
+    expect(sim.stations[0].customerId).toBeNull()
+  })
+})
+
+describe('moved furniture', () => {
+  it('moves a staff member aside when furniture is dropped on them', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.path.length === 0)
+    const t = tileOf(tech)
+    expect(sim.buy('plant', t.x, t.y, false)).toBeNull()
+    expect(isWalkable(sim.grid, tileOf(tech))).toBe(true)
+    const c = seatAndWait(sim)
+    const money = sim.money
+    advanceUntil(sim, () => served(c), 90_000)
+    expect(sim.money).toBeGreaterThan(money)
   })
 })

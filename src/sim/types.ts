@@ -73,6 +73,8 @@ export interface DayStats {
   walkedAway: number
   income: number
   tips: number
+  /** Staff wages for the day, taken when the day ends. */
+  wages: number
 }
 
 export type SimEvent =
@@ -83,6 +85,7 @@ export type SimEvent =
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
   | { type: 'greeted'; staffId: number; customerId: number }
+  | { type: 'levelUp'; staffId: number; level: number }
   | { type: 'toast'; key: 'stationsBusy' }
   /** An empty bed slot was tapped while a bed fits there. */
   | { type: 'bedSlot'; slot: Tile }

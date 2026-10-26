@@ -13,6 +13,7 @@ import {
   RATING_WINDOW,
   SHAMPOO_PRICE,
   STAFF_CAP,
+  STAFF_REST_MS,
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
@@ -22,13 +23,13 @@ import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './b
 import { DayClock } from './clock'
 import { arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
 import { bedSlotAt, buildGrid, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
-import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { ITEMS, beautyOf, footprint, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
-import { greetPatience, makeCandidate, staffStars, tipFactor, walkSpeed, workMs, type Candidate, type Staff } from './staff'
+import { gainXp, greetPatience, makeCandidate, restAfter, staffStars, tipFactor, walkSpeed, workMs, type Candidate, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
 
 interface Mover {
@@ -42,7 +43,7 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
 
-const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0 })
+const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0 })
 const tileOf = (pos: Vec): Tile => ({ x: Math.round(pos.x), y: Math.round(pos.y) })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. */
@@ -159,7 +160,10 @@ export class SpaSim {
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
-    if (greeter) this.emit({ type: 'greeted', staffId: greeter.id, customerId: c.id })
+    if (greeter) {
+      this.emit({ type: 'greeted', staffId: greeter.id, customerId: c.id })
+      if (this.earnXp(greeter)) this.startRest(greeter)
+    }
     return c
   }
 
@@ -336,6 +340,7 @@ export class SpaSim {
     this.untilArrivalMs = FIRST_ARRIVAL_MS
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    for (const s of this.staff) Object.assign(s, { pos: { ...this.homeOf(s) }, path: [], task: null, sinceRest: 0, facing: 'down' })
     if (this.day >= UNLOCK_DAY.staff) this.refreshCandidates()
   }
 
@@ -378,6 +383,27 @@ export class SpaSim {
     const home = this.homeOf(s)
     s.path = findPath(this.grid, tileOf(s.pos), t => tileEq(t, home)) ?? []
     return null
+  }
+
+  /**
+   * Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once.
+   * After the day has ended the wages are already paid, so they just leave.
+   */
+  fire(id: number): void {
+    const s = this.staff.find(x => x.id === id)
+    if (!s || s.leaving) return
+    if (this.dayOver) {
+      this.staff = this.staff.filter(x => x !== s)
+      return
+    }
+    s.leaving = true
+    this.stats.wages += s.wage
+    if (s.task?.kind !== 'serve') this.startExit(s)
+  }
+
+  private startExit(s: Staff): void {
+    s.task = { kind: 'exit' }
+    s.path = this.walkTo(s, t => tileEq(t, this.grid.door)) ?? []
   }
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
@@ -469,6 +495,12 @@ export class SpaSim {
       m.pos = { ...flood(this.grid, tile, () => true).find(reached)! }
     }
     stepAside(this.owner, null)
+    const moved = new Set<Staff>()
+    for (const s of this.staff) {
+      const before = s.pos
+      stepAside(s, null)
+      if (s.pos !== before) moved.add(s)
+    }
     for (const c of walkers) stepAside(c, this.goalOf(c))
 
     for (const c of walkers) {
@@ -476,6 +508,27 @@ export class SpaSim {
       if (c.path.length > 0) this.reroute(c, goal && (x => tileEq(x, goal)))
     }
     if (this.owner.path.length > 0) this.reroute(this.owner, this.ownerGoal())
+    for (const s of this.staff) if (s.path.length > 0 || moved.has(s)) this.reroute(s, this.staffGoal(s))
+  }
+
+  /** Where a staff member's walk ends: beside the customer being fetched, on the work tile, at the rest spot, at the door, or where their path ended if that is still floor. */
+  private staffGoal(s: Staff): ((t: Tile) => boolean) | null {
+    const task = s.task
+    if (task?.kind === 'fetch') {
+      const seat = this.customers.find(c => c.id === task.customerId)?.seat
+      return seat ? x => isWalkable(this.grid, x) && manhattan(x, seat) === 1 : null
+    }
+    if (task?.kind === 'serve') {
+      const work = this.stations.find(x => x.id === task.stationId)?.work
+      return work ? x => tileEq(x, work) : null
+    }
+    if (task?.kind === 'rest') {
+      const spot = this.restSpot(s)
+      return x => tileEq(x, spot)
+    }
+    if (task?.kind === 'exit') return x => tileEq(x, this.grid.door)
+    const end = s.path[s.path.length - 1]
+    return end && isWalkable(this.grid, end) ? x => tileEq(x, end) : null
   }
 
   /** Where a customer on foot is headed: their seat, their bed or the door. */
@@ -528,6 +581,9 @@ export class SpaSim {
 
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
+      for (const s of this.staff) if (!s.leaving) this.stats.wages += s.wage
+      this.money -= this.stats.wages
+      this.staff = this.staff.filter(s => !s.leaving)
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }
@@ -610,9 +666,50 @@ export class SpaSim {
   }
 
   private updateStaff(s: Staff, dt: number): void {
-    if (s.leaving) return
+    if (s.task?.kind === 'exit') {
+      if (s.path.length > 0) return
+      if (!tileEq(tileOf(s.pos), this.grid.door)) s.path = this.walkTo(s, t => tileEq(t, this.grid.door)) ?? []
+      if (s.path.length === 0) this.staff = this.staff.filter(x => x !== s)
+      return
+    }
+    if (s.leaving && s.task?.kind !== 'serve') {
+      this.startExit(s)
+      return
+    }
+    if (s.task?.kind === 'rest') {
+      if (s.path.length > 0) return
+      s.task.leftMs -= dt
+      if (s.task.leftMs <= 0) {
+        s.sinceRest = 0
+        s.task = null
+      }
+      return
+    }
     if (s.role === 'technician') this.updateTechnician(s, dt)
     else if (s.task === null) this.walkHome(s)
+  }
+
+  /** One more customer served or greeted: experience, and a level up if it is enough. True when they are now due a rest (judged before a level up changes their stamina). */
+  private earnXp(s: Staff): boolean {
+    s.sinceRest++
+    const due = s.sinceRest >= restAfter(s)
+    if (gainXp(s, this.rng)) this.emit({ type: 'levelUp', staffId: s.id, level: s.level })
+    return due
+  }
+
+  /** Walks to the nearest floor beside a towel cabinet, or rests where they stand if there is none. */
+  private startRest(s: Staff): void {
+    s.task = { kind: 'rest', leftMs: STAFF_REST_MS }
+    const spot = this.restSpot(s)
+    s.path = this.walkTo(s, t => tileEq(t, spot)) ?? []
+  }
+
+  /** The nearest floor, in walking order from where `s` stands, that touches a towel cabinet; where they stand if there is none. */
+  private restSpot(s: Staff): Tile {
+    const from = tileOf(s.pos)
+    const cabinets = this.items.filter(i => i.kind === 'cabinet').flatMap(footprint)
+    const spot = flood(this.grid, from, t => isWalkable(this.grid, t)).find(t => cabinets.some(c => manhattan(c, t) === 1))
+    return spot ?? from
   }
 
   /** An idle person who is not on their home tile walks there. */
@@ -648,7 +745,8 @@ export class SpaSim {
     const c = this.customers.find(x => x.id === task.customerId)
     const station = this.stations.find(x => x.id === task.stationId)
     if (!c || !station) {
-      s.task = null
+      if (station?.customerId === task.customerId) station.customerId = null
+      this.finishWork(s)
       return
     }
     if (s.path.length > 0) return
@@ -657,7 +755,14 @@ export class SpaSim {
     task.leftMs -= dt
     if (task.leftMs > 0) return
     this.payFor(c, station, staffStars(s.stats.skill, this.rng()), s.stats.friendly)
+    this.finishWork(s, this.earnXp(s))
+  }
+
+  /** A service is over: walk out if being let go, rest if tired, else wait for the next customer. */
+  private finishWork(s: Staff, due = false): void {
     s.task = null
+    if (s.leaving) this.startExit(s)
+    else if (due) this.startRest(s)
   }
 
   /** Starts walking to the waiting customer who has waited longest, if a bed is free and nobody else is on the way to them; false if nothing started. */
