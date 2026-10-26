@@ -7,10 +7,10 @@ import { STAFF_NAMES } from '../../src/strings/vi'
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
 
 describe('staff rules', () => {
-  it('pays 40 000 to 120 000 a day by stats', () => {
-    expect(wageFor(all(1))).toBe(40000)
-    expect(wageFor(all(5))).toBe(120000)
-    expect(wageFor({ skill: 3, speed: 2, friendly: 1, stamina: 4 })).toBe(70000)
+  it('pays 20 000 to 60 000 a day by stats', () => {
+    expect(wageFor(all(1))).toBe(20000)
+    expect(wageFor(all(5))).toBe(60000)
+    expect(wageFor({ skill: 3, speed: 2, friendly: 1, stamina: 4 })).toBe(35000)
   })
 
   it('draws candidates', () => {
@@ -67,9 +67,9 @@ describe('staff rules', () => {
     const s = { level: 1, xp: 2, stats: { skill: 5, speed: 5, friendly: 5, stamina: 1 }, wage: 100000 } as Staff
     const rng = createRng(1)
     expect(gainXp(s, rng)).toBe(true)
-    expect([s.level, s.xp, s.stats.stamina, s.wage]).toEqual([2, 3, 2, 105000])
+    expect([s.level, s.xp, s.stats.stamina, s.wage]).toEqual([2, 3, 2, 102500])
     expect(gainXp(s, rng)).toBe(false)
-    expect(s.wage).toBe(105000)
+    expect(s.wage).toBe(102500)
   })
 
   it('greets and tips by friendliness', () => {

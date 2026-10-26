@@ -197,7 +197,7 @@ Bản lưu thêm danh sách đồ: loại, ô, đã lật hay chưa. Tiệm cũ 
   - **Tốc độ:** làm nhanh hơn, đi nhanh hơn.
   - **Thân thiện:** khách bớt sốt ruột, tip nhiều hơn.
   - **Sức bền:** làm được bao nhiêu khách thì phải nghỉ một lúc.
-- **Lương:** khoảng 40.000 đến 120.000 đ một ngày tuỳ chỉ số. Lương trừ lúc hết ngày, bảng tổng kết có dòng "Lương nhân viên". **(em đề xuất)**
+- **Lương:** khoảng 20.000 đến 60.000 đ một ngày tuỳ chỉ số (anh chọn giảm nửa khi ngày còn 2 phút 30 giây). Lương trừ lúc hết ngày, bảng tổng kết có dòng "Lương nhân viên". **(em đề xuất)**
 - **Hết tiền trả lương:** tiền được âm, hiện màu đỏ. Lúc đang âm thì chưa mua đồ, mở dịch vụ hay thuê thêm người được. Riêng nhập hàng (đợt 6) thì lúc nào cũng được, kể cả khi tiền âm, vì không có hàng thì không làm ra tiền để gỡ. Ngày hôm sau làm có tiền là gỡ lại. Không bao giờ có lúc tiệm kẹt hẳn, phải bỏ tiệm chơi lại (spec chung mục 5.11). **(em đề xuất)**
 - **Cho nghỉ việc:** bấm "Cho nghỉ" ở phần "Đang làm". Người đó làm xong khách đang làm rồi ra về.
 
@@ -213,7 +213,7 @@ Bản lưu thêm danh sách đồ: loại, ô, đã lật hay chưa. Tiệm cũ 
   - Đứng sau quầy, chào khách mới vào.
   - Khách được chào thì kiên nhẫn lâu hơn khoảng một phần tư và tip nhỉnh hơn, tuỳ độ thân thiện.
 - **Mệt và nghỉ:**
-  - Làm được 3 đến 7 khách (tuỳ sức bền) thì nhân viên ra đứng cạnh tủ khăn, trên đầu có ly trà, nghỉ khoảng một giờ trong game (35 giây).
+  - Làm được 3 đến 7 khách (tuỳ sức bền) thì nhân viên ra đứng cạnh tủ khăn, trên đầu có ly trà, nghỉ khoảng một giờ trong game (12,5 giây).
   - Nghỉ xong tự làm tiếp.
 - **Lên cấp:** mỗi khách làm xong được cộng kinh nghiệm. Có 5 cấp. Mỗi lần lên cấp thì một chỉ số tăng một chấm và lương tăng một chút. Lên cấp thì có pháo hoa nhỏ trên đầu.
 - Khi người chơi đang chơi mini-game thì cả tiệm vẫn đứng yên như bây giờ, nhân viên cũng vậy.

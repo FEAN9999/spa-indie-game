@@ -353,7 +353,7 @@ describe('levels and wages', () => {
     const ev: SimEvent[] = []
     advanceUntil(sim, () => ev.some(e => e.type === 'levelUp'), 60_000, ev)
     expect(ev).toContainEqual({ type: 'levelUp', staffId: tech.id, level: 2 })
-    expect(tech.wage).toBe(wage + 5000)
+    expect(tech.wage).toBe(wage + 2500)
   })
 
   it('wages are taken when the day ends', () => {

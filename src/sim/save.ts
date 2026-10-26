@@ -9,7 +9,7 @@ import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } fr
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 6
+export const SAVE_VERSION = 7
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -123,6 +123,13 @@ function withFullStock(old: object): SaveData {
   return { ...old, v: SAVE_VERSION, stats: { ...stats, restock: 0 }, stock: fullStock() } as unknown as SaveData
 }
 
+/** Shops saved before version 7 paid wages for a day twice as long: staff and candidates now ask half. */
+function withHalfWages(old: object): SaveData {
+  const { staff, candidates } = old as { staff: Staff[]; candidates: Candidate[] }
+  const half = <T extends { wage: number }>(p: T): T => ({ ...p, wage: Math.round(p.wage / 2) })
+  return { ...old, v: SAVE_VERSION, staff: staff.map(half), candidates: candidates.map(half) } as unknown as SaveData
+}
+
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   const data = parseVersioned(raw)
@@ -170,7 +177,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
@@ -209,7 +216,8 @@ function parseVersioned(raw: unknown): SaveData {
   checkCandidates(raw.candidates)
   if (!isNumber(raw.candidatesDay)) throw new SaveError('candidatesDay is not a number')
   if (!isNumber(raw.nextStaffId)) throw new SaveError('nextStaffId is not a number')
-  if (raw.v === 4) return withFullStock(withShampooOnly(data))
-  if (raw.v === 5) return withFullStock(data)
+  if (raw.v === 4) return withHalfWages(withFullStock(withShampooOnly(data)))
+  if (raw.v === 5) return withHalfWages(withFullStock(data))
+  if (raw.v === 6) return withHalfWages(data)
   return data as unknown as SaveData
 }

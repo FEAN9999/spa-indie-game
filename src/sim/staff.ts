@@ -54,7 +54,7 @@ export interface Staff extends Candidate {
   leaving: boolean
 }
 
-/** Daily wage: 40 000 for all ones, 5 000 more for each dot above that. */
+/** Daily wage: 20 000 for all ones, 2 500 more for each dot above that. */
 export const wageFor = (stats: StaffStats): number => WAGE_BASE + (STAT_KEYS.reduce((sum, k) => sum + stats[k], 0) - STAT_KEYS.length) * WAGE_PER_DOT
 
 /** A random candidate whose name is not in `taken`. */

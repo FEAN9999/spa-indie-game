@@ -146,9 +146,9 @@ export const STAFF_CAP = { receptionist: 1, technician: 3 } as const
 export const CANDIDATES_PER_DAY = 3
 export const RECEPTIONIST_CHANCE = 1 / 3
 export const RARE_CHANCE = 0.1
-export const WAGE_BASE = 40000
-export const WAGE_PER_DOT = 5000
-export const LEVEL_WAGE_RAISE = 5000
+export const WAGE_BASE = 20000
+export const WAGE_PER_DOT = 2500
+export const LEVEL_WAGE_RAISE = 2500
 /** Experience needed for levels 1 to 5. */
 export const LEVEL_XP = [0, 3, 8, 15, 25] as const
 export const STAFF_WORK_MS_SLOW = 24000
