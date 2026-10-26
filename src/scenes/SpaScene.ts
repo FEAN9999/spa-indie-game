@@ -16,6 +16,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
+import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ShampooData } from './ShampooScene'
 import type { SummaryData } from './SummaryScene'
@@ -52,6 +53,10 @@ export class SpaScene extends Phaser.Scene {
   private pendingService: ShampooData | null = null
   /** Frozen while asking for a newer version on return, so nothing happens that the reload would drop. */
   private holding = false
+  /** The owner card is open: the shop waits and its events stay queued until the card closes. */
+  private modal = false
+  /** The morning banner waits for the install card a new shop opens with. */
+  private bannerOnResume = false
 
   constructor() {
     super('SpaScene')
@@ -61,6 +66,8 @@ export class SpaScene extends Phaser.Scene {
     this.customers = new Map()
     this.pendingService = null
     this.holding = false
+    this.modal = false
+    this.bannerOnResume = false
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
     const saved = this.session.load()
@@ -71,11 +78,15 @@ export class SpaScene extends Phaser.Scene {
     this.hud = new Hud(this, this.sim, () => this.pause())
     this.input.on('pointerup', this.onTap, this)
 
-    this.time.addEvent({ delay: AUTOSAVE_MS, loop: true, callback: () => this.session.saveNow() })
-    const saveOnHide = () => {
-      if (document.visibilityState === 'hidden') this.session.saveNow()
+    // a shop is first written once it has an owner; until then the owner card holds it still, so nothing is lost
+    const autosave = () => {
+      if (this.sim.profileDone) this.session.saveNow()
     }
-    const saveOnLeave = () => this.session.saveNow()
+    this.time.addEvent({ delay: AUTOSAVE_MS, loop: true, callback: autosave })
+    const saveOnHide = () => {
+      if (document.visibilityState === 'hidden') autosave()
+    }
+    const saveOnLeave = () => autosave()
     document.addEventListener('visibilitychange', saveOnHide)
     window.addEventListener('pagehide', saveOnLeave)
     // back in the game: first the shop another page may have saved meanwhile, then a newer version
@@ -89,13 +100,24 @@ export class SpaScene extends Phaser.Scene {
       stopWatching()
     })
 
-    // a reopened shop waits on the pause card; an ended day reopens its summary by itself
-    if (saved && !this.sim.dayOver) this.pause()
-    // a new shop on a phone asks once to be installed, before any progress could be lost
-    else if (!saved && installPlatform(currentInstallEnv()) && !this.store.flag('installCardSeen')) {
-      this.store.setFlag('installCardSeen')
-      this.pause('install')
+    if (!saved) {
+      this.openOwnerCard('new', () => {
+        // a new shop on a phone asks once to be installed, before any progress could be lost
+        if (installPlatform(currentInstallEnv()) && !this.store.flag('installCardSeen')) {
+          this.store.setFlag('installCardSeen')
+          this.bannerOnResume = true
+          this.pause('install')
+        } else this.showMorningBanner()
+      })
     }
+    // a shop from before owners picks its owner and name once, then reopens as usual
+    else if (!this.sim.profileDone) {
+      this.openOwnerCard('upgrade', () => {
+        if (!this.sim.dayOver) this.pause()
+      })
+    }
+    // a reopened shop waits on the pause card; an ended day reopens its summary by itself
+    else if (!this.sim.dayOver) this.pause()
     if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
   }
 
@@ -128,15 +150,46 @@ export class SpaScene extends Phaser.Scene {
 
   private resume(): void {
     this.sim.paused = false
+    if (this.bannerOnResume) {
+      this.bannerOnResume = false
+      this.showMorningBanner()
+    }
     if (this.pendingService) {
       this.scene.launch('ShampooScene', this.pendingService)
       this.pendingService = null
     }
   }
 
+  /** Opens the owner card over the shop; `after` runs once it closes. */
+  openOwnerCard(mode: OwnerMode, after: () => void): void {
+    this.modal = true
+    const data: OwnerData = {
+      mode,
+      look: { ...this.sim.ownerLook },
+      name: this.sim.shopName,
+      onSave: (look, name) => {
+        this.sim.setProfile(look, name)
+        this.owner.container.destroy()
+        this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
+        this.session.saveNow()
+      },
+      onClose: () => {
+        this.modal = false
+        after()
+      },
+    }
+    this.scene.launch('OwnerScene', data)
+  }
+
+  private showMorningBanner(): void {
+    this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
+  }
+
   update(time: number, delta: number) {
-    if (!this.holding) this.sim.update(delta)
-    for (const e of this.sim.drainEvents()) this.handle(e)
+    if (!this.modal) {
+      if (!this.holding) this.sim.update(delta)
+      for (const e of this.sim.drainEvents()) this.handle(e)
+    }
 
     const dt = this.sim.paused ? 0 : delta
     const o = this.sim.owner
@@ -196,6 +249,7 @@ export class SpaScene extends Phaser.Scene {
           onNewDay: () => {
             this.sim.startDay()
             this.session.saveNow()
+            this.showMorningBanner()
           },
         }
         this.scene.launch('SummaryScene', data)

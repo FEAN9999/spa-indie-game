@@ -8,6 +8,9 @@ import { textStyle } from './text'
 import { layoutTopBar, TOP_BAR } from './topBar'
 
 const DEPTH = 10000
+const BANNER_Y = 300
+const BANNER_H = 110
+const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 const NAV: { key: StringKey; icon: string }[] = [
@@ -102,6 +105,28 @@ export class Hud {
 
   hideHint(): void {
     this.hint.setVisible(false)
+  }
+
+  /** A card under the top bar that slides in, stays 2 seconds and fades out. */
+  banner(text: string): void {
+    const label = this.scene.add.text(0, 0, text, textStyle(46)).setOrigin(0.5)
+    if (label.width > BANNER_TEXT_W) label.setScale(BANNER_TEXT_W / label.width)
+    const w = label.displayWidth + 80
+    const bg = this.scene.add
+      .graphics()
+      .fillStyle(hex(C.paper), 1)
+      .fillRoundedRect(-w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
+    const box = this.scene.add.container(GAME_W / 2, BANNER_Y - 40, [bg, label]).setDepth(DEPTH + 60).setAlpha(0)
+    this.scene.tweens.chain({
+      targets: box,
+      tweens: [
+        { y: BANNER_Y, alpha: 1, duration: 250, ease: 'Cubic.easeOut' },
+        { alpha: 0, delay: 2000, duration: 250 },
+      ],
+      onComplete: () => box.destroy(),
+    })
   }
 
   toast(text: string): void {

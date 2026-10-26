@@ -59,6 +59,18 @@ export const vi = {
   navStaff: 'Nhân viên',
   navServices: 'Dịch vụ',
   navQuests: 'Nhiệm vụ',
+  createTitle: 'Tạo chủ tiệm',
+  profileTitle: 'Chủ tiệm và tên tiệm',
+  upgradeNote: 'Giờ đã chọn được chủ tiệm và đặt tên tiệm.',
+  hairStyle: 'Kiểu tóc',
+  hairColor: 'Màu tóc',
+  skinColor: 'Màu da',
+  shirtColor: 'Màu áo',
+  shopNameLabel: 'Tên tiệm',
+  openShop: 'Mở tiệm',
+  save: 'Lưu',
+  keepAsIs: 'Giữ như cũ',
+  morningBanner: '{name} · Ngày {day} · Mở cửa!',
 } as const
 
 export type StringKey = keyof typeof vi
