@@ -6,20 +6,23 @@ import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDA
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
+import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
 import { onBed } from '../sim/grid'
 import { ITEMS } from '../sim/items'
 import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
+import type { ServiceId } from '../sim/services'
 import { SpaSim } from '../sim/spa'
 import { pickHint } from '../sim/tutorial'
-import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
+import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
 import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import type { MiniGameData } from '../view/miniGame'
 import { RoomView } from '../view/RoomView'
 import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
@@ -28,7 +31,6 @@ import { TOP_BAR } from '../view/topBar'
 import type { BuildData } from './BuildScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
-import type { ShampooData } from './ShampooScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { SummaryData } from './SummaryScene'
@@ -50,6 +52,10 @@ const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
 /** The bottom of the service badge, just above the patience bar. */
 const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+/** The close-up each service is played in; massage plays the shampoo game until its own is made. */
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'ShampooScene' }
+/** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoShampoo' }
 
 interface CustomerSprite {
   view: CharacterView
@@ -76,8 +82,8 @@ export class SpaScene extends Phaser.Scene {
   private staffLayer!: StaffLayer
   private store!: SaveStore
   private session!: SaveSession
-  /** A service that became ready while paused; the mini-game opens on resume. */
-  private pendingService: ShampooData | null = null
+  /** A service that became ready while paused, with the scene it is played in; the mini-game opens on resume. */
+  private pendingService: { scene: string; data: MiniGameData } | null = null
   /** Frozen while asking for a newer version on return, so nothing happens that the reload would drop. */
   private holding = false
   /** The owner card, the bed card, build mode or the staff panel is open: the shop waits and its events stay queued until it closes. */
@@ -214,7 +220,7 @@ export class SpaScene extends Phaser.Scene {
       this.showMorningBanner()
     }
     if (this.pendingService) {
-      this.scene.launch('ShampooScene', this.pendingService)
+      this.scene.launch(this.pendingService.scene, this.pendingService.data)
       this.pendingService = null
     }
   }
@@ -443,17 +449,21 @@ export class SpaScene extends Phaser.Scene {
       case 'serviceReady': {
         const c = this.sim.customers.find(x => x.id === e.customerId)
         if (!c) return
-        const data: ShampooData = {
+        const scene = MINI_GAME_SCENE[c.service]
+        const demo = DEMO_HINT[c.service]
+        const data: MiniGameData = {
           look: c.look,
+          kind: c.kind,
           extraMs: dayEase(this.sim.day).miniGameExtraMs,
-          demo: !this.sim.hintDone('demoShampoo'),
+          hard: KINDS[c.kind].hard,
+          demo: !this.sim.hintDone(demo),
           onDone: stars => {
-            this.sim.markHint('demoShampoo')
+            this.sim.markHint(demo)
             this.sim.completeService(c.id, stars)
           },
         }
-        if (this.sim.paused) this.pendingService = data
-        else this.scene.launch('ShampooScene', data)
+        if (this.sim.paused) this.pendingService = { scene, data }
+        else this.scene.launch(scene, data)
         return
       }
       case 'paid':

@@ -33,8 +33,30 @@ export const SHAMPOO_TIME_LIMIT_MS = 25000
 export const FOAM_SWIPES = 6
 export const RINSE_HOLD_MS = 2500
 export const DRY_SWIPES = 4
+/** A picky customer's hair needs more swiping. */
+export const FOAM_SWIPES_HARD = 9
+export const DRY_SWIPES_HARD = 6
 export const STAR3_MS = 15000
 export const STAR2_MS = 22000
+
+// Face-mask mini-game, in face units: the face is the unit circle. Stars use STAR3_MS and STAR2_MS, like the shampoo.
+export const MASK_TIME_LIMIT_MS = 25000
+/** The paint grid has this many cells a side over [−1, 1]². */
+export const MASK_GRID = 20
+export const MASK_EYES = [
+  { x: -0.38, y: -0.1 },
+  { x: 0.38, y: -0.1 },
+] as const
+export const MASK_EYE_R = 0.16
+export const MASK_EYE_R_HARD = 0.22
+export const MASK_BRUSH_R = 0.18
+/** The share of the face outside the eyes to cover. */
+export const MASK_GOAL = 0.9
+export const MASK_GOAL_HARD = 0.95
+/** A cucumber slice dropped this close to an empty eye snaps onto it. */
+export const MASK_SNAP_R = 0.25
+/** This many eye errors cost a star. */
+export const MASK_ERRORS_FOR_PENALTY = 3
 
 // Shop simulation
 export const STARTING_MONEY = 100000

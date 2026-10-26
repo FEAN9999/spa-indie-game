@@ -1,40 +1,25 @@
 import * as Phaser from 'phaser'
-import { C, lookColors } from '../art/palette'
-import { GAME_H, GAME_W } from '../config'
+import { customerColors } from '../art/palette'
+import { GAME_W } from '../config'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
-import type { Look } from '../sim/types'
 import { t, type StringKey } from '../strings/vi'
-import { textStyle } from '../view/text'
+import { addMiniGameCard, drawBars, revealStars, type MiniGameData } from '../view/miniGame'
 
-export interface ShampooData {
-  look: Look
-  /** Added to the time limit and the star marks on the gentler first days. */
-  extraMs: number
-  /** The first shampoo shows each move with a faint hand. */
-  demo: boolean
-  onDone: (stars: Stars) => void
-}
-
-const CARD = { x: 60, y: 260, w: 960, h: 1440 }
 /** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
 /** The head's centre, where the `sh-hair` art expects it: the back of the head lies in the basin. */
 const HEAD_Y = HAIR.y + 130
-const BAR = { x: 140, w: 800, h: 28, progressY: 420, timeY: 1612 }
 const FOAM_STEP_PX = 28
 const MAX_FOAM = 90
 const DROP_EVERY_MS = 45
 const BEADS = 14
-const STAR_Y = 1330
 const DEMO = { alpha: 0.6, swipePx: 120, swipeMs: 700, pressScale: 0.9, pressMs: 900 }
-const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
-
 const INSTRUCTION: Record<ShampooPhase, StringKey> = { foam: 'shampooFoam', rinse: 'shampooRinse', dry: 'shampooDry', done: 'shampooDone' }
 
-/** Close-up shampoo mini-game over the frozen spa: foam by swiping, rinse by holding, dry by swiping. */
+/** Close-up shampoo mini-game over the frozen spa: foam by swiping, rinse by holding, dry by swiping; a picky customer needs more swiping. */
 export class ShampooScene extends Phaser.Scene {
-  private params!: ShampooData
+  private params!: MiniGameData
   private rules!: ShampooGame
   private phase: ShampooPhase = 'foam'
   private pointer: Phaser.Input.Pointer | null = null
@@ -55,12 +40,12 @@ export class ShampooScene extends Phaser.Scene {
     super('ShampooScene')
   }
 
-  init(data: ShampooData) {
+  init(data: MiniGameData) {
     this.params = data
   }
 
   create() {
-    this.rules = new ShampooGame(this.params.extraMs)
+    this.rules = new ShampooGame(this.params.extraMs, this.params.hard)
     this.phase = 'foam'
     this.pointer = null
     this.trail = 0
@@ -70,23 +55,13 @@ export class ShampooScene extends Phaser.Scene {
     this.revealed = false
     this.demoHand = null
 
-    const colors = lookColors(this.params.look)
-    // interactive so taps stop here instead of reaching the spa's HUD underneath
-    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add
-      .graphics()
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
+    const colors = customerColors(this.params.look, this.params.kind)
+    this.instruction = addMiniGameCard(this, t('shampooFoam'))
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
     this.add.image(GAME_W / 2, HEAD_Y, 'sh-head').setTint(colors.skin)
     this.add.image(GAME_W / 2, HEAD_Y, 'sh-head-line')
     this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
     this.add.image(HAIR.x, HAIR.y, 'sh-hair-line')
-    this.instruction = this.add
-      .text(GAME_W / 2, 345, t('shampooFoam'), { ...textStyle(46), align: 'center', wordWrap: { width: 860 } })
-      .setOrigin(0.5)
     this.bars = this.add.graphics()
     this.shower = this.add.image(0, 0, 'sh-shower').setOrigin(0.5, 0.25).setVisible(false).setDepth(10)
     this.towel = this.add.image(0, 0, 'sh-towel').setVisible(false).setDepth(10)
@@ -123,7 +98,7 @@ export class ShampooScene extends Phaser.Scene {
     if (p && this.phase === 'dry') this.towel.setPosition(p.x, p.y).setRotation(Math.sin(time / 90) * 0.15)
     if (this.phase === 'rinse') for (const f of this.foam) f.setAlpha(1 - progress)
     if (this.phase === 'dry') for (const b of this.beads) b.setAlpha(1 - progress)
-    this.drawBars(progress)
+    drawBars(this.bars, progress, this.timeLeft())
   }
 
   /** Dev builds only: jump to the star reveal so headless checks can finish a service. */
@@ -207,30 +182,15 @@ export class ShampooScene extends Phaser.Scene {
     this.foam = []
     this.beads = []
     this.instruction.setText(t('shampooDone'))
-    this.drawBars(1)
-    ;[-1, 0, 1].forEach((offset, i) => {
-      const slot = this.add.image(GAME_W / 2 + offset * 170, STAR_Y, 'star-empty').setScale(1.4)
-      if (i >= stars) return
-      this.time.delayedCall(300 + i * 400, () => {
-        slot.setTexture('star').setScale(0.6)
-        this.tweens.add({ targets: slot, scale: 1.4, duration: 250, ease: 'Back.easeOut' })
-      })
-    })
-    this.time.delayedCall(1900, () => {
+    drawBars(this.bars, 1, this.timeLeft())
+    revealStars(this, stars, () => {
       this.params.onDone(stars)
       this.scene.stop()
     })
   }
 
-  private drawBars(progress: number): void {
-    const left = Math.max(0, 1 - this.rules.elapsedMs / this.rules.limitMs)
-    const g = this.bars.clear()
-    const bar = (y: number, track: number, fill: number, k: number) => {
-      g.fillStyle(track, 1).fillRoundedRect(BAR.x, y, BAR.w, BAR.h, BAR.h / 2)
-      if (k > 0) g.fillStyle(fill, 1).fillRoundedRect(BAR.x, y, Math.max(BAR.h, BAR.w * k), BAR.h, BAR.h / 2)
-    }
-    bar(BAR.progressY, hex(C.tileSeam), hex(C.teal), progress)
-    bar(BAR.timeY, hex(C.tileSeam), hex(C.mustard), left)
+  private timeLeft(): number {
+    return Math.max(0, 1 - this.rules.elapsedMs / this.rules.limitMs)
   }
 
   private onHair(x: number, y: number): boolean {

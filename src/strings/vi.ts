@@ -168,6 +168,8 @@ export const vi = {
   serviceOrder: 'Mở {name} trước',
   serviceJustOpened: 'Đã mở {name}. Mua {bed} ở nút Xây dựng.',
   hintServices: 'Mở thêm dịch vụ mới ở đây',
+  maskPaint: 'Tô mặt nạ kín khuôn mặt, tránh vùng mắt',
+  maskCucumber: 'Kéo hai lát dưa leo đặt lên mắt',
 } as const
 
 export type StringKey = keyof typeof vi

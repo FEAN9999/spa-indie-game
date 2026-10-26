@@ -46,6 +46,20 @@ describe('ShampooGame', () => {
     expect(g.phase).toBe('done')
   })
 
+  it('needs 9 foam swipes and 6 dry swipes for a picky customer', () => {
+    const g = new ShampooGame(0, true)
+    g.swipe(8, true)
+    expect(g.phase).toBe('foam')
+    expect(g.progress()).toBeCloseTo(8 / 9)
+    g.swipe(1, true)
+    expect(g.phase).toBe('rinse')
+    g.hold(2500, true)
+    g.swipe(5, true)
+    expect(g.phase).toBe('dry')
+    g.swipe(1, true)
+    expect(g.phase).toBe('done')
+  })
+
   it('moves the time limit and the star marks by the extra time', () => {
     const g = new ShampooGame(10_000)
     expect(g.limitMs).toBe(35_000)

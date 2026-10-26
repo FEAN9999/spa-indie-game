@@ -6,6 +6,7 @@ import { BUILD_ID, registerServiceWorker } from './app/update'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { BuildScene } from './scenes/BuildScene'
+import { MaskScene } from './scenes/MaskScene'
 import { OwnerScene } from './scenes/OwnerScene'
 import { PauseScene } from './scenes/PauseScene'
 import { ShampooScene } from './scenes/ShampooScene'
@@ -29,7 +30,7 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, SpaScene, ShampooScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }
