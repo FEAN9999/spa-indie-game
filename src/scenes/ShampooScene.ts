@@ -19,6 +19,8 @@ export interface ShampooData {
 const CARD = { x: 60, y: 260, w: 960, h: 1440 }
 /** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
+/** The head's centre, where the `sh-hair` art expects it: the back of the head lies in the basin. */
+const HEAD_Y = HAIR.y + 130
 const BAR = { x: 140, w: 800, h: 28, progressY: 420, timeY: 1612 }
 const FOAM_STEP_PX = 28
 const MAX_FOAM = 90
@@ -78,8 +80,8 @@ export class ShampooScene extends Phaser.Scene {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(CARD.x, CARD.y, CARD.w, CARD.h, 60)
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
-    this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head').setTint(colors.skin)
-    this.add.image(GAME_W / 2, HAIR.y + 190, 'sh-head-line')
+    this.add.image(GAME_W / 2, HEAD_Y, 'sh-head').setTint(colors.skin)
+    this.add.image(GAME_W / 2, HEAD_Y, 'sh-head-line')
     this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
     this.add.image(HAIR.x, HAIR.y, 'sh-hair-line')
     this.instruction = this.add
