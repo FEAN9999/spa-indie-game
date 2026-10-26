@@ -127,6 +127,19 @@ describe('the staff button hint', () => {
   })
 
   it('no staff hand on a shop past day 3', () => {
-    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 1))).toBeNull()
+    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 2))).toBeNull()
+  })
+})
+
+describe('the services button hint', () => {
+  it('points at the services button on the morning of day 4 until it is opened', () => {
+    const sim = pastTutorial(UNLOCK_DAY.services)
+    expect(pickHint(sim)).toEqual({ hint: 'openServices' })
+    sim.markHint('openServices')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('no services hand on a shop past day 4', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.services + 1))).toBeNull()
   })
 })

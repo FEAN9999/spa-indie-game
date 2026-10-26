@@ -19,7 +19,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
-import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, STAFF_PLATE_TOP } from '../view/Hud'
+import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
@@ -29,6 +29,7 @@ import type { BuildData } from './BuildScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ShampooData } from './ShampooScene'
+import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -119,7 +120,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff())
+    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices())
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
 
@@ -281,6 +282,25 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('StaffScene', data)
   }
 
+  /** The services panel over the frozen shop, opened only when build mode would be. */
+  private openServices(): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
+    const intro = !sim.hintDone('openServices')
+    sim.markHint('openServices')
+    const data: ServicesData = {
+      sim,
+      intro,
+      onChange: () => this.session.saveNow(),
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('ServicesScene', data)
+  }
+
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
   }
@@ -382,6 +402,10 @@ export class SpaScene extends Phaser.Scene {
     }
     if (pick?.hint === 'openStaff') {
       this.pointer.show(t('hintStaff'), STAFF_PLATE_TOP.x, STAFF_PLATE_TOP.y, 'down')
+      return
+    }
+    if (pick?.hint === 'openServices') {
+      this.pointer.show(t('hintServices'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container

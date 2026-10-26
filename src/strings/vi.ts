@@ -157,6 +157,17 @@ export const vi = {
   noCandidates: 'Hôm nay không còn ai. Sáng mai có người mới.',
   hintStaff: 'Đông khách thì thuê người phụ ở đây',
   wages: 'Lương nhân viên',
+  servicesTitle: 'Dịch vụ',
+  servicesIntro: 'Mở dịch vụ mới rồi mua giường cho dịch vụ đó ở nút Xây dựng.',
+  servicePrice: 'Khách trả {money}',
+  serviceNeeds: 'Cần {bed} · {money}',
+  serviceOpen: 'Mở · {money}',
+  serviceOpened: 'Đang có',
+  serviceNoBed: 'Chưa có {bed}',
+  serviceDebt: 'Tiền đang âm, chưa mở dịch vụ được',
+  serviceOrder: 'Mở {name} trước',
+  serviceJustOpened: 'Đã mở {name}. Mua {bed} ở nút Xây dựng.',
+  hintServices: 'Mở thêm dịch vụ mới ở đây',
 } as const
 
 export type StringKey = keyof typeof vi
