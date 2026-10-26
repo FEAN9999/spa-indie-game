@@ -1,5 +1,6 @@
 import { TILE } from '../config'
 import type { Grid } from '../sim/grid'
+import { bedSlot, benchMat, lantern, MAT } from './furniture'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -32,25 +33,6 @@ const PLANKS =
   `<rect width="3.2" height="1" fill="${C.plank}"/>` +
   `<path d="M0,0.5 H3.2 M0,1 H3.2 M1,0 V0.5 M2.6,0.5 V1" stroke="${C.plankLine}" stroke-width="${FINE}"/></pattern>`
 
-/** Woven chiếu cói for the runner and the waiting-area mat. */
-const MAT =
-  `<pattern id="mat" width="0.28" height="0.28" patternUnits="userSpaceOnUse">` +
-  `<rect width="0.28" height="0.28" fill="${C.mat}"/>` +
-  `<path d="M0,0.07 H0.28 M0,0.21 H0.28" stroke="${C.matLine}" stroke-width="0.035"/></pattern>`
-
-function lantern(x: number): string {
-  return (
-    `<g ${outline(0.035)}>` +
-    `<path d="M${x},0 V0.22" stroke-width="0.03"/>` +
-    rect(x - 0.12, 0.2, 0.24, 0.09, C.mustard, 'rx="0.03"') +
-    `<ellipse cx="${x}" cy="0.55" rx="0.28" ry="0.27" fill="${C.lantern}"/>` +
-    `<path d="M${x - 0.14},0.32 Q${x - 0.21},0.55 ${x - 0.14},0.78 M${x + 0.14},0.32 Q${x + 0.21},0.55 ${x + 0.14},0.78 M${x},0.29 V0.81" stroke="${C.lanternDark}" stroke-width="0.025" fill="none"/>` +
-    rect(x - 0.12, 0.79, 0.24, 0.09, C.mustard, 'rx="0.03"') +
-    `<path d="M${x - 0.06},0.88 V1.06 M${x},0.88 V1.1 M${x + 0.06},0.88 V1.06" stroke="${C.mustard}" stroke-width="0.035"/>` +
-    `</g>`
-  )
-}
-
 function louvreWindow(cx: number): string {
   const x = cx - 0.75
   const slats: string[] = []
@@ -66,19 +48,6 @@ function clock(cx: number): string {
   return (
     `<circle cx="${cx}" cy="0.9" r="0.3" fill="${C.cream}" ${outline(0.045)}/>` +
     `<path d="M${cx},0.9 V0.72 M${cx},0.9 H${cx + 0.13}" stroke="${C.ink}" stroke-width="0.04" stroke-linecap="round"/>`
-  )
-}
-
-/** Dashed outline where a bed could go, with a "+" on its middle tile. */
-function bedSlot(x: number, y: number): string {
-  const cx = x + 0.5
-  const cy = y + 1.5
-  return (
-    `<g fill="${C.cream}" fill-opacity="0.4" stroke="${C.ink}" stroke-opacity="0.5" stroke-width="0.04" stroke-dasharray="0.12 0.09">` +
-    `<rect x="${x - 0.05}" y="1.3" width="1.1" height="0.6" rx="0.2"/>` +
-    `<rect x="${x - 0.05}" y="1.9" width="1.1" height="${y + 3 - 1.9}" rx="0.15"/></g>` +
-    `<circle cx="${cx}" cy="${cy}" r="0.3" fill="${C.cream}" stroke="${C.terracotta}" stroke-width="0.05"/>` +
-    `<path d="M${cx},${cy - 0.17} V${cy + 0.17} M${cx - 0.17},${cy} H${cx + 0.17}" stroke="${C.terracotta}" stroke-width="0.06" stroke-linecap="round"/>`
   )
 }
 
@@ -124,11 +93,7 @@ function roomBody(grid: Grid): string {
   // mat under the bench and the tea table
   if (grid.seats.length) {
     const xs = grid.seats.map(s => s.x)
-    const x = Math.min(...xs) - 0.4
-    const w = Math.max(...xs) + 1.4 - x
-    const y = grid.seats[0].y - 0.2
-    out.push(rect(x, y, w, 3.1, 'url(#mat)', `rx="0.1" ${outline(0.035)}`))
-    out.push(rect(x + 0.12, y + 0.12, w - 0.24, 2.86, 'none', `rx="0.06" stroke="${C.terracotta}" stroke-width="0.06"`))
+    out.push(benchMat(Math.min(...xs), Math.max(...xs), grid.seats[0].y))
   }
 
   // back wall with its louvre window, clock and lanterns over the work tiles
