@@ -10,10 +10,10 @@ export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */
 export const OWNER_LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 4 } as const
 
-// Day: 8:00 to 20:00, 35 real seconds per game hour (about 7 minutes a day).
+// Day: 8:00 to 20:00, 25 real seconds per game hour (5 minutes a day).
 export const DAY_START_MIN = 480
 export const DAY_END_MIN = 1200
-export const REAL_MS_PER_GAME_MIN = 35000 / 60
+export const REAL_MS_PER_GAME_MIN = 25000 / 60
 
 // Money and reviews
 export const SHAMPOO_PRICE = 40000
@@ -33,7 +33,9 @@ export const STAR2_MS = 22000
 // Shop simulation
 export const STARTING_MONEY = 100000
 export const FIRST_ARRIVAL_MS = 3000
-export const ARRIVAL_JITTER = [0.6, 1.4] as const
+/** Customers come at random: the gap to the next one is never shorter than this, nor longer than this many times the average gap. */
+export const ARRIVAL_MIN_MS = 2000
+export const ARRIVAL_MAX_FACTOR = 2.5
 export const PATIENCE_MS = 60000
 export const CUSTOMER_SPEED = 5 // tiles per second
 export const OWNER_SPEED = 5 // tiles per second
