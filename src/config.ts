@@ -23,6 +23,8 @@ export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000 } a
 export const SERVICE_ARRIVAL_STEP = 0.1
 export const TIP_RATE = { 1: 0, 2: 0.1, 3: 0.25 } as const
 export const REVIEW_FOR_STARS = { 1: 3, 2: 4, 3: 5 } as const
+/** The review a customer leaves for 1, 2 and 3 stars, by how kindly they grade; `normal` is the plain one. */
+export const REVIEW_BY_GRADING = { easy: { 1: 4, 2: 5, 3: 5 }, normal: REVIEW_FOR_STARS, harsh: { 1: 2, 2: 3, 3: 5 } } as const
 export const ANGRY_REVIEW = 1
 export const RATING_WINDOW = 20
 
@@ -41,7 +43,11 @@ export const FIRST_ARRIVAL_MS = 3000
 export const ARRIVAL_MIN_MS = 2000
 export const ARRIVAL_MAX_FACTOR = 2.5
 export const PATIENCE_MS = 60000
-export const CUSTOMER_SPEED = 5 // tiles per second
+/** From this day a roll below CELEB_CHANCE makes the next customer a celebrity. */
+export const CELEB_FROM_DAY = 6
+export const CELEB_CHANCE = 0.05
+/** The chance a customer takes one of their favourite services when the shop has one. */
+export const PREFERRED_SERVICE_CHANCE = 0.7
 export const OWNER_SPEED = 5 // tiles per second
 export const ARRIVE_MS = 1500 // walking in from the street
 export const EXIT_MS = 1500 // walking out to the street

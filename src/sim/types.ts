@@ -1,3 +1,4 @@
+import type { CustomerKind } from './customers'
 import type { ServiceId } from './services'
 
 /** The first day's tips. */
@@ -55,6 +56,8 @@ export interface Customer {
   greet: number
   /** The service this customer wants. */
   service: ServiceId
+  /** What sort of customer this is. */
+  kind: CustomerKind
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }

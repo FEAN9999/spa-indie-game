@@ -1,7 +1,6 @@
 import {
   ANGRY_REVIEW,
   ARRIVE_MS,
-  CUSTOMER_SPEED,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
   MAX_FRAME_MS,
@@ -14,6 +13,7 @@ import {
 } from '../config'
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
+import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
@@ -165,16 +165,13 @@ export class SpaSim {
     return SERVICE_IDS.filter(id => this.services.includes(id) && this.items.some(i => i.kind === SERVICES[id].bed))
   }
 
-  /** A uniform draw among the available services; no draw when there is only one. */
-  private pickService(): ServiceId {
-    const options = this.availableServices()
-    return options.length > 1 ? options[Math.floor(this.rng() * options.length)] : (options[0] ?? 'shampoo')
-  }
-
-  spawnCustomer(opts: { service?: ServiceId } = {}): Customer {
+  /** Draws what it is not given, in this order: look, then kind, then service. */
+  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
-    const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1))
     const look = randomLook(this.rng)
+    const kind = opts.kind ?? drawKind(this.day, this.rng)
+    const service = opts.service ?? drawService(kind, this.availableServices(), this.rng)
+    const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1) * KINDS[kind].patience)
     const c: Customer = {
       id: this.nextId++,
       look,
@@ -189,7 +186,8 @@ export class SpaSim {
       stationId: null,
       mood: null,
       greet: greeter ? greeter.stats.friendly : 0,
-      service: opts.service ?? this.pickService(),
+      service,
+      kind,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -246,13 +244,14 @@ export class SpaSim {
   /** The customer pays, reviews and leaves; `technicianFriendly` is null when the owner did the work. */
   private payFor(c: Customer, station: Station, stars: Stars, technicianFriendly: number | null): void {
     const price = SERVICES[c.service].price
-    const tip = Math.round(tipFor(price, stars) * tipFactor(c.greet, technicianFriendly))
+    const spec = KINDS[c.kind]
+    const tip = Math.round(tipFor(price, stars) * spec.tip[stars - 1] * tipFactor(c.greet, technicianFriendly))
     this.money += price + tip
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
-    this.addReview(c.id, reviewScore(stars))
+    this.addReview(c, reviewScore(stars, spec.grading))
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null
     c.stationId = null
@@ -450,7 +449,7 @@ export class SpaSim {
   private repickLostServices(): void {
     const available = this.availableServices()
     for (const c of this.customers)
-      if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service)) c.service = this.pickService()
+      if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service)) c.service = drawService(c.kind, available, this.rng)
   }
 
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
@@ -562,7 +561,7 @@ export class SpaSim {
         if (c.stateMs >= ARRIVE_MS) this.seatCustomer(c)
         break
       case 'toSeat':
-        moveAlong(c, CUSTOMER_SPEED, dt)
+        moveAlong(c, KINDS[c.kind].speed, dt)
         if (c.path.length === 0) this.setState(c, 'waiting')
         break
       case 'waiting':
@@ -570,10 +569,10 @@ export class SpaSim {
         if (c.patienceMs <= 0) this.loseCustomer(c)
         break
       case 'toStation':
-        moveAlong(c, CUSTOMER_SPEED, dt)
+        moveAlong(c, KINDS[c.kind].speed, dt)
         break
       case 'leaving':
-        moveAlong(c, CUSTOMER_SPEED, dt)
+        moveAlong(c, KINDS[c.kind].speed, dt)
         if (c.path.length === 0) this.setState(c, 'exiting')
         break
       case 'exiting':
@@ -649,7 +648,7 @@ export class SpaSim {
   private loseCustomer(c: Customer): void {
     this.freeSeat(c)
     c.mood = 'angry'
-    this.addReview(c.id, ANGRY_REVIEW)
+    this.addReview(c, ANGRY_REVIEW)
     this.stats.angry++
     this.startLeaving(c)
   }
@@ -664,9 +663,12 @@ export class SpaSim {
     this.setState(c, 'leaving')
   }
 
-  private addReview(customerId: number, score: number): void {
-    this.reviews.push(score)
-    this.emit({ type: 'review', customerId, score })
+  /** The customer's review, once or twice by their kind. */
+  private addReview(c: Customer, score: number): void {
+    for (let i = 0; i < KINDS[c.kind].reviews; i++) {
+      this.reviews.push(score)
+      this.emit({ type: 'review', customerId: c.id, score })
+    }
   }
 
   private setState(c: Customer, state: CustomerState): void {

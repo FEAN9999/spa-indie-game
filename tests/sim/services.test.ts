@@ -21,7 +21,7 @@ const withMask = () => {
 }
 
 const waitingFor = (sim: SpaSim, service: 'shampoo' | 'mask' | 'massage') => {
-  const c = sim.spawnCustomer({ service })
+  const c = sim.spawnCustomer({ kind: 'office', service })
   advanceUntil(sim, () => c.state === 'waiting')
   return c
 }

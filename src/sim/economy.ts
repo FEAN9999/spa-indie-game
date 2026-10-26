@@ -1,4 +1,6 @@
-import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, SERVICE_ARRIVAL_STEP, TIP_RATE } from '../config'
+import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_BY_GRADING, SERVICE_ARRIVAL_STEP, TIP_RATE } from '../config'
+
+import type { Grading } from './customers'
 
 export type Stars = 1 | 2 | 3
 
@@ -6,8 +8,8 @@ export function tipFor(price: number, stars: Stars): number {
   return Math.round(price * TIP_RATE[stars])
 }
 
-export function reviewScore(stars: Stars): number {
-  return REVIEW_FOR_STARS[stars]
+export function reviewScore(stars: Stars, grading: Grading = 'normal'): number {
+  return REVIEW_BY_GRADING[grading][stars]
 }
 
 /** Mean of the most recent reviews, one decimal; null before the first review. */

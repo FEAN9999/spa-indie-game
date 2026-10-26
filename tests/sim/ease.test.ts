@@ -4,14 +4,14 @@ import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 
 describe('easier first days', () => {
-  it('gives customers more patience on the first three days, starting full', () => {
+  it('gives office workers more patience on the first three days, starting full', () => {
     const on = (day: number) => {
       const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
       sim.day = day
-      const c = sim.spawnCustomer()
+      const c = sim.spawnCustomer({ kind: 'office', service: 'shampoo' })
       return [c.patienceMaxMs, c.patienceMs]
     }
-    expect([1, 2, 3, 4, 9].map(on)).toEqual([[96_000, 96_000], [84_000, 84_000], [72_000, 72_000], [60_000, 60_000], [60_000, 60_000]])
+    expect([1, 2, 3, 4, 9].map(on)).toEqual([[76_800, 76_800], [67_200, 67_200], [57_600, 57_600], [48_000, 48_000], [48_000, 48_000]])
   })
 
   it('gives the mini-game 10 extra seconds on days 1 and 2 and 5 on day 3', () =>

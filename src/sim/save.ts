@@ -1,5 +1,6 @@
 import { LOOK_COUNTS, PATIENCE_MS } from '../config'
 import { t } from '../strings/vi'
+import { CUSTOMER_KINDS } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { SERVICE_IDS, type ServiceId } from './services'
@@ -122,6 +123,8 @@ export function parseSave(raw: unknown): SaveData {
   const known = Array.isArray(data.services) ? data.services : []
   data.services = SERVICE_IDS.filter(id => id === 'shampoo' || known.includes(id))
   data.customers = data.customers.map(c => ({ ...c, service: SERVICE_IDS.includes(c.service) ? c.service : 'shampoo' }))
+  // every kind of customer is known; a missing or unknown one is an office worker
+  data.customers = data.customers.map(c => ({ ...c, kind: CUSTOMER_KINDS.includes(c.kind) ? c.kind : 'office' }))
   // damaged staff data is repaired, never a reason to lose the shop
   data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
   data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))

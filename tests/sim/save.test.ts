@@ -417,3 +417,28 @@ describe('save version 5', () => {
     expect(d.customers.every(c => c.service === 'shampoo')).toBe(true)
   })
 })
+
+describe('customer kinds in saves', () => {
+  it('keeps the kind of each customer through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const c = sim.spawnCustomer({ kind: 'celeb', service: 'shampoo' })
+    expect(viaJson(sim).customers.find(x => x.id === c.id)!.kind).toBe('celeb')
+  })
+
+  it('turns a missing or unknown kind into an office worker', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    expect(good.customers.length).toBeGreaterThan(0)
+    for (const kind of [undefined, 'x', 7, null]) {
+      const d = parseSave({ ...good, customers: good.customers.map((c: object) => ({ ...c, kind })) })
+      expect(d.customers.every(c => c.kind === 'office')).toBe(true)
+    }
+  })
+
+  it('opens every customer of versions 1 to 4 as an office worker', () => {
+    for (const raw of [v1, v2, v3, v4]) {
+      const customers = parseSave(structuredClone(raw)).customers
+      expect(customers.length).toBeGreaterThan(0)
+      expect(customers.every(c => c.kind === 'office')).toBe(true)
+    }
+  })
+})

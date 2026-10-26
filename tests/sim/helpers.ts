@@ -12,14 +12,19 @@ export function advanceUntil(sim: SpaSim, pred: () => boolean, maxMs = 120_000, 
   throw new Error('condition not reached')
 }
 
-export const seatAndWait = (sim: SpaSim): Customer => {
-  const c = sim.spawnCustomer()
+type SpawnOptions = NonNullable<Parameters<SpaSim['spawnCustomer']>[0]>
+
+/** What the helpers spawn unless told otherwise, so the tests keep one known kind and service. */
+const KNOWN: SpawnOptions = { kind: 'office', service: 'shampoo' }
+
+export const seatAndWait = (sim: SpaSim, opts: SpawnOptions = KNOWN): Customer => {
+  const c = sim.spawnCustomer(opts)
   advanceUntil(sim, () => c.state === 'waiting')
   return c
 }
 
-export const startService = (sim: SpaSim): Customer => {
-  const c = seatAndWait(sim)
+export const startService = (sim: SpaSim, opts: SpawnOptions = KNOWN): Customer => {
+  const c = seatAndWait(sim, opts)
   sim.tapTile(c.seat!)
   advanceUntil(sim, () => c.state === 'inService')
   return c
