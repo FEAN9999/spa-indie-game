@@ -170,6 +170,11 @@ export const vi = {
   hintServices: 'Mở thêm dịch vụ mới ở đây',
   maskPaint: 'Tô mặt nạ kín khuôn mặt, tránh vùng mắt',
   maskCucumber: 'Kéo hai lát dưa leo đặt lên mắt',
+  massageTap: 'Chạm vào điểm sáng khi vòng khép lại',
+  massageHold: 'Giữ ngón tay trên huyệt cho tới khi vòng đầy',
+  massagePerfect: 'Tuyệt!',
+  massageGood: 'Tốt',
+  massageMiss: 'Trượt',
 } as const
 
 export type StringKey = keyof typeof vi

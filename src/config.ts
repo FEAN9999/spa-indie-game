@@ -58,6 +58,43 @@ export const MASK_SNAP_R = 0.25
 /** This many eye errors cost a star. */
 export const MASK_ERRORS_FOR_PENALTY = 3
 
+// Massage mini-game, in back units: the back is [−1, 1]², from the shoulders at y −1 to the waist at y 1. Points show one after another.
+/** Shoulders, the blades either side of the spine, mid back and lower back. */
+export const MASSAGE_POINTS: readonly { x: number; y: number }[] = [
+  { x: -0.6, y: -0.65 },
+  { x: 0.6, y: -0.65 },
+  { x: 0, y: -0.65 },
+  { x: -0.3, y: -0.2 },
+  { x: -0.6, y: 0.25 },
+  { x: 0, y: 0.25 },
+  { x: 0.6, y: 0.25 },
+  { x: 0.3, y: -0.2 },
+  { x: -0.3, y: 0.7 },
+  { x: 0.3, y: 0.7 },
+]
+/** The pressure points, held until their ring fills; every other point is tapped. */
+export const MASSAGE_HOLD_INDICES: readonly number[] = [3, 7]
+/** A tap point's ring shrinks this long; it closes at the end. */
+export const RING_MS = 1400
+export const RING_MS_HARD = 1000
+/** A tap this close to the ring closing is perfect, and this close good. */
+export const MASSAGE_PERFECT_MS = 150
+export const MASSAGE_PERFECT_MS_HARD = 100
+export const MASSAGE_GOOD_MS = 350
+export const MASSAGE_GOOD_MS_HARD = 220
+/** A press this close to the point is on it. */
+export const MASSAGE_HIT_R = 0.25
+/** A hold point fills after this much holding, and is missed if still unfilled this long after it shows. */
+export const MASSAGE_HOLD_MS = 1500
+export const MASSAGE_HOLD_LIMIT_MS = 4000
+/** The next point shows this long after the last is judged. */
+export const MASSAGE_GAP_MS = 400
+export const MASSAGE_GAP_MS_HARD = 250
+export const MASSAGE_SCORE = { perfect: 2, good: 1, miss: 0 } as const
+/** The scores, out of 20, for 3 and 2 stars. */
+export const MASSAGE_STAR3_SCORE = 16
+export const MASSAGE_STAR2_SCORE = 10
+
 // Shop simulation
 export const STARTING_MONEY = 100000
 export const FIRST_ARRIVAL_MS = 3000

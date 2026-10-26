@@ -52,10 +52,10 @@ const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
 /** The bottom of the service badge, just above the patience bar. */
 const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
-/** The close-up each service is played in; massage plays the shampoo game until its own is made. */
-const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'ShampooScene' }
+/** The close-up each service is played in. */
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
-const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoShampoo' }
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage' }
 
 interface CustomerSprite {
   view: CharacterView

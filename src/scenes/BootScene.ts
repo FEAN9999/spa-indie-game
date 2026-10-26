@@ -3,6 +3,7 @@ import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { furnitureTextures } from '../art/furniture'
 import { maskTextures } from '../art/maskArt'
+import { massageTextures } from '../art/massageArt'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { loadSvgTextures } from '../art/svg'
@@ -29,6 +30,7 @@ export class BootScene extends Phaser.Scene {
       ...fxTextures(),
       ...shampooTextures(),
       ...maskTextures(),
+      ...massageTextures(),
     })
     this.scene.start('SpaScene')
   }
