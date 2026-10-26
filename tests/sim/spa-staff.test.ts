@@ -85,7 +85,7 @@ describe('technicians at work', () => {
     expect(b.state).toBe('waiting')
     expect(sim.servingCustomerId).toBeNull()
     let ms = 0
-    while (!ev.some(e => e.type === 'paid')) {
+    while (!ev.some(e => e.type === 'paid') && ms < 120_000) {
       sim.advance(100)
       ms += 100
       ev.push(...sim.drainEvents())
@@ -159,7 +159,7 @@ describe('technicians at work', () => {
     advanceUntil(sim, () => a.state === 'inService')
     sim.drainEvents()
     let ms = 0
-    while (!sim.drainEvents().some(e => e.type === 'paid')) {
+    while (!sim.drainEvents().some(e => e.type === 'paid') && ms < 120_000) {
       sim.advance(100)
       ms += 100
     }

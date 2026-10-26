@@ -1,9 +1,9 @@
-import { PATIENCE_MS } from '../config'
+import { LOOK_COUNTS, PATIENCE_MS } from '../config'
 import { t } from '../strings/vi'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
-import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff } from './staff'
-import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type HintId, type Look, type Owner } from './types'
+import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } from './staff'
+import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
 export const SAVE_VERSION = 4
@@ -108,9 +108,35 @@ function withNoStaff(old: object): SaveData {
 export function parseSave(raw: unknown): SaveData {
   const data = parseVersioned(raw)
   // customers saved before the receptionist existed were never greeted
-  data.customers = data.customers.map(c => ({ ...c, greet: c.greet ?? 0 }))
+  data.customers = data.customers.map(c => ({ ...c, greet: isNumber(c.greet) ? c.greet : 0 }))
+  // damaged staff data is repaired, never a reason to lose the shop
+  data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
+  data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))
   return data
 }
+
+/** Each look field in range, or 0. */
+function repairLook(x: unknown): Look {
+  const look = isObject(x) ? x : {}
+  const field = (k: keyof typeof LOOK_COUNTS): number => (Number.isInteger(look[k]) && (look[k] as number) >= 0 && (look[k] as number) < LOOK_COUNTS[k] ? (look[k] as number) : 0)
+  return { skin: field('skin'), hair: field('hair'), hairStyle: field('hairStyle'), shirt: field('shirt') }
+}
+
+/** A well-formed task, or none. */
+function repairTask(x: unknown): StaffTask | null {
+  if (!isObject(x)) return null
+  if (x.kind === 'exit') return { kind: 'exit' }
+  if (x.kind === 'rest' && isNumber(x.leftMs)) return { kind: 'rest', leftMs: x.leftMs }
+  if (x.kind === 'fetch' && isNumber(x.customerId)) return { kind: 'fetch', customerId: x.customerId }
+  if (x.kind === 'serve' && isNumber(x.customerId) && isNumber(x.stationId) && isNumber(x.leftMs) && isNumber(x.totalMs))
+    return { kind: 'serve', customerId: x.customerId, stationId: x.stationId, leftMs: x.leftMs, totalMs: x.totalMs }
+  return null
+}
+
+/** A list of whole tiles, or an empty one. */
+const repairPath = (x: unknown): Tile[] => (Array.isArray(x) && x.every(t => isObject(t) && Number.isInteger(t.x) && Number.isInteger(t.y)) ? (x as Tile[]) : [])
+
+const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x === 'right' ? x : 'down')
 
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')

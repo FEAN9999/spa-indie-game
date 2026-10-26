@@ -84,7 +84,7 @@ export class StaffScene extends Phaser.Scene {
 
   init(data: StaffData) {
     this.params = data
-    this.tab = 'working'
+    this.tab = data.sim.staff.length === 0 ? 'hiring' : 'working'
     this.shown = []
     this.toastBox = null
   }
@@ -183,7 +183,7 @@ export class StaffScene extends Phaser.Scene {
 
     STAT_KEYS.forEach((k, i) => {
       const cx = ROW_LEFT + STAT_W * i + STAT_W / 2
-      this.keep(this.add.text(cx, y0 + 215, t(STAT[k]), textStyle(26, '600')).setOrigin(0.5))
+      this.keep(this.add.text(cx, y0 + 215, t(STAT[k]), textStyle(30, '600')).setOrigin(0.5))
       const dots = this.keep(this.add.graphics()).lineStyle(3, hex(C.ink))
       for (let d = 0; d < 5; d++) {
         const x = cx + (d - 2) * DOT_STEP

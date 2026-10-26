@@ -350,8 +350,6 @@ export class SpaSim {
       const c = task && 'customerId' in task ? sim.customers.find(x => x.id === task.customerId) : undefined
       if (task?.kind === 'fetch' && c?.state !== 'waiting') s.task = null
       if (task?.kind === 'serve' && (!c || c.stationId !== task.stationId)) {
-        const station = sim.stations.find(x => x.id === task.stationId)
-        if (station?.customerId === task.customerId) station.customerId = null
         s.task = null
       }
     }

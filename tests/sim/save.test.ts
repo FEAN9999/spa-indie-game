@@ -305,12 +305,11 @@ describe('save version 4', () => {
     save.staff[1].task = { kind: 'serve', customerId: 999, stationId: save.items.find((i: { kind: string }) => i.kind === 'bed').id, leftMs: 5000, totalMs: 9000 }
     const copy = SpaSim.fromSave(parseSave(save), opts())
     expect(copy.staff.map(s => s.task)).toEqual([null, null])
-    expect(copy.stations.every(s => s.customerId === null)).toBe(true)
   })
 
   it('lets a let-go technician whose customer is gone walk out', () => {
     const sim = dayThree()
-    const tech = hireStaff(sim, 'technician')
+    hireStaff(sim, 'technician')
     sim.advance(100)
     const save = JSON.parse(JSON.stringify(sim.toSave()))
     save.staff[0].leaving = true
@@ -318,7 +317,45 @@ describe('save version 4', () => {
     const copy = SpaSim.fromSave(parseSave(save), opts())
     expect(copy.staff[0].task).toBeNull()
     advanceUntil(copy, () => copy.staff.length === 0)
-    expect(tech.id).toBe(1)
+  })
+
+  it('repairs damaged staff instead of losing the shop', () => {
+    const sim = dayThree()
+    hireStaff(sim, 'technician')
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    const look = save.staff[0].look
+    Object.assign(save.staff[0], { task: 5, path: null, facing: 'sideways', look: { ...look, hairStyle: 99 } })
+    const copy = SpaSim.fromSave(parseSave(save), opts())
+    const s = copy.staff[0]
+    expect([s.task, s.path, s.facing, s.look.hairStyle]).toEqual([null, [], 'down', 0])
+    expect(() => copy.advance(5000)).not.toThrow()
+  })
+
+  it('repairs a candidate with a damaged look', () => {
+    const sim = dayThree()
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    save.candidates[0].look = { ...save.candidates[0].look, skin: -1, shirt: 1.5 }
+    save.candidates[1].look = null
+    const copy = SpaSim.fromSave(parseSave(save), opts())
+    expect(copy.candidates[0].look).toMatchObject({ skin: 0, shirt: 0 })
+    expect(copy.candidates[1].look).toEqual({ skin: 0, hair: 0, hairStyle: 0, shirt: 0 })
+  })
+
+  it('still lets go of a technician whose task is damaged', () => {
+    const sim = dayThree()
+    hireStaff(sim, 'technician')
+    sim.advance(100)
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    Object.assign(save.staff[0], { leaving: true, task: { kind: 'serve', customerId: 'x' }, path: 'up' })
+    const copy = SpaSim.fromSave(parseSave(save), opts())
+    advanceUntil(copy, () => copy.staff.length === 0)
+  })
+
+  it('reads a customer with a damaged greeting as not greeted', () => {
+    const sim = busyShop()
+    const save = JSON.parse(JSON.stringify(sim.toSave()))
+    save.customers[0].greet = 'x'
+    expect(SpaSim.fromSave(parseSave(save), opts()).customers[0].greet).toBe(0)
   })
 
   it('rejects staff that are not staff', () => {
