@@ -51,3 +51,10 @@ export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json 
 
 /** The day each feature button opens. */
 export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5 } as const
+
+/** Gentler first days: more patience, more mini-game time, fewer customers on day 1. */
+export const DAY_EASE = [
+  { patience: 1.6, miniGameExtraMs: 10_000, arrival: 1.3 },
+  { patience: 1.4, miniGameExtraMs: 10_000, arrival: 1 },
+  { patience: 1.2, miniGameExtraMs: 5_000, arrival: 1 },
+] as const

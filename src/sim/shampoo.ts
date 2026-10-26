@@ -11,7 +11,12 @@ export class ShampooGame {
   phase: ShampooPhase = 'foam'
   elapsedMs = 0
   private amount = 0
+  readonly limitMs: number
   private finalStars: Stars | null = null
+
+  constructor(private readonly extraMs = 0) {
+    this.limitMs = SHAMPOO_TIME_LIMIT_MS + extraMs
+  }
 
   swipe(hairWidths: number, onHair: boolean): void {
     if ((this.phase === 'foam' || this.phase === 'dry') && onHair) this.add(hairWidths)
@@ -24,7 +29,7 @@ export class ShampooGame {
   tick(ms: number): void {
     if (this.phase === 'done') return
     this.elapsedMs += ms
-    if (this.elapsedMs >= SHAMPOO_TIME_LIMIT_MS) this.finish(1)
+    if (this.elapsedMs >= this.limitMs) this.finish(1)
   }
 
   progress(): number {
@@ -42,7 +47,7 @@ export class ShampooGame {
     if (this.amount < GOAL[this.phase]) return
     this.amount = 0
     this.phase = NEXT[this.phase]
-    if (this.phase === 'done') this.finish(this.elapsedMs <= STAR3_MS ? 3 : this.elapsedMs <= STAR2_MS ? 2 : 1)
+    if (this.phase === 'done') this.finish(this.elapsedMs <= STAR3_MS + this.extraMs ? 3 : this.elapsedMs <= STAR2_MS + this.extraMs ? 2 : 1)
   }
 
   private finish(stars: Stars): void {

@@ -1,4 +1,4 @@
-import { RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
+import { DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
 
 export type Stars = 1 | 2 | 3
 
@@ -21,4 +21,14 @@ export function rating(reviews: number[]): number | null {
 export function arrivalIntervalMs(r: number | null): number {
   const seconds = 40 - ((r ?? 3) - 3) * 6
   return Math.min(50, Math.max(25, seconds)) * 1000
+}
+
+export interface DayEase {
+  patience: number
+  miniGameExtraMs: number
+  arrival: number
+}
+
+export function dayEase(day: number): DayEase {
+  return DAY_EASE[day - 1] ?? { patience: 1, miniGameExtraMs: 0, arrival: 1 }
 }

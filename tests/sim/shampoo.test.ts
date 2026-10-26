@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { ShampooGame } from '../../src/sim/shampoo'
 
-const finishAt = (ms: number) => {
-  const g = new ShampooGame()
+const finishAt = (ms: number, extraMs = 0) => {
+  const g = new ShampooGame(extraMs)
   g.tick(ms)
   g.swipe(6, true)
   g.hold(2500, true)
@@ -44,5 +44,16 @@ describe('ShampooGame', () => {
     expect(g.stars()).toBe(1)
     g.swipe(10, true)
     expect(g.phase).toBe('done')
+  })
+
+  it('moves the time limit and the star marks by the extra time', () => {
+    const g = new ShampooGame(10_000)
+    expect(g.limitMs).toBe(35_000)
+    g.tick(34_000)
+    expect(g.phase).toBe('foam')
+    g.tick(1_000)
+    expect(g.stars()).toBe(1)
+    expect(finishAt(24_000, 10_000).stars()).toBe(3)
+    expect(finishAt(31_000, 10_000).stars()).toBe(2)
   })
 })

@@ -16,7 +16,7 @@ import {
 } from '../config'
 import { t } from '../strings/vi'
 import { DayClock } from './clock'
-import { arrivalIntervalMs, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
+import { arrivalIntervalMs, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
 import { isBedSlot, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
@@ -123,6 +123,7 @@ export class SpaSim {
   }
 
   spawnCustomer(): Customer {
+    const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience)
     const c: Customer = {
       id: this.nextId++,
       look: randomLook(this.rng),
@@ -131,8 +132,8 @@ export class SpaSim {
       pos: { ...this.grid.door },
       facing: 'up',
       path: [],
-      patienceMs: PATIENCE_MS,
-      patienceMaxMs: PATIENCE_MS,
+      patienceMs: patience,
+      patienceMaxMs: patience,
       seat: null,
       stationId: null,
       mood: null,
@@ -276,7 +277,7 @@ export class SpaSim {
       if (this.untilArrivalMs <= 0) {
         this.spawnCustomer()
         const [lo, hi] = ARRIVAL_JITTER
-        this.untilArrivalMs = arrivalIntervalMs(this.rating()) * (lo + (hi - lo) * this.rng())
+        this.untilArrivalMs = arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * (lo + (hi - lo) * this.rng())
       }
     }
 
