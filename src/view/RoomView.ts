@@ -78,6 +78,15 @@ export class RoomView {
     }
   }
 
+  /** The item whose picture covers the point, the one drawn in front where several do; null when none does. */
+  itemAt(x: number, y: number): number | null {
+    let front: { id: number; depth: number } | null = null
+    for (const [id, s] of this.items) {
+      if (s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
+    }
+    return front?.id ?? null
+  }
+
   private addItem(item: Item): ItemSprite {
     const add = this.scene.add
     const body = add.image(0, 0, itemTexture(item.kind)).setOrigin(0.5, 1)

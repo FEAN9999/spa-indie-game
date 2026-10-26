@@ -36,6 +36,8 @@ const MID = GAME_W / 2
 /** New pieces start on the free spot nearest the middle of the shop. */
 const CENTRE: Tile = { x: 6, y: 9 }
 const TAP_SLOP_PX = 20
+/** The catalogue or the hold row that just took the other's place ignores presses this long, so the second tap of a double tap cannot land on it. */
+const SETTLE_MS = 300
 const GHOST_LIFT_PX = 16
 const GHOST_ALPHA = 0.9
 const TINT_ALPHA = 0.35
@@ -58,6 +60,8 @@ const CARD_BOTTOM = 2144
 const CARD_W = 211
 const CARD_STEP = 223
 const CARD_PAD = 14
+/** However many lines a card's words take, its picture keeps this much height, so it is never flattened or flipped. */
+const PIC_MIN_H = 32
 const ARROW_W = 64
 const ARROW_H = 130
 // while a piece is held the panel shrinks to one row of buttons
@@ -94,8 +98,12 @@ export class BuildScene extends Phaser.Scene {
   private tab: ItemGroup = 'bed'
   private page = 0
   private held: Held | null = null
-  /** Where the finger went down above the panel, and the held piece's tile then, if one was held. */
-  private drag: { x: number; y: number; from: Tile | null } | null = null
+  /** Where the finger went down above the panel and the held piece's tile then; `pick` while nothing is held and the press may still pick something up. */
+  private drag: { x: number; y: number; from: Tile | null; pick: boolean } | null = null
+  /** When the finger last went down, on the page's clock: the game's only moves on each frame. */
+  private pressAt = 0
+  /** Panel presses count from this time on; see SETTLE_MS. */
+  private readyAt = 0
   /** Everything drawn for the panel on screen, destroyed when the panel changes. */
   private shown: Phaser.GameObjects.GameObject[] = []
   private ghost: Phaser.GameObjects.Image | null = null
@@ -112,6 +120,8 @@ export class BuildScene extends Phaser.Scene {
     this.page = 0
     this.held = null
     this.drag = null
+    this.pressAt = 0
+    this.readyAt = 0
     this.shown = []
     this.ghost = null
     this.toastBox = null
@@ -156,9 +166,14 @@ export class BuildScene extends Phaser.Scene {
     this.shown = []
   }
 
-  /** A panel button that ignores a finger let go on it at the end of a drag. */
+  /** A panel button that ignores a finger let go on it at the end of a drag, or pressed just after the panel changed. */
   private button(x: number, y: number, w: number, h: number, label: string, kind: 'primary' | 'plain', onTap: () => void, size?: number): void {
-    this.keep(addButton(this, x, y, w, h, label, kind, () => this.drag === null && onTap(), size))
+    this.keep(addButton(this, x, y, w, h, label, kind, () => this.panelTap() && onTap(), size))
+  }
+
+  /** The press began on the panel, not above it, and after the panel settled. */
+  private panelTap(): boolean {
+    return this.drag === null && this.pressAt >= this.readyAt
   }
 
   /** The tabs, the shop's beauty and sets, a page of cards and "Xong". */
@@ -215,12 +230,12 @@ export class BuildScene extends Phaser.Scene {
       line.setOrigin(0.5, 1).setY(y)
       y -= line.height
     }
-    const picH = y - top - CARD_PAD
+    const picH = Math.max(PIC_MIN_H, y - top - CARD_PAD)
     const pic = this.add.image(x, top + CARD_PAD + picH / 2, itemTexture(kind))
     pic.setScale(Math.min(1, (CARD_W - 2 * CARD_PAD) / pic.width, picH / pic.height))
     box.add([pic, ...lines])
     this.keep(box.setAlpha(short > 0 ? FADED_ALPHA : 1))
-    this.keep(this.add.zone(x, (top + CARD_BOTTOM) / 2, CARD_W, CARD_BOTTOM - top).setInteractive()).on('pointerup', () => this.drag === null && this.takeNew(kind))
+    this.keep(this.add.zone(x, (top + CARD_BOTTOM) / 2, CARD_W, CARD_BOTTOM - top).setInteractive()).on('pointerup', () => this.panelTap() && this.takeNew(kind))
   }
 
   private openTab(group: ItemGroup): void {
@@ -246,10 +261,13 @@ export class BuildScene extends Phaser.Scene {
     this.hold({ item: { id: 0, kind, ...spot, flip: false }, buying: true })
   }
 
-  /** A tap on the floor: picks up the item standing there, unless a customer is using it. */
-  private pickUp(tile: Tile): void {
+  /** A tap or a drag on the floor: picks up the item standing there, or else the one drawn over the point, unless a customer is using it. */
+  private pickUp(x: number, y: number): void {
     const { sim, room } = this.params
-    const item = sim.items.find(i => footprint(i).some(f => tileEq(f, tile)))
+    const tile = room.worldToTile(x, y)
+    // the top of a tall piece covers the tile behind it
+    const drawn = room.itemAt(x, y)
+    const item = sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) ?? sim.items.find(i => i.id === drawn)
     if (!item) return
     if (sim.isBusy(item.id)) {
       this.toast(t(PROBLEM_TEXT.busy))
@@ -263,6 +281,7 @@ export class BuildScene extends Phaser.Scene {
     this.held = held
     this.ghost = this.add.image(0, 0, itemTexture(held.item.kind)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(2)
     this.drawGhost()
+    this.readyAt = performance.now() + SETTLE_MS
     this.showHoldRow()
   }
 
@@ -336,6 +355,7 @@ export class BuildScene extends Phaser.Scene {
     this.ghost = null
     this.tint.clear()
     this.params.room.hide(null)
+    this.readyAt = performance.now() + SETTLE_MS
     this.showCatalog()
   }
 
@@ -354,14 +374,27 @@ export class BuildScene extends Phaser.Scene {
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
+    this.pressAt = performance.now()
     const held = this.held?.item
-    this.drag = p.y < this.panelTop() ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null } : null
+    this.drag = p.y < this.panelTop() ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
   }
 
-  /** The held piece moves by whole tiles as far as the finger has gone since it went down, and stays on the grid. */
+  /**
+   * The held piece moves by whole tiles as far as the finger has gone since it went down, and stays on the grid.
+   * With nothing held, a drag that starts on an item picks it up and carries it in the same gesture.
+   */
   private onMove(p: Phaser.Input.Pointer): void {
-    const { drag, held } = this
-    if (!p.isDown || !drag?.from || !held) return
+    const { drag } = this
+    if (!p.isDown || !drag) return
+    if (drag.pick) {
+      if (Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) <= TAP_SLOP_PX) return
+      drag.pick = false
+      this.pickUp(drag.x, drag.y)
+      const picked = this.held?.item
+      if (picked) drag.from = { x: picked.x, y: picked.y }
+    }
+    const { held } = this
+    if (!drag.from || !held) return
     const { w, h } = ITEMS[held.item.kind]
     const { cols, rows } = this.params.sim.grid
     const x = Phaser.Math.Clamp(drag.from.x + Math.round((p.x - drag.x) / TILE), 0, cols - w)
@@ -376,8 +409,8 @@ export class BuildScene extends Phaser.Scene {
   private onUp(p: Phaser.Input.Pointer): void {
     const drag = this.drag
     this.drag = null
-    if (!drag || this.held || Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) > TAP_SLOP_PX) return
-    this.pickUp(this.params.room.worldToTile(p.x, p.y))
+    if (!drag?.pick || Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) > TAP_SLOP_PX) return
+    this.pickUp(p.x, p.y)
   }
 
   private close(): void {
