@@ -28,6 +28,24 @@ describe('save slots', () => {
     expect([mem.getItem('spa.slot.2.broken'), mem.getItem('spa.slot.2')]).toEqual(['{oops', null])
   })
 
+  it('keeps a save in its slot when it cannot be set aside', () => {
+    const mem = new MemStorage()
+    const full = {
+      getItem: (k: string) => mem.getItem(k),
+      setItem: (k: string, v: string) => {
+        if (k.endsWith('.broken')) throw new Error('full')
+        mem.setItem(k, v)
+      },
+      removeItem: (k: string) => mem.removeItem(k),
+    }
+    mem.setItem('spa.slot.2', '{oops')
+    const s = new SaveStore(full)
+    expect(s.load(2)).toBeNull()
+    expect([mem.getItem('spa.slot.2'), mem.getItem('spa.slot.2.broken')]).toEqual(['{oops', null])
+    s.setAside(2)
+    expect([mem.getItem('spa.slot.2'), mem.getItem('spa.slot.2.broken')]).toEqual(['{oops', null])
+  })
+
   it('never moves aside or reads a save from a newer version', () => {
     const mem = new MemStorage()
     const raw = JSON.stringify({ ...shop(1), v: 99 })

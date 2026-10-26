@@ -42,12 +42,11 @@ export class SaveStore {
     }
   }
 
-  /** Moves the slot's save to `.broken`, leaving the slot empty. */
+  /** Moves the slot's save to `.broken`, leaving the slot empty; when `.broken` cannot be written, the save stays in the slot. */
   setAside(slot: SlotId): void {
     const raw = this.read(slotKey(slot))
     if (raw === null) return
-    this.write(`${slotKey(slot)}.broken`, raw)
-    this.remove(slotKey(slot))
+    if (this.write(`${slotKey(slot)}.broken`, raw)) this.remove(slotKey(slot))
   }
 
   save(slot: SlotId, data: SaveData): boolean {
