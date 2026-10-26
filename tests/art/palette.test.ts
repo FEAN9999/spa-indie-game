@@ -1,0 +1,20 @@
+import { describe, expect, it } from 'vitest'
+import { HAIR, OWNER_SHIRT, ownerColors, SHIRT, SKIN } from '../../src/art/palette'
+import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
+
+describe('look palettes', () => {
+  it('has a color for every look choice', () => {
+    expect([SKIN.length, HAIR.length, SHIRT.length]).toEqual([LOOK_COUNTS.skin, LOOK_COUNTS.hair, LOOK_COUNTS.shirt])
+    expect([SKIN.length, HAIR.length, OWNER_SHIRT.length]).toEqual([OWNER_LOOK_COUNTS.skin, OWNER_LOOK_COUNTS.hair, OWNER_LOOK_COUNTS.shirt])
+    expect([LOOK_COUNTS.hairStyle, OWNER_LOOK_COUNTS.hairStyle]).toEqual([4, 4])
+  })
+
+  it('never dresses a customer like the owner', () => {
+    const rgb = (c: number) => [c >> 16, (c >> 8) & 255, c & 255]
+    for (const o of OWNER_SHIRT)
+      for (const s of SHIRT) expect(Math.hypot(...rgb(o).map((v, i) => v - rgb(s)[i]))).toBeGreaterThan(50)
+  })
+
+  it('turns an owner look into colors', () =>
+    expect(ownerColors({ skin: 3, hair: 1, hairStyle: 2, shirt: 2 })).toEqual({ skin: SKIN[3], hair: HAIR[1], hairStyle: 2, shirt: 0xa8302a }))
+})

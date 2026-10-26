@@ -75,5 +75,29 @@ export function fxTextures(): Record<string, string> {
       `<g fill="none" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">` +
         `<path d="M24,26 H19 Q15,26 15,30 V52 Q15,56 19,56 H45 Q49,56 49,52 V30 Q49,26 45,26 H40"/><path d="M32,40 V7 M23,16 L32,7 L41,16"/></g>`,
     ),
+    // the guide's hand: points down with the index finger, fingertip at the bottom centre
+    hand: svgDoc(
+      [0, 0, 100, 130],
+      1,
+      `<ellipse cx="86" cy="50" rx="9" ry="15" transform="rotate(-25 86 50)" fill="${C.cream}" ${OUTLINE}/>` +
+        `<rect x="16" y="20" width="68" height="58" rx="16" fill="${C.cream}" ${OUTLINE}/>` +
+        `<circle cx="27" cy="76" r="10" fill="${C.cream}" ${OUTLINE}/><circle cx="73" cy="76" r="10" fill="${C.cream}" ${OUTLINE}/>` +
+        `<rect x="40" y="58" width="20" height="68" rx="10" fill="${C.cream}" ${OUTLINE}/>` +
+        `<rect x="12" y="2" width="76" height="24" rx="8" fill="${C.teal}" ${OUTLINE}/>`,
+    ),
+    'icon-dice': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<rect x="7" y="7" width="50" height="50" rx="12" fill="${C.cream}" ${ICON}/>` +
+        `<g fill="${C.terracotta}"><circle cx="21" cy="21" r="4.5"/><circle cx="43" cy="21" r="4.5"/><circle cx="32" cy="32" r="4.5"/><circle cx="21" cy="43" r="4.5"/><circle cx="43" cy="43" r="4.5"/></g>`,
+    ),
+    'icon-lock': svgDoc(
+      [0, 0, 40, 46],
+      1,
+      `<path d="M10,22 V14 Q10,4 20,4 Q30,4 30,14 V22" fill="none" stroke="${C.ink}" stroke-width="7" stroke-linecap="round"/>` +
+        `<path d="M10,22 V14 Q10,4 20,4 Q30,4 30,14 V22" fill="none" stroke="${C.tileSeam}" stroke-width="3" stroke-linecap="round"/>` +
+        `<rect x="3" y="20" width="34" height="23" rx="6" fill="${C.mustard}" ${ICON}/>` +
+        `<circle cx="20" cy="29.5" r="3.2" fill="${C.ink}"/><rect x="18.6" y="30" width="2.8" height="7" rx="1.2" fill="${C.ink}"/>`,
+    ),
   }
 }

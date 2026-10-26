@@ -70,10 +70,10 @@ const blanket: Part = {
 }
 
 const STRAND = `stroke="${SHADE}" stroke-width="1.1" fill="none" stroke-linecap="round"`
-const hair = (shape: string, strands: string): Part => ({ viewBox: [-14.5, -14, 29, 32], body: `${shape}${strands}` })
+const hair = (shape: string, strands: string, top = -14): Part => ({ viewBox: [-14.5, top, 29, 18 - top], body: `${shape}${strands}` })
 const path = (d: string) => `<path d="${d}" fill="${W}" ${LINE}/>`
 
-// Style 0: short bob. Style 1: long hair.
+// Style 0: short bob. Style 1: long hair. Style 2: short crop. Style 3: bob with a bun.
 const bobDown = 'M-12,0 A12,12 0 0 1 12,0 Q11,-5 6,-5.5 Q3,-2.5 0,-4.5 Q-3,-2.5 -6,-5.5 Q-11,-5 -12,0Z'
 const bobSideLocks = 'M-12,-1 Q-12.6,5 -10,6.5 L-9.4,-1Z M12,-1 Q12.6,5 10,6.5 L9.4,-1Z'
 const bobUp = 'M-12,0 A12,12 0 0 1 12,0 L12,3 Q11,9 5,10 Q0,11 -5,10 Q-11,9 -12,3Z'
@@ -81,6 +81,12 @@ const bobSide = 'M-12,2 A12,12 0 0 1 12,-1 Q9,-5.5 5,-5 Q4,-2 2,-3 Q-1,-1 -2,3 Q
 const longLocks = 'M-12,-1 L-13,13 Q-11,15.6 -8.6,13 L-9,1Z M12,-1 L13,13 Q11,15.6 8.6,13 L9,1Z'
 const longUp = 'M-12,0 A12,12 0 0 1 12,0 L12.6,14 Q6,17 0,16.4 Q-6,17 -12.6,14Z'
 const longSide = 'M-12,2 A12,12 0 0 1 12,-1 Q9,-5.5 5,-5 Q4,-2 2,-3 Q-1,-1 -2,3 Q-2,10 -5,15 Q-10,16.5 -12.6,12Z'
+
+const cropDown = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 Q10.5,-3 7,-4.5 Q2,-2.5 -4,-6.5 Q-9,-5 -11.5,0Z'
+const cropUp = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 L11,2 Q0,5.5 -11,2Z'
+const cropSide = 'M-11.5,1 A11.5,11.5 0 0 1 11.5,-1 Q10,-4 6,-4.5 Q3,-2.5 0,-4 Q-2,-1.5 -4,0 Q-6.5,-1 -8,1.5 L-9.6,5.5 Q-11.5,4 -11.5,1Z'
+const bunDown = '<circle cx="0" cy="-12" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
+const bunSide = '<circle cx="-8.5" cy="-9" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
 
 const strandsFront = `<path d="M-6,-8.5 Q-2,-11 3,-9.8" ${STRAND}/>`
 const strandsBack = `<path d="M-5,-7 Q0,-9 5,-7 M-7,0 Q0,2 7,0" ${STRAND}/>`
@@ -100,6 +106,12 @@ const parts: Record<string, Part> = {
   'hair1-down': hair(path(longLocks) + path(bobDown), strandsFront),
   'hair1-up': hair(path(longUp), strandsBack),
   'hair1-side': hair(path(longSide), strandsFront),
+  'hair2-down': hair(path(cropDown), strandsFront),
+  'hair2-up': hair(path(cropUp), strandsBack),
+  'hair2-side': hair(path(cropSide), strandsFront),
+  'hair3-down': hair(bunDown + path(bobDown) + path(bobSideLocks), strandsFront, -18),
+  'hair3-up': hair(bunDown + path(bobUp), strandsBack, -18),
+  'hair3-side': hair(bunSide + path(bobSide), strandsFront, -18),
 }
 
 /** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. */

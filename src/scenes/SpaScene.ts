@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
-import { C, lookColors, OWNER_COLORS } from '../art/palette'
+import { C, lookColors, ownerColors } from '../art/palette'
 import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
@@ -66,7 +66,7 @@ export class SpaScene extends Phaser.Scene {
     const saved = this.session.load()
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
-    this.owner = new CharacterView(this, OWNER_COLORS)
+    this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.hud = new Hud(this, this.sim, () => this.pause())
     this.input.on('pointerup', this.onTap, this)

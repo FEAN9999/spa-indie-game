@@ -19,9 +19,9 @@ describe('rng', () => {
     const rng = createRng(1)
     for (let i = 0; i < 200; i++) {
       const l = randomLook(rng)
-      expect(l.skin).toBeLessThan(3)
+      expect(l.skin).toBeLessThan(4)
       expect(l.hair).toBeLessThan(5)
-      expect(l.hairStyle).toBeLessThan(2)
+      expect(l.hairStyle).toBeLessThan(4)
       expect(l.shirt).toBeLessThan(5)
     }
   })
