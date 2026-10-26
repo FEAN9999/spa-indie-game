@@ -165,3 +165,14 @@ export function tileEq(a: Tile, b: Tile): boolean {
 export function manhattan(a: Tile, b: Tile): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y)
 }
+
+/** The tile a mover is standing on, or heading for if it is between two. */
+export function tileOf(pos: Vec): Tile {
+  return { x: Math.round(pos.x), y: Math.round(pos.y) }
+}
+
+/** True for a walkable tile one step from the seat: where whoever fetches the seat's customer stands. */
+export const besideSeat =
+  (grid: Grid, seat: Tile) =>
+  (t: Tile): boolean =>
+    isWalkable(grid, t) && manhattan(t, seat) === 1

@@ -74,6 +74,21 @@ const dayThree = () => {
 /** Spawns a customer and waits until they sit; the next one is spawned only after this returns. */
 const seated = (sim: SpaSim, n: number): Customer[] => Array.from({ length: n }, () => seatAndWait(sim))
 
+describe('hire problems', () => {
+  it('tells why a candidate cannot be hired without hiring them', () => {
+    const sim = newSim()
+    sim.startDay()
+    sim.startDay()
+    expect(sim.hireProblem(0)).toBeNull()
+    for (let i = 0; i < 3; i++) hireStaff(sim, 'technician')
+    sim.candidates.push({ ...sim.staff[0], name: 'Extra' })
+    expect(sim.hireProblem(sim.candidates.length - 1)).toBe('full')
+    sim.money = -1
+    expect(sim.hireProblem(0)).toBe('money')
+    expect(sim.staff).toHaveLength(3)
+  })
+})
+
 describe('technicians at work', () => {
   it('walks in and serves the customer who has waited longest', () => {
     const sim = dayThree()
@@ -132,6 +147,26 @@ describe('technicians at work', () => {
     expect(sim.owner.task).toEqual({ kind: 'fetch', customerId: a.id })
     expect(tech.task).toBeNull()
     expect(tech.path).toEqual([])
+  })
+
+  it('gives the owner the last free bed when a technician is on the way to someone else', () => {
+    const sim = dayThree()
+    sim.money = 2_000_000
+    expect(sim.buy('bed', 6, 2, false)).toBeNull()
+    const free = sim.stations[2]
+    for (const s of sim.stations) if (s !== free) s.customerId = 999
+    const [a, b] = seated(sim, 2)
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.task?.kind === 'fetch')
+    expect(tech.task).toEqual({ kind: 'fetch', customerId: a.id })
+    sim.drainEvents()
+    sim.tapTile(b.seat!)
+    expect(sim.owner.task).toEqual({ kind: 'fetch', customerId: b.id })
+    expect(tech.task).toBeNull()
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => b.state === 'inService', 60_000, ev)
+    expect(b.stationId).toBe(free.id)
+    expect(ev).not.toContainEqual({ type: 'toast', key: 'stationsBusy' })
   })
 
   it('waits when every free bed is spoken for', () => {

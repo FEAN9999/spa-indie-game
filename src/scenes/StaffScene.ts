@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { C, staffColors } from '../art/palette'
-import { GAME_H, GAME_W, STAFF_CAP } from '../config'
-import type { HireProblem, SpaSim } from '../sim/spa'
+import { GAME_H, GAME_W } from '../config'
+import type { SpaSim } from '../sim/spa'
 import { STAT_KEYS, type Candidate, type StaffRole, type StatKey } from '../sim/staff'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
@@ -137,7 +137,7 @@ export class StaffScene extends Phaser.Scene {
           role: t(ROLE[c.role]),
           action: t('hire'),
           kind: 'primary',
-          faded: this.refusal(c) !== null,
+          faded: sim.hireProblem(i) !== null,
           onTap: () => this.hire(i),
         })),
         t('noCandidates'),
@@ -203,13 +203,6 @@ export class StaffScene extends Phaser.Scene {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-w / 2, -21, w, 42, 21)
     this.keep(this.add.container(x + w / 2, y, [pill, label]))
-  }
-
-  /** What `hire` would refuse with, so its button can be faded beforehand. */
-  private refusal(c: Candidate): HireProblem | null {
-    const { sim } = this.params
-    if (sim.money < 0) return 'money'
-    return sim.staff.filter(s => s.role === c.role && !s.leaving).length >= STAFF_CAP[c.role] ? 'full' : null
   }
 
   private hire(index: number): void {

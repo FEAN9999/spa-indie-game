@@ -25,6 +25,13 @@ export interface Vec {
   y: number
 }
 
+/** Anyone who walks the shop: a position in tile units, which way they face, and the tiles still to walk. */
+export interface Mover {
+  pos: Vec
+  facing: Facing
+  path: Tile[]
+}
+
 export type CustomerState = 'arriving' | 'toSeat' | 'waiting' | 'toStation' | 'inService' | 'leaving' | 'exiting'
 
 export interface Customer {

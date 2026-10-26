@@ -1,7 +1,6 @@
 import {
   ANGRY_REVIEW,
   ARRIVE_MS,
-  CANDIDATES_PER_DAY,
   CUSTOMER_SPEED,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
@@ -11,31 +10,23 @@ import {
   PATIENCE_MS,
   RATING_WINDOW,
   SHAMPOO_PRICE,
-  STAFF_CAP,
-  STAFF_REST_MS,
   STARTING_MONEY,
   STEP_MS,
-  UNLOCK_DAY,
 } from '../config'
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { DayClock } from './clock'
+import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
-import { bedSlotAt, buildGrid, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
-import { ITEMS, beautyOf, footprint, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { bedSlotAt, besideSeat, buildGrid, isWalkable, parseLayout, tileEq, tileOf, type Grid } from './grid'
+import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
-import { gainXp, greetPatience, makeCandidate, restAfter, staffStars, tipFactor, walkSpeed, workMs, type Candidate, type Staff } from './staff'
-import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
-
-interface Mover {
-  pos: Vec
-  facing: Facing
-  path: Tile[]
-}
+import { greetPatience, tipFactor, walkSpeed, type Candidate, type Staff } from './staff'
+import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
@@ -43,7 +34,6 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 export type HireProblem = 'money' | 'full'
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0 })
-const tileOf = (pos: Vec): Tile => ({ x: Math.round(pos.x), y: Math.round(pos.y) })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
@@ -96,6 +86,7 @@ export class SpaSim {
   candidatesDay = 0
 
   private readonly rng: Rng
+  private readonly crew: CrewHost
   private readonly autoSpawn: boolean
   /** The layout without its furniture: walls, door, screen and desk. */
   private shell: string[]
@@ -108,6 +99,15 @@ export class SpaSim {
   constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true }: SpaSimOptions) {
     this.rng = rng
     this.autoSpawn = autoSpawn
+    this.crew = {
+      sim: this,
+      rng,
+      emit: e => this.emit(e),
+      walkTo: (m, isGoal) => this.walkTo(m, isGoal),
+      sendToBed: (c, station) => this.sendToBed(c, station),
+      payFor: (c, station, stars, friendly) => this.payFor(c, station, stars, friendly),
+      takeStaffId: () => this.nextStaffId++,
+    }
     this.shell = shellOf(layout)
     this.items = itemsFromLayout(layout)
     this.nextItemId = this.items.length + 1
@@ -140,7 +140,7 @@ export class SpaSim {
   }
 
   spawnCustomer(): Customer {
-    const greeter = this.staff.find(s => s.role === 'receptionist' && this.atDesk(s))
+    const greeter = greeterAtDesk(this.crew)
     const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1))
     const c: Customer = {
       id: this.nextId++,
@@ -159,10 +159,7 @@ export class SpaSim {
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
-    if (greeter) {
-      this.emit({ type: 'greeted', staffId: greeter.id, customerId: c.id })
-      if (this.earnXp(greeter)) this.startRest(greeter)
-    }
+    if (greeter) greet(this.crew, greeter, c.id)
     return c
   }
 
@@ -177,13 +174,8 @@ export class SpaSim {
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
     if (waiting) {
-      for (const s of this.staff)
-        if (s.task?.kind === 'fetch' && s.task.customerId === waiting.id) {
-          s.task = null
-          s.path = []
-        }
-      const seat = waiting.seat!
-      const path = findPath(this.grid, from, x => isWalkable(this.grid, x) && manhattan(x, seat) === 1)
+      makeWayForOwner(this.crew, waiting.id)
+      const path = findPath(this.grid, from, besideSeat(this.grid, waiting.seat!))
       if (!path) return
       this.owner.task = { kind: 'fetch', customerId: waiting.id }
       this.markHint('tapCustomer')
@@ -230,34 +222,7 @@ export class SpaSim {
 
   /** Where the receptionist stands: the first floor tile beside the desk, nearest the owner's start; the start itself if there is none. */
   receptionSpot(): Tile {
-    const spot = flood(this.grid, OWNER_START, t => isWalkable(this.grid, t)).find(
-      t => !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1),
-    )
-    return spot ?? { ...OWNER_START }
-  }
-
-  /**
-   * Where a hired person waits: the receptionist at the desk; each technician in turn on the floor nearest the owner's start
-   * that is not on, or one tile straight above or below, the owner's start, the desk spot or an earlier technician's home,
-   * since the lower of two people one tile apart hides the upper one.
-   */
-  private homeOf(s: Staff): Tile {
-    const spot = this.receptionSpot()
-    if (s.role === 'receptionist') return spot
-    const k = this.staff.filter(x => x.role === 'technician').indexOf(s)
-    const floor = flood(this.grid, OWNER_START, t => isWalkable(this.grid, t))
-    const homes: Tile[] = [OWNER_START, spot]
-    for (let i = 0; i <= k; i++) {
-      const next = floor.find(t => !homes.some(h => h.x === t.x && Math.abs(h.y - t.y) <= 1))
-      if (!next) return spot
-      homes.push(next)
-    }
-    return homes[homes.length - 1]
-  }
-
-  /** Idle, not leaving and standing on the spot. */
-  private atDesk(s: Staff): boolean {
-    return s.task === null && s.path.length === 0 && !s.leaving && tileEq(tileOf(s.pos), this.receptionSpot())
+    return receptionSpot(this.crew)
   }
 
   beauty(): number {
@@ -343,16 +308,7 @@ export class SpaSim {
     sim.candidatesDay = d.candidatesDay
     // never hand out an id a damaged save already uses
     sim.nextStaffId = Math.max(d.nextStaffId, ...d.staff.map(s => s.id + 1))
-    // a task that names a customer who is no longer there is dropped; a leaver with no task walks out on the next step
-    for (const s of sim.staff) {
-      const task = s.task
-      const c = task && 'customerId' in task ? sim.customers.find(x => x.id === task.customerId) : undefined
-      if (task?.kind === 'fetch' && c?.state !== 'waiting') s.task = null
-      if (task?.kind === 'serve' && (!c || c.stationId !== task.stationId)) {
-        s.task = null
-      }
-    }
-    if (sim.day >= UNLOCK_DAY.staff && sim.candidatesDay !== sim.day) sim.refreshCandidates()
+    repairAfterLoad(sim.crew)
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })
@@ -368,70 +324,22 @@ export class SpaSim {
     this.untilArrivalMs = FIRST_ARRIVAL_MS
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
-    for (const s of this.staff) Object.assign(s, { pos: { ...this.homeOf(s) }, path: [], task: null, sinceRest: 0, facing: 'down' })
-    if (this.day >= UNLOCK_DAY.staff) this.refreshCandidates()
-  }
-
-  /** Three new people to hire, with names that differ from each other and from the staff's. */
-  private refreshCandidates(): void {
-    const taken = this.staff.map(s => s.name)
-    this.candidates = []
-    for (let i = 0; i < CANDIDATES_PER_DAY; i++) {
-      const c = makeCandidate(this.rng, taken)
-      taken.push(c.name)
-      this.candidates.push(c)
-    }
-    this.candidatesDay = this.day
+    startDay(this.crew)
   }
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
   hire(index: number): HireProblem | null {
-    if (this.money < 0) return 'money'
-    const c = this.candidates[index]
-    if (this.staff.filter(s => s.role === c.role && !s.leaving).length >= STAFF_CAP[c.role]) return 'full'
-    this.candidates.splice(index, 1)
-    this.staff.push({
-      name: c.name,
-      role: c.role,
-      look: c.look,
-      stats: c.stats,
-      wage: c.wage,
-      rare: c.rare,
-      id: this.nextStaffId++,
-      level: 1,
-      xp: 0,
-      pos: { ...this.grid.door },
-      facing: 'up',
-      path: [],
-      task: null,
-      sinceRest: 0,
-      leaving: false,
-    })
-    const s = this.staff[this.staff.length - 1]
-    const home = this.homeOf(s)
-    s.path = findPath(this.grid, tileOf(s.pos), t => tileEq(t, home)) ?? []
-    return null
+    return hire(this.crew, index)
   }
 
-  /**
-   * Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once.
-   * After the day has ended the wages are already paid, so they just leave.
-   */
+  /** What `hire` would refuse with, so a button can be faded beforehand; null if the candidate can be hired. */
+  hireProblem(index: number): HireProblem | null {
+    return hireProblem(this.crew, index)
+  }
+
+  /** Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once. */
   fire(id: number): void {
-    const s = this.staff.find(x => x.id === id)
-    if (!s || s.leaving) return
-    if (this.dayOver) {
-      this.staff = this.staff.filter(x => x !== s)
-      return
-    }
-    s.leaving = true
-    this.stats.wages += s.wage
-    if (s.task?.kind !== 'serve') this.startExit(s)
-  }
-
-  private startExit(s: Staff): void {
-    s.task = { kind: 'exit' }
-    s.path = this.walkTo(s, t => tileEq(t, this.grid.door)) ?? []
+    fire(this.crew, id)
   }
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
@@ -536,27 +444,7 @@ export class SpaSim {
       if (c.path.length > 0) this.reroute(c, goal && (x => tileEq(x, goal)))
     }
     if (this.owner.path.length > 0) this.reroute(this.owner, this.ownerGoal())
-    for (const s of this.staff) if (s.path.length > 0 || moved.has(s)) this.reroute(s, this.staffGoal(s))
-  }
-
-  /** Where a staff member's walk ends: beside the customer being fetched, on the work tile, at the rest spot, at the door, or where their path ended if that is still floor. */
-  private staffGoal(s: Staff): ((t: Tile) => boolean) | null {
-    const task = s.task
-    if (task?.kind === 'fetch') {
-      const seat = this.customers.find(c => c.id === task.customerId)?.seat
-      return seat ? x => isWalkable(this.grid, x) && manhattan(x, seat) === 1 : null
-    }
-    if (task?.kind === 'serve') {
-      const work = this.stations.find(x => x.id === task.stationId)?.work
-      return work ? x => tileEq(x, work) : null
-    }
-    if (task?.kind === 'rest') {
-      const spot = this.restSpot(s)
-      return x => tileEq(x, spot)
-    }
-    if (task?.kind === 'exit') return x => tileEq(x, this.grid.door)
-    const end = s.path[s.path.length - 1]
-    return end && isWalkable(this.grid, end) ? x => tileEq(x, end) : null
+    for (const s of this.staff) if (s.path.length > 0 || moved.has(s)) this.reroute(s, staffGoal(this.crew, s))
   }
 
   /** Where a customer on foot is headed: their seat, their bed or the door. */
@@ -571,7 +459,7 @@ export class SpaSim {
     const task = this.owner.task
     if (task?.kind === 'fetch') {
       const seat = this.customers.find(c => c.id === task.customerId)?.seat
-      return seat ? x => isWalkable(this.grid, x) && manhattan(x, seat) === 1 : null
+      return seat ? besideSeat(this.grid, seat) : null
     }
     if (task?.kind === 'serve') {
       const work = this.stations.find(s => s.id === task.stationId)?.work
@@ -604,13 +492,11 @@ export class SpaSim {
     for (const s of this.staff) moveAlong(s, walkSpeed(s.stats.speed), dt)
     for (const c of [...this.customers]) this.updateCustomer(c, dt)
     this.updateOwnerTask()
-    for (const s of this.staff) this.updateStaff(s, dt)
+    for (const s of this.staff) updateStaff(this.crew, s, dt)
 
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
-      for (const s of this.staff) if (!s.leaving) this.stats.wages += s.wage
-      this.money -= this.stats.wages
-      this.staff = this.staff.filter(s => !s.leaving)
+      payWages(this.crew)
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }
@@ -690,128 +576,6 @@ export class SpaSim {
     const route = findPath(this.grid, from, isGoal)
     if (!route) return null
     return tileEq(from, m.pos) ? route : [from, ...route]
-  }
-
-  private updateStaff(s: Staff, dt: number): void {
-    if (s.task?.kind === 'exit') {
-      if (s.path.length > 0) return
-      if (!tileEq(tileOf(s.pos), this.grid.door)) s.path = this.walkTo(s, t => tileEq(t, this.grid.door)) ?? []
-      if (s.path.length === 0) this.staff = this.staff.filter(x => x !== s)
-      return
-    }
-    if (s.leaving && s.task?.kind !== 'serve') {
-      this.startExit(s)
-      return
-    }
-    if (s.task?.kind === 'rest') {
-      if (s.path.length > 0) return
-      s.task.leftMs -= dt
-      if (s.task.leftMs <= 0) {
-        s.sinceRest = 0
-        s.task = null
-      }
-      return
-    }
-    if (s.role === 'technician') this.updateTechnician(s, dt)
-    else if (s.task === null) this.walkHome(s)
-  }
-
-  /** One more customer served or greeted: experience, and a level up if it is enough. True when they are now due a rest (judged before a level up changes their stamina). */
-  private earnXp(s: Staff): boolean {
-    s.sinceRest++
-    const due = s.sinceRest >= restAfter(s)
-    if (gainXp(s, this.rng)) this.emit({ type: 'levelUp', staffId: s.id, level: s.level })
-    return due
-  }
-
-  /** Walks to the nearest floor beside a towel cabinet, or rests where they stand if there is none. */
-  private startRest(s: Staff): void {
-    s.task = { kind: 'rest', leftMs: STAFF_REST_MS }
-    const spot = this.restSpot(s)
-    s.path = this.walkTo(s, t => tileEq(t, spot)) ?? []
-  }
-
-  /** The nearest floor, in walking order from where `s` stands, that touches a towel cabinet; where they stand if there is none. */
-  private restSpot(s: Staff): Tile {
-    const from = tileOf(s.pos)
-    const cabinets = this.items.filter(i => i.kind === 'cabinet').flatMap(footprint)
-    const spot = flood(this.grid, from, t => isWalkable(this.grid, t)).find(t => cabinets.some(c => manhattan(c, t) === 1))
-    return spot ?? from
-  }
-
-  /** An idle person who is not on their home tile walks there; one who is faces the door. */
-  private walkHome(s: Staff): void {
-    if (s.path.length > 0) return
-    const home = this.homeOf(s)
-    if (tileEq(tileOf(s.pos), home)) {
-      s.facing = 'down'
-      return
-    }
-    s.path = this.walkTo(s, t => tileEq(t, home)) ?? []
-  }
-
-  private updateTechnician(s: Staff, dt: number): void {
-    const task = s.task
-    if (!task) {
-      if (!this.fetchWaiting(s)) this.walkHome(s)
-      return
-    }
-    if (task.kind === 'fetch') {
-      if (s.path.length > 0) return
-      const c = this.customers.find(x => x.id === task.customerId)
-      const station = this.stations.find(x => x.customerId === null)
-      if (!c || c.state !== 'waiting' || !station) {
-        s.task = null
-        return
-      }
-      this.sendToBed(c, station)
-      s.path = this.walkTo(s, t => tileEq(t, station.work)) ?? []
-      const total = workMs(s.stats.speed)
-      s.task = { kind: 'serve', customerId: c.id, stationId: station.id, leftMs: total, totalMs: total }
-      return
-    }
-    if (task.kind !== 'serve') return
-
-    const c = this.customers.find(x => x.id === task.customerId)
-    const station = this.stations.find(x => x.id === task.stationId)
-    if (!c || !station) {
-      if (station?.customerId === task.customerId) station.customerId = null
-      this.finishWork(s)
-      return
-    }
-    if (s.path.length > 0) return
-    if (c.state === 'toStation' && c.path.length === 0) this.setState(c, 'inService')
-    if (c.state !== 'inService') return
-    task.leftMs -= dt
-    if (task.leftMs > 0) return
-    this.payFor(c, station, staffStars(s.stats.skill, this.rng()), s.stats.friendly)
-    this.finishWork(s, this.earnXp(s))
-  }
-
-  /** A service is over: walk out if being let go, rest if tired, else wait for the next customer. */
-  private finishWork(s: Staff, due = false): void {
-    s.task = null
-    if (s.leaving) this.startExit(s)
-    else if (due) this.startRest(s)
-  }
-
-  /** Starts walking to the waiting customer who has waited longest, if a bed is free and nobody else is on the way to them; false if nothing started. */
-  private fetchWaiting(s: Staff): boolean {
-    const fetched = new Set<number>()
-    if (this.owner.task?.kind === 'fetch') fetched.add(this.owner.task.customerId)
-    for (const x of this.staff) if (x.task?.kind === 'fetch') fetched.add(x.task.customerId)
-    const freeBeds = this.stations.filter(x => x.customerId === null).length
-    if (freeBeds <= fetched.size) return false
-    const next = this.customers
-      .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id))
-      .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
-    if (!next) return false
-    const seat = next.seat!
-    const path = this.walkTo(s, t => isWalkable(this.grid, t) && manhattan(t, seat) === 1)
-    if (!path) return false
-    s.task = { kind: 'fetch', customerId: next.id }
-    s.path = path
-    return true
   }
 
   private seatCustomer(c: Customer): void {

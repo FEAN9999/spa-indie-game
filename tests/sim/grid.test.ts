@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bedSlotAt, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { bedSlotAt, besideSeat, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('grid', () => {
@@ -48,5 +48,17 @@ describe('grid', () => {
 
   it('rejects ragged layouts', () => {
     expect(() => parseLayout(['###', '##'])).toThrow('Layout rows must have equal length')
+  })
+
+  it('knows the floor one step from a seat', () => {
+    const g = parseLayout(SPA_LAYOUT_1A)
+    const seat = g.seats[1]
+    const beside = besideSeat(g, seat)
+    const around = [{ x: seat.x, y: seat.y + 1 }, { x: seat.x, y: seat.y - 1 }, { x: seat.x - 1, y: seat.y }, { x: seat.x + 1, y: seat.y }]
+    for (const t of around) expect([t, isWalkable(g, t) && beside(t)]).toEqual([t, isWalkable(g, t)])
+    expect(around.some(t => beside(t))).toBe(true)
+    expect(beside(seat)).toBe(false)
+    expect(beside({ x: seat.x, y: seat.y + 2 })).toBe(false)
+    expect(beside({ x: 0, y: 0 })).toBe(false)
   })
 })
