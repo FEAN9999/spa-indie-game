@@ -22,6 +22,7 @@ export interface MiniGameData {
 
 const CARD = { x: 60, y: 260, w: 960, h: 1440 }
 const INSTRUCTION_Y = 345
+const INSTRUCTION_MAX_W = 880
 const BAR = { x: 140, w: 800, h: 28, progressY: 420, timeY: 1612 }
 const STAR_Y = 1330
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -31,10 +32,19 @@ export function addMiniGameCard(scene: Phaser.Scene, instruction: string): Phase
   // interactive so taps stop here instead of reaching the spa's HUD underneath
   scene.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
   addCard(scene, CARD.x, CARD.y, CARD.w, CARD.h)
-  return scene.add
-    .text(GAME_W / 2, INSTRUCTION_Y, instruction, { ...textStyle(46), align: 'center', wordWrap: { width: 860 } })
+  // one line, scaled down to fit the card when it is long, so no word is left alone on a second line
+  const text = scene.add
+    .text(GAME_W / 2, INSTRUCTION_Y, instruction, { ...textStyle(46), align: 'center', wordWrap: { width: 1100 } })
     .setOrigin(0.5)
+  return fitInstruction(text)
 }
+
+/** Swaps the instruction's words, keeping it on one line. */
+export function setInstruction(text: Phaser.GameObjects.Text, words: string): void {
+  fitInstruction(text.setText(words))
+}
+
+const fitInstruction = (text: Phaser.GameObjects.Text) => text.setScale(Math.min(1, INSTRUCTION_MAX_W / text.width))
 
 /** The progress bar under the instruction and the time bar at the foot of the card; both run from 0 to 1. */
 export function drawBars(g: Phaser.GameObjects.Graphics, progress: number, timeLeft: number): void {

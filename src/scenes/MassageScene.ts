@@ -5,7 +5,7 @@ import { MASSAGE_HOLD_MS, MASSAGE_POINTS, MASSAGE_SCORE } from '../config'
 import type { Stars } from '../sim/economy'
 import { MassageGame, type Judgement, type MassagePoint } from '../sim/massage'
 import { t, type StringKey } from '../strings/vi'
-import { addMiniGameCard, drawBars, revealStars, type MiniGameData } from '../view/miniGame'
+import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
 import { textStyle } from '../view/text'
 
 /** The back centre on the card; the rules' back square spans MS_BACK_PX either side of it. */
@@ -127,7 +127,7 @@ export class MassageScene extends Phaser.Scene {
     this.point.setTexture(p.kind === 'tap' ? 'ms-point' : 'ms-hold').setPosition(x, y).setVisible(true).setScale(0.5)
     this.tweens.add({ targets: this.point, scale: 1, duration: SHOW_MS, ease: 'Back.easeOut' })
     this.ring.setPosition(x, y).setVisible(p.kind === 'tap')
-    this.instruction.setText(t(p.kind === 'tap' ? 'massageTap' : 'massageHold'))
+    setInstruction(this.instruction, t(p.kind === 'tap' ? 'massageTap' : 'massageHold'))
     this.showDemo(p, x, y)
   }
 
@@ -191,7 +191,7 @@ export class MassageScene extends Phaser.Scene {
     this.point.setVisible(false)
     this.ring.setVisible(false)
     this.holdRing.clear()
-    this.instruction.setText(t('shampooDone'))
+    setInstruction(this.instruction, t('shampooDone'))
     drawBars(this.bars, this.rules.score() / MAX_SCORE, this.pointsLeft())
     revealStars(this, stars, () => {
       this.params.onDone(stars)

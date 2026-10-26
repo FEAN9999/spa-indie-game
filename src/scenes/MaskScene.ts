@@ -5,7 +5,7 @@ import { MASK_BRUSH_R } from '../config'
 import type { Stars } from '../sim/economy'
 import { MaskGame, type MaskPhase } from '../sim/mask'
 import { t, type StringKey } from '../strings/vi'
-import { addMiniGameCard, drawBars, revealStars, type MiniGameData } from '../view/miniGame'
+import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
 
 /** The face centre on the card; the face circle, the rules' unit circle, is MK_FACE_R px round it. */
 const FACE = { x: 540, y: 880 }
@@ -141,6 +141,10 @@ export class MaskScene extends Phaser.Scene {
     this.paintClip = clip(0)
     // the ink layer keeps a rim inside each eye hole, so the holes have an edge too
     this.rimClip = clip(RIM_PX)
+    // made off the display list, so the scene does not clean them up
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      for (const g of [this.rimDab, this.dab, this.paintClip, this.rimClip]) g.destroy()
+    })
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
@@ -216,7 +220,7 @@ export class MaskScene extends Phaser.Scene {
       this.reveal(this.rules.stars() ?? 1)
       return
     }
-    this.instruction.setText(t(INSTRUCTION[next]))
+    setInstruction(this.instruction, t(INSTRUCTION[next]))
     this.frown.setVisible(false)
     for (const s of this.slices) {
       s.img.setAlpha(1)
@@ -259,7 +263,7 @@ export class MaskScene extends Phaser.Scene {
     // the stars show where the tray was; a slice not on an eye goes with it
     this.tray.setVisible(false)
     for (const s of this.slices) if (s.eye === null) s.img.setVisible(false)
-    this.instruction.setText(t('shampooDone'))
+    setInstruction(this.instruction, t('shampooDone'))
     drawBars(this.bars, 1, this.timeLeft())
     revealStars(this, stars, () => {
       this.params.onDone(stars)

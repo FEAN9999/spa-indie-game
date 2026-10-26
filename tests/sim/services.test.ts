@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { serviceArrivalFactor, tipFor } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
+import type { SimEvent } from '../../src/sim/types'
 import { advanceUntil, hireStaff } from './helpers'
 
 const fresh = () => {
@@ -108,3 +109,20 @@ describe('more services, more customers', () => {
   })
 })
 
+describe('the owner and the technician on mask chairs', () => {
+  it('gives the owner the last mask chair when a technician is heading for another mask customer', () => {
+    const sim = withMask()
+    const a = waitingFor(sim, 'mask')
+    const b = waitingFor(sim, 'mask')
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.task?.kind === 'fetch')
+    expect(tech.task).toEqual({ kind: 'fetch', customerId: a.id })
+    sim.drainEvents()
+    sim.tapTile(b.seat!)
+    expect(tech.task).toBeNull()
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => b.state === 'inService', 60_000, ev)
+    expect(sim.stations.find(s => s.id === b.stationId)!.service).toBe('mask')
+    expect(ev.filter(e => e.type === 'toast')).toEqual([])
+  })
+})

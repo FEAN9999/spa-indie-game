@@ -127,6 +127,7 @@ describe('the staff button hint', () => {
   })
 
   it('no staff hand on a shop past day 3', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 1))).not.toEqual({ hint: 'openStaff' })
     expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 2))).toBeNull()
   })
 })

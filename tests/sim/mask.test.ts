@@ -52,7 +52,7 @@ describe('MaskGame', () => {
     expect(g.stars()).toBeNull()
   })
 
-  it('counts one error per stroke that enters an eye, not per move', () => {
+  it('counts an error each time a stroke enters an eye, not on every move inside it', () => {
     const g = new MaskGame()
     g.paint(-0.38, -0.1)
     g.paint(-0.37, -0.1)

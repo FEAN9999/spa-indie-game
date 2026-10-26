@@ -4,7 +4,7 @@ import { GAME_W } from '../config'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
 import { t, type StringKey } from '../strings/vi'
-import { addMiniGameCard, drawBars, revealStars, type MiniGameData } from '../view/miniGame'
+import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
 
 /** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
@@ -133,7 +133,7 @@ export class ShampooScene extends Phaser.Scene {
       this.reveal(this.rules.stars() ?? 1)
       return
     }
-    this.instruction.setText(t(INSTRUCTION[next]))
+    setInstruction(this.instruction, t(INSTRUCTION[next]))
     this.showDemo(next)
     if (next === 'dry') {
       for (const f of this.foam) f.destroy()
@@ -181,7 +181,7 @@ export class ShampooScene extends Phaser.Scene {
     for (const img of [...this.foam, ...this.beads]) img.destroy()
     this.foam = []
     this.beads = []
-    this.instruction.setText(t('shampooDone'))
+    setInstruction(this.instruction, t('shampooDone'))
     drawBars(this.bars, 1, this.timeLeft())
     revealStars(this, stars, () => {
       this.params.onDone(stars)
