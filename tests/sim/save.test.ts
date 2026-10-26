@@ -87,7 +87,7 @@ describe('save version 2', () => {
     sim.markHint('money')
     sim.markHint('money')
     const copy = viaJson(sim)
-    expect([copy.shopName, copy.ownerLook, copy.profileDone, copy.hints]).toEqual(['Spa Hoa Sen', { skin: 3, hair: 4, hairStyle: 3, shirt: 2 }, true, ['money']])
+    expect([copy.shopName, copy.ownerLook, copy.profileDone, copy.hints]).toEqual(['Spa Hoa Sen', { skin: 3, hair: 4, hairStyle: 3, shirt: 2 }, true, ['tapCustomer', 'money']])
   })
 
   it('rejects an owner look outside the choices', () => {

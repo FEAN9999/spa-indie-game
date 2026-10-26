@@ -48,3 +48,6 @@ export const AUTOSAVE_MS = 10_000
 
 // Updates
 export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json when the player comes back
+
+/** The day each feature button opens. */
+export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5 } as const

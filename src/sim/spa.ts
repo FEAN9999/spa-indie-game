@@ -157,6 +157,7 @@ export class SpaSim {
       const path = findPath(this.grid, from, x => isWalkable(this.grid, x) && manhattan(x, seat) === 1)
       if (!path) return
       this.owner.task = { kind: 'fetch', customerId: waiting.id }
+      this.markHint('tapCustomer')
       this.owner.path = path
       return
     }
