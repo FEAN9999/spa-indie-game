@@ -128,7 +128,7 @@ describe('the staff button hint', () => {
 
   it('no staff hand on a shop past day 3', () => {
     expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 1))).not.toEqual({ hint: 'openStaff' })
-    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 2))).toBeNull()
+    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 3))).toBeNull()
   })
 })
 
@@ -140,7 +140,26 @@ describe('the services button hint', () => {
     expect(pickHint(sim)).toBeNull()
   })
 
-  it('no services hand on a shop past day 4', () => {
-    expect(pickHint(pastTutorial(UNLOCK_DAY.services + 1))).toBeNull()
+  it('no services hand on a shop past day 4 (day 5 has the stock hand)', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.services + 2))).toBeNull()
+  })
+})
+
+describe('the stock hint', () => {
+  it('points at the services button on day 5 until the stock was seen', () => {
+    const sim = pastTutorial(UNLOCK_DAY.stock)
+    expect(pickHint(sim)).toEqual({ hint: 'openStock' })
+    sim.markHint('openStock')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('gives an old shop on day 6 no hand', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.stock + 1))).toBeNull()
+  })
+
+  it('still points on day 5 when the services hint was never shown', () => {
+    const sim = pastTutorial(UNLOCK_DAY.stock)
+    expect(sim.hintDone('openServices')).toBe(false)
+    expect(pickHint(sim)).toEqual({ hint: 'openStock' })
   })
 })

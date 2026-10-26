@@ -296,9 +296,15 @@ export class SpaScene extends Phaser.Scene {
     this.modal = true
     const intro = !sim.hintDone('openServices')
     sim.markHint('openServices')
+    const stock = isUnlocked('stock', sim.day)
+    const stockIntro = stock && !sim.hintDone('openStock')
+    const tab = stock && (stockIntro || sim.lowStock().length > 0) ? 'stock' : 'services'
+    if (stock) sim.markHint('openStock')
     const data: ServicesData = {
       sim,
       intro,
+      tab,
+      stockIntro,
       onChange: () => this.session.saveNow(),
       onClose: () => {
         this.modal = false
@@ -413,6 +419,10 @@ export class SpaScene extends Phaser.Scene {
     }
     if (pick?.hint === 'openServices') {
       this.pointer.show(t('hintServices'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
+      return
+    }
+    if (pick?.hint === 'openStock') {
+      this.pointer.show(t('hintStock'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container

@@ -17,6 +17,8 @@ const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const NAV_Y = 2020
 const PLATE_R = 62
+/** Radius of the red low-stock dot: about 30 px across with its outline. */
+const DOT_R = 13
 const navX = (i: number) => 135 + i * 270
 /** The top of the build button's plate, where the hand points. */
 export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
@@ -25,11 +27,11 @@ export const STAFF_PLATE_TOP = { x: navX(1), y: NAV_Y - PLATE_R }
 /** The top of the services button's plate, where the hand points. */
 export const SERVICES_PLATE_TOP = { x: navX(2), y: NAV_Y - PLATE_R }
 
-/** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done. */
-const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId }[] = [
+/** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
+const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }[] = [
   { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
   { key: 'navStaff', icon: 'icon-staff', feature: 'staff', hint: 'openStaff' },
-  { key: 'navServices', icon: 'icon-services', feature: 'services', hint: 'openServices' },
+  { key: 'navServices', icon: 'icon-services', feature: 'services', hint: 'openServices', later: { feature: 'stock', hint: 'openStock' } },
   { key: 'navQuests', icon: 'icon-quests' },
 ]
 const LOCKED_ALPHA = 0.45
@@ -37,10 +39,13 @@ const LOCKED_ALPHA = 0.45
 interface NavPlate {
   feature?: Feature
   hint?: HintId
+  later?: { feature: Feature; hint: HintId }
   icon: Phaser.GameObjects.Image
   label: Phaser.GameObjects.Text
   lock: Phaser.GameObjects.Image
   badge: Phaser.GameObjects.Container | null
+  /** The services plate's red dot while something runs low. */
+  dot: Phaser.GameObjects.Arc | null
 }
 
 /** Top bar, pause button, bottom nav and toasts. Every element swallows its taps. */
@@ -107,6 +112,9 @@ export class Hud {
       // and a red "Mới" on its top-left once it opens, until it is first used
       const badge = n.hint ? this.badge() : null
       if (badge) btn.add(badge)
+      // and, on the services plate, a red dot on the top-right while stock runs low
+      const dot = n.feature === 'services' ? add.circle(44, -44, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
+      if (dot) btn.add(dot)
       const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
       const feature = n.feature
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
@@ -116,7 +124,7 @@ export class Hud {
         else if (feature === 'services') onServices()
         else this.toast(t('comingSoon'))
       })
-      this.plates.push({ feature, hint: n.hint, icon, label, lock, badge })
+      this.plates.push({ feature, hint: n.hint, later: n.later, icon, label, lock, badge, dot })
     })
   }
 
@@ -143,7 +151,10 @@ export class Hud {
       p.icon.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.label.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.lock.setVisible(locked)
-      p.badge?.setVisible(!locked && p.hint !== undefined && !this.sim.hintDone(p.hint))
+      const fresh = p.hint !== undefined && !this.sim.hintDone(p.hint)
+      const freshLater = p.later !== undefined && isUnlocked(p.later.feature, this.sim.day) && !this.sim.hintDone(p.later.hint)
+      p.badge?.setVisible(!locked && (fresh || freshLater))
+      p.dot?.setVisible(!locked && this.sim.lowStock().length > 0)
     }
   }
 

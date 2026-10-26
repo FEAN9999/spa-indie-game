@@ -1,0 +1,13 @@
+import { describe, expect, it, vi } from 'vitest'
+import { fxTextures } from '../../src/art/fx'
+import { STOCK_ITEMS } from '../../src/sim/stock'
+
+// svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
+vi.mock('phaser', () => ({}))
+
+describe('fx art', () => {
+  it('draws an icon for every stock item', () => {
+    const fx = fxTextures()
+    for (const item of STOCK_ITEMS) expect(fx[`stock-${item}`], item).toBeDefined()
+  })
+})

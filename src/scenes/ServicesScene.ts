@@ -1,9 +1,10 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
-import { GAME_H, GAME_W } from '../config'
+import { GAME_H, GAME_W, LOW_STOCK, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../config'
 import { ITEMS } from '../sim/items'
 import { SERVICE_IDS, SERVICES, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
+import { STOCK_ITEMS, STOCK_NAME, STOCK_USES, type StockItem } from '../sim/stock'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
@@ -13,10 +14,16 @@ export interface ServicesData {
   sim: SpaSim
   /** The first time the panel opens: it says where the beds are bought. */
   intro: boolean
+  /** The tab to open on; only from day 5, when the stock tab exists. */
+  tab: Tab
+  /** The first time the stock tab opens: it says what a service uses. */
+  stockIntro: boolean
   /** After a service opens: save. */
   onChange: () => void
   onClose: () => void
 }
+
+export type Tab = 'services' | 'stock'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -26,6 +33,17 @@ const INTRO_Y = 385
 const INTRO_WRAP = 680
 const ROW_TOP = 520
 const ROW_H = 330
+// from day 5 two tabs sit under the title and the rows start below them
+const TAB_Y = 500
+const TAB_W = 440
+const TAB_H = 120
+const TAB_X = { services: 300, stock: 780 } as const
+const TABBED_ROW_TOP = 590
+const STOCK_ROW_H = 290
+// the restock button is wider than the open button, so the stock text column is narrower
+const STOCK_TEXT_WRAP = 320
+const RESTOCK_X = 790
+const RESTOCK_W = 380
 const ROW_LEFT = 90
 const ROW_RIGHT = 990
 const ICON_X = 160
@@ -49,6 +67,7 @@ export class ServicesScene extends Phaser.Scene {
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
+  private tab: Tab = 'services'
 
   constructor() {
     super('ServicesScene')
@@ -56,6 +75,7 @@ export class ServicesScene extends Phaser.Scene {
 
   init(data: ServicesData) {
     this.params = data
+    this.tab = data.sim.stockTracked() ? data.tab : 'services'
     this.shown = []
     this.toastBox = null
   }
@@ -76,16 +96,63 @@ export class ServicesScene extends Phaser.Scene {
     this.shown = []
     this.keep(addCard(this, 40, 230, 1000, 1760))
     this.keep(this.add.text(MID, TITLE_Y, t('servicesTitle'), textStyle(60)).setOrigin(0.5))
-    if (this.params.intro) {
-      this.keep(this.add.text(MID, INTRO_Y, t('servicesIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
+    const tabbed = this.params.sim.stockTracked()
+    const intro = this.tab === 'stock' ? this.params.stockIntro && t('stockIntro') : this.params.intro && t('servicesIntro')
+    if (intro) {
+      this.keep(this.add.text(MID, INTRO_Y, intro, { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
     }
+    if (tabbed) {
+      const tabs: { tab: Tab; label: string }[] = [
+        { tab: 'services', label: t('tabServices') },
+        { tab: 'stock', label: t('tabStock') },
+      ]
+      for (const { tab, label } of tabs) {
+        this.keep(addButton(this, TAB_X[tab], TAB_Y, TAB_W, TAB_H, label, tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
+      }
+    }
+    const top = tabbed ? TABBED_ROW_TOP : ROW_TOP
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
-    SERVICE_IDS.forEach((id, i) => {
-      const y0 = ROW_TOP + i * ROW_H
-      if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
-      this.row(id, y0)
-    })
+    if (this.tab === 'stock') {
+      const items = STOCK_ITEMS.filter(item => this.params.sim.services.some(id => STOCK_USES[id].includes(item)))
+      items.forEach((item, i) => {
+        const y0 = top + i * STOCK_ROW_H
+        if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
+        this.stockRow(item, y0)
+      })
+    } else {
+      SERVICE_IDS.forEach((id, i) => {
+        const y0 = top + i * ROW_H
+        if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
+        this.row(id, y0)
+      })
+    }
     this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
+  }
+
+  private openTab(tab: Tab): void {
+    this.tab = tab
+    this.show()
+  }
+
+  /** One stock item: its icon, what is left, who uses it, and the restock button. */
+  private stockRow(item: StockItem, y0: number): void {
+    const { sim } = this.params
+    const cy = y0 + STOCK_ROW_H / 2
+    const user = SERVICE_IDS.find(id => sim.services.includes(id) && STOCK_USES[id][0] === item)
+    const usedBy = user ? t('stockUsedBy', { name: t(SERVICES[user].name) }) : t('stockUsedByAll')
+    const left = sim.stock[item]
+    this.keep(this.add.image(ICON_X, cy, `stock-${item}`).setScale(1.5))
+    this.keep(this.add.text(TEXT_X, cy - 75, t(STOCK_NAME[item]), textStyle(46)).setOrigin(0, 0.5))
+    this.keep(this.add.text(TEXT_X, cy - 22, t('stockLeft', { n: left }), textStyle(34, '800', left <= LOW_STOCK ? C.lantern : C.ink)).setOrigin(0, 0.5))
+    this.keep(this.add.text(TEXT_X, cy + 14, usedBy, { ...textStyle(32, '600'), wordWrap: { width: STOCK_TEXT_WRAP } }).setOrigin(0, 0))
+    const label = t('restock', { n: RESTOCK_AMOUNT, money: formatMoney(RESTOCK_PRICE[item]) })
+    this.keep(addButton(this, RESTOCK_X, cy, RESTOCK_W, ACTION_H, label, 'primary', () => this.restock(item), 30))
+  }
+
+  private restock(item: StockItem): void {
+    this.params.sim.restock(item)
+    this.params.onChange()
+    this.show()
   }
 
   private row(id: ServiceId, y0: number): void {

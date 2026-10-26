@@ -125,6 +125,32 @@ export function fxTextures(): Record<string, string> {
         `<path d="M23,19.5 Q26,17.6 29,18 M21,29 Q25,26.8 29,27.2 M19,39 Q24,36.6 29,37" fill="none" stroke="${C.clayLight}" stroke-width="2" stroke-linecap="round"/>` +
         `<path d="M36,17 Q38,8 46,9 Q45,17 36,17Z" fill="${C.leaf}" ${INNER}/>`,
     ),
+    // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
+    'stock-shampoo': badge(
+      C.water,
+      `<rect x="22" y="8" width="12" height="7" rx="2" fill="${C.teal}" ${INNER}/>` +
+        `<rect x="16" y="14" width="24" height="33" rx="8" fill="${C.cream}" ${INNER}/>` +
+        `<rect x="16" y="25" width="24" height="12" fill="${C.cobalt}" ${INNER}/>`,
+    ),
+    'stock-towel': badge(
+      C.mint,
+      `<rect x="11" y="19" width="34" height="22" rx="11" fill="${C.cream}" ${INNER}/>` +
+        `<ellipse cx="42" cy="30" rx="5" ry="11" fill="${C.paper}" ${INNER}/>` +
+        `<path d="M24,20 V40 M31,20 V40" stroke="${C.teal}" stroke-width="3" stroke-linecap="round"/>`,
+    ),
+    'stock-mask': badge(
+      C.lotus,
+      `<rect x="12" y="14" width="32" height="28" rx="5" fill="${C.cream}" ${INNER}/>` +
+        `<path d="M12,19 H44 M12,37 H44" stroke="${C.ink}" stroke-width="2" stroke-dasharray="3 2"/>` +
+        `<circle cx="28" cy="28" r="6" fill="${C.mint}" ${INNER}/>`,
+    ),
+    'stock-oil': badge(
+      C.mustard,
+      `<path d="M25,8 H31 V14 H25Z" fill="${C.clay}" ${INNER}/>` +
+        `<rect x="22" y="14" width="12" height="6" rx="2" fill="${C.woodDark}" ${INNER}/>` +
+        `<path d="M22,20 H34 L40,32 V43 Q40,48 35,48 H21 Q16,48 16,43 V32Z" fill="${C.clay}" ${INNER}/>` +
+        `<path d="M28,28 Q34,35 28,41 Q22,35 28,28Z" fill="${C.mustard}" ${INNER}/>`,
+    ),
     'icon-dice': svgDoc(
       [0, 0, 64, 64],
       1,
