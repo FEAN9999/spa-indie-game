@@ -208,6 +208,39 @@ describe('the receptionist', () => {
     sim.completeService(c.id, 3)
     expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 12_000 }))
   })
+
+  it('waits at the desk facing the door', () => {
+    const sim = dayThree()
+    const rec = hireStaff(sim, 'receptionist')
+    advanceUntil(sim, () => rec.path.length === 0 && tileEq(rec.pos, sim.receptionSpot()))
+    expect(rec.facing).toBe('down')
+  })
+})
+
+describe('homes', () => {
+  it('no technician waits right behind the owner, the receptionist or another technician', () => {
+    const sim = dayThree()
+    hireStaff(sim, 'receptionist')
+    for (let i = 0; i < 3; i++) hireStaff(sim, 'technician')
+    sim.startDay()
+    const spot = sim.receptionSpot()
+    const techs = sim.staff.filter(s => s.role === 'technician')
+    for (const s of techs) {
+      expect(tileEq(s.pos, { x: OWNER_START.x, y: OWNER_START.y - 1 })).toBe(false)
+      expect(tileEq(s.pos, { x: spot.x, y: spot.y - 1 })).toBe(false)
+    }
+    const people = [sim.owner.pos, ...sim.staff.map(s => s.pos)]
+    expect(new Set(people.map(p => `${p.x},${p.y}`)).size).toBe(people.length)
+    // one tile straight above someone is hidden behind them
+    for (const a of people) for (const b of people) expect(a.x === b.x && a.y === b.y - 1).toBe(false)
+  })
+
+  it('an idle technician back home faces the door', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.path.length === 0)
+    expect([tech.task, tech.facing]).toEqual([null, 'down'])
+  })
 })
 
 const tired = () => ({ skill: 3, speed: 5, friendly: 3, stamina: 1 })

@@ -237,13 +237,23 @@ export class SpaSim {
     return spot ?? { ...OWNER_START }
   }
 
-  /** Where a hired person waits: the receptionist at the desk, the k-th technician on the k-th other tile near the owner's start. */
+  /**
+   * Where a hired person waits: the receptionist at the desk; each technician in turn on the floor nearest the owner's start
+   * that is not on, or one tile straight above or below, the owner's start, the desk spot or an earlier technician's home,
+   * since the lower of two people one tile apart hides the upper one.
+   */
   private homeOf(s: Staff): Tile {
     const spot = this.receptionSpot()
     if (s.role === 'receptionist') return spot
     const k = this.staff.filter(x => x.role === 'technician').indexOf(s)
-    const spare = flood(this.grid, OWNER_START, t => isWalkable(this.grid, t)).filter(t => !tileEq(t, OWNER_START) && !tileEq(t, spot))
-    return spare[k] ?? spot
+    const floor = flood(this.grid, OWNER_START, t => isWalkable(this.grid, t))
+    const homes: Tile[] = [OWNER_START, spot]
+    for (let i = 0; i <= k; i++) {
+      const next = floor.find(t => !homes.some(h => h.x === t.x && Math.abs(h.y - t.y) <= 1))
+      if (!next) return spot
+      homes.push(next)
+    }
+    return homes[homes.length - 1]
   }
 
   /** Idle, not leaving and standing on the spot. */
@@ -733,11 +743,14 @@ export class SpaSim {
     return spot ?? from
   }
 
-  /** An idle person who is not on their home tile walks there. */
+  /** An idle person who is not on their home tile walks there; one who is faces the door. */
   private walkHome(s: Staff): void {
     if (s.path.length > 0) return
     const home = this.homeOf(s)
-    if (tileEq(tileOf(s.pos), home)) return
+    if (tileEq(tileOf(s.pos), home)) {
+      s.facing = 'down'
+      return
+    }
     s.path = this.walkTo(s, t => tileEq(t, home)) ?? []
   }
 
