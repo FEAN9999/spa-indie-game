@@ -1,0 +1,125 @@
+{
+  "v": 2,
+  "day": 1,
+  "minutes": 497.1428571428578,
+  "money": 123456,
+  "reviews": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": 1,
+  "owner": {
+    "pos": {
+      "x": 5,
+      "y": 3
+    },
+    "facing": "left",
+    "path": [],
+    "task": {
+      "kind": "serve",
+      "customerId": 1,
+      "stationId": 1
+    }
+  },
+  "customers": [
+    {
+      "id": 1,
+      "look": {
+        "skin": 2,
+        "hair": 0,
+        "hairStyle": 2,
+        "shirt": 4
+      },
+      "state": "inService",
+      "stateMs": 0,
+      "pos": {
+        "x": 4,
+        "y": 3
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 92700,
+      "patienceMaxMs": 96000,
+      "seat": null,
+      "stationId": 1,
+      "mood": null
+    },
+    {
+      "id": 2,
+      "look": {
+        "skin": 3,
+        "hair": 1,
+        "hairStyle": 2,
+        "shirt": 3
+      },
+      "state": "waiting",
+      "stateMs": 4000,
+      "pos": {
+        "x": 3,
+        "y": 13
+      },
+      "facing": "up",
+      "path": [],
+      "patienceMs": 92000,
+      "patienceMaxMs": 96000,
+      "seat": {
+        "x": 3,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    },
+    {
+      "id": 3,
+      "look": {
+        "skin": 1,
+        "hair": 4,
+        "hairStyle": 1,
+        "shirt": 2
+      },
+      "state": "waiting",
+      "stateMs": 2200,
+      "pos": {
+        "x": 4,
+        "y": 13
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 93800,
+      "patienceMaxMs": 96000,
+      "seat": {
+        "x": 4,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    }
+  ],
+  "stationCustomers": [
+    null,
+    1
+  ],
+  "seatCustomers": [
+    null,
+    2,
+    3
+  ],
+  "nextId": 4,
+  "untilArrivalMs": 3000,
+  "shopName": "Tiệm Spa",
+  "ownerLook": {
+    "skin": 0,
+    "hair": 0,
+    "hairStyle": 0,
+    "shirt": 0
+  },
+  "profileDone": false,
+  "hints": [
+    "tapCustomer"
+  ]
+}
