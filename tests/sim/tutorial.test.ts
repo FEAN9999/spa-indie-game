@@ -68,15 +68,15 @@ describe('first-day hints', () => {
   })
 })
 
-describe('the build button hint', () => {
-  /** A shop on day `day` that has seen every first-day tip. */
-  const pastTutorial = (day: number) => {
-    const sim = fresh()
-    for (const h of TUTORIAL_HINTS) sim.markHint(h)
-    sim.day = day
-    return sim
-  }
+/** A shop on day `day` that has seen every first-day tip. */
+const pastTutorial = (day: number) => {
+  const sim = fresh()
+  for (const h of TUTORIAL_HINTS) sim.markHint(h)
+  sim.day = day
+  return sim
+}
 
+describe('the build button hint', () => {
   it('points at the build button on the morning it opens, once the first-day tips are done', () => {
     expect(pickHint(pastTutorial(UNLOCK_DAY.build))).toEqual({ hint: 'openBuild' })
   })
@@ -89,7 +89,8 @@ describe('the build button hint', () => {
 
   it('only shows on the day building opens, so an older shop gets no hand', () => {
     expect(pickHint(pastTutorial(UNLOCK_DAY.build - 1))).toBeNull()
-    expect(pickHint(pastTutorial(UNLOCK_DAY.build + 1))).toBeNull()
+    // the day after is the staff button's morning, with its own hand
+    expect(pickHint(pastTutorial(UNLOCK_DAY.build + 1))?.hint).not.toBe('openBuild')
   })
 
   it('waits behind the first-day tips', () => {
@@ -114,5 +115,18 @@ describe('the build button hint', () => {
     sim.paused = false
     sim.dayOver = true
     expect(pickHint(sim)).toBeNull()
+  })
+})
+
+describe('the staff button hint', () => {
+  it('points at the staff button on the morning of day 3 until it is opened', () => {
+    const sim = pastTutorial(UNLOCK_DAY.staff)
+    expect(pickHint(sim)).toEqual({ hint: 'openStaff' })
+    sim.markHint('openStaff')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('no staff hand on a shop past day 3', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.staff + 1))).toBeNull()
   })
 })

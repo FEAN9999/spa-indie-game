@@ -10,6 +10,7 @@ import { OwnerScene } from './scenes/OwnerScene'
 import { PauseScene } from './scenes/PauseScene'
 import { ShampooScene } from './scenes/ShampooScene'
 import { SpaScene } from './scenes/SpaScene'
+import { StaffScene } from './scenes/StaffScene'
 import { SummaryScene } from './scenes/SummaryScene'
 
 async function start() {
@@ -27,7 +28,7 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, SpaScene, ShampooScene, SummaryScene, PauseScene, OwnerScene, BuildScene],
+    scene: [BootScene, SpaScene, ShampooScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game }
 }

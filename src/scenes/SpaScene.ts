@@ -19,7 +19,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
-import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
+import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, STAFF_PLATE_TOP } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
@@ -29,6 +29,7 @@ import type { BuildData } from './BuildScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ShampooData } from './ShampooScene'
+import type { StaffData } from './StaffScene'
 import type { SummaryData } from './SummaryScene'
 
 const FX_DEPTH = 9000
@@ -74,7 +75,7 @@ export class SpaScene extends Phaser.Scene {
   private pendingService: ShampooData | null = null
   /** Frozen while asking for a newer version on return, so nothing happens that the reload would drop. */
   private holding = false
-  /** The owner card, the bed card or build mode is open: the shop waits and its events stay queued until it closes. */
+  /** The owner card, the bed card, build mode or the staff panel is open: the shop waits and its events stay queued until it closes. */
   private modal = false
   /** The morning banner waits for the install card a new shop opens with. */
   private bannerOnResume = false
@@ -114,7 +115,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild())
+    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff())
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
 
@@ -257,6 +258,25 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('BuildScene', data)
   }
 
+  /** The staff panel over the frozen shop, opened only when build mode would be. */
+  private openStaff(): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
+    const intro = !sim.hintDone('openStaff')
+    sim.markHint('openStaff')
+    const data: StaffData = {
+      sim,
+      intro,
+      onChange: () => this.session.saveNow(),
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('StaffScene', data)
+  }
+
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
   }
@@ -332,7 +352,7 @@ export class SpaScene extends Phaser.Scene {
     this.updatePointer(delta)
   }
 
-  /** One hint at a time: the money and star pointers after the first payment first, then the waiting customers, then the build button. */
+  /** One hint at a time: the money and star pointers after the first payment first, then the waiting customers, then the build or staff button. */
   private updatePointer(delta: number): void {
     const sim = this.sim
     if (sim.paused || sim.dayOver || sim.servingCustomerId !== null || this.modal || this.holding) {
@@ -352,6 +372,10 @@ export class SpaScene extends Phaser.Scene {
     const pick = pickHint(sim)
     if (pick?.hint === 'openBuild') {
       this.pointer.show(t('hintBuild'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
+      return
+    }
+    if (pick?.hint === 'openStaff') {
+      this.pointer.show(t('hintStaff'), STAFF_PLATE_TOP.x, STAFF_PLATE_TOP.y, 'down')
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container

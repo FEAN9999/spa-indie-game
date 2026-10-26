@@ -1,7 +1,7 @@
 import { UNLOCK_DAY } from '../config'
 import type { SpaSim } from './spa'
 
-export type Pointer = { hint: 'tapCustomer' | 'patience'; customerId: number } | { hint: 'openBuild' }
+export type Pointer = { hint: 'tapCustomer' | 'patience'; customerId: number } | { hint: 'openBuild' } | { hint: 'openStaff' }
 
 /** The one hint to show right now, or null. Never blocks input. */
 export function pickHint(sim: SpaSim): Pointer | null {
@@ -15,7 +15,8 @@ export function pickHint(sim: SpaSim): Pointer | null {
     const c = waiting.find(x => x.patienceMs < x.patienceMaxMs / 2)
     if (c) return { hint: 'patience', customerId: c.id }
   }
-  // only on the day building opens: a shop already past it gets the badge but no hand
+  // only on the day each button opens: a shop already past it gets the badge but no hand
   if (sim.day === UNLOCK_DAY.build && !sim.hintDone('openBuild')) return { hint: 'openBuild' }
+  if (sim.day === UNLOCK_DAY.staff && !sim.hintDone('openStaff')) return { hint: 'openStaff' }
   return null
 }

@@ -20,11 +20,13 @@ const PLATE_R = 62
 const navX = (i: number) => 135 + i * 270
 /** The top of the build button's plate, where the hand points. */
 export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
+/** The top of the staff button's plate, where the hand points. */
+export const STAFF_PLATE_TOP = { x: navX(1), y: NAV_Y - PLATE_R }
 
 /** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done. */
 const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId }[] = [
   { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
-  { key: 'navStaff', icon: 'icon-staff', feature: 'staff' },
+  { key: 'navStaff', icon: 'icon-staff', feature: 'staff', hint: 'openStaff' },
   { key: 'navServices', icon: 'icon-services', feature: 'services' },
   { key: 'navQuests', icon: 'icon-quests' },
 ]
@@ -53,6 +55,7 @@ export class Hud {
     private readonly sim: SpaSim,
     onPause: () => void,
     onBuild: () => void,
+    onStaff: () => void,
   ) {
     const add = scene.add
 
@@ -106,6 +109,7 @@ export class Hud {
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
         if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
         else if (feature === 'build') onBuild()
+        else if (feature === 'staff') onStaff()
         else this.toast(t('comingSoon'))
       })
       this.plates.push({ feature, hint: n.hint, icon, label, lock, badge })
