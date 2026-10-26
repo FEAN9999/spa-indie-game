@@ -18,7 +18,7 @@ export interface Grid {
   works: Tile[]
   desks: Tile[]
   plants: Tile[]
-  /** Head tile of each empty bed slot; see isBedSlot. */
+  /** Head tile of each empty bed slot; see bedSlotAt. */
   bedSlots: Tile[]
   decor: Record<DecorKind, Tile[]>
 }
@@ -137,12 +137,10 @@ export function isWalkable(grid: Grid, t: Tile): boolean {
   return cell === 'floor' || cell === 'door' || cell === 'work'
 }
 
-/** An empty bed slot covers its dashed basin on the wall above, its head tile and the two tiles below, like a bed. */
-export function isBedSlot(grid: Grid, t: Tile): boolean {
-  return bedSlotAt(grid, t) !== undefined
-}
-
-/** The head tile of the bed slot covering `t`, if any; see isBedSlot. */
+/**
+ * The head tile of the bed slot covering `t`, if any.
+ * An empty bed slot covers its dashed basin on the wall above, its head tile and the two tiles below, like a bed.
+ */
 export function bedSlotAt(grid: Grid, t: Tile): Tile | undefined {
   return grid.bedSlots.find(s => s.x === t.x && t.y >= s.y - 1 && t.y <= s.y + 2)
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isBedSlot, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { bedSlotAt, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('grid', () => {
@@ -34,8 +34,9 @@ describe('grid', () => {
 
   it('treats a bed slot, its basin above and the two tiles below as the slot', () => {
     const g = parseLayout(SPA_LAYOUT_1A)
-    expect([0, 1, 2, 3, 4, 5].map(y => isBedSlot(g, { x: 6, y }))).toEqual([false, true, true, true, true, false])
-    expect(isBedSlot(g, { x: 7, y: 3 })).toBe(false)
+    const head = { x: 6, y: 2 }
+    expect([0, 1, 2, 3, 4, 5].map(y => bedSlotAt(g, { x: 6, y }))).toEqual([undefined, head, head, head, head, undefined])
+    expect(bedSlotAt(g, { x: 7, y: 3 })).toBeUndefined()
   })
 
   it('counts a position on a bed, or stepping on or off it, as on the bed', () => {

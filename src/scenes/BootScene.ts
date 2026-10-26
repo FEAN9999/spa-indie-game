@@ -6,7 +6,8 @@ import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { loadSvgTextures } from '../art/svg'
 import { GAME_H, GAME_W } from '../config'
-import { parseLayout } from '../sim/grid'
+import { buildGrid } from '../sim/grid'
+import { shellOf } from '../sim/items'
 import { SPA_LAYOUT_1A } from '../sim/layout'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
@@ -21,7 +22,7 @@ export class BootScene extends Phaser.Scene {
       .text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600'))
       .setOrigin(0.5)
     await loadSvgTextures(this, {
-      room: roomTexture(parseLayout(SPA_LAYOUT_1A)),
+      room: roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])),
       ...furnitureTextures(),
       ...chibiTextures(),
       ...fxTextures(),

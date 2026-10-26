@@ -105,6 +105,8 @@ export const vi = {
   problemLastBed: 'Tiệm cần ít nhất một giường gội',
   problemLastSeat: 'Tiệm cần ít nhất một ghế chờ',
   problemMoney: 'Còn thiếu {money}',
+  quickBuyBed: 'Mua giường gội {money}?',
+  buy: 'Mua',
 } as const
 
 export type StringKey = keyof typeof vi

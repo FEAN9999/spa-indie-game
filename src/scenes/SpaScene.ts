@@ -2,21 +2,24 @@ import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, lookColors, ownerColors } from '../art/palette'
-import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
+import { PROBLEM_TEXT } from '../sim/build'
 import { dayEase } from '../sim/economy'
 import { onBed } from '../sim/grid'
+import { ITEMS } from '../sim/items'
 import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
 import { SpaSim } from '../sim/spa'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
+import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
-import { Hud } from '../view/Hud'
+import { DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
@@ -27,6 +30,8 @@ import type { ShampooData } from './ShampooScene'
 import type { SummaryData } from './SummaryScene'
 
 const FX_DEPTH = 9000
+/** The quick-buy card covers the top bar and the bottom nav too. */
+const CARD_DEPTH = HUD_DEPTH + 100
 const TAP_SLOP_PX = 20
 const STREET_SIDE_TILES = 4.5
 const RIPPLE_MS = 1200
@@ -102,6 +107,7 @@ export class SpaScene extends Phaser.Scene {
     }
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
+    this.syncRoom()
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.hud = new Hud(this, this.sim, () => this.pause())
@@ -228,6 +234,45 @@ export class SpaScene extends Phaser.Scene {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
   }
 
+  /** Draws the furniture as the sim has it, and a bed slot wherever a bed would fit. */
+  private syncRoom(): void {
+    const sim = this.sim
+    this.room.sync(sim.items, sim.grid.bedSlots.map(tile => ({ tile, open: sim.canPlace('bed', tile.x, tile.y, false) === null })))
+  }
+
+  /** A tap on an open bed slot: once building is open and the money is there, a card over the frozen shop asks before buying. */
+  private offerBed(slot: Tile): void {
+    const price = ITEMS.bed.price
+    if (!isUnlocked('build', this.sim.day)) {
+      this.hud.toast(t('unlocksOn', { day: UNLOCK_DAY.build }))
+      return
+    }
+    if (this.sim.money < price) {
+      this.hud.toast(t(PROBLEM_TEXT.money, { money: formatMoney(price - this.sim.money) }))
+      return
+    }
+    this.modal = true
+    const close = () => {
+      for (const p of parts) p.destroy()
+      this.modal = false
+    }
+    const buy = () => {
+      close()
+      this.sim.buy('bed', slot.x, slot.y, false)
+      this.syncRoom()
+      this.session.saveNow()
+    }
+    const text = t('quickBuyBed', { money: formatMoney(price) })
+    const parts = [
+      this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
+      addCard(this, 90, 860, 900, 440),
+      this.add.text(GAME_W / 2, 950, text, { ...textStyle(48, '800'), align: 'center', wordWrap: { width: 720 } }).setOrigin(0.5, 0),
+      addButton(this, GAME_W / 2 - 190, 1170, 340, 120, t('cancel'), 'plain', close),
+      addButton(this, GAME_W / 2 + 190, 1170, 340, 120, t('buy'), 'primary', buy),
+    ]
+    for (const p of parts) p.setDepth(CARD_DEPTH)
+  }
+
   update(time: number, delta: number) {
     if (this.tooNew) return
     if (!this.modal) {
@@ -336,6 +381,12 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'toast':
         this.hud.toast(t(e.key))
+        return
+      case 'roomChanged':
+        this.syncRoom()
+        return
+      case 'bedSlot':
+        this.offerBed(e.slot)
         return
       case 'dayEnded': {
         this.session.saveNow()

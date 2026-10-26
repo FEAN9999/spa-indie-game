@@ -362,7 +362,7 @@ const areca =
   frond(0.5, 0.72, 0.42, 0.15, 0.6, 0.04, C.leafLight) +
   clayPot(0.5, 1.5, 1.96, 0.26)
 
-/** Furniture sizes in tiles; RoomView anchors each at the bottom-centre of its run. */
+/** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
   bench: { w: 3.2, h: 1.35, body: bench },
@@ -398,5 +398,5 @@ export function itemTexture(kind: ItemKind): string {
 }
 
 export function furnitureTextures(): Record<string, string> {
-  return Object.fromEntries(Object.entries(FURNITURE).map(([key, f]) => [key, svgDoc([0, 0, f.w, f.h], TILE, f.body)]))
+  return Object.fromEntries(Object.entries(FURNITURE).map(([key, piece]) => [key, svgDoc([0, 0, piece.w, piece.h], TILE, piece.body)]))
 }

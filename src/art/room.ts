@@ -1,6 +1,6 @@
 import { TILE } from '../config'
 import type { Grid } from '../sim/grid'
-import { bedSlot, benchMat, lantern, MAT } from './furniture'
+import { MAT } from './furniture'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -32,6 +32,9 @@ const PLANKS =
   `<pattern id="planks" width="3.2" height="1" patternUnits="userSpaceOnUse" x="0.5" y="2">` +
   `<rect width="3.2" height="1" fill="${C.plank}"/>` +
   `<path d="M0,0.5 H3.2 M0,1 H3.2 M1,0 V0.5 M2.6,0.5 V1" stroke="${C.plankLine}" stroke-width="${FINE}"/></pattern>`
+
+/** Centre of the louvre window, over the default towel cabinet. */
+const WINDOW_X = 10.5
 
 function louvreWindow(cx: number): string {
   const x = cx - 0.75
@@ -70,7 +73,7 @@ function shopFront(cols: number, rows: number, doorX: number): string {
   return out.join('')
 }
 
-/** The whole floor in tile units: wood service room, gạch bông front, mats, walls, bed slots, shop front, street. */
+/** The bare room in tile units: wood service room, gạch bông front, runner, walls, shop front, street. RoomView draws the rest. */
 function roomBody(grid: Grid): string {
   const cols = grid.cols
   const rows = grid.rows
@@ -90,21 +93,11 @@ function roomBody(grid: Grid): string {
   out.push(rect(door.x + 0.1, runnerTop, 0.8, front - runnerTop, 'url(#mat)', outline(FINE)))
   out.push(`<path d="M${door.x + 0.22},${runnerTop} V${front} M${door.x + 0.78},${runnerTop} V${front}" stroke="${C.terracotta}" stroke-width="0.05"/>`)
 
-  // mat under the bench and the tea table
-  if (grid.seats.length) {
-    const xs = grid.seats.map(s => s.x)
-    out.push(benchMat(Math.min(...xs), Math.max(...xs), grid.seats[0].y))
-  }
-
-  // back wall with its louvre window, clock and lanterns over the work tiles
+  // back wall with its louvre window and clock
   out.push(rect(0.3, 0, cols - 0.6, 2, C.wall, outline()))
   out.push(rect(0.3, 1.65, cols - 0.6, 0.35, C.wallDark, outline(0.04)))
-  const cabinet = grid.decor.cabinet
-  if (cabinet.length) out.push(louvreWindow((cabinet[0].x + cabinet[cabinet.length - 1].x + 1) / 2))
+  out.push(louvreWindow(WINDOW_X))
   out.push(clock(cols / 2))
-  for (const w of grid.works) out.push(lantern(w.x + 0.5))
-
-  for (const s of grid.bedSlots) out.push(bedSlot(s.x, s.y))
 
   // side walls
   out.push(rect(0.3, 0, 0.2, rows, C.wallDark, outline(0.04)))

@@ -19,4 +19,8 @@ describe('strings', () => {
     expect(t('morningBanner', { name: 'Spa Sen', day: 3 })).toBe('Spa Sen · Ngày 3 · Mở cửa!')
     expect(t('importConfirm', { n: 2, day: 5 })).toBe('Tiệm trong ô 2 (Ngày 5) sẽ bị thay bằng tiệm trong mã. Tiếp tục?')
   })
+
+  it('asks before buying a bed from its slot', () => {
+    expect(t('quickBuyBed', { money: formatMoney(300000) })).toBe('Mua giường gội 300.000 đ?')
+  })
 })
