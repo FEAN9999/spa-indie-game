@@ -1,32 +1,42 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
-import { GAME_W } from '../config'
+import { GAME_W, UNLOCK_DAY } from '../config'
 import type { SpaSim } from '../sim/spa'
+import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
 import { layoutTopBar, TOP_BAR } from './topBar'
 
-const DEPTH = 10000
+export const DEPTH = 10000
 const BANNER_Y = 300
 const BANNER_H = 110
 const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
-const NAV: { key: StringKey; icon: string }[] = [
-  { key: 'navBuild', icon: 'icon-build' },
-  { key: 'navStaff', icon: 'icon-staff' },
-  { key: 'navServices', icon: 'icon-services' },
+/** Each button opens with its feature's day; one without a feature is never locked. */
+const NAV: { key: StringKey; icon: string; feature?: Feature }[] = [
+  { key: 'navBuild', icon: 'icon-build', feature: 'build' },
+  { key: 'navStaff', icon: 'icon-staff', feature: 'staff' },
+  { key: 'navServices', icon: 'icon-services', feature: 'services' },
   { key: 'navQuests', icon: 'icon-quests' },
 ]
+const LOCKED_ALPHA = 0.45
 
-/** Top bar, pause button, bottom nav, first-customer hint and toasts. Every element swallows its taps. */
+interface NavPlate {
+  feature?: Feature
+  icon: Phaser.GameObjects.Image
+  label: Phaser.GameObjects.Text
+  lock: Phaser.GameObjects.Image
+}
+
+/** Top bar, pause button, bottom nav and toasts. Every element swallows its taps. */
 export class Hud {
   private readonly money: Phaser.GameObjects.Text
   private readonly star: Phaser.GameObjects.Image
   private readonly rating: Phaser.GameObjects.Text
   private readonly dayTime: Phaser.GameObjects.Text
-  private readonly hint: Phaser.GameObjects.Container
+  private readonly plates: NavPlate[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
 
   constructor(
@@ -74,22 +84,23 @@ export class Hud {
       // a blue-and-white plate: cobalt double ring
       btn.add(add.circle(0, 0, 62, hex(C.cream)).setStrokeStyle(5, hex(C.cobalt)))
       btn.add(add.circle(0, 0, 52).setStrokeStyle(2, hex(C.cobalt)))
-      btn.add(add.image(0, 0, n.icon).setScale(1.3))
-      btn.setSize(130, 130).setInteractive().on('pointerup', () => this.toast(t('comingSoon')))
-      add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
+      const icon = add.image(0, 0, n.icon).setScale(1.3)
+      // a padlock on the plate's top-right while the feature waits for its day
+      const lock = add.image(44, -44, 'icon-lock')
+      btn.add([icon, lock])
+      const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
+      const feature = n.feature
+      btn.setSize(130, 130).setInteractive().on('pointerup', () => {
+        if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
+        else this.toast(t('comingSoon'))
+      })
+      this.plates.push({ feature, icon, label, lock })
     })
+  }
 
-    // first-customer hint
-    const hintText = add.text(0, 0, t('hintFirstCustomer'), textStyle(38, '600')).setOrigin(0.5)
-    const hintBg = add
-      .graphics()
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(-hintText.width / 2 - 36, -38, hintText.width + 72, 76, 12)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-hintText.width / 2 - 36, -38, hintText.width + 72, 76, 12)
-    // only until the first service ever, not again on a reopened shop
-    this.hint = add.container(GAME_W / 2, 1880, [hintBg, hintText]).setDepth(DEPTH).setVisible(sim.day === 1 && sim.stats.served === 0)
-    scene.tweens.add({ targets: this.hint, y: 1870, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
+  /** Where the star sits now; it moves right when the money grows long. */
+  get starX(): number {
+    return this.star.x
   }
 
   update(): void {
@@ -101,10 +112,13 @@ export class Hud {
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
     this.rating.x = row.ratingX
-  }
-
-  hideHint(): void {
-    this.hint.setVisible(false)
+    // checked every frame, so a new day opens its buttons at once
+    for (const p of this.plates) {
+      const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
+      p.icon.setAlpha(locked ? LOCKED_ALPHA : 1)
+      p.label.setAlpha(locked ? LOCKED_ALPHA : 1)
+      p.lock.setVisible(locked)
+    }
   }
 
   /** A card under the top bar that slides in, stays 2 seconds and fades out. */

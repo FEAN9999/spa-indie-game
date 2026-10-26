@@ -2,20 +2,24 @@ import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, lookColors, ownerColors } from '../art/palette'
-import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, PATIENCE_MS, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
+import { dayEase } from '../sim/economy'
 import { onBed } from '../sim/grid'
 import { createRng } from '../sim/rng'
 import { SaveError, type SaveData } from '../sim/save'
 import { SpaSim } from '../sim/spa'
+import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
+import { HandPointer } from '../view/HandPointer'
 import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
+import { TOP_BAR } from '../view/topBar'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ShampooData } from './ShampooScene'
@@ -25,6 +29,14 @@ const FX_DEPTH = 9000
 const TAP_SLOP_PX = 20
 const STREET_SIDE_TILES = 4.5
 const RIPPLE_MS = 1200
+/** How long each of the money and star pointers stays after the first payment. */
+const TOUR_STEP_MS = 3000
+/** The patience pointer is done once it has been seen this long. */
+const PATIENCE_HINT_MS = 4000
+/** The money and star pointers aim just under the top bar's first row. */
+const TOP_ROW_TIP_Y = 120
+/** The top of a waiting customer's patience bar, from their feet. */
+const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 interface CustomerSprite {
@@ -57,6 +69,10 @@ export class SpaScene extends Phaser.Scene {
   private modal = false
   /** The morning banner waits for the install card a new shop opens with. */
   private bannerOnResume = false
+  private pointer!: HandPointer
+  /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
+  private tour: { hint: 'money' | 'star'; ms: number }[] = []
+  private patienceHintMs = 0
 
   constructor() {
     super('SpaScene')
@@ -68,6 +84,8 @@ export class SpaScene extends Phaser.Scene {
     this.holding = false
     this.modal = false
     this.bannerOnResume = false
+    this.tour = []
+    this.patienceHintMs = 0
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
     const saved = this.session.load()
@@ -76,6 +94,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.hud = new Hud(this, this.sim, () => this.pause())
+    this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
 
     // a shop is first written once it has an owner; until then the owner card holds it still, so nothing is lost
@@ -205,6 +224,39 @@ export class SpaScene extends Phaser.Scene {
       if (s) this.syncCustomer(c, s, time, dt)
     }
     this.hud.update()
+    this.updatePointer(delta)
+  }
+
+  /** One hint at a time: the money and star pointers after the first payment first, then the waiting customers. */
+  private updatePointer(delta: number): void {
+    const sim = this.sim
+    if (sim.paused || sim.dayOver || sim.servingCustomerId !== null || this.modal || this.holding) {
+      this.pointer.hide()
+      return
+    }
+
+    const step = this.tour[0]
+    if (step) {
+      if (step.hint === 'money') this.pointer.show(t('hintMoney'), TOP_BAR.moneyX + 80, TOP_ROW_TIP_Y, 'up')
+      else this.pointer.show(t('hintStar'), this.hud.starX, TOP_ROW_TIP_Y, 'up')
+      step.ms -= delta
+      if (step.ms <= 0) this.tour.shift()
+      return
+    }
+
+    const pick = pickHint(sim)
+    const at = pick && this.customers.get(pick.customerId)?.view.container
+    if (!pick || !at) {
+      this.pointer.hide()
+      return
+    }
+    if (pick.hint === 'tapCustomer') {
+      this.pointer.show(t('hintTapCustomer'), at.x, at.y - CHARACTER_HEIGHT_PX - 10, 'down')
+      return
+    }
+    this.pointer.show(t('hintPatience'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+    this.patienceHintMs += delta
+    if (this.patienceHintMs >= PATIENCE_HINT_MS) sim.markHint('patience')
   }
 
   private handle(e: SimEvent): void {
@@ -227,14 +279,30 @@ export class SpaScene extends Phaser.Scene {
       case 'serviceReady': {
         const c = this.sim.customers.find(x => x.id === e.customerId)
         if (!c) return
-        this.hud.hideHint()
-        const data: ShampooData = { look: c.look, onDone: stars => this.sim.completeService(c.id, stars) }
+        const data: ShampooData = {
+          look: c.look,
+          extraMs: dayEase(this.sim.day).miniGameExtraMs,
+          demo: !this.sim.hintDone('demoShampoo'),
+          onDone: stars => {
+            this.sim.markHint('demoShampoo')
+            this.sim.completeService(c.id, stars)
+          },
+        }
         if (this.sim.paused) this.pendingService = data
         else this.scene.launch('ShampooScene', data)
         return
       }
       case 'paid':
         this.floatMoney(e.tile, e.amount + e.tip)
+        // the first payment ever points out the money, then the star; marked now so a reload never repeats them
+        if (!this.sim.hintDone('money')) {
+          this.sim.markHint('money')
+          this.sim.markHint('star')
+          this.tour = [
+            { hint: 'money', ms: TOUR_STEP_MS },
+            { hint: 'star', ms: TOUR_STEP_MS },
+          ]
+        }
         return
       case 'review':
         this.showBubble(e.customerId, e.score)
@@ -285,10 +353,10 @@ export class SpaScene extends Phaser.Scene {
 
     s.bar.clear()
     if (c.state === 'waiting') {
-      const f = Math.max(0, c.patienceMs / PATIENCE_MS)
+      const f = Math.max(0, c.patienceMs / c.patienceMaxMs)
       const color = hex(f > 0.5 ? C.green : f > 0.25 ? C.mustard : C.lantern)
       const x = p.x - 36
-      const y = p.y - CHARACTER_HEIGHT_PX - 8
+      const y = p.y + PATIENCE_BAR_TOP + 4
       s.bar.fillStyle(hex(C.paper), 1).fillRoundedRect(x - 4, y - 4, 80, 20, 10)
       s.bar.lineStyle(3, hex(C.ink)).strokeRoundedRect(x - 4, y - 4, 80, 20, 10)
       s.bar.fillStyle(color, 1).fillRoundedRect(x, y, Math.max(12, 72 * f), 12, 6)

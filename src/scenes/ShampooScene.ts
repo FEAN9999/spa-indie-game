@@ -1,6 +1,6 @@
 import * as Phaser from 'phaser'
 import { C, lookColors } from '../art/palette'
-import { GAME_H, GAME_W, SHAMPOO_TIME_LIMIT_MS } from '../config'
+import { GAME_H, GAME_W } from '../config'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
 import type { Look } from '../sim/types'
@@ -9,6 +9,10 @@ import { textStyle } from '../view/text'
 
 export interface ShampooData {
   look: Look
+  /** Added to the time limit and the star marks on the gentler first days. */
+  extraMs: number
+  /** The first shampoo shows each move with a faint hand. */
+  demo: boolean
   onDone: (stars: Stars) => void
 }
 
@@ -21,6 +25,7 @@ const MAX_FOAM = 90
 const DROP_EVERY_MS = 45
 const BEADS = 14
 const STAR_Y = 1330
+const DEMO = { alpha: 0.6, swipePx: 120, swipeMs: 700, pressScale: 0.9, pressMs: 900 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 const INSTRUCTION: Record<ShampooPhase, StringKey> = { foam: 'shampooFoam', rinse: 'shampooRinse', dry: 'shampooDry', done: 'shampooDone' }
@@ -41,6 +46,8 @@ export class ShampooScene extends Phaser.Scene {
   private shower!: Phaser.GameObjects.Image
   private towel!: Phaser.GameObjects.Image
   private revealed = false
+  /** The faint hand showing this phase's move, until the first touch of the phase. */
+  private demoHand: Phaser.GameObjects.Image | null = null
 
   constructor() {
     super('ShampooScene')
@@ -51,7 +58,7 @@ export class ShampooScene extends Phaser.Scene {
   }
 
   create() {
-    this.rules = new ShampooGame()
+    this.rules = new ShampooGame(this.params.extraMs)
     this.phase = 'foam'
     this.pointer = null
     this.trail = 0
@@ -59,6 +66,7 @@ export class ShampooScene extends Phaser.Scene {
     this.foam = []
     this.beads = []
     this.revealed = false
+    this.demoHand = null
 
     const colors = lookColors(this.params.look)
     // interactive so taps stop here instead of reaching the spa's HUD underneath
@@ -84,9 +92,11 @@ export class ShampooScene extends Phaser.Scene {
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       this.pointer = p
       this.last = { x: p.x, y: p.y }
+      this.hideDemo()
     })
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p))
     for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => (this.pointer = null))
+    this.showDemo('foam')
   }
 
   update(time: number, delta: number) {
@@ -140,6 +150,7 @@ export class ShampooScene extends Phaser.Scene {
       return
     }
     this.instruction.setText(t(INSTRUCTION[next]))
+    this.showDemo(next)
     if (next === 'dry') {
       for (const f of this.foam) f.destroy()
       this.foam = []
@@ -151,6 +162,27 @@ export class ShampooScene extends Phaser.Scene {
     }
   }
 
+  /** Foam and dry: the hand swipes side to side across the hair; rinse: it presses slowly on the hair centre. */
+  private showDemo(phase: ShampooPhase): void {
+    this.hideDemo()
+    if (!this.params.demo || phase === 'done') return
+    // the fingertip is at the bottom centre of the texture
+    const hand = this.add.image(HAIR.x, HAIR.y, 'hand').setOrigin(0.5, 1).setAlpha(DEMO.alpha).setDepth(20)
+    if (phase === 'rinse') this.tweens.add({ targets: hand, scale: DEMO.pressScale, duration: DEMO.pressMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
+    else {
+      hand.x = HAIR.x - DEMO.swipePx
+      this.tweens.add({ targets: hand, x: HAIR.x + DEMO.swipePx, duration: DEMO.swipeMs, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
+    }
+    this.demoHand = hand
+  }
+
+  private hideDemo(): void {
+    if (!this.demoHand) return
+    this.tweens.killTweensOf(this.demoHand)
+    this.demoHand.destroy()
+    this.demoHand = null
+  }
+
   private spawnDrop(x: number, y: number): void {
     const drop = this.add.image(x + Phaser.Math.Between(-40, 40), y - 80, 'sh-drop').setDepth(9)
     this.tweens.add({ targets: drop, y: y + 40, alpha: 0, duration: 380, onComplete: () => drop.destroy() })
@@ -158,6 +190,7 @@ export class ShampooScene extends Phaser.Scene {
 
   private reveal(stars: Stars): void {
     this.revealed = true
+    this.hideDemo()
     this.shower.setVisible(false)
     this.towel.setVisible(false)
     // the hair is clean and dry, whatever phase the reveal interrupted
@@ -181,7 +214,7 @@ export class ShampooScene extends Phaser.Scene {
   }
 
   private drawBars(progress: number): void {
-    const left = Math.max(0, 1 - this.rules.elapsedMs / SHAMPOO_TIME_LIMIT_MS)
+    const left = Math.max(0, 1 - this.rules.elapsedMs / this.rules.limitMs)
     const g = this.bars.clear()
     const bar = (y: number, track: number, fill: number, k: number) => {
       g.fillStyle(track, 1).fillRoundedRect(BAR.x, y, BAR.w, BAR.h, BAR.h / 2)
