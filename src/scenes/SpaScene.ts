@@ -282,7 +282,11 @@ export class SpaScene extends Phaser.Scene {
     }
     const buy = () => {
       close()
-      this.sim.buy('bed', slot.x, slot.y, false)
+      const problem = this.sim.buy('bed', slot.x, slot.y, false)
+      if (problem) {
+        this.hud.toast(t(PROBLEM_TEXT[problem], { money: formatMoney(price - this.sim.money) }))
+        return
+      }
       this.syncRoom()
       this.session.saveNow()
     }
