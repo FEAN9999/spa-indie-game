@@ -79,11 +79,11 @@ export function fxTextures(): Record<string, string> {
     hand: svgDoc(
       [0, 0, 100, 130],
       1,
-      `<ellipse cx="86" cy="50" rx="9" ry="15" transform="rotate(-25 86 50)" fill="${C.cream}" ${OUTLINE}/>` +
-        `<rect x="16" y="20" width="68" height="58" rx="16" fill="${C.cream}" ${OUTLINE}/>` +
-        `<circle cx="27" cy="76" r="10" fill="${C.cream}" ${OUTLINE}/><circle cx="73" cy="76" r="10" fill="${C.cream}" ${OUTLINE}/>` +
+      `<ellipse cx="70" cy="56" rx="8.5" ry="17" transform="rotate(14 70 56)" fill="${C.cream}" ${OUTLINE}/>` +
+        `<rect x="12" y="20" width="52" height="58" rx="16" fill="${C.cream}" ${OUTLINE}/>` +
+        `<circle cx="20" cy="76" r="9" fill="${C.cream}" ${OUTLINE}/><circle cx="30" cy="78" r="9" fill="${C.cream}" ${OUTLINE}/><circle cx="40" cy="76" r="9" fill="${C.cream}" ${OUTLINE}/>` +
         `<rect x="40" y="58" width="20" height="68" rx="10" fill="${C.cream}" ${OUTLINE}/>` +
-        `<rect x="12" y="2" width="76" height="24" rx="8" fill="${C.teal}" ${OUTLINE}/>`,
+        `<rect x="8" y="2" width="60" height="24" rx="8" fill="${C.teal}" ${OUTLINE}/>`,
     ),
     'icon-dice': svgDoc(
       [0, 0, 64, 64],

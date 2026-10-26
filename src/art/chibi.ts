@@ -83,7 +83,7 @@ const longUp = 'M-12,0 A12,12 0 0 1 12,0 L12.6,14 Q6,17 0,16.4 Q-6,17 -12.6,14Z'
 const longSide = 'M-12,2 A12,12 0 0 1 12,-1 Q9,-5.5 5,-5 Q4,-2 2,-3 Q-1,-1 -2,3 Q-2,10 -5,15 Q-10,16.5 -12.6,12Z'
 
 const cropDown = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 Q10.5,-3 7,-4.5 Q2,-2.5 -4,-6.5 Q-9,-5 -11.5,0Z'
-const cropUp = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 L11,2 Q0,5.5 -11,2Z'
+const cropUp = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 L10.4,5 Q0,10 -10.4,5Z'
 const cropSide = 'M-11.5,1 A11.5,11.5 0 0 1 11.5,-1 Q10,-4 6,-4.5 Q3,-2.5 0,-4 Q-2,-1.5 -4,0 Q-6.5,-1 -8,1.5 L-9.6,5.5 Q-11.5,4 -11.5,1Z'
 const bunDown = '<circle cx="0" cy="-12" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
 const bunSide = '<circle cx="-8.5" cy="-9" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
