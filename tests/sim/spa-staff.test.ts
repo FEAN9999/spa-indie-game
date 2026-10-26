@@ -253,7 +253,7 @@ const cabinetTiles = (sim: SpaSim) => sim.items.filter(i => i.kind === 'cabinet'
 const served = (c: Customer) => c.state === 'leaving' || c.state === 'exiting'
 
 describe('rest', () => {
-  it('a tired technician rests by the towel cabinet for 35 s, then works again', () => {
+  it('a tired technician rests by the towel cabinet for one game hour, then works again', () => {
     const sim = dayThree()
     const tech = hireStaff(sim, 'technician', tired())
     for (const c of seated(sim, 3)) advanceUntil(sim, () => served(c), 90_000)

@@ -78,7 +78,8 @@ export const LEVEL_WAGE_RAISE = 5000
 export const LEVEL_XP = [0, 3, 8, 15, 25] as const
 export const STAFF_WORK_MS_SLOW = 24000
 export const STAFF_WORK_MS_STEP = 3000
-export const STAFF_REST_MS = 35000
+/** A tea break lasts one game hour. */
+export const STAFF_REST_MS = 25000
 /** Chance of three stars and of one star, by skill 1 to 5. */
 export const STAFF_STAR_ODDS = { three: [0, 0.1, 0.25, 0.45, 0.65], one: [0.4, 0.25, 0.1, 0.05, 0] } as const
 export const GREET_PATIENCE_BASE = 1.15
