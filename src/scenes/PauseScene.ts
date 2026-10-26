@@ -21,6 +21,7 @@ export interface PauseData {
   session: SaveSession
   panel: PausePanel
   onResume: () => void
+  onEditProfile: () => void
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -31,6 +32,11 @@ const MID = GAME_W / 2
 const ROW_W = 720
 const ROW_H = 120
 const ROW_STEP = 144
+
+/** Shrinks `text` to `width` when it is wider. */
+const fitWidth = (text: Phaser.GameObjects.Text, width: number) => {
+  if (text.width > width) text.setScale(width / text.width)
+}
 
 /** The pause card over the frozen spa: save slots, save codes and the install steps. Taps on the dimmed backdrop do nothing. */
 export class PauseScene extends Phaser.Scene {
@@ -73,6 +79,13 @@ export class PauseScene extends Phaser.Scene {
     this.keep(this.add.text(MID, CARD_TOP + 120, text, textStyle(72)).setOrigin(0.5))
   }
 
+  /** The shop name over "paused", on the menu only. */
+  private header(): void {
+    const name = this.keep(this.add.text(MID, CARD_TOP + 95, this.params.sim.shopName, textStyle(64, '800')).setOrigin(0.5))
+    fitWidth(name, 780)
+    this.keep(this.add.text(MID, CARD_TOP + 170, t('paused'), textStyle(40, '600')).setOrigin(0.5))
+  }
+
   private note(y: number, text: string, color: string = C.ink): Phaser.GameObjects.Text {
     return this.keep(this.add.text(MID, y, text, { ...textStyle(38, '600', color), align: 'center', wordWrap: { width: ROW_W } }).setOrigin(0.5, 0))
   }
@@ -84,7 +97,7 @@ export class PauseScene extends Phaser.Scene {
   private showMenu(): void {
     this.clear()
     const { store, session } = this.params
-    this.title(t('paused'))
+    this.header()
     this.button(CARD_TOP + 280, t('resume'), 'primary', () => this.resume(), 150)
     this.keep(this.add.text(MID, CARD_TOP + 435, t('saveSlots'), textStyle(44, '600')).setOrigin(0.5))
     let y = CARD_TOP + 540
@@ -96,6 +109,11 @@ export class PauseScene extends Phaser.Scene {
     this.button(y, t('exportSave'), 'plain', () => this.showExport())
     y += ROW_STEP
     this.button(y, t('importSave'), 'plain', () => this.showImport())
+    y += ROW_STEP
+    this.button(y, t('profileTitle'), 'plain', () => {
+      this.scene.stop()
+      this.params.onEditProfile()
+    })
     if (installPlatform(currentInstallEnv())) {
       y += ROW_STEP
       this.button(y, t('installMenu'), 'plain', () => this.showInstall())
@@ -110,11 +128,13 @@ export class PauseScene extends Phaser.Scene {
       .fillRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
       .lineStyle(playing ? 6 : 4, hex(playing ? C.teal : C.ink))
       .strokeRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
-    this.keep(this.add.text(left + 50, y, t(playing ? 'slotPlaying' : 'slotName', { n: slot }), textStyle(40)).setOrigin(0, 0.5))
+    const info = playing ? null : store.info(slot)
+    const name = playing ? this.params.sim.shopName : info?.name
+    const first = this.keep(this.add.text(left + 50, y - 22, name ?? t('slotEmpty'), textStyle(40, '800')).setOrigin(0, 0.5))
+    fitWidth(first, 620)
+    const second = playing ? t('slotPlaying', { n: slot }) : info ? t('slotSummary', { n: slot, day: info.day, money: formatMoney(info.money) }) : t('slotName', { n: slot })
+    this.keep(this.add.text(left + 50, y + 28, second, textStyle(32, '600')).setOrigin(0, 0.5))
     if (playing) return
-    const info = store.info(slot)
-    const detail = info ? t('slotDetail', { day: info.day, money: formatMoney(info.money) }) : t('slotEmpty')
-    this.keep(this.add.text(left + ROW_W - 50, y, detail, textStyle(36, '600')).setOrigin(1, 0.5))
     const zone = this.keep(this.add.zone(MID, y, ROW_W, ROW_H).setInteractive())
     zone.on('pointerup', () => this.params.session.switchTo(slot))
   }

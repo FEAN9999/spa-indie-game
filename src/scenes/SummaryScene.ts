@@ -9,6 +9,7 @@ import { textStyle } from '../view/text'
 export interface SummaryData {
   sim: SpaSim
   onNewDay: () => void
+  firstDay: boolean
 }
 
 const COUNT_MS = 800
@@ -29,7 +30,7 @@ export class SummaryScene extends Phaser.Scene {
   }
 
   create() {
-    const { sim, onNewDay } = this.params
+    const { sim, onNewDay, firstDay } = this.params
     const s = sim.stats
     const rating = sim.rating()
     const rows: { label: StringKey; value: number; show: (v: number) => string }[] = [
@@ -48,7 +49,14 @@ export class SummaryScene extends Phaser.Scene {
       .fillRoundedRect(90, 420, 900, 1300, 60)
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(90, 420, 900, 1300, 60)
-    this.add.text(GAME_W / 2, 545, t('summaryTitle', { day: sim.day }), textStyle(64)).setOrigin(0.5)
+    const name = this.add.text(GAME_W / 2, 485, sim.shopName, textStyle(44, '600')).setOrigin(0.5)
+    if (name.width > 760) name.setScale(760 / name.width)
+    this.add.text(GAME_W / 2, 565, t('summaryTitle', { day: sim.day }), textStyle(60)).setOrigin(0.5)
+    if (firstDay) {
+      this.add
+        .text(GAME_W / 2, 1420, t('summaryFirstDay'), { ...textStyle(34, '600'), align: 'center', wordWrap: { width: 760 } })
+        .setOrigin(0.5)
+    }
 
     const values = rows.map((row, i) => {
       const y = ROW_Y + i * ROW_STEP

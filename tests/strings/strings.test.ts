@@ -15,7 +15,8 @@ describe('strings', () => {
   })
 
   it('fills the save screen strings', () => {
-    expect(t('slotDetail', { day: 5, money: formatMoney(340000) })).toBe('Ngày 5 · 340.000 đ')
+    expect(t('slotSummary', { n: 2, day: 5, money: formatMoney(340000) })).toBe('Ô 2 · Ngày 5 · 340.000 đ')
+    expect(t('morningBanner', { name: 'Spa Sen', day: 3 })).toBe('Spa Sen · Ngày 3 · Mở cửa!')
     expect(t('importConfirm', { n: 2, day: 5 })).toBe('Tiệm trong ô 2 (Ngày 5) sẽ bị thay bằng tiệm trong mã. Tiếp tục?')
   })
 })

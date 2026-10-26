@@ -144,7 +144,7 @@ export class SpaScene extends Phaser.Scene {
 
   pause(panel: PausePanel = 'menu'): void {
     this.sim.paused = true
-    const data: PauseData = { sim: this.sim, store: this.store, session: this.session, panel, onResume: () => this.resume() }
+    const data: PauseData = { sim: this.sim, store: this.store, session: this.session, panel, onResume: () => this.resume(), onEditProfile: () => this.openOwnerCard('edit', () => this.pause()) }
     this.scene.launch('PauseScene', data)
   }
 
@@ -246,7 +246,9 @@ export class SpaScene extends Phaser.Scene {
         this.session.saveNow()
         const data: SummaryData = {
           sim: this.sim,
+          firstDay: !this.sim.hintDone('summary'),
           onNewDay: () => {
+            this.sim.markHint('summary')
             this.sim.startDay()
             this.session.saveNow()
             this.showMorningBanner()
