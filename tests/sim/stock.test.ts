@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { DAY_END_MIN, RESTOCK_AMOUNT } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -43,6 +44,18 @@ describe('using up stock', () => {
     expect(sim.money).toBe(-670_000)
     expect(sim.stock.oil).toBe(60)
     expect(sim.stats.restock).toBe(720_000)
+  })
+
+  it('warns for every item that reaches 5 on the same customer, in order', () => {
+    const sim = fresh()
+    sim.stock.shampoo = 6
+    sim.stock.towel = 6
+    sim.drainEvents()
+    startService(sim)
+    expect(sim.drainEvents().filter(e => e.type === 'stockLow')).toEqual([
+      { type: 'stockLow', item: 'shampoo' },
+      { type: 'stockLow', item: 'towel' },
+    ])
   })
 
   it('warns once when an item reaches 5, and again after restocking above 5', () => {
@@ -107,6 +120,12 @@ describe('running out', () => {
     expect(sim.stock.towel).toBe(0)
     expect(sim.customers.find(c => c.id === fetched)!.state).toBe('waiting')
     expect(tech.task).toBeNull()
+
+    sim.completeService(other.id, 3)
+    sim.advance(5000)
+    expect(sim.customers.find(c => c.id === fetched)!.state).toBe('waiting')
+    expect(sim.stock.towel).toBe(0)
+    expect(tech.task).toBeNull()
   })
 
   it('never lays a customer on a bed when the last unit went to someone else on the way', () => {
@@ -137,6 +156,71 @@ describe('running out', () => {
     const events: SimEvent[] = []
     advanceUntil(sim, () => sim.money > -340_000, 120_000, events)
     expect(c.state).not.toBe('waiting')
+  })
+
+  it('keeps a shop that wages pushed below zero able to restock and earn on the next day', () => {
+    const sim = fresh()
+    const tech = hireStaff(sim, 'technician')
+    sim.money = tech.wage - 1
+    sim.clock.minutes = DAY_END_MIN
+    advanceUntil(sim, () => sim.dayOver, 5_000)
+    expect(sim.stats.wages).toBe(tech.wage)
+    expect(sim.money).toBe(-1)
+    sim.startDay()
+    sim.stock.shampoo = 0
+    sim.stock.towel = 0
+    sim.restock('shampoo')
+    sim.restock('towel')
+    expect(sim.stock).toMatchObject({ shampoo: RESTOCK_AMOUNT, towel: RESTOCK_AMOUNT })
+    expect(sim.stats.restock).toBeGreaterThan(0)
+    const poor = sim.money
+    expect(poor).toBeLessThan(0)
+    const c = seatAndWait(sim)
+    advanceUntil(sim, () => sim.money > poor, 120_000)
+    expect(c.state).not.toBe('waiting')
+    expect(sim.stock).toMatchObject({ shampoo: RESTOCK_AMOUNT - 1, towel: RESTOCK_AMOUNT - 1 })
+  })
+
+  describe('when the only bed of a fetched customer is sold', () => {
+    /** A mask customer waiting with the only mask bed sold on the way: the customer now wants shampoo, which has run out. */
+    const soldDuringFetch = (whoFetches: 'technician' | 'owner') => {
+      const sim = fresh()
+      expect(sim.openService('mask')).toBeNull()
+      expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+      const tech = whoFetches === 'technician' ? hireStaff(sim, 'technician') : null
+      const c = sim.spawnCustomer({ kind: 'office', service: 'mask' })
+      if (tech) advanceUntil(sim, () => tech.task?.kind === 'fetch')
+      else {
+        advanceUntil(sim, () => c.state === 'waiting')
+        sim.tapTile(c.seat!)
+        expect(sim.owner.task).toMatchObject({ kind: 'fetch' })
+      }
+      sim.drainEvents()
+      expect(sim.sell(sim.items.find(i => i.kind === 'maskBed')!.id)).toBeNull()
+      expect(c.service).toBe('shampoo')
+      sim.stock.shampoo = 0
+      return { sim, c, tech }
+    }
+
+    it('makes the technician drop the fetch instead of laying the customer on a bed', () => {
+      const { sim, c, tech } = soldDuringFetch('technician')
+      sim.advance(10_000)
+      expect(tech!.task).toBeNull()
+      expect(c.state).toBe('waiting')
+      expect(c.stationId).toBeNull()
+      expect(sim.stock).toMatchObject({ shampoo: 0, towel: 20 })
+    })
+
+    it('tells the owner the item is out and leaves the owner where they stopped', () => {
+      const { sim, c } = soldDuringFetch('owner')
+      const ev: SimEvent[] = []
+      advanceUntil(sim, () => sim.owner.task === null, 30_000, ev)
+      ev.push(...sim.drainEvents())
+      expect(ev).toContainEqual({ type: 'stockOut', item: 'shampoo' })
+      expect(c.state).toBe('waiting')
+      expect(sim.owner.path).toEqual([])
+      expect(sim.stock).toMatchObject({ shampoo: 0, towel: 20 })
+    })
   })
 
   it('takes the items once even when the shop is saved and reopened during the service', () => {

@@ -126,11 +126,11 @@ function withFullStock(old: object): SaveData {
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   const data = parseVersioned(raw)
-  // customers saved before the receptionist existed were never greeted
   // stock counts are whole numbers from zero up, else a full shelf; money spent restocking is a number, else nothing
   const stock: Record<string, unknown> = isObject(data.stock) ? data.stock : {}
   data.stock = Object.fromEntries(STOCK_ITEMS.map(i => [i, Number.isInteger(stock[i]) && (stock[i] as number) >= 0 ? stock[i] : STOCK_START])) as Record<StockItem, number>
   data.stats = { ...data.stats, restock: isNumber(data.stats.restock) ? data.stats.restock : 0 }
+  // customers saved before the receptionist existed were never greeted
   data.customers = data.customers.map(c => ({ ...c, greet: isNumber(c.greet) ? c.greet : 0 }))
   // unknown services are dropped and shampoo is always open; a customer who wants an unknown one wants shampoo
   const known = Array.isArray(data.services) ? data.services : []

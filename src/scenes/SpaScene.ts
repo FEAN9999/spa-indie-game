@@ -24,6 +24,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
 import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
+import { stockLowText } from '../view/stockText'
 import { RoomView } from '../view/RoomView'
 import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
@@ -365,7 +366,11 @@ export class SpaScene extends Phaser.Scene {
     if (this.tooNew) return
     if (!this.modal) {
       if (!this.holding) this.sim.update(delta)
-      for (const e of this.sim.drainEvents()) this.handle(e)
+      const events = this.sim.drainEvents()
+      for (const e of events) this.handle(e)
+      // two items can run low on the same customer: one toast, or the first would be destroyed unseen
+      const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
+      if (low.length > 0) this.hud.toast(stockLowText(low))
     }
 
     const dt = this.sim.paused || this.modal ? 0 : delta
@@ -500,7 +505,6 @@ export class SpaScene extends Phaser.Scene {
         this.hud.toast(t(e.key))
         return
       case 'stockLow':
-        this.hud.toast(t('stockLow', { item: t(STOCK_NAME[e.item]) }))
         return
       case 'stockOut':
         this.hud.toast(t('stockOut', { item: t(STOCK_NAME[e.item]).toLocaleLowerCase('vi') }))
