@@ -3,6 +3,7 @@ import '@fontsource/be-vietnam-pro/800.css'
 import * as Phaser from 'phaser'
 import { captureInstallPrompt } from './app/install'
 import { BUILD_ID, registerServiceWorker } from './app/update'
+import { sound } from './audio/engine'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { BuildScene } from './scenes/BuildScene'
@@ -31,9 +32,11 @@ async function start() {
     pixelArt: false,
     antialias: true,
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    // all sound is made by src/audio, so Phaser never opens its own AudioContext
+    audio: { noAudio: true },
     scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene],
   })
-  if (import.meta.env.DEV) (window as any).__spa = { game }
+  if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }
 
 // Chrome offers the install prompt once, early; keep it for the "Cài" button
@@ -43,5 +46,7 @@ navigator.storage?.persist?.()
 registerServiceWorker()
 // which version is running, for checking a deploy from the browser
 document.documentElement.dataset.build = BUILD_ID
+// sound may only start at the player's first touch
+sound.listenForFirstTouch(window)
 
 start()
