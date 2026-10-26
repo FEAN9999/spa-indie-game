@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { installPlatform } from '../../src/app/install'
+import { inSafari, installPlatform } from '../../src/app/install'
 
 const IPHONE_SAFARI =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Mobile/15E148 Safari/604.1'
 const IPAD_SAFARI = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15'
 const IPHONE_CHROME =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/141.0.7390.41 Mobile/15E148 Safari/604.1'
-const ANDROID_CHROME = 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36'
+const IPHONE_ZALO =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Zalo iOS/600 ZaloTheme/light ZaloLanguage/vn'
+const IPHONE_EDGE =
+  'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 EdgiOS/141.0.3537.57 Mobile/15E148 Safari/605.1.15'
+const ANDROID_CHROME ='Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36'
 const WINDOWS_CHROME = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Safari/537.36'
 
 describe('install platform', () => {
@@ -22,6 +26,14 @@ describe('install platform', () => {
 
   it('treats Chrome on an iPhone as iOS', () => {
     expect(installPlatform({ ua: IPHONE_CHROME, maxTouchPoints: 5, standalone: false })).toBe('ios')
+  })
+
+  it('sends Zalo, Chrome and other browsers on an iPhone to Safari first', () => {
+    expect(inSafari(IPHONE_SAFARI)).toBe(true)
+    expect(inSafari(IPAD_SAFARI)).toBe(true)
+    expect(inSafari(IPHONE_ZALO)).toBe(false)
+    expect(inSafari(IPHONE_CHROME)).toBe(false)
+    expect(inSafari(IPHONE_EDGE)).toBe(false)
   })
 
   it('offers the Android steps on Android and nothing on a desktop', () => {

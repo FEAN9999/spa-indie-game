@@ -15,6 +15,12 @@ export function installPlatform(env: InstallEnv): InstallPlatform | null {
   return null
 }
 
+/** Safari itself, whose Share menu the iOS steps describe; Zalo's built-in browser, Chrome and others are not. */
+export function inSafari(ua: string): boolean {
+  // built-in browsers carry no Safari token, Chrome and Firefox no Version token; Edge carries both
+  return /Version\/.*Safari\//.test(ua) && !/EdgiOS/.test(ua)
+}
+
 export function currentInstallEnv(): InstallEnv {
   return {
     ua: navigator.userAgent,

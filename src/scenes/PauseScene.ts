@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser'
-import { canPromptInstall, currentInstallEnv, installPlatform, promptInstall } from '../app/install'
+import { canPromptInstall, currentInstallEnv, inSafari, installPlatform, promptInstall } from '../app/install'
 import { C } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
@@ -187,10 +187,12 @@ export class PauseScene extends Phaser.Scene {
     )
     let y = heading.y + heading.height + 60
     let n = 1
-    if (installPlatform(currentInstallEnv()) === 'ios') {
+    const env = currentInstallEnv()
+    if (installPlatform(env) === 'ios') {
       const carry = sim.day > 1
+      const safari = inSafari(env.ua)
       if (carry) {
-        y = this.step(n++, y, t('installCopyFirst'))
+        y = this.step(n++, y, t(safari ? 'installCopyFirst' : 'installKeepCode'))
         // encoded ahead, so the copy runs straight from the tap as Safari requires
         let code = ''
         encodeSaveCode(sim.toSave()).then(c => (code = c))
@@ -202,9 +204,27 @@ export class PauseScene extends Phaser.Scene {
         )
         y += 170
       }
-      y = this.step(n++, y, t('installIosShare'), 'icon-share')
-      y = this.step(n++, y, t('installIosAdd'))
-      y = this.step(n++, y, t('installOpenApp'))
+      if (safari) {
+        y = this.step(n++, y, t('installIosShare'), 'icon-share')
+        y = this.step(n++, y, t('installIosAdd'))
+        y = this.step(n++, y, t('installOpenApp'))
+      } else {
+        // Zalo's built-in browser and Chrome have other menus: move to Safari, which shows its own install card
+        y = this.step(n++, y, t('installToSafari'))
+        const link = location.origin + location.pathname
+        this.keep(
+          domButton(this, MID, y + 60, t('copyLink'), async b => {
+            if (await copyText(link, null)) b.textContent = t('copied')
+            else {
+              // no clipboard here: show the link to type into Safari
+              b.textContent = link.replace(/^https?:\/\//, '')
+              b.style.fontSize = '30px'
+            }
+          }),
+        )
+        y += 170
+        y = this.step(n++, y, t('installInSafari'))
+      }
       if (carry) y = this.step(n++, y, t('installImportAfter'))
     } else if (canPromptInstall()) {
       this.keep(domButton(this, MID, y + 60, t('installAndroid'), () => void promptInstall()))
