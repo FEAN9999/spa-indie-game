@@ -67,6 +67,8 @@ export class MusicPlayer {
   private queuePhrase(): void {
     const start = this.nextPhraseAt
     const length = PHRASE_EIGHTHS * EIGHTH + (this.rng() < 0.3 ? REST : 0)
+    // moved on before any node is made, so a failure part way loses only this phrase and never queues it again
+    this.nextPhraseAt = start + length
     this.queuePad(start, start + length)
     const notes = phrase(this.rng, this.lastDegree)
     for (const n of notes) {
@@ -74,7 +76,6 @@ export class MusicPlayer {
       this.queued.push({ node: pluck(this.ctx, this.melody, this.plucks, n.degree, at, n.velocity * 0.5, n.bend), at })
     }
     this.lastDegree = notes[notes.length - 1].degree
-    this.nextPhraseAt = start + length
   }
 
   /** A root and the pure fifth above it, swelling in over 2 s and fading over 2.5 s under the next phrase's pad. */

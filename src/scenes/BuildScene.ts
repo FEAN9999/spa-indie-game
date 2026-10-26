@@ -236,7 +236,10 @@ export class BuildScene extends Phaser.Scene {
     pic.setScale(Math.min(1, (CARD_W - 2 * CARD_PAD) / pic.width, picH / pic.height))
     box.add([pic, ...lines])
     this.keep(box.setAlpha(short > 0 ? FADED_ALPHA : 1))
-    this.keep(this.add.zone(x, (top + CARD_BOTTOM) / 2, CARD_W, CARD_BOTTOM - top).setInteractive()).on('pointerup', () => this.panelTap() && this.takeNew(kind))
+    this.keep(this.add.zone(x, (top + CARD_BOTTOM) / 2, CARD_W, CARD_BOTTOM - top).setInteractive()).on('pointerup', () => {
+      sound.play('tap')
+      if (this.panelTap()) this.takeNew(kind)
+    })
   }
 
   private openTab(group: ItemGroup): void {

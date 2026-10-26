@@ -63,7 +63,15 @@ export class SoundEngine {
   private graph: Graph | null = null
   private stopWater: (() => void) | null = null
   private ended = false
+  private warned = false
   private readonly throttle = new Throttle()
+  private touchTarget: EventTarget | null = null
+  private listening = false
+  /** Unlocks at a gesture, and stops listening once sound runs or turns out to be unavailable. */
+  private readonly onGesture = () => {
+    this.unlock()
+    if (this.current === 'running' || this.current === 'off') this.listen(false)
+  }
 
   constructor(
     private readonly getStorage: () => KeyValueStorage | null,
@@ -87,105 +95,158 @@ export class SoundEngine {
     return this.ended
   }
 
-  /** Unlocks sound at the first gesture, and stops listening once it runs or turns out to be unavailable. */
+  /** Listens on `target` for the gesture that unlocks sound, and again whenever sound stops while the page shows. */
   listenForFirstTouch(target: EventTarget): void {
-    const onGesture = () => {
-      this.unlock()
-      if (this.current !== 'running' && this.current !== 'off') return
-      for (const type of FIRST_TOUCH) target.removeEventListener(type, onGesture, { capture: true })
-    }
-    for (const type of FIRST_TOUCH) target.addEventListener(type, onGesture, { capture: true })
+    this.touchTarget = target
+    this.listen(true)
   }
 
   /** Makes the audio graph on the first call and asks the browser to run it. Call it inside a user gesture. */
   unlock(): void {
-    if (this.current === 'locked') {
-      this.graph = this.build()
-      if (!this.graph) this.current = 'off'
-    }
-    const ctx = this.graph?.ctx
-    if (!ctx) return
-    // outside a gesture the browser may refuse; the next gesture asks again
-    if (ctx.state !== 'running') ctx.resume().catch(() => {})
-    this.sync()
+    this.safe(() => {
+      if (this.current === 'locked') {
+        // off until the graph is whole, so a failure part way never leads a later gesture to open a second context
+        this.current = 'off'
+        this.graph = this.build()
+      }
+      const ctx = this.graph?.ctx
+      if (!ctx) return
+      // outside a gesture the browser may refuse; the next gesture asks again
+      if (ctx.state !== 'running') ctx.resume().catch(() => {})
+      this.sync()
+    })
   }
 
   /** Plays one effect now, unless effects are off, sound is not running, or the same effect has just played. */
   play(name: OneShot, step?: number): void {
-    const graph = this.graph
-    if (!graph || !this.allowed(name)) return
-    playSfx(graph.ctx, graph.sfxBus, name, graph.ctx.currentTime, step)
-    this.remember(name)
+    this.safe(() => {
+      const graph = this.graph
+      if (!graph || !this.allowed(name)) return
+      playSfx(graph.ctx, graph.sfxBus, name, graph.ctx.currentTime, step)
+      this.remember(name)
+    })
   }
 
   /** Holds the running-water loop on or off. Safe to call every frame. */
   water(on: boolean): void {
-    if (!on) {
-      this.stopWater?.()
-      this.stopWater = null
-      return
-    }
-    const graph = this.graph
-    if (!graph || this.stopWater || !this.allowed('water')) return
-    this.stopWater = startWater(graph.ctx, graph.sfxBus)
-    this.remember('water')
+    this.safe(() => {
+      if (!on) {
+        this.stopWater?.()
+        this.stopWater = null
+        return
+      }
+      const graph = this.graph
+      if (!graph || this.stopWater || !this.allowed('water')) return
+      this.stopWater = startWater(graph.ctx, graph.sfxBus)
+      this.remember('water')
+    })
   }
 
   setMusic(on: boolean): void {
     const was = this.prefs.music
     this.prefs.music = on
     savePrefs(this.storage(), this.prefs)
-    if (on && !was) this.restartMusic()
-    this.fadeMusic()
+    this.safe(() => {
+      if (on && !was) this.restartMusic()
+      this.fadeMusic()
+    })
   }
 
   setSfx(on: boolean): void {
     this.prefs.sfx = on
     savePrefs(this.storage(), this.prefs)
-    if (!on) this.water(false)
-    if (this.graph) fadeTo(this.graph.sfxBus, on ? SFX_LEVEL : 0)
+    this.safe(() => {
+      if (!on) this.water(false)
+      if (this.graph) fadeTo(this.graph.sfxBus, on ? SFX_LEVEL : 0)
+    })
   }
 
   /** The summary card opened: the tune fades away and, with music on, the closing jingle plays. */
   endOfDay(): void {
-    if (this.ended) return
-    this.ended = true
-    const graph = this.graph
-    if (!graph) return
-    const now = graph.ctx.currentTime
-    fadeTo(graph.musicBus, 0, 0.2)
-    graph.music.stop(now + 0.6)
-    if (this.current !== 'running' || !this.prefs.music) return
-    playJingle(graph.ctx, graph.jingleBus, now + 0.4, graph.plucks)
-    this.remember('jingle')
+    this.safe(() => {
+      if (this.ended) return
+      this.ended = true
+      const graph = this.graph
+      if (!graph) return
+      const now = graph.ctx.currentTime
+      fadeTo(graph.musicBus, 0, 0.2)
+      graph.music.stop(now + 0.6)
+      if (this.current !== 'running' || !this.prefs.music) return
+      playJingle(graph.ctx, graph.jingleBus, now + 0.4, graph.plucks)
+      this.remember('jingle')
+    })
   }
 
   /** "Ngày mới": the tune comes back, fresh from the start of a phrase. */
   startOfDay(): void {
-    if (!this.ended) return
-    this.ended = false
-    if (this.prefs.music) this.restartMusic()
-    this.fadeMusic()
+    this.safe(() => {
+      if (!this.ended) return
+      this.ended = false
+      if (this.prefs.music) this.restartMusic()
+      this.fadeMusic()
+    })
+  }
+
+  /** Adds or removes the gesture listeners, never twice. */
+  private listen(on: boolean): void {
+    const target = this.touchTarget
+    if (!target || on === this.listening) return
+    this.listening = on
+    for (const type of FIRST_TOUCH) {
+      if (on) target.addEventListener(type, this.onGesture, { capture: true })
+      else target.removeEventListener(type, this.onGesture, { capture: true })
+    }
+  }
+
+  /** Runs a piece of sound work. A Web Audio failure costs only that sound, never the game: it warns once and the engine carries on. */
+  private safe(fn: () => void): void {
+    try {
+      fn()
+    } catch (e) {
+      if (this.warned) return
+      this.warned = true
+      console.warn('Sound: a Web Audio call failed; that sound is skipped.', e)
+    }
   }
 
   private build(): Graph | null {
     const ctx = this.openContext()
     if (!ctx) return null
-    const master = bus(ctx, MASTER_LEVEL, ctx.destination)
-    const musicBus = bus(ctx, this.musicLevel(), master)
-    const plucks = makePlucks(ctx, Math.random)
-    const graph: Graph = {
-      ctx,
-      musicBus,
-      sfxBus: bus(ctx, this.prefs.sfx ? SFX_LEVEL : 0, master),
-      jingleBus: bus(ctx, JINGLE_LEVEL, master),
-      plucks,
-      music: new MusicPlayer(ctx, musicBus, plucks, Math.random),
+    let graph: Graph
+    try {
+      const master = bus(ctx, MASTER_LEVEL, ctx.destination)
+      const musicBus = bus(ctx, this.musicLevel(), master)
+      const plucks = makePlucks(ctx, Math.random)
+      graph = {
+        ctx,
+        musicBus,
+        sfxBus: bus(ctx, this.prefs.sfx ? SFX_LEVEL : 0, master),
+        jingleBus: bus(ctx, JINGLE_LEVEL, master),
+        plucks,
+        music: new MusicPlayer(ctx, musicBus, plucks, Math.random),
+      }
+    } catch (e) {
+      // half a graph is no use: close its context, so the page never holds two
+      try {
+        ctx.close().catch(() => {})
+      } catch {
+        // already closed, or never usable
+      }
+      throw e
     }
-    setInterval(() => {
+    setInterval(() => this.safe(() => {
+      // a call banner, Siri or an alarm can leave the context interrupted while the page shows: ask again, as Phaser's own sound did
+      if (ctx.state !== 'running' && !document.hidden) {
+        ctx.resume().catch(() => {})
+        this.listen(true)
+      }
       if (this.current === 'running' && this.prefs.music && !this.ended) graph.music.scheduleUntil(ctx.currentTime + LOOKAHEAD)
-    }, TICK_MS)
-    ctx.addEventListener('statechange', () => this.sync())
+    }), TICK_MS)
+    ctx.addEventListener('statechange', () => {
+      this.sync()
+      // left 'running' with the page still showing: if the browser wants a gesture to resume, the next tap gives one
+      if (ctx.state !== 'running' && !document.hidden) this.listen(true)
+    })
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         this.water(false)

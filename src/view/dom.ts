@@ -34,7 +34,10 @@ export function codeBox(
   const btn = button(opts.button)
   root.append(textarea, btn)
   const box: CodeBox = { dom: scene.add.dom(x, y, root).setOrigin(0.5, 0), textarea, button: btn }
-  btn.addEventListener('click', () => opts.onButton(box))
+  btn.addEventListener('click', () => {
+    sound.play('tap')
+    opts.onButton(box)
+  })
   return box
 }
 

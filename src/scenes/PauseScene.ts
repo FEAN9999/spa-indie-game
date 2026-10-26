@@ -150,7 +150,10 @@ export class PauseScene extends Phaser.Scene {
     this.keep(this.add.text(left + 50, y + 28, second, textStyle(32, '600')).setOrigin(0, 0.5))
     if (playing) return
     const zone = this.keep(this.add.zone(MID, y, ROW_W, ROW_H).setInteractive())
-    zone.on('pointerup', () => this.params.session.switchTo(slot))
+    zone.on('pointerup', () => {
+      sound.play('tap')
+      this.params.session.switchTo(slot)
+    })
   }
 
   private showExport(): void {

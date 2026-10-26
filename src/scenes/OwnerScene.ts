@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { PART_ANCHORS } from '../art/chibi'
 import { C, HAIR, OWNER_SHIRT, SKIN, ownerColors } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, OWNER_LOOK_COUNTS } from '../config'
 import { SHOP_NAME_MAX, suggestShopName } from '../sim/profile'
 import type { Facing, Look } from '../sim/types'
@@ -104,7 +105,10 @@ export class OwnerScene extends Phaser.Scene {
     this.add
       .zone(DICE_X, NAME_Y, 130, 130)
       .setInteractive()
-      .on('pointerup', () => (this.nameBox.value = suggestShopName(Math.random, this.nameBox.value)))
+      .on('pointerup', () => {
+        sound.play('tap')
+        this.nameBox.value = suggestShopName(Math.random, this.nameBox.value)
+      })
     // the canvas swallows taps, so the box would keep the keyboard open
     this.input.on('pointerdown', () => this.nameBox.blur())
 
@@ -119,7 +123,10 @@ export class OwnerScene extends Phaser.Scene {
         this.add
           .zone(x, row.y, ROW_W / n, TILE_PX + 10)
           .setInteractive()
-          .on('pointerup', () => this.choose(row.key, i))
+          .on('pointerup', () => {
+            sound.play('tap')
+            this.choose(row.key, i)
+          })
       }
     }
 
