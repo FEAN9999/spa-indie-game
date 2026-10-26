@@ -51,6 +51,8 @@ export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]
 export const HAIR = [0x2b201c, 0x5b3a29, 0x7a4a2f, 0x9a5b36, 0xc98b5a]
 export const SHIRT = [0xc65d3b, 0xe3a73b, 0x2d5fa8, 0xf28ca0, 0xfbf7ee]
 export const OWNER_SHIRT = [0x2f7d6e, 0x4e9a6b, 0xa8302a, 0x8a5634]
+/** Light teal, kept well away from every customer and owner shirt. */
+export const STAFF_SHIRT = 0x8fd3c1
 export const PANTS = 0x3b2b26
 
 export interface CharacterColors {
@@ -58,6 +60,7 @@ export interface CharacterColors {
   hair: number
   hairStyle: number
   shirt: number
+  apron?: boolean
 }
 
 export function lookColors(look: Look): CharacterColors {
@@ -66,4 +69,8 @@ export function lookColors(look: Look): CharacterColors {
 
 export function ownerColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: OWNER_SHIRT[look.shirt] }
+}
+
+export function staffColors(look: Look): CharacterColors {
+  return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: STAFF_SHIRT, apron: true }
 }

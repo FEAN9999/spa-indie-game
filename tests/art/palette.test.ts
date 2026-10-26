@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HAIR, OWNER_SHIRT, ownerColors, SHIRT, SKIN } from '../../src/art/palette'
+import { HAIR, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
 
 describe('look palettes', () => {
@@ -17,4 +17,13 @@ describe('look palettes', () => {
 
   it('turns an owner look into colors', () =>
     expect(ownerColors({ skin: 3, hair: 1, hairStyle: 2, shirt: 2 })).toEqual({ skin: SKIN[3], hair: HAIR[1], hairStyle: 2, shirt: 0xa8302a }))
+
+  it('dresses staff in a shirt unlike any customer or owner shirt, with an apron', () => {
+    const rgb = (c: number) => [c >> 16, (c >> 8) & 255, c & 255]
+    for (const o of [...SHIRT, ...OWNER_SHIRT]) expect(Math.hypot(...rgb(STAFF_SHIRT).map((v, i) => v - rgb(o)[i]))).toBeGreaterThan(50)
+    const look = { skin: 1, hair: 2, hairStyle: 3, shirt: 4 }
+    expect(staffColors(look)).toEqual({ skin: SKIN[1], hair: HAIR[2], hairStyle: 3, shirt: STAFF_SHIRT, apron: true })
+    expect(ownerColors(look).apron).toBeUndefined()
+    expect(lookColors(look).apron).toBeUndefined()
+  })
 })

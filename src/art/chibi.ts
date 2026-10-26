@@ -31,6 +31,20 @@ const body: Part = {
   body: `<rect x="-9" y="0" width="18" height="18" rx="7" fill="${W}" ${LINE}/><path d="M-3,0.4 V2.6 H3 V0.4 M0,2.6 V17" ${FINE}/>`,
 }
 
+// not tinted: the staff apron over the body, cream with a brown edge
+const APRON = `fill="#FBF7EE" stroke="#8A5634" stroke-width="1.4" stroke-linejoin="round"`
+const apronDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-3,2 L-4.8,6.5 M3,2 L4.8,6.5" stroke="#8A5634" stroke-width="1.4" stroke-linecap="round" fill="none"/>` +
+    `<path d="M-4.8,6 H4.8 L5.4,11 L8,17.4 Q0,19 -8,17.4 L-5.4,11Z" ${APRON}/>` +
+    `<path d="M-5.2,11 H5.2" ${FINE}/>`,
+}
+const apronSide: Part = {
+  viewBox: body.viewBox,
+  body: `<path d="M4,5 H8.2 Q9,5 9,6 V16.6 Q9,17.6 8,17.6 H4Z" ${APRON}/><path d="M4.4,11 H8.6" ${FINE}/>`,
+}
+
 const head: Part = {
   viewBox: [-14.5, -14, 29, 28],
   body: `<circle cx="-11" cy="1.5" r="2.6" fill="#f0f0f0" ${LINE}/><circle cx="11" cy="1.5" r="2.6" fill="#f0f0f0" ${LINE}/><circle cx="0" cy="0" r="11" fill="${W}" ${LINE}/>`,
@@ -100,6 +114,8 @@ const parts: Record<string, Part> = {
   'face-side': faceSide,
   'face-rest': faceRest,
   blanket,
+  'apron-down': apronDown,
+  'apron-side': apronSide,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
   'hair0-up': hair(path(bobUp), strandsBack),
   'hair0-side': hair(path(bobSide), strandsFront),

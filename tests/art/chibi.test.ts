@@ -11,5 +11,12 @@ describe('chibi and fx art', () => {
     for (const s of [0, 1, 2, 3])
       for (const d of ['down', 'up', 'side']) expect(keys).toEqual(expect.arrayContaining([`hair${s}-${d}`, `hair${s}-${d}-line`]))
   })
+  it('draws the staff apron without a line texture, and the tea cup and spark', () => {
+    const keys = Object.keys(chibiTextures())
+    expect(keys).toEqual(expect.arrayContaining(['apron-down', 'apron-side']))
+    expect(keys).not.toContain('apron-down-line')
+    expect(keys).not.toContain('apron-side-line')
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['tea-cup', 'spark']))
+  })
   it('draws the hand, the dice and the lock', () => expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['hand', 'icon-dice', 'icon-lock'])))
 })

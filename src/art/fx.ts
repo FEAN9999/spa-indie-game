@@ -36,6 +36,22 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="30" cy="25" r="2" fill="${C.cream}"/><circle cx="40" cy="25" r="2" fill="${C.cream}"/>` +
         `<path d="M29,33 Q35,28 41,33" stroke="${C.cream}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
     ),
+    // a cup of tea on a saucer with two curls of steam, shown above a resting staff member
+    'tea-cup': svgDoc(
+      [0, 0, 56, 56],
+      1,
+      `<path d="M19,14 Q15,8 19,4 M31,14 Q27,8 31,4" fill="none" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>` +
+        `<path d="M40,26 H46 Q52,26 52,32 Q52,39 44,40" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>` +
+        `<path d="M8,20 H42 V32 Q42,44 25,44 Q8,44 8,32Z" fill="${C.cream}" ${OUTLINE}/>` +
+        `<path d="M8.5,26 H41.5 V31 H8.5Z" fill="${C.teal}" ${INNER}/>` +
+        `<ellipse cx="25" cy="48" rx="21" ry="5" fill="${C.cream}" ${INNER}/>`,
+    ),
+    // a four-point sparkle, drawn white so it can be tinted
+    spark: svgDoc(
+      [0, 0, 24, 24],
+      1,
+      `<path d="M12,1.5 Q13.5,10.5 22.5,12 Q13.5,13.5 12,22.5 Q10.5,13.5 1.5,12 Q10.5,10.5 12,1.5Z" fill="#ffffff" stroke="${C.ink}" stroke-width="1.5" stroke-linejoin="round"/>`,
+    ),
     ripple: svgDoc([0, 0, 80, 80], 1, `<circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff" stroke-width="6"/>`),
     star: svgDoc([0, 0, 100, 96], 0.9, `<path d="${STAR_PATH}" fill="${C.mustard}" stroke="${C.ink}" stroke-width="6" stroke-linejoin="round"/>`),
     'star-empty': svgDoc(

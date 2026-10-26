@@ -30,6 +30,7 @@ export class CharacterView {
   private readonly legs: Phaser.GameObjects.Image[]
   private readonly arms: Phaser.GameObjects.Image[]
   private readonly body: Phaser.GameObjects.Image
+  private readonly apron: Phaser.GameObjects.Image | null
   private readonly head: Phaser.GameObjects.Image
   private readonly face: Phaser.GameObjects.Image
   private readonly hair: Phaser.GameObjects.Image
@@ -55,11 +56,12 @@ export class CharacterView {
     this.shadow = scene.add.image(0, 0, 'shadow')
     this.legs = [part('leg', -3.5 * U, HIP_Y, PANTS), part('leg', 3.5 * U, HIP_Y, PANTS)]
     this.body = part('body', 0, -27 * U, colors.shirt)
+    this.apron = colors.apron ? part('apron-down', 0, -27 * U) : null
     this.arms = [part('arm', -9 * U, SHOULDER_Y, colors.skin), part('arm', 9 * U, SHOULDER_Y, colors.skin)]
     this.head = part('head', 0, HEAD_Y, colors.skin)
     this.face = part('face-down', 0, HEAD_Y)
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
-    this.upper = scene.add.container(0, 0, withLines([this.body, ...this.arms, this.head, this.face, this.hair]))
+    this.upper = scene.add.container(0, 0, withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.arms, this.head, this.face, this.hair]))
     this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
     this.container = scene.add.container(0, 0, [this.shadow, ...withLines(this.legs), this.blanket, this.upper])
     this.setFacing('down')
@@ -88,6 +90,8 @@ export class CharacterView {
     this.legs[1].x = (side ? 1.5 : 3.5) * U
     this.arms[0].setVisible(!side && !lying)
     this.arms[1].x = (side ? 0 : 9) * U
+    // the apron shows its front or its side, and hides from behind and with the body
+    this.apron?.setTexture(`apron-${side ? 'side' : 'down'}`).setFlipX(f === 'left').setVisible(f !== 'up' && this.body.visible)
     this.syncLines()
   }
 
@@ -101,6 +105,7 @@ export class CharacterView {
     for (const leg of this.legs) leg.setVisible(p !== 'sit' && !lying).setRotation(0)
     for (const arm of this.arms) arm.setVisible(!lying).setRotation(0)
     this.body.setVisible(!lying).setScale(1)
+    this.apron?.setScale(1)
     this.upper.y = lying ? LIE_HEAD_Y - HEAD_Y : p === 'sit' ? SIT_DROP_PX : 0
     // re-apply the facing so the face and the near arm follow the pose
     const f = this.facing
@@ -120,7 +125,9 @@ export class CharacterView {
       this.arms[1].setRotation(s * SWING * 0.8)
       this.upper.y = -Math.abs(s) * BOB_PX
     } else if (this.pose === 'stand') {
-      this.body.setScale(1, 1 + 0.015 * Math.sin(t * Math.PI))
+      const breath = 1 + 0.015 * Math.sin(t * Math.PI)
+      this.body.setScale(1, breath)
+      this.apron?.setScale(1, breath)
     }
     this.syncLines()
   }
