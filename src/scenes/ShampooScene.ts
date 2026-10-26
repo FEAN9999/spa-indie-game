@@ -102,10 +102,13 @@ export class ShampooScene extends Phaser.Scene {
   update(time: number, delta: number) {
     if (this.revealed) return
     const p = this.pointer
-    if (this.rules.phase === 'rinse') this.rules.hold(delta, p !== null && this.onHair(p.x, p.y))
+    const held = p !== null && this.onHair(p.x, p.y)
+    if (this.rules.phase === 'rinse') this.rules.hold(delta, held)
     this.rules.tick(delta)
     if (this.rules.phase !== this.phase) this.enterPhase(this.rules.phase)
     if (this.revealed) return
+    // a finger carried over from foam is already rinsing, so the demo goes without a new touch
+    if (this.phase === 'rinse' && held) this.hideDemo()
 
     const progress = this.rules.progress()
     this.shower.setVisible(this.phase === 'rinse' && p !== null)
@@ -132,7 +135,11 @@ export class ShampooScene extends Phaser.Scene {
     const dist = Phaser.Math.Distance.Between(this.last.x, this.last.y, p.x, p.y)
     this.last = { x: p.x, y: p.y }
     const onHair = this.onHair(p.x, p.y)
-    if (this.phase === 'foam' || this.phase === 'dry') this.rules.swipe(dist / (HAIR.rx * 2), onHair)
+    if (this.phase === 'foam' || this.phase === 'dry') {
+      this.rules.swipe(dist / (HAIR.rx * 2), onHair)
+      // a finger carried over from rinse is already drying, so the demo goes without a new touch
+      if (onHair) this.hideDemo()
+    }
     if (this.phase !== 'foam' || !onHair) return
     this.trail += dist
     for (; this.trail >= FOAM_STEP_PX; this.trail -= FOAM_STEP_PX) {
