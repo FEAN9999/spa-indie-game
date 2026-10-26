@@ -1,4 +1,4 @@
-import { parseSave, type SaveData } from '../sim/save'
+import { parseSave, SaveTooNewError, type SaveData } from '../sim/save'
 
 export type SlotId = 1 | 2 | 3
 export const SLOTS: SlotId[] = [1, 2, 3]
@@ -29,13 +29,14 @@ export class SaveStore {
     this.write(CURRENT, String(slot))
   }
 
-  /** The slot's shop, or null when empty. A save that cannot be read is moved aside to `.broken`. */
+  /** The slot's shop, or null when empty. A save that cannot be read is moved aside to `.broken`; one from a newer version throws SaveTooNewError and stays put. */
   load(slot: SlotId): SaveData | null {
     const raw = this.read(slotKey(slot))
     if (raw === null) return null
     try {
       return parseSave(JSON.parse(raw))
-    } catch {
+    } catch (e) {
+      if (e instanceof SaveTooNewError) throw e
       this.write(`${slotKey(slot)}.broken`, raw)
       this.remove(slotKey(slot))
       return null
@@ -51,7 +52,21 @@ export class SaveStore {
     return this.read(slotKey(slot))
   }
 
+  /** The slot holds a shop saved by a newer version of the game. */
+  isTooNew(slot: SlotId): boolean {
+    const raw = this.read(slotKey(slot))
+    if (raw === null) return false
+    try {
+      parseSave(JSON.parse(raw))
+      return false
+    } catch (e) {
+      return e instanceof SaveTooNewError
+    }
+  }
+
+  /** The slot's day, money and name; null when empty or too new to read. */
   info(slot: SlotId): SlotInfo | null {
+    if (this.isTooNew(slot)) return null
     const d = this.load(slot)
     return d && { day: d.day, money: d.money, name: d.shopName }
   }

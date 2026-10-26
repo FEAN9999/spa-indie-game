@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { SaveSession } from '../../src/save/session'
 import { SaveStore } from '../../src/save/store'
+import { SaveTooNewError } from '../../src/sim/save'
 import type { SaveData } from '../../src/sim/save'
 import { MemStorage, shop } from './memStorage'
 
@@ -91,5 +92,18 @@ describe('save session', () => {
     play(9)
     session.saveNow()
     expect([store.load(1)?.money, reloads.length]).toEqual([7, 1])
+  })
+
+  it('never writes over a shop saved by a newer version', () => {
+    const mem = new MemStorage()
+    const raw = JSON.stringify({ ...shop(1), v: 99 })
+    mem.setItem('spa.slot.1', raw)
+    const store = new SaveStore(mem)
+    const reloads: string[] = []
+    const session = new SaveSession(store, () => shop(5), () => reloads.push('reload'))
+    expect(() => session.load()).toThrow(SaveTooNewError)
+    session.saveNow()
+    session.reloadForUpdate()
+    expect([mem.getItem('spa.slot.1'), mem.getItem('spa.slot.1.broken')]).toEqual([raw, null])
   })
 })

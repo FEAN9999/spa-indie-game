@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { openStore, SaveStore } from '../../src/save/store'
+import { SaveTooNewError } from '../../src/sim/save'
 import { MemStorage, shop } from './memStorage'
 
 describe('save slots', () => {
@@ -25,6 +26,17 @@ describe('save slots', () => {
     mem.setItem('spa.slot.2', '{oops')
     expect(new SaveStore(mem).load(2)).toBeNull()
     expect([mem.getItem('spa.slot.2.broken'), mem.getItem('spa.slot.2')]).toEqual(['{oops', null])
+  })
+
+  it('never moves aside or reads a save from a newer version', () => {
+    const mem = new MemStorage()
+    const raw = JSON.stringify({ ...shop(1), v: 99 })
+    mem.setItem('spa.slot.1', raw)
+    const s = new SaveStore(mem)
+    expect(() => s.load(1)).toThrow(SaveTooNewError)
+    expect([mem.getItem('spa.slot.1'), mem.getItem('spa.slot.1.broken')]).toEqual([raw, null])
+    expect([s.isTooNew(1), s.isTooNew(2), s.info(1)]).toEqual([true, false, null])
+    expect(mem.getItem('spa.slot.1')).toBe(raw)
   })
 
   it('keeps playing when the storage refuses to work', () => {

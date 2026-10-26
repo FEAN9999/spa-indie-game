@@ -2,13 +2,13 @@ import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, lookColors, ownerColors } from '../art/palette'
-import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
 import { dayEase } from '../sim/economy'
 import { onBed } from '../sim/grid'
 import { createRng } from '../sim/rng'
-import { SaveError, type SaveData } from '../sim/save'
+import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
 import { SpaSim } from '../sim/spa'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, SimEvent, Tile } from '../sim/types'
@@ -19,6 +19,7 @@ import { HandPointer } from '../view/HandPointer'
 import { Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
+import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
@@ -69,6 +70,8 @@ export class SpaScene extends Phaser.Scene {
   private modal = false
   /** The morning banner waits for the install card a new shop opens with. */
   private bannerOnResume = false
+  /** The slot was saved by a newer version: only the card shows, and the shop never runs. */
+  private tooNew = false
   private pointer!: HandPointer
   /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
@@ -83,12 +86,20 @@ export class SpaScene extends Phaser.Scene {
     this.pendingService = null
     this.holding = false
     this.modal = false
+    this.tooNew = false
     this.bannerOnResume = false
     this.tour = []
     this.patienceHintMs = 0
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
-    const saved = this.session.load()
+    let saved: SaveData | null
+    try {
+      saved = this.session.load()
+    } catch (e) {
+      if (!(e instanceof SaveTooNewError)) throw e
+      this.showTooNew()
+      return
+    }
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
@@ -138,6 +149,17 @@ export class SpaScene extends Phaser.Scene {
     // a reopened shop waits on the pause card; an ended day reopens its summary by itself
     else if (!this.sim.dayOver) this.pause()
     if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
+  }
+
+  /** The slot was saved by a newer version: nothing runs and nothing is written; reloading fetches the newer version. */
+  private showTooNew(): void {
+    this.tooNew = true
+    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    addCard(this, 90, 800, 900, 520)
+    this.add
+      .text(GAME_W / 2, 880, t('saveTooNew'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } })
+      .setOrigin(0.5, 0)
+    addButton(this, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
   }
 
   private openShop(saved: SaveData | null): SpaSim {
@@ -205,12 +227,13 @@ export class SpaScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
+    if (this.tooNew) return
     if (!this.modal) {
       if (!this.holding) this.sim.update(delta)
       for (const e of this.sim.drainEvents()) this.handle(e)
     }
 
-    const dt = this.sim.paused ? 0 : delta
+    const dt = this.sim.paused || this.modal ? 0 : delta
     const o = this.sim.owner
     const at = this.room.tileToWorld(o.pos)
     // serving: face the bed on the left of the work tile

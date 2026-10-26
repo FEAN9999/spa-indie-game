@@ -75,6 +75,8 @@ export const vi = {
   openShop: 'Mở tiệm',
   save: 'Lưu',
   keepAsIs: 'Giữ như cũ',
+  saveTooNew: 'Tiệm này được lưu ở bản game mới hơn. Mở lại game khi có mạng để cập nhật.',
+  reload: 'Tải lại',
   morningBanner: '{name} · Ngày {day} · Mở cửa!',
 } as const
 

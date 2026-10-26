@@ -111,7 +111,7 @@ export class OwnerScene extends Phaser.Scene {
     this.frames = this.add.graphics()
     for (const row of ROWS) {
       this.label(row.y - (row.colors ? 85 : 100), row.label)
-      const n = row.colors?.length ?? OWNER_LOOK_COUNTS.hairStyle
+      const n = OWNER_LOOK_COUNTS[row.key]
       for (let i = 0; i < n; i++) {
         const x = choiceX(i, n)
         if (row.colors) this.add.circle(x, row.y, SWATCH_R, row.colors[i]).setStrokeStyle(4, hex(C.ink))

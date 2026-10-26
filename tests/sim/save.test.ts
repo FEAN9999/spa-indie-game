@@ -3,7 +3,7 @@ import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SHAMPOO_PRICE } from '../../
 import { tipFor } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
-import { parseSave, SaveError } from '../../src/sim/save'
+import { parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import { HINT_IDS } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
@@ -103,5 +103,20 @@ describe('save version 2', () => {
     expect([d.shopName, d.hints]).toEqual(['Spa Sen', ['money']])
     expect(parseSave({ ...good, shopName: '   ' }).shopName).toBe('Tiệm Spa')
     expect(() => parseSave({ ...good, shopName: 5 })).toThrow(SaveError)
+  })
+
+  it('tells a save from a newer version apart from other unknown versions', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    expect(() => parseSave({ ...good, v: 99 })).toThrow(SaveTooNewError)
+    for (const v of ['x', 0, null]) {
+      let err: unknown
+      try {
+        parseSave({ ...good, v })
+      } catch (e) {
+        err = e
+      }
+      expect(err).toBeInstanceOf(SaveError)
+      expect(err).not.toBeInstanceOf(SaveTooNewError)
+    }
   })
 })

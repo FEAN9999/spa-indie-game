@@ -23,8 +23,9 @@ export class SaveSession {
     this.known = store.raw(this.slot)
   }
 
-  /** The shop in the slot in use, or null; a save that cannot be read is set aside first. */
+  /** The shop in the slot in use, or null; a save that cannot be read is set aside first. Throws SaveTooNewError, leaving the slot alone, for one from a newer version. */
   load(): SaveData | null {
+    this.known = this.store.raw(this.slot)
     const data = this.store.load(this.slot)
     this.known = this.store.raw(this.slot)
     return data
@@ -61,7 +62,7 @@ export class SaveSession {
 
   /** Saves unless another page has written the slot since; false when it has. */
   private write(): boolean {
-    if (this.store.raw(this.slot) !== this.known) return false
+    if (this.store.raw(this.slot) !== this.known || this.store.isTooNew(this.slot)) return false
     this.store.save(this.slot, this.current())
     this.known = this.store.raw(this.slot)
     return true

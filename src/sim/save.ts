@@ -7,6 +7,8 @@ import { HINT_IDS, type Customer, type DayStats, type HintId, type Look, type Ow
 export const SAVE_VERSION = 2
 
 export class SaveError extends Error {}
+/** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
+export class SaveTooNewError extends SaveError {}
 
 /** The whole shop as plain JSON. */
 export interface SaveData {
@@ -41,6 +43,7 @@ const isNumber = (x: unknown): x is number => typeof x === 'number' && Number.is
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
+  if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
   if (raw.v !== 1 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
