@@ -31,7 +31,8 @@ describe('items', () => {
     expect(g.desks).toEqual(old.desks)
     expect(g.plants).toEqual(old.plants)
     expect(g.bedSlots).toEqual(old.bedSlots)
-    expect(g.decor).toEqual(old.decor)
+    expect(g.decor.screen).toEqual(old.decor.screen)
+    expect(Object.values(g.decor).flat()).toEqual(g.decor.screen) // the old decor kinds are items now
   })
 
   it("puts a flipped bed's work tile on its left", () => {

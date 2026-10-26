@@ -1,7 +1,7 @@
 import { ITEM_KINDS, ITEMS, type ItemGroup, type ItemKind } from '../sim/items'
 
 /** Build mode shows this many item cards at a time. */
-export const CARDS_PER_PAGE = 4
+const CARDS_PER_PAGE = 4
 
 /** One page of a tab's kinds in catalogue order; turning past either end comes round to the other. */
 export function catalogPage(group: ItemGroup, page: number): { kinds: ItemKind[]; page: number; pages: number } {

@@ -97,8 +97,6 @@ export function parseLayout(rows: string[]): Grid {
   return grid
 }
 
-const OLD_DECOR = new Set<string>(Object.values(DECOR))
-
 /** Builds the floor grid from a bare shell, as layout rows or already parsed, plus the items standing on it. */
 export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
   const grid = Array.isArray(shell) ? parseLayout(shell) : structuredClone(shell)
@@ -121,7 +119,6 @@ export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
       grid.plants.push(...tiles)
     } else {
       set('decor')
-      if (OLD_DECOR.has(item.kind)) grid.decor[item.kind as DecorKind].push(...tiles)
     }
   }
   return grid
