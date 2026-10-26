@@ -85,6 +85,20 @@ describe('save session', () => {
     expect([store.load(1)?.money, reloads]).toEqual([3, []])
   })
 
+  it('sets aside a shop the game cannot rebuild, then saves the new shop there without reloading', () => {
+    const mem = new MemStorage()
+    const raw = JSON.stringify(shop(1))
+    mem.setItem('spa.slot.1', raw)
+    const store = new SaveStore(mem)
+    const reloads: string[] = []
+    const session = new SaveSession(store, () => shop(3), () => reloads.push('reload'))
+    session.load()
+    session.setAside()
+    expect([mem.getItem('spa.slot.1'), mem.getItem('spa.slot.1.broken')]).toEqual([null, raw])
+    session.saveNow()
+    expect([store.load(1)?.money, mem.getItem('spa.slot.1.broken'), reloads]).toEqual([3, raw, []])
+  })
+
   it('saves before reloading for a new version, and not after', () => {
     const { store, session, reloads, play } = setup()
     play(7)

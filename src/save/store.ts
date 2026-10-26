@@ -37,10 +37,17 @@ export class SaveStore {
       return parseSave(JSON.parse(raw))
     } catch (e) {
       if (e instanceof SaveTooNewError) throw e
-      this.write(`${slotKey(slot)}.broken`, raw)
-      this.remove(slotKey(slot))
+      this.setAside(slot)
       return null
     }
+  }
+
+  /** Moves the slot's save to `.broken`, leaving the slot empty. */
+  setAside(slot: SlotId): void {
+    const raw = this.read(slotKey(slot))
+    if (raw === null) return
+    this.write(`${slotKey(slot)}.broken`, raw)
+    this.remove(slotKey(slot))
   }
 
   save(slot: SlotId, data: SaveData): boolean {

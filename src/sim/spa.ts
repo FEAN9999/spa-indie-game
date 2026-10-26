@@ -17,7 +17,8 @@ import {
 import { t } from '../strings/vi'
 import { DayClock } from './clock'
 import { arrivalIntervalMs, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
-import { isBedSlot, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
+import { buildGrid, isBedSlot, isWalkable, manhattan, tileEq, type Grid } from './grid'
+import { itemsFromLayout, seatTiles, shellOf, workTile, type Item } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
@@ -61,11 +62,13 @@ export interface SpaSimOptions {
 }
 
 export class SpaSim {
-  readonly grid: Grid
+  grid!: Grid
+  /** The furniture; the grid, the stations and the seats are built from it. */
+  items: Item[]
   owner: Owner
   customers: Customer[] = []
-  stations: Station[]
-  seats: Seat[]
+  stations: Station[] = []
+  seats: Seat[] = []
   money = STARTING_MONEY
   reviews: number[] = []
   clock = new DayClock()
@@ -81,6 +84,9 @@ export class SpaSim {
 
   private readonly rng: Rng
   private readonly autoSpawn: boolean
+  /** The layout without its furniture: walls, door, screen and desk. */
+  private shell: string[]
+  private nextItemId: number
   private events: SimEvent[] = []
   private nextId = 1
   private untilArrivalMs = FIRST_ARRIVAL_MS
@@ -88,13 +94,10 @@ export class SpaSim {
   constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true }: SpaSimOptions) {
     this.rng = rng
     this.autoSpawn = autoSpawn
-    this.grid = parseLayout(layout)
-    this.stations = this.grid.beds.map((bed, id) => {
-      const work = { x: bed.x + 1, y: bed.y }
-      if (!this.grid.works.some(w => tileEq(w, work))) throw new Error(`Bed at ${bed.x},${bed.y} has no work tile on its right`)
-      return { id, bed, work, customerId: null }
-    })
-    this.seats = this.grid.seats.map(tile => ({ tile, customerId: null }))
+    this.shell = shellOf(layout)
+    this.items = itemsFromLayout(layout)
+    this.nextItemId = this.items.length + 1
+    this.rebuildRoom()
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
   }
 
@@ -177,8 +180,8 @@ export class SpaSim {
 
   completeService(customerId: number, stars: Stars): void {
     const c = this.customers.find(x => x.id === customerId)
-    if (!c || c.state !== 'inService' || c.stationId === null) return
-    const station = this.stations[c.stationId]
+    const station = c && this.stations.find(s => s.id === c.stationId)
+    if (!c || c.state !== 'inService' || !station) return
     const tip = tipFor(SHAMPOO_PRICE, stars)
     this.money += SHAMPOO_PRICE + tip
     this.stats.income += SHAMPOO_PRICE
@@ -217,8 +220,8 @@ export class SpaSim {
       servingCustomerId: this.servingCustomerId,
       owner: this.owner,
       customers: this.customers,
-      stationCustomers: this.stations.map(s => s.customerId),
-      seatCustomers: this.seats.map(s => s.customerId),
+      items: this.items,
+      nextItemId: this.nextItemId,
       nextId: this.nextId,
       untilArrivalMs: this.untilArrivalMs,
       shopName: this.shopName,
@@ -232,8 +235,9 @@ export class SpaSim {
   static fromSave(data: SaveData, options: SpaSimOptions): SpaSim {
     const sim = new SpaSim(options)
     const d = structuredClone(data)
-    if (d.stationCustomers.length !== sim.stations.length || d.seatCustomers.length !== sim.seats.length)
-      throw new SaveError('the save does not match the shop layout')
+    sim.items = d.items
+    sim.nextItemId = d.nextItemId
+    sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
     sim.money = d.money
@@ -243,8 +247,15 @@ export class SpaSim {
     sim.servingCustomerId = d.servingCustomerId
     sim.owner = d.owner
     sim.customers = d.customers
-    d.stationCustomers.forEach((id, i) => (sim.stations[i].customerId = id))
-    d.seatCustomers.forEach((id, i) => (sim.seats[i].customerId = id))
+    for (const c of sim.customers) {
+      if (c.stationId !== null) {
+        const station = sim.stations.find(s => s.id === c.stationId)
+        if (!station) throw new SaveError(`customer ${c.id} is on item ${c.stationId}, which is not a bed`)
+        station.customerId = c.id
+      }
+      const seat = c.seat && sim.seats.find(s => tileEq(s.tile, c.seat!))
+      if (seat) seat.customerId = c.id
+    }
     sim.nextId = d.nextId
     sim.untilArrivalMs = d.untilArrivalMs
     sim.shopName = d.shopName
@@ -266,6 +277,21 @@ export class SpaSim {
     this.untilArrivalMs = FIRST_ARRIVAL_MS
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+  }
+
+  /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
+  private rebuildRoom(): void {
+    this.grid = buildGrid(this.shell, this.items)
+    const byId = [...this.items].sort((a, b) => a.id - b.id)
+    this.stations = byId
+      .filter(item => item.kind === 'bed')
+      .map(item => ({
+        id: item.id,
+        bed: { x: item.x, y: item.y + 1 },
+        work: workTile(item)!,
+        customerId: this.stations.find(s => s.id === item.id)?.customerId ?? null,
+      }))
+    this.seats = byId.flatMap(seatTiles).map(tile => ({ tile, customerId: this.seats.find(s => tileEq(s.tile, tile))?.customerId ?? null }))
   }
 
   private step(dt: number): void {

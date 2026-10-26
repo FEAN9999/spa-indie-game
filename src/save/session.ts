@@ -31,6 +31,13 @@ export class SaveSession {
     return data
   }
 
+  /** The shop in the slot cannot be rebuilt: set it aside, like one that cannot be read, so the new shop can be saved there. */
+  setAside(): void {
+    if (this.closed) return
+    this.store.setAside(this.slot)
+    this.known = this.store.raw(this.slot)
+  }
+
   saveNow(): void {
     if (this.closed) return
     if (!this.write()) this.leave()

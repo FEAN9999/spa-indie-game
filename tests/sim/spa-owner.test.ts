@@ -27,7 +27,7 @@ describe('SpaSim owner and service', () => {
     const c = seatAndWait(sim)
     sim.tapTile(c.seat!)
     advanceUntil(sim, () => c.state === 'inService', 60_000, ev)
-    expect(ev).toContainEqual({ type: 'serviceReady', customerId: c.id, stationId: 0 })
+    expect(ev).toContainEqual({ type: 'serviceReady', customerId: c.id, stationId: 1 })
     expect(tileEq(sim.ownerTile(), sim.stations[0].work)).toBe(true)
     expect(sim.servingCustomerId).toBe(c.id)
     const m = sim.clock.minutes
@@ -108,7 +108,7 @@ describe('SpaSim owner and service', () => {
   })
 
   it('rejects a bed with no work tile on its right', () => {
-    const layout = ['#####', '#.CW#', '#.C.#', '##D##']
+    const layout = ['#####', '#.BW#', '#.C.#', '#.B.#', '##D##']
     expect(() => new SpaSim({ rng: createRng(1), layout })).toThrow('Bed at 2,2 has no work tile on its right')
   })
 

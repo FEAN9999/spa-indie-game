@@ -169,6 +169,8 @@ export class SpaScene extends Phaser.Scene {
         return SpaSim.fromSave(saved, { rng })
       } catch (e) {
         if (!(e instanceof SaveError)) throw e
+        // kept for a later version that may read it, instead of being written over by the new shop
+        this.session.setAside()
       }
     }
     return new SpaSim({ rng })
@@ -236,8 +238,10 @@ export class SpaScene extends Phaser.Scene {
     const dt = this.sim.paused || this.modal ? 0 : delta
     const o = this.sim.owner
     const at = this.room.tileToWorld(o.pos)
-    // serving: face the bed on the left of the work tile
-    this.owner.setFacing(o.task?.kind === 'serve' && o.path.length === 0 ? 'left' : o.facing)
+    // serving: face the bed beside the work tile
+    const task = o.task
+    const station = task?.kind === 'serve' && o.path.length === 0 ? this.sim.stations.find(s => s.id === task.stationId) : undefined
+    this.owner.setFacing(station ? (station.bed.x < station.work.x ? 'left' : 'right') : o.facing)
     this.owner.setPose(o.path.length > 0 ? 'walk' : 'stand')
     this.owner.container.setPosition(at.x, at.y).setDepth(at.y)
     this.owner.update(dt)
