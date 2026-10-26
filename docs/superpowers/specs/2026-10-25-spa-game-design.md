@@ -115,7 +115,7 @@ Giữa các giai đoạn không có ranh giới cứng. Người chơi tự chuy
 
 ### 5.3 Một ngày trong game (em đề xuất)
 
-- Tiệm mở từ 8 giờ sáng đến 8 giờ tối, bằng khoảng 5 phút ngoài đời. **(anh chọn)**
+- Tiệm mở từ 8 giờ sáng đến 8 giờ tối, bằng khoảng 2 phút 30 giây ngoài đời. **(anh chọn)**
 - Hết giờ thì không nhận khách mới, khách đang làm được làm nốt.
 - Cuối ngày có bảng tổng kết: thu, chi (lương, nguyên liệu), số khách, đánh giá trung bình.
 - Giữa hai ngày là lúc nâng cấp, kê đồ, nhập hàng và thuê người. Trong giờ mở cửa vẫn kê đồ được, nhưng có thể làm gián đoạn khách.

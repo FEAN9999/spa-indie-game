@@ -10,10 +10,10 @@ export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */
 export const OWNER_LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 4 } as const
 
-// Day: 8:00 to 20:00, 25 real seconds per game hour (5 minutes a day).
+// Day: 8:00 to 20:00, 12.5 real seconds per game hour (2 and a half minutes a day).
 export const DAY_START_MIN = 480
 export const DAY_END_MIN = 1200
-export const REAL_MS_PER_GAME_MIN = 25000 / 60
+export const REAL_MS_PER_GAME_MIN = 12500 / 60
 
 // Money and reviews
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
@@ -154,7 +154,7 @@ export const LEVEL_XP = [0, 3, 8, 15, 25] as const
 export const STAFF_WORK_MS_SLOW = 24000
 export const STAFF_WORK_MS_STEP = 3000
 /** A tea break lasts one game hour. */
-export const STAFF_REST_MS = 25000
+export const STAFF_REST_MS = 60 * REAL_MS_PER_GAME_MIN
 /** Chance of three stars and of one star, by skill 1 to 5. */
 export const STAFF_STAR_ODDS = { three: [0, 0.1, 0.25, 0.45, 0.65], one: [0.4, 0.25, 0.1, 0.05, 0] } as const
 export const GREET_PATIENCE_BASE = 1.15
