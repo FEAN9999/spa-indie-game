@@ -578,11 +578,7 @@ export class SpaSim {
         this.owner.task = null
         return
       }
-      station.customerId = c.id
-      c.stationId = station.id
-      this.freeSeat(c)
-      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.bed)) ?? []
-      this.setState(c, 'toStation')
+      this.sendToBed(c, station)
       this.owner.path = findPath(this.grid, this.ownerTile(), t => tileEq(t, station.work)) ?? []
       this.owner.task = { kind: 'serve', customerId: c.id, stationId: station.id }
       return
@@ -594,6 +590,15 @@ export class SpaSim {
       this.servingCustomerId = c.id
       this.emit({ type: 'serviceReady', customerId: c.id, stationId: task.stationId })
     }
+  }
+
+  /** Claims the bed for a waiting customer, frees their seat and sends them to lie down. */
+  private sendToBed(c: Customer, station: Station): void {
+    station.customerId = c.id
+    c.stationId = station.id
+    this.freeSeat(c)
+    c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.bed)) ?? []
+    this.setState(c, 'toStation')
   }
 
   /** A walk from where `m` is now to the nearest tile that passes `isGoal`, or null; someone caught between two tiles steps back onto the first first. */
@@ -632,11 +637,7 @@ export class SpaSim {
         s.task = null
         return
       }
-      station.customerId = c.id
-      c.stationId = station.id
-      this.freeSeat(c)
-      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, station.bed)) ?? []
-      this.setState(c, 'toStation')
+      this.sendToBed(c, station)
       s.path = this.walkTo(s, t => tileEq(t, station.work)) ?? []
       const total = workMs(s.stats.speed)
       s.task = { kind: 'serve', customerId: c.id, stationId: station.id, leftMs: total, totalMs: total }
