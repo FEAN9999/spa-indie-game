@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
@@ -88,7 +89,10 @@ export class Hud {
     pause.add(add.rectangle(-11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     pause.add(add.rectangle(11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     // thumb-sized hit area, larger than the drawn circle
-    pause.setSize(130, 130).setInteractive().on('pointerup', onPause)
+    pause.setSize(130, 130).setInteractive().on('pointerup', () => {
+      sound.play('tap')
+      onPause()
+    })
 
     // bottom bar
     add
@@ -118,6 +122,7 @@ export class Hud {
       const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
       const feature = n.feature
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
+        sound.play('tap')
         if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
         else if (feature === 'build') onBuild()
         else if (feature === 'staff') onStaff()

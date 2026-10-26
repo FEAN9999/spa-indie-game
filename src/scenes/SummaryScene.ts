@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
@@ -33,6 +34,7 @@ export class SummaryScene extends Phaser.Scene {
 
   create() {
     const { sim, onNewDay, firstDay } = this.params
+    sound.endOfDay()
     const s = sim.stats
     const rating = sim.rating()
     const rows: (SummaryRow & { show: (v: number) => string; color?: string })[] = [
@@ -100,6 +102,8 @@ export class SummaryScene extends Phaser.Scene {
     )
     button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', C.paper)).setOrigin(0.5))
     button.setSize(600, 150).setInteractive().on('pointerup', () => {
+      sound.play('tap')
+      sound.startOfDay()
       onNewDay()
       this.scene.stop()
     })

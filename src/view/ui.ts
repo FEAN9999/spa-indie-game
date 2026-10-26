@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { textStyle } from './text'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -38,7 +39,10 @@ export function addButton(
     .container(x, y, [bg, text])
     .setSize(w, h)
     .setInteractive()
-    .on('pointerup', onTap)
+    .on('pointerup', () => {
+      sound.play('tap')
+      onTap()
+    })
 }
 
 /** A dark pill with paper text centred on x, y that fades in, stays 1.7 seconds and fades out, then destroys itself. */

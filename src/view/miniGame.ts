@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import type { CustomerKind } from '../sim/customers'
 import type { Stars } from '../sim/economy'
@@ -63,6 +64,7 @@ export function revealStars(scene: Phaser.Scene, stars: Stars, onDone: () => voi
     const slot = scene.add.image(GAME_W / 2 + offset * 170, STAR_Y, 'star-empty').setScale(1.4)
     if (i >= stars) return
     scene.time.delayedCall(300 + i * 400, () => {
+      sound.play('star', i)
       slot.setTexture('star').setScale(0.6)
       scene.tweens.add({ targets: slot, scale: 1.4, duration: 250, ease: 'Back.easeOut' })
     })

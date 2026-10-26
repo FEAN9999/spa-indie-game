@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { canPromptInstall, currentInstallEnv, inSafari, installPlatform, promptInstall } from '../app/install'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
 import type { SaveSession } from '../save/session'
@@ -99,8 +100,10 @@ export class PauseScene extends Phaser.Scene {
     const { store, session } = this.params
     this.header()
     this.button(CARD_TOP + 280, t('resume'), 'primary', () => this.resume(), 150)
-    this.keep(this.add.text(MID, CARD_TOP + 435, t('saveSlots'), textStyle(44, '600')).setOrigin(0.5))
-    let y = CARD_TOP + 540
+    this.toggle(MID - 185, 'soundMusic', sound.prefs.music, () => sound.setMusic(!sound.prefs.music))
+    this.toggle(MID + 185, 'soundSfx', sound.prefs.sfx, () => sound.setSfx(!sound.prefs.sfx))
+    this.keep(this.add.text(MID, CARD_TOP + 579, t('saveSlots'), textStyle(44, '600')).setOrigin(0.5))
+    let y = CARD_TOP + 684
     for (const slot of SLOTS) {
       this.slotRow(slot, y, slot === session.slot, store)
       y += ROW_STEP
@@ -119,6 +122,17 @@ export class PauseScene extends Phaser.Scene {
       this.button(y, t('installMenu'), 'plain', () => this.showInstall())
     }
     this.card(y + ROW_H / 2 + 70)
+  }
+
+  /** One of the two sound switches under "Chơi tiếp": teal while on, cream while off. */
+  private toggle(x: number, name: 'soundMusic' | 'soundSfx', on: boolean, flip: () => void): void {
+    const label = t(on ? 'soundOn' : 'soundOff', { name: t(name) })
+    this.keep(
+      addButton(this, x, CARD_TOP + 450, 350, ROW_H, label, on ? 'primary' : 'plain', () => {
+        flip()
+        this.showMenu()
+      }, 36),
+    )
   }
 
   private slotRow(slot: SlotId, y: number, playing: boolean, store: SaveStore): void {

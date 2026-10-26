@@ -2,6 +2,8 @@ import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, ownerColors } from '../art/palette'
+import { cueFor } from '../audio/cues'
+import { sound } from '../audio/engine'
 import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
@@ -348,6 +350,7 @@ export class SpaScene extends Phaser.Scene {
         this.hud.toast(t(PROBLEM_TEXT[problem], { money: formatMoney(price - this.sim.money) }))
         return
       }
+      sound.play('thud')
       this.syncRoom()
       this.session.saveNow()
     }
@@ -445,6 +448,8 @@ export class SpaScene extends Phaser.Scene {
   }
 
   private handle(e: SimEvent): void {
+    const cue = cueFor(e)
+    if (cue) sound.play(cue)
     switch (e.type) {
       case 'customerArrived': {
         const c = this.sim.customers.find(x => x.id === e.id)

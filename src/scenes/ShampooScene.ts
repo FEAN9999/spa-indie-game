@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { customerColors } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_W } from '../config'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
@@ -74,12 +75,15 @@ export class ShampooScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p))
     for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => (this.pointer = null))
     this.showDemo('foam')
+    // the water stops however the scene ends
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => sound.water(false))
   }
 
   update(time: number, delta: number) {
     if (this.revealed) return
     const p = this.pointer
     const held = p !== null && this.onHair(p.x, p.y)
+    sound.water(this.phase === 'rinse' && held)
     if (this.rules.phase === 'rinse') this.rules.hold(delta, held)
     this.rules.tick(delta)
     if (this.rules.phase !== this.phase) this.enterPhase(this.rules.phase)
@@ -124,11 +128,13 @@ export class ShampooScene extends Phaser.Scene {
       const bubble = this.add.image(p.x, p.y, 'sh-foam').setScale(0).setRotation(Math.random() * Math.PI)
       this.tweens.add({ targets: bubble, scale: 0.7 + Math.random() * 0.5, duration: 180, ease: 'Back.easeOut' })
       this.foam.push(bubble)
+      sound.play('foam')
     }
   }
 
   private enterPhase(next: ShampooPhase): void {
     this.phase = next
+    sound.water(false)
     if (next === 'done') {
       this.reveal(this.rules.stars() ?? 1)
       return
@@ -174,6 +180,7 @@ export class ShampooScene extends Phaser.Scene {
 
   private reveal(stars: Stars): void {
     this.revealed = true
+    sound.water(false)
     this.hideDemo()
     this.shower.setVisible(false)
     this.towel.setVisible(false)

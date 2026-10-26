@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
+import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
 import { nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { parseLayout, tileEq } from '../sim/grid'
@@ -332,7 +333,10 @@ export class BuildScene extends Phaser.Scene {
     const { item, buying } = this.held!
     const problem = buying ? sim.buy(item.kind, item.x, item.y, item.flip) : sim.move(item.id, item.x, item.y, item.flip)
     if (problem) this.toast(this.problemText(problem, item.kind))
-    else this.changed()
+    else {
+      sound.play('thud')
+      this.changed()
+    }
   }
 
   private sell(): void {

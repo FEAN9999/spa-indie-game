@@ -1,4 +1,5 @@
 import type * as Phaser from 'phaser'
+import { sound } from '../audio/engine'
 
 /** HTML over the canvas, in canvas px: Phaser scales its DOM layer with the game. Styled by `.spa-dom` in index.html. */
 export interface CodeBox {
@@ -76,7 +77,10 @@ export function domButton(
   const root = document.createElement('div')
   root.className = 'spa-dom'
   const btn = button(label)
-  btn.addEventListener('click', () => onClick(btn))
+  btn.addEventListener('click', () => {
+    sound.play('tap')
+    onClick(btn)
+  })
   root.append(btn)
   return scene.add.dom(x, y, root)
 }
