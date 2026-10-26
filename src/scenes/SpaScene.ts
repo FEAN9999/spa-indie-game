@@ -21,6 +21,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
 import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { RoomView } from '../view/RoomView'
+import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
@@ -66,6 +67,7 @@ export class SpaScene extends Phaser.Scene {
   private hud!: Hud
   private owner!: CharacterView
   private customers = new Map<number, CustomerSprite>()
+  private staffLayer!: StaffLayer
   private store!: SaveStore
   private session!: SaveSession
   /** A service that became ready while paused; the mini-game opens on resume. */
@@ -111,6 +113,7 @@ export class SpaScene extends Phaser.Scene {
     this.syncRoom()
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
+    this.staffLayer = new StaffLayer(this, this.room)
     this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild())
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
@@ -323,6 +326,8 @@ export class SpaScene extends Phaser.Scene {
       const s = this.customers.get(c.id)
       if (s) this.syncCustomer(c, s, time, dt)
     }
+    // staff also hold still while the owner plays, as the sim does
+    this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.hud.update()
     this.updatePointer(delta)
   }
@@ -410,6 +415,10 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'review':
         this.showBubble(e.customerId, e.score)
+        return
+      case 'greeted':
+      case 'levelUp':
+        this.staffLayer.handle(e)
         return
       case 'toast':
         this.hud.toast(t(e.key))

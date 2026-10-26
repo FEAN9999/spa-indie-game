@@ -119,6 +119,9 @@ export class Hud {
 
   update(): void {
     this.money.setText(formatMoney(this.sim.money))
+    // red while in debt; set only on a change, since a new colour redraws the text
+    const moneyColor = this.sim.money < 0 ? C.lantern : C.ink
+    if (this.money.style.color !== moneyColor) this.money.setColor(moneyColor)
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${this.sim.clock.label()}`)

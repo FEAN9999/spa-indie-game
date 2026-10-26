@@ -41,10 +41,10 @@ export function fxTextures(): Record<string, string> {
       [0, 0, 56, 56],
       1,
       `<path d="M19,14 Q15,8 19,4 M31,14 Q27,8 31,4" fill="none" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>` +
+        `<ellipse cx="25" cy="48" rx="21" ry="5" fill="${C.cream}" ${INNER}/>` +
         `<path d="M40,26 H46 Q52,26 52,32 Q52,39 44,40" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>` +
         `<path d="M8,20 H42 V32 Q42,44 25,44 Q8,44 8,32Z" fill="${C.cream}" ${OUTLINE}/>` +
-        `<path d="M8.5,26 H41.5 V31 H8.5Z" fill="${C.teal}" ${INNER}/>` +
-        `<ellipse cx="25" cy="48" rx="21" ry="5" fill="${C.cream}" ${INNER}/>`,
+        `<path d="M8.5,26 H41.5 V31 H8.5Z" fill="${C.teal}" ${INNER}/>`,
     ),
     // a four-point sparkle, drawn white so it can be tinted
     spark: svgDoc(

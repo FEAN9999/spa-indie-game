@@ -125,6 +125,8 @@ export const vi = {
   flip: 'Lật',
   place: 'Đặt',
   sell: 'Bán · {money}',
+  staffGreet: 'Xin chào!',
+  levelUp: 'Lên cấp!',
 } as const
 
 export type StringKey = keyof typeof vi
