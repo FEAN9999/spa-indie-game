@@ -2,24 +2,38 @@ import * as Phaser from 'phaser'
 import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
 import { PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
+import type { CustomerKind } from '../sim/customers'
 import type { Facing } from '../sim/types'
 
 export type Pose = 'stand' | 'walk' | 'sit' | 'lie'
 
 const U = CHIBI_PX
 const HIP_Y = -11 * U
+const BODY_Y = -27 * U
 const SHOULDER_Y = -24 * U
 const HEAD_Y = -37 * U
 const SWING = Phaser.Math.DegToRad(25)
 const STEP_HZ = 5 // one full leg cycle is two steps, so 10 steps a second at 5 tiles a second
 const BOB_PX = 3
 const SIT_DROP_PX = 12
-// lying on the shampoo bed: the feet origin is the bottom of the bed's middle tile
+// lying on a bed: the feet origin is the bottom of the bed's middle tile
 const BLANKET_TOP = -1.1 * TILE
 const LIE_HEAD_Y = -1.45 * TILE
 
 /** From the feet to the top of the hair. */
 export const CHARACTER_HEIGHT_PX = 51 * U
+
+/** What each kind of customer wears, untinted, on the body, over the face or on the hair; a piece shows from each side it has a texture for. */
+const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
+  student: [{ key: 'backpack', on: 'body' }],
+  office: [{ key: 'tie', on: 'body' }],
+  picky: [{ key: 'glasses', on: 'face' }],
+  elder: [],
+  celeb: [
+    { key: 'sunglasses', on: 'face' },
+    { key: 'hat', on: 'hair' },
+  ],
+}
 
 /** A chibi built from tinted part textures and animated in code, with its feet at the container origin. */
 export class CharacterView {
@@ -33,8 +47,16 @@ export class CharacterView {
   private readonly apron: Phaser.GameObjects.Image | null
   private readonly head: Phaser.GameObjects.Image
   private readonly face: Phaser.GameObjects.Image
+  /** The face from the front: a picky customer frowns. */
+  private readonly frontFace: string
   private readonly hair: Phaser.GameObjects.Image
   private readonly hairStyle: number
+  /** What the kind wears, each with its key without the side. */
+  private readonly worn = new Map<Phaser.GameObjects.Image, string>()
+  /** The pieces worn on the body, which breathe with it. */
+  private readonly bodyWorn: Phaser.GameObjects.Image[]
+  private readonly mask: Phaser.GameObjects.Image
+  private masked = false
   /** Each tinted part's untinted brown outline, drawn on top and kept in step by syncLines. */
   private readonly lines = new Map<Phaser.GameObjects.Image, Phaser.GameObjects.Image>()
   private facing: Facing | null = null
@@ -53,15 +75,32 @@ export class CharacterView {
     // each tinted part followed by its outline
     const withLines = (imgs: Phaser.GameObjects.Image[]) => imgs.flatMap(img => [img, ...(this.lines.has(img) ? [this.lines.get(img)!] : [])])
     this.hairStyle = colors.hairStyle
+    const wear = (on: 'body' | 'face' | 'hair') =>
+      (colors.kind ? WORN[colors.kind] : [])
+        .filter(w => w.on === on)
+        .map(w => {
+          const img = part(`${w.key}-down`, 0, on === 'body' ? BODY_Y : HEAD_Y)
+          this.worn.set(img, w.key)
+          return img
+        })
     this.shadow = scene.add.image(0, 0, 'shadow')
     this.legs = [part('leg', -3.5 * U, HIP_Y, PANTS), part('leg', 3.5 * U, HIP_Y, PANTS)]
-    this.body = part('body', 0, -27 * U, colors.shirt)
-    this.apron = colors.apron ? part('apron-down', 0, -27 * U) : null
+    this.body = part('body', 0, BODY_Y, colors.shirt)
+    this.apron = colors.apron ? part('apron-down', 0, BODY_Y) : null
+    this.bodyWorn = wear('body')
     this.arms = [part('arm', -9 * U, SHOULDER_Y, colors.skin), part('arm', 9 * U, SHOULDER_Y, colors.skin)]
     this.head = part('head', 0, HEAD_Y, colors.skin)
-    this.face = part('face-down', 0, HEAD_Y)
+    this.frontFace = colors.kind === 'picky' ? 'face-frown' : 'face-down'
+    this.face = part(this.frontFace, 0, HEAD_Y)
+    this.mask = part('mask-face', 0, HEAD_Y).setVisible(false)
+    const onFace = wear('face')
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
-    this.upper = scene.add.container(0, 0, withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.arms, this.head, this.face, this.hair]))
+    const onHair = wear('hair')
+    this.upper = scene.add.container(
+      0,
+      0,
+      withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.bodyWorn, ...this.arms, this.head, this.face, this.mask, ...onFace, this.hair, ...onHair]),
+    )
     this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
     this.container = scene.add.container(0, 0, [this.shadow, ...withLines(this.legs), this.blanket, this.upper])
     this.setFacing('down')
@@ -83,7 +122,7 @@ export class CharacterView {
     const dir = side ? 'side' : f
     this.hair.setTexture(`hair${this.hairStyle}-${dir}`)
     const lying = this.pose === 'lie'
-    this.face.setTexture(lying ? 'face-rest' : side ? 'face-side' : 'face-down').setVisible(f !== 'up')
+    this.face.setTexture(lying ? 'face-rest' : side ? 'face-side' : this.frontFace).setVisible(f !== 'up')
     for (const img of [this.head, this.face, this.hair]) img.setFlipX(f === 'left')
     // seen from the side the legs overlap and only the near arm shows
     this.legs[0].x = (side ? -1.5 : -3.5) * U
@@ -92,7 +131,22 @@ export class CharacterView {
     this.arms[1].x = (side ? 0 : 9) * U
     // the apron shows its front or its side, and hides from behind and with the body
     this.apron?.setTexture(`apron-${side ? 'side' : 'down'}`).setFlipX(f === 'left').setVisible(f !== 'up' && this.body.visible)
+    // what the kind wears comes off on the bed
+    for (const [img, key] of this.worn) {
+      const tex = `${key}-${dir}`
+      const shown = !lying && tex in PART_ANCHORS
+      if (shown) img.setTexture(tex).setOrigin(PART_ANCHORS[tex].ox, PART_ANCHORS[tex].oy)
+      img.setFlipX(f === 'left').setVisible(shown)
+    }
+    this.mask.setVisible(this.masked && lying && f !== 'up')
     this.syncLines()
+  }
+
+  /** Shows the face mask while lying face up. */
+  setMask(on: boolean): void {
+    if (on === this.masked) return
+    this.masked = on
+    this.mask.setVisible(on && this.pose === 'lie' && this.facing !== 'up')
   }
 
   setPose(p: Pose): void {
@@ -106,6 +160,7 @@ export class CharacterView {
     for (const arm of this.arms) arm.setVisible(!lying).setRotation(0)
     this.body.setVisible(!lying).setScale(1)
     this.apron?.setScale(1)
+    for (const img of this.bodyWorn) img.setScale(1)
     this.upper.y = lying ? LIE_HEAD_Y - HEAD_Y : p === 'sit' ? SIT_DROP_PX : 0
     // re-apply the facing so the face and the near arm follow the pose
     const f = this.facing
@@ -128,6 +183,7 @@ export class CharacterView {
       const breath = 1 + 0.015 * Math.sin(t * Math.PI)
       this.body.setScale(1, breath)
       this.apron?.setScale(1, breath)
+      for (const img of this.bodyWorn) img.setScale(1, breath)
     }
     this.syncLines()
   }

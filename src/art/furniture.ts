@@ -1,5 +1,5 @@
 import { TILE } from '../config'
-import { ITEMS, type ItemKind } from '../sim/items'
+import type { ItemKind } from '../sim/items'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -28,6 +28,38 @@ const bed =
   rect(0.05, 3.38, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
   rect(0.1, 3.52, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 3.52, 0.12, 0.14, C.woodDark, ink(0.025))
+
+// The new beds have no wall basin, but measured from their head tile they match the shampoo bed: a cushion under a
+// lying customer's head, the frame ending where the blanket does, and the same front rail and legs.
+
+// mask chair: a padded mint recliner on a wood base, its back raised at the head above the base, with a neck cushion and armrests
+const maskBed =
+  rect(0.05, 1.05, 1.0, 2.15, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 1.5, 0.82, 0.92, C.mintTeal, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.14, 2.46, 0.82, 0.66, C.mintTeal, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.02, 1.64, 0.16, 0.76, C.woodLight, `rx="0.07" ${ink(0.04)}`) +
+  rect(0.92, 1.64, 0.16, 0.76, C.woodLight, `rx="0.07" ${ink(0.04)}`) +
+  rect(0.14, 1.5, 0.82, 0.18, C.ink, 'opacity="0.15"') +
+  rect(0.08, 0.1, 0.94, 1.46, C.mintTeal, `rx="0.2" ${ink()}`) +
+  rect(0.17, 0.17, 0.76, 0.12, C.mint, 'rx="0.06"') +
+  `<path d="M0.42,0.8 V1.44 M0.68,0.8 V1.44" stroke="${C.tealLight}" stroke-width="${FINE}" stroke-linecap="round"/>` +
+  rect(0.22, 0.36, 0.66, 0.34, C.cream, `rx="0.15" ${ink(FINE)}`) +
+  rect(0.05, 3.13, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 3.27, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.88, 3.27, 0.12, 0.14, C.woodDark, ink(0.025))
+
+// massage bed: a wood table under a cream sheet, with a padded face hole at the head and a rolled towel at the foot
+const massageBed =
+  rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 0.82, 2.72, C.cream, `rx="0.1" ${ink(FINE)}`) +
+  `<path d="M0.18,2.66 H0.92" stroke="${C.tileSeam}" stroke-width="0.035"/>` +
+  `<ellipse cx="0.55" cy="0.66" rx="0.3" ry="0.24" fill="${C.sand}" ${ink(FINE)}/>` +
+  `<ellipse cx="0.55" cy="0.66" rx="0.15" ry="0.1" fill="${C.woodDark}" ${ink(FINE)}/>` +
+  rect(0.2, 2.2, 0.7, 0.24, C.tealLight, `rx="0.12" ${ink(FINE)}`) +
+  `<path d="M0.36,2.21 V2.43 M0.74,2.21 V2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
+  rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
 
 const bench =
   WEAVE +
@@ -365,6 +397,8 @@ const areca =
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
+  maskBed: { w: 1.1, h: 3.45, body: maskBed },
+  massageBed: { w: 1.1, h: 3.15, body: massageBed },
   bench: { w: 3.2, h: 1.35, body: bench },
   desk: { w: 3, h: 1.45, body: desk },
   plant: { w: 1, h: 1.6, body: plant },
@@ -394,8 +428,6 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
 
 /** The texture of an item kind: the first pieces keep their keys, the old decor is under `decor-`. */
 export function itemTexture(kind: ItemKind): string {
-  // the mask and massage beds borrow the shampoo bed's picture until they have their own
-  if (ITEMS[kind].group === 'bed') return kind in FURNITURE ? kind : 'bed'
   return kind in FURNITURE ? kind : `decor-${kind}`
 }
 

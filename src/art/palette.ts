@@ -1,3 +1,4 @@
+import type { CustomerKind } from '../sim/customers'
 import type { Look } from '../sim/types'
 
 /** Named colors from the approved style A board (spec 7.1). */
@@ -45,6 +46,9 @@ export const C = {
   sidewalkLine: '#D8C8B0',
   road: '#D4C5B1',
   green: '#6DB36A',
+  mint: '#BFE8D2',
+  mintTeal: '#7CC4AE',
+  cucumber: '#DCEFB4',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]
@@ -54,6 +58,8 @@ export const OWNER_SHIRT = [0x2f7d6e, 0x4e9a6b, 0xa8302a, 0x8a5634]
 /** Light teal, kept well away from every customer and owner shirt. */
 export const STAFF_SHIRT = 0x8fd3c1
 export const PANTS = 0x3b2b26
+/** An elder customer's grey hair. */
+export const ELDER_HAIR = 0xd8d2c8
 
 export interface CharacterColors {
   skin: number
@@ -61,10 +67,18 @@ export interface CharacterColors {
   hairStyle: number
   shirt: number
   apron?: boolean
+  /** A customer's kind, which decides what they wear. */
+  kind?: CustomerKind
 }
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
+}
+
+/** A customer's colors: their look, with an elder's hair grey, and their kind. */
+export function customerColors(look: Look, kind: CustomerKind): CharacterColors {
+  const colors = lookColors(look)
+  return { ...colors, hair: kind === 'elder' ? ELDER_HAIR : colors.hair, kind }
 }
 
 export function ownerColors(look: Look): CharacterColors {

@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
-import { C, lookColors, ownerColors } from '../art/palette'
+import { C, customerColors, ownerColors } from '../art/palette'
 import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
@@ -46,11 +46,15 @@ const PATIENCE_HINT_MS = 4000
 const TOP_ROW_TIP_Y = 120
 /** The top of a waiting customer's patience bar, from their feet. */
 const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
+/** The bottom of the service badge, just above the patience bar. */
+const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 interface CustomerSprite {
   view: CharacterView
   bar: Phaser.GameObjects.Graphics
+  /** The service the customer wants, over the patience bar. */
+  badge: Phaser.GameObjects.Image
   ripple: Phaser.GameObjects.Image
   bubble: Phaser.GameObjects.Image | null
 }
@@ -342,9 +346,11 @@ export class SpaScene extends Phaser.Scene {
     this.owner.container.setPosition(at.x, at.y).setDepth(at.y)
     this.owner.update(dt)
 
+    // a badge tells which service a waiting customer wants once the shop offers more than one
+    const badges = this.sim.availableServices().length > 1
     for (const c of this.sim.customers) {
       const s = this.customers.get(c.id)
-      if (s) this.syncCustomer(c, s, time, dt)
+      if (s) this.syncCustomer(c, s, time, dt, badges)
     }
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
@@ -404,6 +410,7 @@ export class SpaScene extends Phaser.Scene {
         if (!s) return
         s.view.container.destroy()
         s.bar.destroy()
+        s.badge.destroy()
         s.ripple.destroy()
         s.bubble?.destroy()
         this.customers.delete(e.id)
@@ -473,14 +480,15 @@ export class SpaScene extends Phaser.Scene {
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, lookColors(c.look)),
+      view: new CharacterView(this, customerColors(c.look, c.kind)),
       bar: this.add.graphics(),
+      badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
       bubble: null,
     })
   }
 
-  private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number): void {
+  private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
     // on the bed from arrival until the owner finishes, waiting or being served
     const lying = c.stationId !== null && c.path.length === 0
     const sitting = c.state === 'waiting'
@@ -489,8 +497,10 @@ export class SpaScene extends Phaser.Scene {
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
-    s.view.setFacing(lying || sitting ? 'down' : p.facing)
+    // face down on the massage bed, face up anywhere else
+    s.view.setFacing(lying ? (c.service === 'massage' ? 'up' : 'down') : sitting ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
+    s.view.setMask(c.service === 'mask' && c.state === 'inService')
     s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha)
     s.view.update(dt)
 
@@ -504,6 +514,13 @@ export class SpaScene extends Phaser.Scene {
       s.bar.lineStyle(3, hex(C.ink)).strokeRoundedRect(x - 4, y - 4, 80, 20, 10)
       s.bar.fillStyle(color, 1).fillRoundedRect(x, y, Math.max(12, 72 * f), 12, 6)
       s.bar.setDepth(FX_DEPTH)
+    }
+    const badge = c.state === 'waiting' && badges
+    s.badge.setVisible(badge)
+    if (badge) {
+      const key = `svc-${c.service}`
+      if (s.badge.texture.key !== key) s.badge.setTexture(key)
+      s.badge.setPosition(p.x, p.y + BADGE_BOTTOM)
     }
 
     const pulsing = c.state === 'waiting' && this.sim.owner.task === null

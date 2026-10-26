@@ -83,6 +83,108 @@ const blanket: Part = {
   body: `<rect x="-12" y="0" width="24" height="60" rx="5" fill="#C65D3B" ${LINE}/><path d="M-12,6 H12" stroke="#FBF7EE" stroke-width="1.6"/>`,
 }
 
+// Not tinted: what each kind of customer wears. Body pieces share the body's origin, face and hat pieces the head's;
+// every viewBox is centred on x = 0 so a flipped piece stays in place.
+
+// student: a teal backpack, its straps seen from the front, its side, or the whole bag from behind
+const BAG = '#2F7D6E'
+const BAG_LIGHT = '#3E9682'
+const BUCKLE = '#E3A73B'
+const strap = (x: number) => `<rect x="${x}" y="-0.6" width="2.6" height="12" rx="1.3" fill="${BAG}" ${LINE}/>`
+const buckle = (x: number, y: number) => `<rect x="${x}" y="${y}" width="2.4" height="2.2" rx=".6" fill="${BUCKLE}" stroke="${INK}" stroke-width=".9"/>`
+const backpackDown: Part = { viewBox: body.viewBox, body: strap(-6.8) + strap(4.2) + buckle(-6.7, 7) + buckle(4.3, 7) }
+const backpackSide: Part = {
+  viewBox: [-16.5, -2, 33, 19],
+  body:
+    `<path d="M-8.4,3 Q-2,-1.2 4.4,2.6 L5,11.4" stroke="${INK}" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+    `<path d="M-8.4,3 Q-2,-1.2 4.4,2.6 L5,11.4" stroke="${BAG}" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+    `<rect x="-14.4" y="0.6" width="7.6" height="14.4" rx="3.4" fill="${BAG}" ${LINE}/>` +
+    `<rect x="-15.8" y="7.4" width="4" height="6.4" rx="1.8" fill="${BAG_LIGHT}" ${LINE}/>` +
+    `<path d="M-14.4,4.4 H-6.8" ${FINE}/>`,
+}
+const backpackUp: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<rect x="-7.2" y="1" width="14.4" height="15" rx="4.2" fill="${BAG}" ${LINE}/>` +
+    `<path d="M-7.2,5.4 Q-7.2,1 -3,1 H3 Q7.2,1 7.2,5.4 V7.4 Q0,9.8 -7.2,7.4Z" fill="${BAG_LIGHT}" ${LINE}/>` +
+    `<rect x="-4.8" y="10.6" width="9.6" height="4.4" rx="1.8" fill="${BAG_LIGHT}" ${LINE}/>` +
+    buckle(-1.2, 7.4),
+}
+
+// office worker: a white collar and a red striped tie, seen from the front only
+const tieDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-0.2,1.6 L-3.8,-0.2 L-4.6,2.6 L-1.4,4Z M0.2,1.6 L3.8,-0.2 L4.6,2.6 L1.4,4Z" fill="#FBF7EE" ${LINE}/>` +
+    `<path d="M-1,4.2 L-2.1,11.2 L0,13.4 L2.1,11.2 L1,4.2Z" fill="#D8463A" ${LINE}/>` +
+    `<path d="M-1.4,8 L1.4,6.6 M-1.8,11 L1.8,9.4" stroke="#A8302A" stroke-width=".9" stroke-linecap="round"/>` +
+    `<path d="M-1.6,2.2 H1.6 L1.1,4.6 H-1.1Z" fill="#D8463A" ${LINE}/>`,
+}
+
+// picky customer: round glasses and a frown
+const GLASS = 'fill="#CFE8F0" fill-opacity=".35"'
+const glassesDown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<path d="M-7.6,1.2 L-10.8,0.2 M7.6,1.2 L10.8,0.2 M-1.2,1.4 Q0,0.6 1.2,1.4" ${FINE}/>` +
+    `<circle cx="-4.2" cy="2.2" r="3.1" ${GLASS} ${LINE}/><circle cx="4.2" cy="2.2" r="3.1" ${GLASS} ${LINE}/>`,
+}
+const glassesSide: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body: `<path d="M4.4,1.4 L-3.6,0.4" ${FINE}/><ellipse cx="6.7" cy="2.2" rx="2.3" ry="3.1" ${GLASS} ${LINE}/>`,
+}
+const faceFrown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<ellipse cx="-4" cy="2.3" rx="1.6" ry="1.7" fill="${EYE}"/><ellipse cx="4" cy="2.3" rx="1.6" ry="1.7" fill="${EYE}"/>` +
+    `<path d="M-6.6,-2.4 L-2.2,-1.3 M6.6,-2.4 L2.2,-1.3" stroke="${EYE}" stroke-width="1.1" stroke-linecap="round"/>` +
+    `<path d="M-1.8,6.6 Q0,5.2 1.8,6.6" ${MOUTH}/>`,
+}
+
+// celebrity: dark sunglasses and a wide-brimmed cream hat with a black band
+const SHADES = `fill="${EYE}" ${LINE}`
+const SHINE = 'stroke="#ffffff" stroke-opacity=".7" stroke-width=".9" stroke-linecap="round"'
+const sunglassesDown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<path d="M-8.4,0.8 L-11,0 M8.4,0.8 L11,0 M-1,1.1 Q0,0.4 1,1.1" ${FINE}/>` +
+    `<path d="M-8.4,0 H-1 Q-0.6,0 -0.7,0.8 Q-1.1,5.4 -4.6,5.4 Q-8.2,5.4 -8.6,0.8 Q-8.7,0 -8.4,0Z" ${SHADES}/>` +
+    `<path d="M8.4,0 H1 Q0.6,0 0.7,0.8 Q1.1,5.4 4.6,5.4 Q8.2,5.4 8.6,0.8 Q8.7,0 8.4,0Z" ${SHADES}/>` +
+    `<path d="M-6.8,1.6 L-5.2,1.6 M2.6,1.6 L4.2,1.6" ${SHINE}/>`,
+}
+const sunglassesSide: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<path d="M4.4,0.8 L-3.6,0.2" ${FINE}/>` +
+    `<path d="M4.4,0 H9 Q9.4,0 9.3,0.8 Q9,5.2 6.8,5.2 Q4.4,5.2 4.2,0.8 Q4.2,0 4.4,0Z" ${SHADES}/>` +
+    `<path d="M5.6,1.6 L7,1.6" ${SHINE}/>`,
+}
+const HAT = `fill="#FBF7EE" ${LINE}`
+const BAND = `fill="#2B201C" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"`
+/** The hat's brim, its crown centred on cx and its band, then `extra` (a ribbon or a bow) on top. */
+const hat = (cx: number, extra: string): Part => ({
+  viewBox: [-17.5, -20.5, 35, 20],
+  body:
+    `<ellipse cx="0" cy="-5.4" rx="16" ry="4.2" ${HAT}/>` +
+    `<path d="M${cx - 8.8},-5.6 Q${cx - 9.6},-18.6 ${cx},-18.6 Q${cx + 9.6},-18.6 ${cx + 8.8},-5.6 Q${cx},-3.6 ${cx - 8.8},-5.6Z" ${HAT}/>` +
+    `<path d="M${cx - 9},-9.4 Q${cx},-7.4 ${cx + 9},-9.4 L${cx + 8.9},-6.4 Q${cx},-4.4 ${cx - 8.9},-6.4Z" ${BAND}/>` +
+    extra,
+})
+const hatDown = hat(0, '')
+const hatSide = hat(-1, `<path d="M-9.6,-8.4 Q-12.4,-6 -13,-2.2 L-10.8,-2.8 Q-10.6,-5.6 -9.4,-6.6Z" ${BAND}/>`)
+const hatUp = hat(0, `<path d="M0,-7.4 Q-3.6,-10.2 -3.8,-6.6 Q-3.6,-4 0,-6.4 Q3.6,-4 3.8,-6.6 Q3.6,-10.2 0,-7.4Z" ${BAND}/>`)
+
+// lying face up under the mask: a mint layer over the face with a cucumber slice on each eye
+const CUCUMBER = 'fill="#DCEFB4" stroke="#4E9A6B" stroke-width="1.1"'
+const maskFace: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<ellipse cx="0" cy="2.4" rx="9.4" ry="7.8" fill="#BFE8D2" ${LINE}/>` +
+    `<circle cx="-4" cy="2" r="2.9" ${CUCUMBER}/><circle cx="4" cy="2" r="2.9" ${CUCUMBER}/>` +
+    `<path d="M-4.9,2 H-3.1 M3.1,2 H4.9" stroke="#A8CC7E" stroke-width=".8" stroke-linecap="round"/>` +
+    `<path d="M-1.6,6.4 Q0,7.7 1.6,6.4" ${MOUTH}/>`,
+}
+
 const STRAND = `stroke="${SHADE}" stroke-width="1.1" fill="none" stroke-linecap="round"`
 const hair = (shape: string, strands: string, top = -14): Part => ({ viewBox: [-14.5, top, 29, 18 - top], body: `${shape}${strands}` })
 const path = (d: string) => `<path d="${d}" fill="${W}" ${LINE}/>`
@@ -116,6 +218,19 @@ const parts: Record<string, Part> = {
   blanket,
   'apron-down': apronDown,
   'apron-side': apronSide,
+  'backpack-down': backpackDown,
+  'backpack-side': backpackSide,
+  'backpack-up': backpackUp,
+  'tie-down': tieDown,
+  'glasses-down': glassesDown,
+  'glasses-side': glassesSide,
+  'face-frown': faceFrown,
+  'sunglasses-down': sunglassesDown,
+  'sunglasses-side': sunglassesSide,
+  'hat-down': hatDown,
+  'hat-side': hatSide,
+  'hat-up': hatUp,
+  'mask-face': maskFace,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
   'hair0-up': hair(path(bobUp), strandsBack),
   'hair0-side': hair(path(bobSide), strandsFront),

@@ -23,4 +23,13 @@ describe('furniture art', () => {
     const added: ItemKind[] = ['teaChest', 'jar', 'bambooBench', 'bambooTea', 'bambooShelf', 'bambooLamp', 'clayJar', 'areca']
     for (const kind of added) expect(FURNITURE[itemTexture(kind)]?.w, kind).toBe(ITEMS[kind].w)
   })
+
+  it('draws the mask chair and the massage bed as their own pictures, as wide as the shampoo bed', () => {
+    const tex = furnitureTextures()
+    for (const kind of ['maskBed', 'massageBed'] as const) {
+      expect(itemTexture(kind)).toBe(kind)
+      expect(tex[kind], kind).toBeDefined()
+      expect(FURNITURE[kind].w, kind).toBe(FURNITURE.bed.w)
+    }
+  })
 })

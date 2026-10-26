@@ -13,6 +13,9 @@ const bubble = (inner: string) =>
     `<path d="M8,4 H62 Q68,4 68,10 V40 Q68,46 62,46 H42 L35,58 L28,46 H8 Q2,46 2,40 V10 Q2,4 8,4Z" fill="${C.cream}" ${OUTLINE}/>${inner}`,
   )
 
+/** A round 56 px service badge on its own color. */
+const badge = (fill: string, inner: string) => svgDoc([0, 0, 56, 56], 1, `<circle cx="28" cy="28" r="25" fill="${fill}" ${OUTLINE}/>${inner}`)
+
 export function fxTextures(): Record<string, string> {
   return {
     // a coin with a square hole, like the old xu
@@ -100,6 +103,27 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="20" cy="76" r="9" fill="${C.cream}" ${OUTLINE}/><circle cx="30" cy="78" r="9" fill="${C.cream}" ${OUTLINE}/><circle cx="40" cy="76" r="9" fill="${C.cream}" ${OUTLINE}/>` +
         `<rect x="40" y="58" width="20" height="68" rx="10" fill="${C.cream}" ${OUTLINE}/>` +
         `<rect x="8" y="2" width="60" height="24" rx="8" fill="${C.teal}" ${OUTLINE}/>`,
+    ),
+    // the service a waiting customer wants: a drop of water with foam, a face under a mint mask, a stack of warm stones
+    'svc-shampoo': badge(
+      C.water,
+      `<path d="M24,12 Q35,25 35,33 A11,11 0 0 1 13,33 Q13,25 24,12Z" fill="${C.cobalt}" ${INNER}/>` +
+        `<path d="M18,33 Q18,28 21,25" fill="none" stroke="${C.cream}" stroke-width="2.6" stroke-linecap="round"/>` +
+        `<circle cx="39" cy="19" r="6" fill="${C.cream}" ${INNER}/><circle cx="42" cy="32" r="4" fill="${C.cream}" ${INNER}/>`,
+    ),
+    'svc-mask': badge(
+      C.lotus,
+      `<circle cx="28" cy="29" r="16" fill="${C.mint}" ${INNER}/>` +
+        `<circle cx="21.5" cy="26" r="5" fill="${C.cucumber}" stroke="${C.leaf}" stroke-width="2.4"/><circle cx="34.5" cy="26" r="5" fill="${C.cucumber}" stroke="${C.leaf}" stroke-width="2.4"/>` +
+        `<path d="M24,36 Q28,39.5 32,36" fill="none" stroke="${C.ink}" stroke-width="2.4" stroke-linecap="round"/>`,
+    ),
+    'svc-massage': badge(
+      C.mustard,
+      `<ellipse cx="28" cy="40" rx="15" ry="6" fill="${C.clay}" ${INNER}/>` +
+        `<ellipse cx="28" cy="30" rx="11.5" ry="5.5" fill="${C.woodDark}" ${INNER}/>` +
+        `<ellipse cx="28" cy="20.5" rx="8" ry="4.5" fill="${C.clay}" ${INNER}/>` +
+        `<path d="M23,19.5 Q26,17.6 29,18 M21,29 Q25,26.8 29,27.2 M19,39 Q24,36.6 29,37" fill="none" stroke="${C.clayLight}" stroke-width="2" stroke-linecap="round"/>` +
+        `<path d="M36,17 Q38,8 46,9 Q45,17 36,17Z" fill="${C.leaf}" ${INNER}/>`,
     ),
     'icon-dice': svgDoc(
       [0, 0, 64, 64],

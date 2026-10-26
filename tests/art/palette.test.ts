@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HAIR, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
+import { customerColors, ELDER_HAIR, HAIR, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
 
 describe('look palettes', () => {
@@ -25,5 +25,13 @@ describe('look palettes', () => {
     expect(staffColors(look)).toEqual({ skin: SKIN[1], hair: HAIR[2], hairStyle: 3, shirt: STAFF_SHIRT, apron: true })
     expect(ownerColors(look).apron).toBeUndefined()
     expect(lookColors(look).apron).toBeUndefined()
+  })
+
+  it("greys an elder's hair and keeps every other kind's own, with the kind attached", () => {
+    const look = { skin: 2, hair: 1, hairStyle: 0, shirt: 3 }
+    expect(ELDER_HAIR).toBe(0xd8d2c8)
+    expect(customerColors(look, 'elder')).toEqual({ ...lookColors(look), hair: ELDER_HAIR, kind: 'elder' })
+    expect(customerColors(look, 'student').hair).toBe(lookColors(look).hair)
+    expect(customerColors(look, 'celeb')).toEqual({ ...lookColors(look), kind: 'celeb' })
   })
 })
