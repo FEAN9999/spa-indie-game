@@ -63,3 +63,23 @@ export const DAY_EASE = [
   { patience: 1.4, miniGameExtraMs: 10_000, arrival: 1 },
   { patience: 1.2, miniGameExtraMs: 5_000, arrival: 1 },
 ] as const
+
+// Staff
+export const STAFF_CAP = { receptionist: 1, technician: 3 } as const
+export const CANDIDATES_PER_DAY = 3
+export const RECEPTIONIST_CHANCE = 1 / 3
+export const RARE_CHANCE = 0.1
+export const WAGE_BASE = 40000
+export const WAGE_PER_DOT = 5000
+export const LEVEL_WAGE_RAISE = 5000
+/** Experience needed for levels 1 to 5. */
+export const LEVEL_XP = [0, 3, 8, 15, 25] as const
+export const STAFF_WORK_MS_SLOW = 24000
+export const STAFF_WORK_MS_STEP = 3000
+export const STAFF_REST_MS = 35000
+/** Chance of three stars and of one star, by skill 1 to 5. */
+export const STAFF_STAR_ODDS = { three: [0, 0.1, 0.25, 0.45, 0.65], one: [0.4, 0.25, 0.1, 0.05, 0] } as const
+export const GREET_PATIENCE_BASE = 1.15
+export const GREET_PATIENCE_PER_DOT = 0.02
+export const GREET_TIP_PER_DOT = 0.05
+export const STAFF_TIP_PER_DOT = 0.05

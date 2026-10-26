@@ -2,6 +2,7 @@ import {
   ANGRY_REVIEW,
   ARRIVAL_JITTER,
   ARRIVE_MS,
+  CANDIDATES_PER_DAY,
   CUSTOMER_SPEED,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
@@ -11,8 +12,10 @@ import {
   PATIENCE_MS,
   RATING_WINDOW,
   SHAMPOO_PRICE,
+  STAFF_CAP,
   STARTING_MONEY,
   STEP_MS,
+  UNLOCK_DAY,
 } from '../config'
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
@@ -25,6 +28,7 @@ import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
+import { makeCandidate, type Candidate, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
 
 interface Mover {
@@ -35,6 +39,8 @@ interface Mover {
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
+
+export type HireProblem = 'money' | 'full'
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0 })
 const tileOf = (pos: Vec): Tile => ({ x: Math.round(pos.x), y: Math.round(pos.y) })
@@ -85,6 +91,9 @@ export class SpaSim {
   ownerLook: Look = { ...DEFAULT_OWNER_LOOK }
   profileDone = false
   hints: HintId[] = []
+  staff: Staff[] = []
+  candidates: Candidate[] = []
+  candidatesDay = 0
 
   private readonly rng: Rng
   private readonly autoSpawn: boolean
@@ -93,6 +102,7 @@ export class SpaSim {
   private nextItemId: number
   private events: SimEvent[] = []
   private nextId = 1
+  private nextStaffId = 1
   private untilArrivalMs = FIRST_ARRIVAL_MS
 
   constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true }: SpaSimOptions) {
@@ -291,6 +301,45 @@ export class SpaSim {
     this.untilArrivalMs = FIRST_ARRIVAL_MS
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    if (this.day >= UNLOCK_DAY.staff) this.refreshCandidates()
+  }
+
+  /** Three new people to hire, with names that differ from each other and from the staff's. */
+  private refreshCandidates(): void {
+    const taken = this.staff.map(s => s.name)
+    this.candidates = []
+    for (let i = 0; i < CANDIDATES_PER_DAY; i++) {
+      const c = makeCandidate(this.rng, taken)
+      taken.push(c.name)
+      this.candidates.push(c)
+    }
+    this.candidatesDay = this.day
+  }
+
+  /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
+  hire(index: number): HireProblem | null {
+    if (this.money < 0) return 'money'
+    const c = this.candidates[index]
+    if (this.staff.filter(s => s.role === c.role && !s.leaving).length >= STAFF_CAP[c.role]) return 'full'
+    this.candidates.splice(index, 1)
+    this.staff.push({
+      name: c.name,
+      role: c.role,
+      look: c.look,
+      stats: c.stats,
+      wage: c.wage,
+      rare: c.rare,
+      id: this.nextStaffId++,
+      level: 1,
+      xp: 0,
+      pos: { ...this.grid.door },
+      facing: 'up',
+      path: [],
+      task: null,
+      sinceRest: 0,
+      leaving: false,
+    })
+    return null
   }
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
