@@ -81,9 +81,9 @@ export class PauseScene extends Phaser.Scene {
 
   /** The shop name over "paused", on the menu only. */
   private header(): void {
-    const name = this.keep(this.add.text(MID, CARD_TOP + 95, this.params.sim.shopName, textStyle(64, '800')).setOrigin(0.5))
+    const name = this.keep(this.add.text(MID, CARD_TOP + 80, this.params.sim.shopName, textStyle(64, '800')).setOrigin(0.5))
     fitWidth(name, 780)
-    this.keep(this.add.text(MID, CARD_TOP + 170, t('paused'), textStyle(40, '600')).setOrigin(0.5))
+    this.keep(this.add.text(MID, CARD_TOP + 150, t('paused'), textStyle(40, '600')).setOrigin(0.5))
   }
 
   private note(y: number, text: string, color: string = C.ink): Phaser.GameObjects.Text {
