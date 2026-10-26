@@ -107,6 +107,22 @@ export const vi = {
   problemMoney: 'Còn thiếu {money}',
   quickBuyBed: 'Mua giường gội {money}?',
   buy: 'Mua',
+  newBadge: 'Mới',
+  hintBuild: 'Có tiền rồi thì mua thêm giường ở đây',
+  buildIntro: 'Mua đồ, kéo để kê lại tiệm. Tiệm càng đẹp càng đông khách.',
+  tabBeds: 'Giường',
+  tabSeats: 'Ghế chờ',
+  tabDecor: 'Trang trí',
+  beautyTotal: 'Tiệm đẹp: {n}',
+  setProgress: '{name} {have}/6',
+  setDone: '{name} · Đủ bộ!',
+  beautyPlus: 'Đẹp +{n}',
+  prevPage: '‹',
+  nextPage: '›',
+  done: 'Xong',
+  flip: 'Lật',
+  place: 'Đặt',
+  sell: 'Bán · {money}',
 } as const
 
 export type StringKey = keyof typeof vi

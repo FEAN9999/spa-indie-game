@@ -2,21 +2,28 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { GAME_W, UNLOCK_DAY } from '../config'
 import type { SpaSim } from '../sim/spa'
+import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
 import { layoutTopBar, TOP_BAR } from './topBar'
+import { addToast } from './ui'
 
 export const DEPTH = 10000
 const BANNER_Y = 300
 const BANNER_H = 110
 const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+const NAV_Y = 2020
+const PLATE_R = 62
+const navX = (i: number) => 135 + i * 270
+/** The top of the build button's plate, where the hand points. */
+export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
 
-/** Each button opens with its feature's day; one without a feature is never locked. */
-const NAV: { key: StringKey; icon: string; feature?: Feature }[] = [
-  { key: 'navBuild', icon: 'icon-build', feature: 'build' },
+/** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done. */
+const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId }[] = [
+  { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
   { key: 'navStaff', icon: 'icon-staff', feature: 'staff' },
   { key: 'navServices', icon: 'icon-services', feature: 'services' },
   { key: 'navQuests', icon: 'icon-quests' },
@@ -25,9 +32,11 @@ const LOCKED_ALPHA = 0.45
 
 interface NavPlate {
   feature?: Feature
+  hint?: HintId
   icon: Phaser.GameObjects.Image
   label: Phaser.GameObjects.Text
   lock: Phaser.GameObjects.Image
+  badge: Phaser.GameObjects.Container | null
 }
 
 /** Top bar, pause button, bottom nav and toasts. Every element swallows its taps. */
@@ -43,6 +52,7 @@ export class Hud {
     private readonly scene: Phaser.Scene,
     private readonly sim: SpaSim,
     onPause: () => void,
+    onBuild: () => void,
   ) {
     const add = scene.add
 
@@ -79,22 +89,26 @@ export class Hud {
       .strokeRoundedRect(0, 1940, GAME_W, 260, 48)
     add.zone(0, 1940, GAME_W, 220).setOrigin(0).setInteractive().setDepth(DEPTH)
     NAV.forEach((n, i) => {
-      const x = 135 + i * 270
-      const btn = add.container(x, 2020).setDepth(DEPTH)
+      const x = navX(i)
+      const btn = add.container(x, NAV_Y).setDepth(DEPTH)
       // a blue-and-white plate: cobalt double ring
-      btn.add(add.circle(0, 0, 62, hex(C.cream)).setStrokeStyle(5, hex(C.cobalt)))
+      btn.add(add.circle(0, 0, PLATE_R, hex(C.cream)).setStrokeStyle(5, hex(C.cobalt)))
       btn.add(add.circle(0, 0, 52).setStrokeStyle(2, hex(C.cobalt)))
       const icon = add.image(0, 0, n.icon).setScale(1.3)
       // a padlock on the plate's top-right while the feature waits for its day
       const lock = add.image(44, -44, 'icon-lock')
       btn.add([icon, lock])
+      // and a red "Mới" on its top-left once it opens, until it is first used
+      const badge = n.hint ? this.badge() : null
+      if (badge) btn.add(badge)
       const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
       const feature = n.feature
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
         if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
+        else if (feature === 'build') onBuild()
         else this.toast(t('comingSoon'))
       })
-      this.plates.push({ feature, icon, label, lock })
+      this.plates.push({ feature, hint: n.hint, icon, label, lock, badge })
     })
   }
 
@@ -118,7 +132,22 @@ export class Hud {
       p.icon.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.label.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.lock.setVisible(locked)
+      p.badge?.setVisible(!locked && p.hint !== undefined && !this.sim.hintDone(p.hint))
     }
+  }
+
+  /** A lantern-red pill with "Mới", centred where the lock sits mirrored. */
+  private badge(): Phaser.GameObjects.Container {
+    const add = this.scene.add
+    const label = add.text(0, 0, t('newBadge'), textStyle(26, '800', C.paper)).setOrigin(0.5)
+    const w = label.width + 28
+    const pill = add
+      .graphics()
+      .fillStyle(hex(C.lantern), 1)
+      .fillRoundedRect(-w / 2, -21, w, 42, 21)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, -21, w, 42, 21)
+    return add.container(-44, -44, [pill, label])
   }
 
   /** A card under the top bar that slides in, stays 2 seconds and fades out. */
@@ -143,22 +172,9 @@ export class Hud {
     })
   }
 
+  /** Replaces the toast on screen, if any; destroying one that already faded does nothing. */
   toast(text: string): void {
     this.toastBox?.destroy()
-    const label = this.scene.add.text(0, 0, text, textStyle(40, '600', C.paper)).setOrigin(0.5)
-    const bg = this.scene.add.graphics().fillStyle(hex(C.ink), 0.92).fillRoundedRect(-label.width / 2 - 40, -40, label.width + 80, 80, 40)
-    const box = this.scene.add.container(GAME_W / 2, 1790, [bg, label]).setDepth(DEPTH + 50).setAlpha(0)
-    this.toastBox = box
-    this.scene.tweens.chain({
-      targets: box,
-      tweens: [
-        { alpha: 1, duration: 150 },
-        { alpha: 0, delay: 1700, duration: 150 },
-      ],
-      onComplete: () => {
-        box.destroy()
-        if (this.toastBox === box) this.toastBox = null
-      },
-    })
+    this.toastBox = addToast(this.scene, GAME_W / 2, 1790, text).setDepth(DEPTH + 50)
   }
 }

@@ -155,7 +155,7 @@ export const MAT =
   `<path d="M0,0.07 H0.28 M0,0.21 H0.28" stroke="${C.matLine}" stroke-width="0.035"/></pattern>`
 
 /** Red lantern hanging from the top of the back wall, centred on x. */
-export function lantern(x: number): string {
+function lantern(x: number): string {
   return (
     `<g ${ink(0.035)}>` +
     `<path d="M${x},0 V0.22" stroke-width="0.03"/>` +
@@ -169,7 +169,7 @@ export function lantern(x: number): string {
 }
 
 /** Dashed outline where a bed could go, with a "+" on its middle tile; (x, y) is its head tile on the back row. */
-export function bedSlot(x: number, y: number): string {
+function bedSlot(x: number, y: number): string {
   const cx = x + 0.5
   const cy = y + 1.5
   return (
@@ -182,7 +182,7 @@ export function bedSlot(x: number, y: number): string {
 }
 
 /** Cói mat with a terracotta border under the seats from x = left to right on `row`, reaching down over the tea table. Needs MAT. */
-export function benchMat(left: number, right: number, row: number): string {
+function benchMat(left: number, right: number, row: number): string {
   const x = left - 0.4
   const w = right + 1.4 - x
   const y = row - 0.2

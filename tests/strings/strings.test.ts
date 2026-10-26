@@ -23,4 +23,12 @@ describe('strings', () => {
   it('asks before buying a bed from its slot', () => {
     expect(t('quickBuyBed', { money: formatMoney(300000) })).toBe('Mua giường gội 300.000 đ?')
   })
+
+  it('fills the build panel strings', () => {
+    expect(t('beautyTotal', { n: 39 })).toBe('Tiệm đẹp: 39')
+    expect(t('setProgress', { name: t('setSaigon'), have: 4 })).toBe('Sài Gòn xưa 4/6')
+    expect(t('setDone', { name: t('setSaigon') })).toBe('Sài Gòn xưa · Đủ bộ!')
+    expect(t('beautyPlus', { n: 5 })).toBe('Đẹp +5')
+    expect(t('sell', { money: formatMoney(Math.floor(150000 / 2)) })).toBe('Bán · 75.000 đ')
+  })
 })

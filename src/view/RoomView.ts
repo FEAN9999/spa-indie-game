@@ -7,6 +7,8 @@ import type { Tile, Vec } from '../sim/types'
 
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
 const PART_DEPTH = 1
+/** An item draws just under a character whose feet are on its bottom row, however late it was bought. */
+const ITEM_DEPTH_BIAS = -0.5
 /** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
 const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
 
@@ -49,7 +51,7 @@ export class RoomView {
       const s = this.items.get(item.id) ?? this.addItem(item)
       const { w, h } = ITEMS[item.kind]
       const bottom = MAP_Y + (item.y + h) * TILE
-      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(bottom).setFlipX(item.flip)
+      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(bottom + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
       if (work) s.part?.setPosition(MAP_X + work.x * TILE, MAP_Y)
       else if (s.part) this.placeMat(s.part, item)

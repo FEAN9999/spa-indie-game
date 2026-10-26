@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PROBLEM_TEXT } from '../../src/sim/build'
+import { nearestSpot, PROBLEM_TEXT } from '../../src/sim/build'
 import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
 import type { ItemKind } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
@@ -178,5 +178,32 @@ describe('building the shop', () => {
     sim.tapTile({ x: 6, y: 3 })
     expect(sim.drainEvents()).toEqual([])
     expect(sim.owner.path).toEqual([])
+  })
+})
+
+describe('where a new piece starts', () => {
+  const centre = { x: 6, y: 9 }
+  const spotFor = (sim: SpaSim, kind: ItemKind) => nearestSpot(sim.grid, centre, t => sim.canPlace(kind, t.x, t.y, false) === null)
+
+  it('starts on the middle of the shop when it is free', () => {
+    expect(spotFor(shop(), 'plant')).toEqual(centre)
+  })
+
+  it('tries the rings around the middle, nearest first', () => {
+    const sim = shop()
+    expect(sim.buy('plant', 6, 9, false)).toBeNull()
+    const spot = spotFor(sim, 'plant')!
+    expect(Math.max(Math.abs(spot.x - 6), Math.abs(spot.y - 9))).toBe(1)
+  })
+
+  it('puts a bed by the back wall', () => {
+    expect(spotFor(shop(), 'bed')).toEqual({ x: 6, y: 2 })
+  })
+
+  it('stays inside the grid and gives up when nothing fits', () => {
+    const tried: { x: number; y: number }[] = []
+    expect(nearestSpot({ cols: 13, rows: 18 }, centre, t => (tried.push(t), false))).toBeNull()
+    expect(tried).toHaveLength(13 * 18)
+    expect(new Set(tried.map(t => `${t.x},${t.y}`)).size).toBe(13 * 18)
   })
 })

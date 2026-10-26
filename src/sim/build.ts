@@ -67,3 +67,17 @@ export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { d
   const reachedBeside = (seat: Tile) => DIRS.some(d => reached({ x: seat.x + d.x, y: seat.y + d.y }))
   return grid.works.every(reached) && grid.seats.every(reachedBeside) && reached(ownerStart) ? null : 'blocksPath'
 }
+
+/** The tile nearest `from` that `fits`, trying square rings of growing size, each row by row; null when no tile on the grid fits. */
+export function nearestSpot(grid: { cols: number; rows: number }, from: Tile, fits: (t: Tile) => boolean): Tile | null {
+  for (let r = 0; r < Math.max(grid.cols, grid.rows); r++) {
+    for (let y = from.y - r; y <= from.y + r; y++) {
+      for (let x = from.x - r; x <= from.x + r; x++) {
+        const t = { x, y }
+        const onRing = Math.max(Math.abs(x - from.x), Math.abs(y - from.y)) === r
+        if (onRing && x >= 0 && y >= 0 && x < grid.cols && y < grid.rows && fits(t)) return t
+      }
+    }
+  }
+  return null
+}

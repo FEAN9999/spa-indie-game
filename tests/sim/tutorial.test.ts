@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { UNLOCK_DAY } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import { pickHint } from '../../src/sim/tutorial'
+import { TUTORIAL_HINTS } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
 import { seatAndWait, startService } from './helpers'
 
@@ -63,5 +65,54 @@ describe('first-day hints', () => {
     sim.tapTile(c.seat!)
     const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(1), autoSpawn: false })
     expect([copy.hintDone('tapCustomer'), copy.hintDone('demoShampoo')]).toEqual([true, false])
+  })
+})
+
+describe('the build button hint', () => {
+  /** A shop on day `day` that has seen every first-day tip. */
+  const pastTutorial = (day: number) => {
+    const sim = fresh()
+    for (const h of TUTORIAL_HINTS) sim.markHint(h)
+    sim.day = day
+    return sim
+  }
+
+  it('points at the build button on the morning it opens, once the first-day tips are done', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.build))).toEqual({ hint: 'openBuild' })
+  })
+
+  it('is gone once build mode was opened', () => {
+    const sim = pastTutorial(UNLOCK_DAY.build)
+    sim.markHint('openBuild')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('only shows on the day building opens, so an older shop gets no hand', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.build - 1))).toBeNull()
+    expect(pickHint(pastTutorial(UNLOCK_DAY.build + 1))).toBeNull()
+  })
+
+  it('waits behind the first-day tips', () => {
+    const sim = fresh()
+    sim.day = UNLOCK_DAY.build
+    expect(pickHint(sim)).toBeNull()
+    const c = seatAndWait(sim)
+    expect(pickHint(sim)).toEqual({ hint: 'tapCustomer', customerId: c.id })
+    sim.markHint('tapCustomer')
+    // the patience tip goes first only when it is due
+    expect(pickHint(sim)).toEqual({ hint: 'openBuild' })
+    c.patienceMs = 1
+    expect(pickHint(sim)).toEqual({ hint: 'patience', customerId: c.id })
+    sim.markHint('patience')
+    expect(pickHint(sim)).toEqual({ hint: 'openBuild' })
+  })
+
+  it('stays quiet while paused or after closing', () => {
+    const sim = pastTutorial(UNLOCK_DAY.build)
+    sim.paused = true
+    expect(pickHint(sim)).toBeNull()
+    sim.paused = false
+    sim.dayOver = true
+    expect(pickHint(sim)).toBeNull()
   })
 })
