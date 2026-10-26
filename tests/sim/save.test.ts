@@ -9,6 +9,7 @@ import { SpaSim } from '../../src/sim/spa'
 import { TUTORIAL_HINTS } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
 import v2 from '../fixtures/save-v2.json'
+import v3 from '../fixtures/save-v3.json'
 import { advanceUntil, busyShop, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -211,5 +212,19 @@ describe('save version 3', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 3 }).v).toBe(3)
     expect(() => parseSave({ ...good, v: 4 })).toThrow(SaveTooNewError)
+  })
+})
+
+describe('save version 3 as saved by batch 3', () => {
+  it('opens a batch-3 shop as it was saved', () => {
+    const sim = open(v3)
+    expect([sim.day, sim.money]).toEqual([v3.day, v3.money])
+    expect(sim.items).toEqual(v3.items)
+    expect(sim.items.map(i => i.kind)).toEqual(expect.arrayContaining(['bed', 'teaChest']))
+    expect(sim.customers.map(c => [c.id, c.stationId, c.seat])).toEqual(v3.customers.map(c => [c.id, c.stationId, c.seat]))
+    expect(sim.servingCustomerId).toBe(v3.servingCustomerId)
+    expect(sim.stations.map(s => s.customerId)).toEqual(sim.stations.map(s => v3.customers.find(c => c.stationId === s.id)?.id ?? null))
+    const served = sim.customers.find(c => c.id === v3.servingCustomerId)!
+    expect(sim.drainEvents()).toEqual([{ type: 'serviceReady', customerId: served.id, stationId: served.stationId }])
   })
 })

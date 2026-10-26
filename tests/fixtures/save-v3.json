@@ -1,0 +1,230 @@
+{
+  "v": 3,
+  "day": 4,
+  "minutes": 503.82857142857233,
+  "money": 1450000,
+  "reviews": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": 2,
+  "owner": {
+    "pos": {
+      "x": 3,
+      "y": 3
+    },
+    "facing": "up",
+    "path": [],
+    "task": {
+      "kind": "serve",
+      "customerId": 2,
+      "stationId": 1
+    }
+  },
+  "customers": [
+    {
+      "id": 1,
+      "look": {
+        "skin": 2,
+        "hair": 0,
+        "hairStyle": 1,
+        "shirt": 0
+      },
+      "state": "waiting",
+      "stateMs": 10800,
+      "pos": {
+        "x": 2,
+        "y": 13
+      },
+      "facing": "up",
+      "path": [],
+      "patienceMs": 49200,
+      "patienceMaxMs": 60000,
+      "seat": {
+        "x": 2,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    },
+    {
+      "id": 2,
+      "look": {
+        "skin": 3,
+        "hair": 2,
+        "hairStyle": 1,
+        "shirt": 0
+      },
+      "state": "inService",
+      "stateMs": 0,
+      "pos": {
+        "x": 2,
+        "y": 3
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 55900,
+      "patienceMaxMs": 60000,
+      "seat": null,
+      "stationId": 1,
+      "mood": null
+    },
+    {
+      "id": 3,
+      "look": {
+        "skin": 1,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "state": "waiting",
+      "stateMs": 5200,
+      "pos": {
+        "x": 4,
+        "y": 13
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 54800,
+      "patienceMaxMs": 60000,
+      "seat": {
+        "x": 4,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    }
+  ],
+  "items": [
+    {
+      "kind": "bed",
+      "x": 2,
+      "y": 2,
+      "flip": false,
+      "id": 1
+    },
+    {
+      "kind": "bed",
+      "x": 4,
+      "y": 2,
+      "flip": false,
+      "id": 2
+    },
+    {
+      "kind": "cabinet",
+      "x": 9,
+      "y": 2,
+      "flip": false,
+      "id": 3
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 5,
+      "flip": false,
+      "id": 4
+    },
+    {
+      "kind": "shelf",
+      "x": 2,
+      "y": 7,
+      "flip": false,
+      "id": 5
+    },
+    {
+      "kind": "lotus",
+      "x": 9,
+      "y": 7,
+      "flip": false,
+      "id": 6
+    },
+    {
+      "kind": "vase",
+      "x": 11,
+      "y": 11,
+      "flip": false,
+      "id": 7
+    },
+    {
+      "kind": "planter",
+      "x": 2,
+      "y": 12,
+      "flip": false,
+      "id": 8
+    },
+    {
+      "kind": "bench",
+      "x": 2,
+      "y": 13,
+      "flip": false,
+      "id": 9
+    },
+    {
+      "kind": "tea",
+      "x": 3,
+      "y": 15,
+      "flip": false,
+      "id": 10
+    },
+    {
+      "kind": "plant",
+      "x": 1,
+      "y": 16,
+      "flip": false,
+      "id": 11
+    },
+    {
+      "kind": "slippers",
+      "x": 4,
+      "y": 16,
+      "flip": false,
+      "id": 12
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 16,
+      "flip": false,
+      "id": 13
+    },
+    {
+      "id": 14,
+      "kind": "bed",
+      "x": 6,
+      "y": 2,
+      "flip": false
+    },
+    {
+      "id": 15,
+      "kind": "teaChest",
+      "x": 8,
+      "y": 3,
+      "flip": false
+    }
+  ],
+  "nextItemId": 16,
+  "nextId": 4,
+  "untilArrivalMs": 3000,
+  "shopName": "Spa Gạch Bông",
+  "ownerLook": {
+    "skin": 2,
+    "hair": 3,
+    "hairStyle": 1,
+    "shirt": 2
+  },
+  "profileDone": true,
+  "hints": [
+    "tapCustomer",
+    "demoShampoo",
+    "money",
+    "star",
+    "patience",
+    "summary",
+    "openBuild"
+  ]
+}
