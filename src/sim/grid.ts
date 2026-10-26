@@ -1,3 +1,5 @@
+import { BED_SLOTS, footprint, ITEMS, seatTiles, workTile } from './items'
+import type { Item } from './items'
 import type { Tile, Vec } from './types'
 
 export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'bed' | 'bedEnd' | 'work' | 'desk' | 'plant' | 'decor'
@@ -92,6 +94,36 @@ export function parseLayout(rows: string[]): Grid {
       }),
     )
   })
+  return grid
+}
+
+const OLD_DECOR = new Set<string>(Object.values(DECOR))
+
+/** Builds the floor grid from a bare shell layout plus the items standing on it. */
+export function buildGrid(shell: string[], items: Item[]): Grid {
+  const grid = parseLayout(shell)
+  grid.bedSlots = BED_SLOTS
+  const sorted = [...items].sort((a, b) => a.id - b.id)
+  for (const item of sorted) {
+    const tiles = footprint(item)
+    const set = (cell: Cell) => tiles.forEach(t => (grid.cells[t.y][t.x] = cell))
+    if (item.kind === 'bed') {
+      tiles.forEach((t, i) => (grid.cells[t.y][t.x] = i === 1 ? 'bed' : 'bedEnd'))
+      const work = workTile(item)!
+      grid.cells[work.y][work.x] = 'work'
+      grid.beds.push(tiles[1])
+      grid.works.push(work)
+    } else if (ITEMS[item.kind].group === 'seat') {
+      set('seat')
+      grid.seats.push(...seatTiles(item))
+    } else if (item.kind === 'plant') {
+      set('plant')
+      grid.plants.push(...tiles)
+    } else {
+      set('decor')
+      if (OLD_DECOR.has(item.kind)) grid.decor[item.kind as DecorKind].push(...tiles)
+    }
+  }
   return grid
 }
 
