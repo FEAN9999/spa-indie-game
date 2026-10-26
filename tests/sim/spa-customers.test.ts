@@ -71,7 +71,7 @@ describe('SpaSim customers and day', () => {
     expect(sim.day).toBe(2)
     expect(sim.dayOver).toBe(false)
     expect(sim.clock.label()).toBe('08:00')
-    expect(sim.stats).toEqual({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0 })
+    expect(sim.stats).toEqual({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0 })
     expect(sim.money).toBe(123_000)
   })
 })

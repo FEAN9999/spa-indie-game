@@ -7,6 +7,7 @@ import { findPath } from './path'
 import type { Rng } from './rng'
 import type { HireProblem, SpaSim } from './spa'
 import type { ServiceId } from './services'
+import { STOCK_USES, type StockItem } from './stock'
 import { gainXp, makeCandidate, restAfter, staffStars, workMs, type Staff } from './staff'
 import type { Customer, Mover, SimEvent, Station, Tile } from './types'
 
@@ -227,7 +228,7 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
     if (s.path.length > 0) return
     const c = sim.customers.find(x => x.id === task.customerId)
     const station = c && sim.stations.find(x => x.customerId === null && x.service === c.service)
-    if (!c || c.state !== 'waiting' || !station) {
+    if (!c || c.state !== 'waiting' || !station || sim.missingStock(c.service)) {
       s.task = null
       return
     }
@@ -273,8 +274,10 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   for (const x of sim.staff) if (x.task?.kind === 'fetch') fetched.add(x.task.customerId)
   const fetchesOf = (service: ServiceId) => sim.customers.filter(c => fetched.has(c.id) && c.service === service).length
   const hasRoom = (service: ServiceId) => freeBeds(sim, service) > fetchesOf(service)
+  const stockFetches = (item: StockItem) => sim.customers.filter(c => fetched.has(c.id) && STOCK_USES[c.service].includes(item)).length
+  const hasStock = (service: ServiceId) => !sim.stockTracked() || STOCK_USES[service].every(item => sim.stock[item] > stockFetches(item))
   const next = sim.customers
-    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && hasRoom(c.service))
+    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && hasRoom(c.service) && hasStock(c.service))
     .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))
@@ -290,7 +293,7 @@ const freeBeds = (sim: SpaSim, service: ServiceId): number => sim.stations.filte
 /**
  * The owner taps a waiting customer: whoever is fetching that customer lets go. Then, while the free beds of that customer's service
  * number no more than the technicians' fetches of customers of that service still on their way, the last hired lets go of theirs too,
- * so the owner's customer finds a bed.
+ * so the owner's customer finds a bed. The same goes for each item that customer uses, against what is left of it.
  * Whoever let go is idle and picks again on the next step.
  */
 export function makeWayForOwner({ sim }: CrewHost, customerId: number): void {
@@ -306,6 +309,17 @@ export function makeWayForOwner({ sim }: CrewHost, customerId: number): void {
     return task?.kind === 'fetch' && sim.customers.find(c => c.id === task.customerId)?.service === service
   })
   for (let n = fetching.length; n >= free && n > 0; n--) drop(fetching[n - 1])
+  if (!sim.stockTracked()) return
+  // the same for stock: no more technicians on their way than there are units left of each item the owner's customer uses
+  for (const item of STOCK_USES[service]) {
+    const using = () =>
+      sim.staff.filter(s => {
+        const task = s.task
+        const c = task?.kind === 'fetch' ? sim.customers.find(x => x.id === task.customerId) : undefined
+        return c !== undefined && STOCK_USES[c.service].includes(item)
+      })
+    for (let list = using(); list.length > 0 && list.length >= sim.stock[item]; list = using()) drop(list[list.length - 1])
+  }
 }
 
 /** The day starts with everyone on their home tile, and new candidates once staff is open. */

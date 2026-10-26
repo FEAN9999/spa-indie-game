@@ -3,13 +3,17 @@ import {
   ARRIVE_MS,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
+  LOW_STOCK,
   MAX_FRAME_MS,
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
   RATING_WINDOW,
+  RESTOCK_AMOUNT,
+  RESTOCK_PRICE,
   STARTING_MONEY,
   STEP_MS,
+  UNLOCK_DAY,
 } from '../config'
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
@@ -25,6 +29,7 @@ import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
+import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { greetPatience, tipFactor, walkSpeed, type Candidate, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 
@@ -33,7 +38,7 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
 
-const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0 })
+const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0 })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
@@ -86,6 +91,8 @@ export class SpaSim {
   candidatesDay = 0
   /** The services the shop has opened, in opening order; shampoo is built in. */
   services: ServiceId[] = ['shampoo']
+  /** What is left of each item; only used up from day 5. */
+  stock: Record<StockItem, number> = fullStock()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -206,6 +213,11 @@ export class SpaSim {
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
     if (waiting) {
+      const missing = this.missingStock(waiting.service)
+      if (missing) {
+        this.emit({ type: 'stockOut', item: missing })
+        return
+      }
       if (!this.stations.some(s => s.service === waiting.service && s.customerId === null)) {
         this.emitBusy(waiting.service)
         return
@@ -303,6 +315,7 @@ export class SpaSim {
       candidatesDay: this.candidatesDay,
       nextStaffId: this.nextStaffId,
       services: this.services,
+      stock: this.stock,
     })
   }
 
@@ -318,6 +331,7 @@ export class SpaSim {
     // never hand out an id a damaged save already uses
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
     sim.services = d.services
+    sim.stock = d.stock
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -600,6 +614,12 @@ export class SpaSim {
         this.owner.task = null
         return
       }
+      const missing = this.missingStock(c.service)
+      if (missing) {
+        this.emit({ type: 'stockOut', item: missing })
+        this.owner.task = null
+        return
+      }
       this.sendToBed(c, station)
       this.owner.path = findPath(this.grid, this.ownerTile(), t => tileEq(t, station.work)) ?? []
       this.owner.task = { kind: 'serve', customerId: c.id, stationId: station.id }
@@ -614,8 +634,39 @@ export class SpaSim {
     }
   }
 
-  /** Claims the bed for a waiting customer, frees their seat and sends them to lie down. */
+  /** Whether the shop counts its stock yet. */
+  stockTracked(): boolean {
+    return this.day >= UNLOCK_DAY.stock
+  }
+
+  /** The first item a customer of the service would use that has run out, while stock is tracked; else null. */
+  missingStock(service: ServiceId): StockItem | null {
+    if (!this.stockTracked()) return null
+    return STOCK_USES[service].find(item => this.stock[item] < 1) ?? null
+  }
+
+  /** The items at the low-stock count or fewer that an open service uses, while stock is tracked. */
+  lowStock(): StockItem[] {
+    if (!this.stockTracked()) return []
+    return STOCK_ITEMS.filter(item => this.stock[item] <= LOW_STOCK && this.services.some(id => STOCK_USES[id].includes(item)))
+  }
+
+  /** Buys RESTOCK_AMOUNT more of an item for its price, even when money is short or already below zero. */
+  restock(item: StockItem): void {
+    this.money -= RESTOCK_PRICE[item]
+    this.stock[item] += RESTOCK_AMOUNT
+    this.stats.restock += RESTOCK_PRICE[item]
+  }
+
+  /** Claims the bed for a waiting customer, frees their seat and sends them to lie down; from day 5 it also takes the service's items from the stock. */
   private sendToBed(c: Customer, station: Station): void {
+    if (this.stockTracked()) {
+      for (const item of STOCK_USES[c.service]) {
+        const before = this.stock[item]
+        this.stock[item] = before - 1
+        if (before > LOW_STOCK && before - 1 <= LOW_STOCK) this.emit({ type: 'stockLow', item })
+      }
+    }
     station.customerId = c.id
     c.stationId = station.id
     this.freeSeat(c)

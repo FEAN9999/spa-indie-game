@@ -11,6 +11,7 @@ import v1 from '../fixtures/save-v1.json'
 import v2 from '../fixtures/save-v2.json'
 import v3 from '../fixtures/save-v3.json'
 import v4 from '../fixtures/save-v4.json'
+import v5 from '../fixtures/save-v5.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -72,12 +73,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([5, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([6, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(5)
+    expect(sim.toSave().v).toBe(6)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -209,10 +210,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 5', () => {
+  it('still leaves alone only saves newer than version 6', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 5 }).v).toBe(5)
-    expect(() => parseSave({ ...good, v: 6 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 6 }).v).toBe(6)
+    expect(() => parseSave({ ...good, v: 7 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -440,5 +441,45 @@ describe('customer kinds in saves', () => {
       expect(customers.length).toBeGreaterThan(0)
       expect(customers.every(c => c.kind === 'office')).toBe(true)
     }
+  })
+})
+
+describe('save version 6', () => {
+  it('keeps the stock and the money spent restocking through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    sim.day = 5
+    sim.stock = { shampoo: 3, towel: 7, mask: 40, oil: 0 }
+    sim.stats.restock = 123_000
+    const copy = viaJson(sim)
+    expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
+    expect(copy.stats.restock).toBe(123_000)
+    expect(copy.toSave().v).toBe(6)
+  })
+
+  it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
+    for (const raw of [v1, v2, v3, v4, v5]) {
+      const sim = open(raw)
+      expect(sim.stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20 })
+      expect(sim.stats.restock).toBe(0)
+    }
+  })
+
+  it('opens the batch-5 shop on day 6 with its customers and tracked stock', () => {
+    const sim = open(v5)
+    expect(sim.day).toBe(6)
+    expect(sim.stockTracked()).toBe(true)
+    expect(sim.customers.filter(c => c.state === 'inService')).toHaveLength(3)
+    expect(sim.customers.some(c => c.state === 'waiting' && c.kind === 'picky')).toBe(true)
+    expect(sim.drainEvents().some(e => e.type === 'serviceReady')).toBe(true)
+  })
+
+  it('repairs a missing, negative, fractional or non-number count to 20, and a bad restock total to 0', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    for (const bad of [undefined, -1, 2.5, 'x', null, NaN]) {
+      const d = parseSave({ ...good, stock: { shampoo: bad, towel: 4, mask: bad, oil: 0 } })
+      expect(d.stock).toEqual({ shampoo: 20, towel: 4, mask: 20, oil: 0 })
+    }
+    for (const bad of [undefined, 'x', null, NaN]) expect(parseSave({ ...good, stats: { ...good.stats, restock: bad } }).stats.restock).toBe(0)
+    expect(parseSave({ ...good, stock: 'lots' }).stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20 })
   })
 })

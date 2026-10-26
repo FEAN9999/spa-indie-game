@@ -14,6 +14,7 @@ import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
 import type { ServiceId } from '../sim/services'
 import { SpaSim } from '../sim/spa'
+import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
@@ -487,6 +488,12 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'toast':
         this.hud.toast(t(e.key))
+        return
+      case 'stockLow':
+        this.hud.toast(t('stockLow', { item: t(STOCK_NAME[e.item]) }))
+        return
+      case 'stockOut':
+        this.hud.toast(t('stockOut', { item: t(STOCK_NAME[e.item]).toLocaleLowerCase('vi') }))
         return
       case 'roomChanged':
         this.syncRoom()

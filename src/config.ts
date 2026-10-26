@@ -95,6 +95,12 @@ export const MASSAGE_SCORE = { perfect: 2, good: 1, miss: 0 } as const
 export const MASSAGE_STAR3_SCORE = 16
 export const MASSAGE_STAR2_SCORE = 10
 
+// Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000 } as const
+export const RESTOCK_AMOUNT = 20
+export const STOCK_START = 20
+export const LOW_STOCK = 5
+
 // Shop simulation
 export const STARTING_MONEY = 100000
 export const FIRST_ARRIVAL_MS = 3000

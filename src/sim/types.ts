@@ -1,5 +1,6 @@
 import type { CustomerKind } from './customers'
 import type { ServiceId } from './services'
+import type { StockItem } from './stock'
 
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
@@ -91,6 +92,8 @@ export interface DayStats {
   tips: number
   /** Staff wages for the day, taken when the day ends. */
   wages: number
+  /** Money spent restocking today. */
+  restock: number
 }
 
 export type SimEvent =
@@ -103,6 +106,9 @@ export type SimEvent =
   | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'levelUp'; staffId: number; level: number }
   | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' }
+  /** An item reached the low-stock count, or ran out when a customer needed it. */
+  | { type: 'stockLow'; item: StockItem }
+  | { type: 'stockOut'; item: StockItem }
   /** An empty bed slot was tapped while a bed fits there. */
   | { type: 'bedSlot'; slot: Tile }
   /** Furniture was bought, moved or sold. */
