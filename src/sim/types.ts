@@ -80,5 +80,9 @@ export type SimEvent =
   | { type: 'serviceReady'; customerId: number; stationId: number }
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
-  | { type: 'toast'; key: 'stationsBusy' | 'comingSoon' }
+  | { type: 'toast'; key: 'stationsBusy' }
+  /** An empty bed slot was tapped while a bed fits there. */
+  | { type: 'bedSlot'; slot: Tile }
+  /** Furniture was bought, moved or sold. */
+  | { type: 'roomChanged' }
   | { type: 'dayEnded'; stats: DayStats }

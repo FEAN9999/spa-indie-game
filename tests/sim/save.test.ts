@@ -20,6 +20,8 @@ describe('saving the shop', () => {
     const sim = busyShop()
     const copy = viaJson(sim)
     expect(copy.toSave()).toEqual(sim.toSave())
+    expect(copy.stations).toEqual(sim.stations)
+    expect(copy.seats).toEqual(sim.seats)
     sim.advance(5000)
     copy.advance(5000)
     expect(copy.toSave()).toEqual(sim.toSave())
@@ -178,6 +180,25 @@ describe('save version 3', () => {
     const plant = { id: 14, kind: 'plant', x: 6, y: 9, flip: false }
     for (const items of [[{ id: 1, kind: 'sofa', x: 1, y: 1, flip: false }], [plant, plant], [{ ...plant, x: 6.5 }], [{ ...plant, flip: 1 }], null])
       expect(() => parseSave({ ...good, items })).toThrow('items are not furniture')
+  })
+
+  it('rejects furniture off the floor, so the shop is set aside instead of crashing', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    const plant = (x: number, y: number) => ({ id: 14, kind: 'plant', x, y, flip: false })
+    // a wall, the door, the screen, the desk, off each edge, and a flipped bed whose work tile is in the wall
+    const strays = [plant(0, 5), plant(6, 17), plant(3, 6), plant(9, 14), plant(-1, 9), plant(13, 9), plant(6, -1), plant(6, 18), { id: 14, kind: 'bed', x: 1, y: 2, flip: true }]
+    for (const stray of strays) expect(() => SpaSim.fromSave(parseSave({ ...good, items: [...good.items, stray] }), opts())).toThrow(SaveError)
+    // overlapping furniture is not checked on load
+    expect(() => SpaSim.fromSave(parseSave({ ...good, items: [...good.items, plant(3, 13)] }), opts())).not.toThrow()
+  })
+
+  it('never hands out an id a saved item already has', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    const sim = SpaSim.fromSave(parseSave({ ...good, nextItemId: 5, items: [...good.items, { id: 20, kind: 'plant', x: 7, y: 9, flip: false }] }), opts())
+    expect(sim.toSave().nextItemId).toBe(21)
+    sim.money = 1_000_000
+    expect(sim.buy('plant', 7, 10, false)).toBeNull()
+    expect(sim.items.map(i => i.id).slice(-2)).toEqual([20, 21])
   })
 
   it('keeps the tap hint done but the build badge new for an old shop', () => {

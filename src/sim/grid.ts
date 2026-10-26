@@ -99,9 +99,9 @@ export function parseLayout(rows: string[]): Grid {
 
 const OLD_DECOR = new Set<string>(Object.values(DECOR))
 
-/** Builds the floor grid from a bare shell layout plus the items standing on it. */
-export function buildGrid(shell: string[], items: Item[]): Grid {
-  const grid = parseLayout(shell)
+/** Builds the floor grid from a bare shell, as layout rows or already parsed, plus the items standing on it. */
+export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
+  const grid = Array.isArray(shell) ? parseLayout(shell) : structuredClone(shell)
   grid.bedSlots = BED_SLOTS
   const sorted = [...items].sort((a, b) => a.id - b.id)
   for (const item of sorted) {
@@ -139,7 +139,12 @@ export function isWalkable(grid: Grid, t: Tile): boolean {
 
 /** An empty bed slot covers its dashed basin on the wall above, its head tile and the two tiles below, like a bed. */
 export function isBedSlot(grid: Grid, t: Tile): boolean {
-  return grid.bedSlots.some(s => s.x === t.x && t.y >= s.y - 1 && t.y <= s.y + 2)
+  return bedSlotAt(grid, t) !== undefined
+}
+
+/** The head tile of the bed slot covering `t`, if any; see isBedSlot. */
+export function bedSlotAt(grid: Grid, t: Tile): Tile | undefined {
+  return grid.bedSlots.find(s => s.x === t.x && t.y >= s.y - 1 && t.y <= s.y + 2)
 }
 
 /** True on a bed's middle tile and while stepping on or off it from either side. */

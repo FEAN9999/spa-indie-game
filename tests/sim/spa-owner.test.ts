@@ -131,11 +131,11 @@ describe('SpaSim owner and service', () => {
     expect(sim.owner.facing).toBe('down')
   })
 
-  it('tapping an empty bed slot says it is coming soon and leaves the owner where they are', () => {
+  it('tapping an empty bed slot offers a bed there and leaves the owner where they are', () => {
     const sim = fresh()
     for (const y of [1, 2, 3, 4]) {
       sim.tapTile({ x: 6, y })
-      expect(sim.drainEvents()).toContainEqual({ type: 'toast', key: 'comingSoon' })
+      expect(sim.drainEvents()).toContainEqual({ type: 'bedSlot', slot: { x: 6, y: 2 } })
     }
     expect(sim.owner.path).toEqual([])
   })

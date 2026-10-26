@@ -15,10 +15,11 @@ import {
   STEP_MS,
 } from '../config'
 import { t } from '../strings/vi'
+import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { DayClock } from './clock'
 import { arrivalIntervalMs, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
-import { buildGrid, isBedSlot, isWalkable, manhattan, tileEq, type Grid } from './grid'
-import { itemsFromLayout, seatTiles, shellOf, workTile, type Item } from './items'
+import { bedSlotAt, buildGrid, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
+import { ITEMS, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
@@ -31,6 +32,9 @@ interface Mover {
   facing: Facing
   path: Tile[]
 }
+
+/** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
+const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0 })
 const tileOf = (pos: Vec): Tile => ({ x: Math.round(pos.x), y: Math.round(pos.y) })
@@ -150,7 +154,7 @@ export class SpaSim {
     return tileOf(this.owner.pos)
   }
 
-  /** A tap on the shop floor: fetch the waiting customer sitting there, or walk there. */
+  /** A tap on the shop floor: fetch the waiting customer sitting there, offer a bed on an open bed slot, or walk there. */
   tapTile(t: Tile): void {
     if (this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
     const from = this.ownerTile()
@@ -166,8 +170,9 @@ export class SpaSim {
       return
     }
 
-    if (isBedSlot(this.grid, t)) {
-      this.emit({ type: 'toast', key: 'comingSoon' })
+    const slot = bedSlotAt(this.grid, t)
+    if (slot && this.canPlace('bed', slot.x, slot.y, false) === null) {
+      this.emit({ type: 'bedSlot', slot: { ...slot } })
       return
     }
 
@@ -235,8 +240,13 @@ export class SpaSim {
   static fromSave(data: SaveData, options: SpaSimOptions): SpaSim {
     const sim = new SpaSim(options)
     const d = structuredClone(data)
+    // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
+    const shell = parseLayout(sim.shell)
+    const stray = d.items.find(i => offFloor(shell, i))
+    if (stray) throw new SaveError(`item ${stray.id} is off the floor`)
     sim.items = d.items
-    sim.nextItemId = d.nextItemId
+    // never hand out an id a damaged save already uses
+    sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -279,6 +289,67 @@ export class SpaSim {
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
   }
 
+  /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
+  canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number): BuildProblem | null {
+    const others = this.items.filter(i => i.id !== movingId)
+    const item = { id: movingId ?? this.nextItemId, kind, x, y, flip }
+    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START })
+  }
+
+  buy(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
+    const price = ITEMS[kind].price
+    if (this.money < price) return 'money'
+    const problem = this.canPlace(kind, x, y, flip)
+    if (problem) return problem
+    this.money -= price
+    this.items.push({ id: this.nextItemId++, kind, x, y, flip })
+    this.changeRoom()
+    return null
+  }
+
+  /** Free; the item keeps its id, so a bed keeps its station. */
+  move(id: number, x: number, y: number, flip: boolean): BuildProblem | null {
+    const item = this.itemById(id)
+    if (this.isBusy(id)) return 'busy'
+    const problem = this.canPlace(item.kind, x, y, flip, id)
+    if (problem) return problem
+    Object.assign(item, { x, y, flip })
+    this.changeRoom()
+    return null
+  }
+
+  /** Refunds half the price; the shop always keeps one shampoo bed and one seat. */
+  sell(id: number): BuildProblem | null {
+    const { kind } = this.itemById(id)
+    if (this.isBusy(id)) return 'busy'
+    if (kind === 'bed' && this.items.filter(i => i.kind === 'bed').length === 1) return 'lastBed'
+    if (ITEMS[kind].group === 'seat' && this.items.filter(i => ITEMS[i.kind].group === 'seat').length === 1) return 'lastSeat'
+    this.money += Math.floor(ITEMS[kind].price / 2)
+    this.items = this.items.filter(i => i.id !== id)
+    this.changeRoom()
+    return null
+  }
+
+  /** True for a bed a customer lies on or walks to, and for a bench with someone sitting on or walking to one of its seats. */
+  isBusy(id: number): boolean {
+    const item = this.itemById(id)
+    if (item.kind === 'bed') return this.stations.some(s => s.id === id && s.customerId !== null)
+    return seatTiles(item).some(t => this.seats.some(s => tileEq(s.tile, t) && s.customerId !== null))
+  }
+
+  private itemById(id: number): Item {
+    const item = this.items.find(i => i.id === id)
+    if (!item) throw new Error(`No item ${id}`)
+    return item
+  }
+
+  /** After a build change: lay the room out again, get everyone out of the way, and tell the view. */
+  private changeRoom(): void {
+    this.rebuildRoom()
+    this.settleCharacters()
+    this.emit({ type: 'roomChanged' })
+  }
+
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
   private rebuildRoom(): void {
     this.grid = buildGrid(this.shell, this.items)
@@ -292,6 +363,57 @@ export class SpaSim {
         customerId: this.stations.find(s => s.id === item.id)?.customerId ?? null,
       }))
     this.seats = byId.flatMap(seatTiles).map(tile => ({ tile, customerId: this.seats.find(s => tileEq(s.tile, tile))?.customerId ?? null }))
+  }
+
+  /**
+   * Whoever now stands on furniture, or somewhere the door no longer reaches, steps to the nearest tile the door does reach.
+   * Then every walk finds its way again.
+   */
+  private settleCharacters(): void {
+    const reached = doorReach(this.grid, this.grid.door)
+    const walkers = this.customers.filter(c => ON_FOOT.includes(c.state))
+    const stepAside = (m: Mover, goal: Tile | null) => {
+      const tile = tileOf(m.pos)
+      if (reached(tile) || (goal && tileEq(tile, goal))) return
+      m.pos = { ...flood(this.grid, tile, () => true).find(reached)! }
+    }
+    stepAside(this.owner, null)
+    for (const c of walkers) stepAside(c, this.goalOf(c))
+
+    for (const c of walkers) {
+      const goal = this.goalOf(c)
+      if (c.path.length > 0) this.reroute(c, goal && (x => tileEq(x, goal)))
+    }
+    if (this.owner.path.length > 0) this.reroute(this.owner, this.ownerGoal())
+  }
+
+  /** Where a customer on foot is headed: their seat, their bed or the door. */
+  private goalOf(c: Customer): Tile | null {
+    if (c.state === 'leaving') return this.grid.door
+    if (c.state === 'toStation') return this.stations.find(s => s.id === c.stationId)?.bed ?? null
+    return c.seat
+  }
+
+  /** Where the owner's walk ends: beside the customer being fetched, on the work tile, or where the player tapped if that is still floor. */
+  private ownerGoal(): ((t: Tile) => boolean) | null {
+    const task = this.owner.task
+    if (task?.kind === 'fetch') {
+      const seat = this.customers.find(c => c.id === task.customerId)?.seat
+      return seat ? x => isWalkable(this.grid, x) && manhattan(x, seat) === 1 : null
+    }
+    if (task?.kind === 'serve') {
+      const work = this.stations.find(s => s.id === task.stationId)?.work
+      return work ? x => tileEq(x, work) : null
+    }
+    const end = this.owner.path[this.owner.path.length - 1]
+    return isWalkable(this.grid, end) ? x => tileEq(x, end) : null
+  }
+
+  /** A new path from the nearest tile, which someone caught between two tiles steps back onto first; with no goal they just stop there. */
+  private reroute(m: Mover, isGoal: ((t: Tile) => boolean) | null): void {
+    const from = tileOf(m.pos)
+    const route = (isGoal && findPath(this.grid, from, isGoal)) || []
+    m.path = tileEq(from, m.pos) ? route : [from, ...route]
   }
 
   private step(dt: number): void {

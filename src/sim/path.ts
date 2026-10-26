@@ -1,7 +1,8 @@
 import { inBounds, isWalkable, type Grid } from './grid'
 import type { Tile } from './types'
 
-const DIRS = [
+/** The four steps a walker can take, in the order searches try them: up, right, down, left. */
+export const DIRS = [
   { x: 0, y: -1 },
   { x: 1, y: 0 },
   { x: 0, y: 1 },

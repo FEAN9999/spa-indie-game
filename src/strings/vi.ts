@@ -98,6 +98,13 @@ export const vi = {
   itemAreca: 'Cây cau cảnh',
   setSaigon: 'Sài Gòn xưa',
   setBamboo: 'Tre làng',
+  problemBlocksPath: 'Chắn lối đi',
+  problemOverlap: 'Đè lên đồ khác',
+  problemBedWall: 'Giường gội phải sát tường sau',
+  problemBusy: 'Đang có khách',
+  problemLastBed: 'Tiệm cần ít nhất một giường gội',
+  problemLastSeat: 'Tiệm cần ít nhất một ghế chờ',
+  problemMoney: 'Còn thiếu {money}',
 } as const
 
 export type StringKey = keyof typeof vi
