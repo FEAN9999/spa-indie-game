@@ -1,4 +1,4 @@
-import { BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
+import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
 
 export type Stars = 1 | 2 | 3
 
@@ -19,8 +19,13 @@ export function rating(reviews: number[]): number | null {
 }
 
 export function arrivalIntervalMs(r: number | null): number {
-  const seconds = 40 - ((r ?? 3) - 3) * 6
-  return Math.min(50, Math.max(25, seconds)) * 1000
+  const seconds = 15 - ((r ?? 3) - 3) * 2
+  return Math.min(20, Math.max(10, seconds)) * 1000
+}
+
+/** A random gap around `meanMs` (exponential, from a uniform draw `u`): customers sometimes come close together, sometimes far apart. */
+export function arrivalGapMs(meanMs: number, u: number): number {
+  return Math.min(ARRIVAL_MAX_FACTOR * meanMs, Math.max(ARRIVAL_MIN_MS, -meanMs * Math.log(1 - u)))
 }
 
 /** Multiplies the arrival gap: 1 at the default shop's beauty, down to 0.8 at the prettiest. */

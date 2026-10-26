@@ -16,10 +16,12 @@ export function shampooTextures(): Record<string, string> {
     `<path d="M110,235 Q130,250 150,235 M210,235 Q230,250 250,235" stroke="#2B201C" stroke-width="9" fill="none" stroke-linecap="round"/>` +
     `<ellipse cx="95" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/><ellipse cx="265" cy="280" rx="30" ry="16" fill="#F09A86" opacity=".75"/>` +
     `<path d="M160,300 Q180,318 200,300" stroke="${C.ink}" stroke-width="7" fill="none" stroke-linecap="round"/>`
-  // hair spread towards the basin; tinted with the hair color
+  // hair over the top of the head, locks down both cheeks, ends fanned out in the basin; tinted with the hair color.
+  // Drawn around the head's centre at (210, 280), where ShampooScene puts it.
   const hair =
-    `<path d="M30,250 Q0,120 90,50 Q210,-20 330,50 Q420,120 390,250 Q360,200 300,215 Q250,170 210,200 Q170,170 120,215 Q60,200 30,250Z" fill="#ffffff" ${OUTLINE}/>` +
-    `<path d="M110,80 Q160,40 210,60 M220,55 Q280,40 320,90 M90,140 Q140,100 190,120 M230,120 Q290,100 330,150" stroke="#dcdcdc" stroke-width="8" fill="none" stroke-linecap="round"/>`
+    `<path d="M58,288 Q30,250 36,200 Q8,150 30,96 Q58,30 130,22 Q170,4 210,16 Q250,4 290,22 Q362,30 390,96 Q412,150 384,200 Q390,250 362,288 ` +
+    `Q350,240 334,210 Q316,180 270,186 Q236,190 210,166 Q184,190 150,186 Q104,180 86,210 Q70,240 58,288Z" fill="#ffffff" ${OUTLINE}/>` +
+    `<path d="M150,160 Q130,100 90,64 M190,140 Q180,90 160,48 M230,140 Q240,90 260,48 M270,160 Q290,100 330,64 M64,190 Q50,150 62,110 M356,190 Q370,150 358,110" stroke="#dcdcdc" stroke-width="8" fill="none" stroke-linecap="round"/>`
   return {
     // porcelain basin and headrest seen from above; the customer's head lies with the hair towards the basin
     'sh-basin': svgDoc(

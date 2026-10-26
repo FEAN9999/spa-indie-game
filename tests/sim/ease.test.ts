@@ -19,7 +19,8 @@ describe('easier first days', () => {
 
   it('sends customers 1.3 times further apart on day 1', () => {
     const gapOn = (day: number) => {
-      const sim = new SpaSim({ rng: createRng(5) })
+      // a middling draw, so the gap is neither the shortest nor the longest allowed
+      const sim = new SpaSim({ rng: () => 0.5 })
       sim.day = day
       const times: number[] = []
       for (let ms = 0; times.length < 2; ms += 50) {

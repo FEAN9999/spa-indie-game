@@ -1,6 +1,5 @@
 import {
   ANGRY_REVIEW,
-  ARRIVAL_JITTER,
   ARRIVE_MS,
   CANDIDATES_PER_DAY,
   CUSTOMER_SPEED,
@@ -21,7 +20,7 @@ import {
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { DayClock } from './clock'
-import { arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
+import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
 import { bedSlotAt, buildGrid, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
 import { ITEMS, beautyOf, footprint, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
@@ -597,8 +596,7 @@ export class SpaSim {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
         this.spawnCustomer()
-        const [lo, hi] = ARRIVAL_JITTER
-        this.untilArrivalMs = arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * (lo + (hi - lo) * this.rng())
+        this.untilArrivalMs = arrivalGapMs(arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()), this.rng())
       }
     }
 

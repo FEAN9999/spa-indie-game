@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { arrivalIntervalMs, beautyArrivalFactor, rating, reviewScore, tipFor } from '../../src/sim/economy'
+import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, rating, reviewScore, tipFor } from '../../src/sim/economy'
+import { createRng } from '../../src/sim/rng'
 
 describe('economy', () => {
   it('computes tips and reviews from stars', () => {
@@ -15,9 +16,22 @@ describe('economy', () => {
   })
 
   it('brings customers faster when the rating is higher', () => {
-    expect(arrivalIntervalMs(null)).toBe(40000)
-    expect(arrivalIntervalMs(5)).toBe(28000)
-    expect(arrivalIntervalMs(1)).toBe(50000)
+    expect(arrivalIntervalMs(null)).toBe(15000)
+    expect(arrivalIntervalMs(5)).toBe(11000)
+    expect(arrivalIntervalMs(1)).toBe(19000)
+  })
+
+  it('spaces customers at random around the average gap, never closer than 2 s or longer than 2.5 times the average', () => {
+    expect(arrivalGapMs(15000, 1 - Math.exp(-1))).toBeCloseTo(15000)
+    expect(arrivalGapMs(15000, 0)).toBe(2000)
+    expect(arrivalGapMs(15000, 0.9999)).toBe(37500)
+    const rng = createRng(1)
+    const gaps = Array.from({ length: 500 }, () => arrivalGapMs(15000, rng()))
+    expect(gaps.some(g => g < 5000)).toBe(true)
+    expect(gaps.some(g => g > 30000)).toBe(true)
+    const mean = gaps.reduce((a, b) => a + b, 0) / gaps.length
+    expect(mean).toBeGreaterThan(12000)
+    expect(mean).toBeLessThan(16000)
   })
 
   it('draws customers faster as the shop gets prettier, up to a quarter more', () => {
