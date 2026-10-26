@@ -105,7 +105,7 @@ export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
   for (const item of sorted) {
     const tiles = footprint(item)
     const set = (cell: Cell) => tiles.forEach(t => (grid.cells[t.y][t.x] = cell))
-    if (item.kind === 'bed') {
+    if (ITEMS[item.kind].group === 'bed') {
       tiles.forEach((t, i) => (grid.cells[t.y][t.x] = i === 1 ? 'bed' : 'bedEnd'))
       const work = workTile(item)!
       grid.cells[work.y][work.x] = 'work'

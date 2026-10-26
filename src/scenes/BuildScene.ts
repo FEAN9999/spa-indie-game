@@ -193,7 +193,7 @@ export class BuildScene extends Phaser.Scene {
     this.showScore(INFO_Y - lift)
 
     const top = CARD_TOP - lift
-    const { kinds, page, pages } = catalogPage(this.tab, this.page)
+    const { kinds, page, pages } = catalogPage(this.tab, this.page, this.params.sim.services)
     this.page = page
     kinds.forEach((kind, i) => this.card(kind, MID + (i - (kinds.length - 1) / 2) * CARD_STEP, top))
     if (pages > 1) {

@@ -1,4 +1,4 @@
-import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, TIP_RATE } from '../config'
+import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_FOR_STARS, SERVICE_ARRIVAL_STEP, TIP_RATE } from '../config'
 
 export type Stars = 1 | 2 | 3
 
@@ -33,6 +33,9 @@ export function beautyArrivalFactor(beauty: number): number {
   const t = Math.min(1, Math.max(0, (beauty - BEAUTY_BASE) / (BEAUTY_TOP - BEAUTY_BASE)))
   return 1 - BEAUTY_MAX_SPEEDUP * t
 }
+
+/** Multiplies the arrival gap: each available service beyond the first brings customers more often. */
+export const serviceArrivalFactor = (available: number): number => 1 - SERVICE_ARRIVAL_STEP * (available - 1)
 
 export interface DayEase {
   patience: number

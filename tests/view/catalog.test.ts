@@ -5,6 +5,7 @@ import { catalogPage } from '../../src/view/catalog'
 describe('build mode catalogue', () => {
   it('fits the beds and the seats on one page each', () => {
     expect(catalogPage('bed', 0)).toEqual({ kinds: ['bed'], page: 0, pages: 1 })
+    expect(catalogPage('bed', 0, ['shampoo', 'mask'])).toEqual({ kinds: ['bed', 'maskBed'], page: 0, pages: 1 })
     expect(catalogPage('seat', 0)).toEqual({ kinds: ['bench', 'bambooBench'], page: 0, pages: 1 })
   })
 
@@ -21,8 +22,9 @@ describe('build mode catalogue', () => {
 
   it('offers every kind exactly once', () => {
     const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
-      const { pages } = catalogPage(g, 0)
-      return Array.from({ length: pages }, (_, p) => catalogPage(g, p).kinds).flat()
+      const all = ['shampoo', 'mask', 'massage'] as const
+      const { pages } = catalogPage(g, 0, [...all])
+      return Array.from({ length: pages }, (_, p) => catalogPage(g, p, [...all]).kinds).flat()
     })
     expect([...shown].sort()).toEqual([...ITEM_KINDS].sort())
   })

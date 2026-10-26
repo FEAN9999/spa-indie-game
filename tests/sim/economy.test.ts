@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, rating, reviewScore, tipFor } from '../../src/sim/economy'
+import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, rating, reviewScore, serviceArrivalFactor, tipFor } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
 
 describe('economy', () => {

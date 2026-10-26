@@ -37,8 +37,10 @@ describe('building the shop', () => {
     expect(sim.ownerTile()).toEqual({ x: 7, y: 3 })
   })
 
-  it('refuses a bed away from the back wall', () => {
+  it('refuses a bed away from the back wall, but a mask or massage bed may stand there', () => {
     expect(shop().canPlace('bed', 6, 8, false)).toBe('bedWall')
+    expect(shop().canPlace('maskBed', 6, 8, false)).toBeNull()
+    expect(shop().canPlace('massageBed', 6, 8, true)).toBeNull()
   })
 
   it("refuses anything on another item, the desk, the screen or the door's way in", () => {

@@ -2,11 +2,12 @@ import { LOOK_COUNTS, PATIENCE_MS } from '../config'
 import { t } from '../strings/vi'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
+import { SERVICE_IDS, type ServiceId } from './services'
 import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } from './staff'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 4
+export const SAVE_VERSION = 5
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -42,6 +43,8 @@ export interface SaveData {
   /** The day `candidates` were drawn for. */
   candidatesDay: number
   nextStaffId: number
+  /** The services the shop has opened, in opening order. */
+  services: ServiceId[]
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -104,11 +107,21 @@ function withNoStaff(old: object): SaveData {
   return { ...old, v: SAVE_VERSION, stats: { ...stats, wages: 0 }, staff: [], candidates: [], candidatesDay: 0, nextStaffId: 1 } as unknown as SaveData
 }
 
+/** Shops saved before version 5 offered only shampoo. */
+function withShampooOnly(old: object): SaveData {
+  const customers = (old as { customers: Customer[] }).customers.map(c => ({ ...c, service: 'shampoo' as const }))
+  return { ...old, v: SAVE_VERSION, services: ['shampoo'], customers } as unknown as SaveData
+}
+
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   const data = parseVersioned(raw)
   // customers saved before the receptionist existed were never greeted
   data.customers = data.customers.map(c => ({ ...c, greet: isNumber(c.greet) ? c.greet : 0 }))
+  // unknown services are dropped and shampoo is always open; a customer who wants an unknown one wants shampoo
+  const known = Array.isArray(data.services) ? data.services : []
+  data.services = SERVICE_IDS.filter(id => id === 'shampoo' || known.includes(id))
+  data.customers = data.customers.map(c => ({ ...c, service: SERVICE_IDS.includes(c.service) ? c.service : 'shampoo' }))
   // damaged staff data is repaired, never a reason to lose the shop
   data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
   data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))
@@ -141,7 +154,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
@@ -152,7 +165,7 @@ function parseVersioned(raw: unknown): SaveData {
   if (typeof raw.dayOver !== 'boolean') throw new SaveError('dayOver is not a boolean')
   if (raw.servingCustomerId !== null && !isNumber(raw.servingCustomerId)) throw new SaveError('servingCustomerId is not a number')
   if (raw.v === 1) {
-    return withNoStaff(withDefaultItems({
+    return withShampooOnly(withNoStaff(withDefaultItems({
       ...raw,
       customers: (raw.customers as object[]).map(c => ({ ...c, patienceMaxMs: PATIENCE_MS })),
       shopName: t('defaultShopName'),
@@ -160,7 +173,7 @@ function parseVersioned(raw: unknown): SaveData {
       profileDone: false,
       // an old shop is past the first day's tips, but has not seen the build button yet
       hints: [...TUTORIAL_HINTS],
-    }))
+    })))
   }
   if (typeof raw.shopName !== 'string') throw new SaveError('shopName is not a string')
   if (!isOwnerLook(raw.ownerLook)) throw new SaveError('ownerLook is not a look')
@@ -171,14 +184,15 @@ function parseVersioned(raw: unknown): SaveData {
     shopName: cleanShopName(raw.shopName, t('defaultShopName')),
     hints: raw.hints.filter((h): h is HintId => (HINT_IDS as readonly unknown[]).includes(h)),
   }
-  if (raw.v === 2) return withNoStaff(withDefaultItems(data))
+  if (raw.v === 2) return withShampooOnly(withNoStaff(withDefaultItems(data)))
   if (!isNumber(raw.nextItemId)) throw new SaveError('nextItemId is not a number')
   if (!isItems(raw.items)) throw new SaveError('items are not furniture')
-  if (raw.v === 3) return withNoStaff(data)
+  if (raw.v === 3) return withShampooOnly(withNoStaff(data))
   if (!isNumber(raw.stats.wages)) throw new SaveError('stats.wages is not a number')
   checkStaff(raw.staff)
   checkCandidates(raw.candidates)
   if (!isNumber(raw.candidatesDay)) throw new SaveError('candidatesDay is not a number')
   if (!isNumber(raw.nextStaffId)) throw new SaveError('nextStaffId is not a number')
+  if (raw.v === 4) return withShampooOnly(data)
   return data as unknown as SaveData
 }

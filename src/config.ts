@@ -16,7 +16,11 @@ export const DAY_END_MIN = 1200
 export const REAL_MS_PER_GAME_MIN = 25000 / 60
 
 // Money and reviews
-export const SHAMPOO_PRICE = 40000
+/** What a customer pays for each service, and what opening it costs; shampoo is built in. */
+export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000 } as const
+/** Each service open beyond the first shortens the arrival gap by this share. */
+export const SERVICE_ARRIVAL_STEP = 0.1
 export const TIP_RATE = { 1: 0, 2: 0.1, 3: 0.25 } as const
 export const REVIEW_FOR_STARS = { 1: 3, 2: 4, 3: 5 } as const
 export const ANGRY_REVIEW = 1

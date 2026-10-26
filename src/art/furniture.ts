@@ -1,5 +1,5 @@
 import { TILE } from '../config'
-import type { ItemKind } from '../sim/items'
+import { ITEMS, type ItemKind } from '../sim/items'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -394,6 +394,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
 
 /** The texture of an item kind: the first pieces keep their keys, the old decor is under `decor-`. */
 export function itemTexture(kind: ItemKind): string {
+  // the mask and massage beds borrow the shampoo bed's picture until they have their own
+  if (ITEMS[kind].group === 'bed') return kind in FURNITURE ? kind : 'bed'
   return kind in FURNITURE ? kind : `decor-${kind}`
 }
 

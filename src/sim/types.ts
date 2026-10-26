@@ -1,3 +1,5 @@
+import type { ServiceId } from './services'
+
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
@@ -51,6 +53,8 @@ export interface Customer {
   mood: 'happy' | 'ok' | 'angry' | null
   /** The receptionist's friendliness when they greeted this customer, else 0. */
   greet: number
+  /** The service this customer wants. */
+  service: ServiceId
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }
@@ -67,6 +71,8 @@ export interface Station {
   bed: Tile
   work: Tile
   customerId: number | null
+  /** The service this bed gives. */
+  service: ServiceId
 }
 
 export interface Seat {
@@ -93,7 +99,7 @@ export type SimEvent =
   | { type: 'review'; customerId: number; score: number }
   | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'levelUp'; staffId: number; level: number }
-  | { type: 'toast'; key: 'stationsBusy' }
+  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' }
   /** An empty bed slot was tapped while a bed fits there. */
   | { type: 'bedSlot'; slot: Tile }
   /** Furniture was bought, moved or sold. */

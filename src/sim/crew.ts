@@ -6,6 +6,7 @@ import { footprint } from './items'
 import { findPath } from './path'
 import type { Rng } from './rng'
 import type { HireProblem, SpaSim } from './spa'
+import type { ServiceId } from './services'
 import { gainXp, makeCandidate, restAfter, staffStars, workMs, type Staff } from './staff'
 import type { Customer, Mover, SimEvent, Station, Tile } from './types'
 
@@ -225,7 +226,7 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
   if (task.kind === 'fetch') {
     if (s.path.length > 0) return
     const c = sim.customers.find(x => x.id === task.customerId)
-    const station = sim.stations.find(x => x.customerId === null)
+    const station = c && sim.stations.find(x => x.customerId === null && x.service === c.service)
     if (!c || c.state !== 'waiting' || !station) {
       s.task = null
       return
@@ -264,16 +265,16 @@ function finishWork(h: CrewHost, s: Staff, due = false): void {
   else if (due) startRest(h, s)
 }
 
-/** Starts walking to the waiting customer who has waited longest, if a bed is free and nobody else is on the way to them; false if nothing started. */
+/** Starts walking to the waiting customer who has waited longest, if a bed of their service is free and nobody else is on the way to them; false if nothing started. */
 function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const { sim } = h
   const fetched = new Set<number>()
   if (sim.owner.task?.kind === 'fetch') fetched.add(sim.owner.task.customerId)
   for (const x of sim.staff) if (x.task?.kind === 'fetch') fetched.add(x.task.customerId)
-  const freeBeds = sim.stations.filter(x => x.customerId === null).length
-  if (freeBeds <= fetched.size) return false
+  const fetchesOf = (service: ServiceId) => sim.customers.filter(c => fetched.has(c.id) && c.service === service).length
+  const hasRoom = (service: ServiceId) => freeBeds(sim, service) > fetchesOf(service)
   const next = sim.customers
-    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id))
+    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && hasRoom(c.service))
     .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))
@@ -283,20 +284,28 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   return true
 }
 
+/** The beds of a service nobody is lying on or walking to. */
+const freeBeds = (sim: SpaSim, service: ServiceId): number => sim.stations.filter(x => x.service === service && x.customerId === null).length
+
 /**
- * The owner taps a waiting customer: whoever is fetching that customer lets go. Then, while the free beds number no more than
- * the technicians' fetches still on their way, the last hired lets go of theirs too, so the owner's customer finds a bed.
+ * The owner taps a waiting customer: whoever is fetching that customer lets go. Then, while the free beds of that customer's service
+ * number no more than the technicians' fetches of customers of that service still on their way, the last hired lets go of theirs too,
+ * so the owner's customer finds a bed.
  * Whoever let go is idle and picks again on the next step.
  */
 export function makeWayForOwner({ sim }: CrewHost, customerId: number): void {
+  const service = sim.customers.find(c => c.id === customerId)?.service ?? 'shampoo'
   const drop = (s: Staff) => {
     s.task = null
     s.path = []
   }
   for (const s of sim.staff) if (s.task?.kind === 'fetch' && s.task.customerId === customerId) drop(s)
-  const freeBeds = sim.stations.filter(x => x.customerId === null).length
-  const fetching = sim.staff.filter(s => s.task?.kind === 'fetch')
-  for (let n = fetching.length; n >= freeBeds && n > 0; n--) drop(fetching[n - 1])
+  const free = freeBeds(sim, service)
+  const fetching = sim.staff.filter(s => {
+    const task = s.task
+    return task?.kind === 'fetch' && sim.customers.find(c => c.id === task.customerId)?.service === service
+  })
+  for (let n = fetching.length; n >= free && n > 0; n--) drop(fetching[n - 1])
 }
 
 /** The day starts with everyone on their home tile, and new candidates once staff is open. */

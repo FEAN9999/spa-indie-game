@@ -43,6 +43,16 @@ describe('items', () => {
     expect(g.cells[3][6]).toBe('bed')
   })
 
+  it('gives the mask and massage beds a work tile like a bed, and lists the beds together', () => {
+    expect(workTile({ id: 9, kind: 'maskBed', x: 6, y: 2, flip: false })).toEqual({ x: 7, y: 3 })
+    expect(workTile({ id: 9, kind: 'massageBed', x: 6, y: 2, flip: true })).toEqual({ x: 5, y: 3 })
+    const g = buildGrid(shellOf(SPA_LAYOUT_1A), [{ id: 9, kind: 'massageBed', x: 6, y: 2, flip: true }])
+    expect([g.cells[3][6], g.cells[3][5], g.beds.length, g.works.length]).toEqual(['bed', 'work', 1, 1])
+    expect(ITEM_KINDS.slice(0, 3)).toEqual(['bed', 'maskBed', 'massageBed'])
+    expect(ITEMS.maskBed).toMatchObject({ w: 1, h: 3, price: 350000, beauty: 0, group: 'bed' })
+    expect(ITEMS.massageBed).toMatchObject({ price: 450000, name: 'itemMassageBed' })
+  })
+
   it("knows every kind's price, beauty and set", () => {
     expect(ITEMS.teaChest).toMatchObject({ price: 250000, beauty: 5, set: 'saigon' })
     expect(ITEMS.areca).toMatchObject({ price: 80000, beauty: 3, set: 'bamboo' })

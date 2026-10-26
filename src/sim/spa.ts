@@ -9,7 +9,6 @@ import {
   OWNER_START,
   PATIENCE_MS,
   RATING_WINDOW,
-  SHAMPOO_PRICE,
   STARTING_MONEY,
   STEP_MS,
 } from '../config'
@@ -17,7 +16,7 @@ import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, updateStaff, type CrewHost } from './crew'
-import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
+import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
@@ -25,6 +24,7 @@ import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
+import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { greetPatience, tipFactor, walkSpeed, type Candidate, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 
@@ -84,6 +84,8 @@ export class SpaSim {
   staff: Staff[] = []
   candidates: Candidate[] = []
   candidatesDay = 0
+  /** The services the shop has opened, in opening order; shampoo is built in. */
+  services: ServiceId[] = ['shampoo']
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -139,12 +141,43 @@ export class SpaSim {
     if (!this.hints.includes(id)) this.hints.push(id)
   }
 
-  spawnCustomer(): Customer {
+  /** What stops `id` opening now, or null if it can: not while money is negative, not before the service ahead of it, not without the money. An open service has no problem. */
+  serviceProblem(id: ServiceId): ServiceProblem | null {
+    if (this.services.includes(id)) return null
+    if (this.money < 0) return 'debt'
+    const ahead = SERVICE_IDS.slice(0, SERVICE_IDS.indexOf(id))
+    if (ahead.some(a => !this.services.includes(a))) return 'order'
+    return this.money < SERVICES[id].openCost ? 'money' : null
+  }
+
+  /** Opens the service for its price; opening an open one does nothing. */
+  openService(id: ServiceId): ServiceProblem | null {
+    if (this.services.includes(id)) return null
+    const problem = this.serviceProblem(id)
+    if (problem) return problem
+    this.money -= SERVICES[id].openCost
+    this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
+    return null
+  }
+
+  /** The services customers can ask for: open, with at least one bed. */
+  availableServices(): ServiceId[] {
+    return SERVICE_IDS.filter(id => this.services.includes(id) && this.items.some(i => i.kind === SERVICES[id].bed))
+  }
+
+  /** A uniform draw among the available services; no draw when there is only one. */
+  private pickService(): ServiceId {
+    const options = this.availableServices()
+    return options.length > 1 ? options[Math.floor(this.rng() * options.length)] : (options[0] ?? 'shampoo')
+  }
+
+  spawnCustomer(opts: { service?: ServiceId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
     const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1))
+    const look = randomLook(this.rng)
     const c: Customer = {
       id: this.nextId++,
-      look: randomLook(this.rng),
+      look,
       state: 'arriving',
       stateMs: 0,
       pos: { ...this.grid.door },
@@ -156,6 +189,7 @@ export class SpaSim {
       stationId: null,
       mood: null,
       greet: greeter ? greeter.stats.friendly : 0,
+      service: opts.service ?? this.pickService(),
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -174,6 +208,10 @@ export class SpaSim {
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
     if (waiting) {
+      if (!this.stations.some(s => s.service === waiting.service && s.customerId === null)) {
+        this.emitBusy(waiting.service)
+        return
+      }
       makeWayForOwner(this.crew, waiting.id)
       const path = findPath(this.grid, from, besideSeat(this.grid, waiting.seat!))
       if (!path) return
@@ -207,12 +245,13 @@ export class SpaSim {
 
   /** The customer pays, reviews and leaves; `technicianFriendly` is null when the owner did the work. */
   private payFor(c: Customer, station: Station, stars: Stars, technicianFriendly: number | null): void {
-    const tip = Math.round(tipFor(SHAMPOO_PRICE, stars) * tipFactor(c.greet, technicianFriendly))
-    this.money += SHAMPOO_PRICE + tip
-    this.stats.income += SHAMPOO_PRICE
+    const price = SERVICES[c.service].price
+    const tip = Math.round(tipFor(price, stars) * tipFactor(c.greet, technicianFriendly))
+    this.money += price + tip
+    this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
-    this.emit({ type: 'paid', customerId: c.id, amount: SHAMPOO_PRICE, tip, tile: station.bed })
+    this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     this.addReview(c.id, reviewScore(stars))
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null
@@ -264,6 +303,7 @@ export class SpaSim {
       candidates: this.candidates,
       candidatesDay: this.candidatesDay,
       nextStaffId: this.nextStaffId,
+      services: this.services,
     })
   }
 
@@ -278,6 +318,7 @@ export class SpaSim {
     sim.items = d.items
     // never hand out an id a damaged save already uses
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
+    sim.services = d.services
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -308,6 +349,7 @@ export class SpaSim {
     sim.candidatesDay = d.candidatesDay
     // never hand out an id a damaged save already uses
     sim.nextStaffId = Math.max(d.nextStaffId, ...d.staff.map(s => s.id + 1))
+    sim.repickLostServices()
     repairAfterLoad(sim.crew)
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
@@ -386,7 +428,7 @@ export class SpaSim {
   /** True for a bed a customer lies on or walks to, and for a bench with someone sitting on or walking to one of its seats. */
   isBusy(id: number): boolean {
     const item = this.itemById(id)
-    if (item.kind === 'bed') return this.stations.some(s => s.id === id && s.customerId !== null)
+    if (ITEMS[item.kind].group === 'bed') return this.stations.some(s => s.id === id && s.customerId !== null)
     return seatTiles(item).some(t => this.seats.some(s => tileEq(s.tile, t) && s.customerId !== null))
   }
 
@@ -399,8 +441,16 @@ export class SpaSim {
   /** After a build change: lay the room out again, get everyone out of the way, and tell the view. */
   private changeRoom(): void {
     this.rebuildRoom()
+    this.repickLostServices()
     this.settleCharacters()
     this.emit({ type: 'roomChanged' })
+  }
+
+  /** Whoever is still to be served and wants a service that is no longer available picks again among those that are. */
+  private repickLostServices(): void {
+    const available = this.availableServices()
+    for (const c of this.customers)
+      if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service)) c.service = this.pickService()
   }
 
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
@@ -408,9 +458,10 @@ export class SpaSim {
     this.grid = buildGrid(this.shell, this.items)
     const byId = [...this.items].sort((a, b) => a.id - b.id)
     this.stations = byId
-      .filter(item => item.kind === 'bed')
+      .filter(item => ITEMS[item.kind].group === 'bed')
       .map(item => ({
         id: item.id,
+        service: serviceOfBed(item.kind)!,
         bed: { x: item.x, y: item.y + 1 },
         work: workTile(item)!,
         customerId: this.stations.find(s => s.id === item.id)?.customerId ?? null,
@@ -484,7 +535,10 @@ export class SpaSim {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
         this.spawnCustomer()
-        this.untilArrivalMs = arrivalGapMs(arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()), this.rng())
+        this.untilArrivalMs = arrivalGapMs(
+          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices().length),
+          this.rng(),
+        )
       }
     }
 
@@ -541,9 +595,9 @@ export class SpaSim {
         this.owner.task = null
         return
       }
-      const station = this.stations.find(s => s.customerId === null)
+      const station = this.stations.find(s => s.customerId === null && s.service === c.service)
       if (!station) {
-        this.emit({ type: 'toast', key: 'stationsBusy' })
+        this.emitBusy(c.service)
         this.owner.task = null
         return
       }
@@ -618,6 +672,11 @@ export class SpaSim {
   private setState(c: Customer, state: CustomerState): void {
     c.state = state
     c.stateMs = 0
+  }
+
+  /** Tells the player every bed of the service is taken. */
+  private emitBusy(id: ServiceId): void {
+    this.emit({ type: 'toast', key: SERVICES[id].busy as Extract<SimEvent, { type: 'toast' }>['key'] })
   }
 
   private emit(e: SimEvent): void {

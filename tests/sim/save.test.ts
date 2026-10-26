@@ -1,15 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SHAMPOO_PRICE } from '../../src/config'
+import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../src/config'
 import { tipFor } from '../../src/sim/economy'
 import { DEFAULT_ITEMS } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
-import { TUTORIAL_HINTS } from '../../src/sim/types'
+import { TUTORIAL_HINTS, type SimEvent } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
 import v2 from '../fixtures/save-v2.json'
 import v3 from '../fixtures/save-v3.json'
+import v4 from '../fixtures/save-v4.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -35,7 +36,7 @@ describe('saving the shop', () => {
     expect(copy.drainEvents()).toContainEqual({ type: 'serviceReady', customerId: c.id, stationId: c.stationId })
     const before = copy.money
     copy.completeService(c.id, 3)
-    expect(copy.money).toBe(before + SHAMPOO_PRICE + tipFor(SHAMPOO_PRICE, 3))
+    expect(copy.money).toBe(before + SERVICE_PRICE.shampoo + tipFor(SERVICE_PRICE.shampoo, 3))
   })
 
   it('shows the summary again for a day that had ended', () => {
@@ -71,12 +72,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([4, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([5, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(4)
+    expect(sim.toSave().v).toBe(5)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -148,7 +149,7 @@ describe('save version 3', () => {
     expect(sim.drainEvents()).toEqual([{ type: 'serviceReady', customerId: served.id, stationId: 2 }])
     const before = sim.money
     sim.completeService(served.id, 3)
-    expect(sim.money).toBe(before + SHAMPOO_PRICE + tipFor(SHAMPOO_PRICE, 3))
+    expect(sim.money).toBe(before + SERVICE_PRICE.shampoo + tipFor(SERVICE_PRICE.shampoo, 3))
     expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tile: { x: 4, y: 3 } }))
   })
 
@@ -165,7 +166,7 @@ describe('save version 3', () => {
     expect(sim.stations.find(s => s.id === 1)?.bed).toEqual({ x: 2, y: 3 })
     const before = sim.money
     sim.completeService(c.id, 3)
-    expect(sim.money).toBe(before + SHAMPOO_PRICE + tipFor(SHAMPOO_PRICE, 3))
+    expect(sim.money).toBe(before + SERVICE_PRICE.shampoo + tipFor(SERVICE_PRICE.shampoo, 3))
   })
 
   it('keeps bought furniture across a save', () => {
@@ -208,10 +209,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 4', () => {
+  it('still leaves alone only saves newer than version 5', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 4 }).v).toBe(4)
-    expect(() => parseSave({ ...good, v: 5 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 5 }).v).toBe(5)
+    expect(() => parseSave({ ...good, v: 6 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -377,5 +378,42 @@ describe('save version 4', () => {
       { ...good, nextStaffId: null },
     ])
       expect(() => parseSave(raw)).toThrow(SaveError)
+  })
+})
+
+describe('save version 5', () => {
+  it('opens a batch-4 shop with shampoo only and every customer wanting it', () => {
+    const sim = open(v4)
+    expect(sim.services).toEqual(['shampoo'])
+    expect(sim.customers.length).toBeGreaterThan(0)
+    expect(sim.customers.every(c => c.service === 'shampoo')).toBe(true)
+    const paid: number[] = []
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => {
+      paid.push(...ev.flatMap(e => (e.type === 'paid' ? [e.amount] : [])))
+      ev.length = 0
+      return paid.length >= 2
+    }, 120_000, ev)
+    expect(paid.slice(0, 2)).toEqual([40_000, 40_000])
+  })
+
+  it('keeps the services and what each customer wants through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    sim.money = 1_000_000
+    sim.openService('mask')
+    sim.buy('maskBed', 6, 2, false)
+    const c = sim.spawnCustomer({ service: 'mask' })
+    const copy = viaJson(sim)
+    expect(copy.services).toEqual(['shampoo', 'mask'])
+    expect(copy.customers.find(x => x.id === c.id)!.service).toBe('mask')
+    expect(copy.stations.map(s => s.service)).toEqual(['shampoo', 'shampoo', 'mask'])
+  })
+
+  it('repairs unknown services instead of rejecting the shop', () => {
+    const good = JSON.parse(JSON.stringify(busyShop().toSave()))
+    expect(parseSave({ ...good, services: ['massage', 'x'] }).services).toEqual(['shampoo', 'massage'])
+    expect(parseSave({ ...good, services: 7 }).services).toEqual(['shampoo'])
+    const d = parseSave({ ...good, customers: good.customers.map((c: object) => ({ ...c, service: 'x' })) })
+    expect(d.customers.every(c => c.service === 'shampoo')).toBe(true)
   })
 })
