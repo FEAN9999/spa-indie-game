@@ -65,6 +65,13 @@ function withDefaultItems(old: Record<string, unknown>): SaveData {
 
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
+  const data = parseVersioned(raw)
+  // customers saved before the receptionist existed were never greeted
+  data.customers = data.customers.map(c => ({ ...c, greet: c.greet ?? 0 }))
+  return data
+}
+
+function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
   if (raw.v !== 1 && raw.v !== 2 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)

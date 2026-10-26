@@ -42,6 +42,8 @@ export interface Customer {
   seat: Tile | null
   stationId: number | null
   mood: 'happy' | 'ok' | 'angry' | null
+  /** The receptionist's friendliness when they greeted this customer, else 0. */
+  greet: number
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }
@@ -80,6 +82,7 @@ export type SimEvent =
   | { type: 'serviceReady'; customerId: number; stationId: number }
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
+  | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'toast'; key: 'stationsBusy' }
   /** An empty bed slot was tapped while a bed fits there. */
   | { type: 'bedSlot'; slot: Tile }
