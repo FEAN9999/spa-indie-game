@@ -80,6 +80,18 @@ describe('building the shop', () => {
     expect(sim.sell(bench)).toBe('busy')
     expect(sim.items.find(i => i.id === bench)).toMatchObject({ x: 2, y: 13 })
 
+    // a customer still walking to the bench has a seat on it already; with a second bench, only that stops the move and the sale
+    const walking = shop()
+    expect(walking.buy('bench', 6, 9, false)).toBeNull()
+    const c = walking.spawnCustomer()
+    advanceUntil(walking, () => c.state === 'toSeat')
+    expect(c.seat).toEqual({ x: 2, y: 13 })
+    expect(walking.isBusy(bench)).toBe(true)
+    expect(walking.canPlace('bench', 6, 11, false, bench)).toBeNull()
+    expect(walking.move(bench, 6, 11, false)).toBe('busy')
+    expect(walking.sell(bench)).toBe('busy')
+    expect(walking.items.find(i => i.id === bench)).toMatchObject({ x: 2, y: 13 })
+
     const serving = shop()
     startService(serving)
     expect(serving.isBusy(1)).toBe(true)
@@ -122,6 +134,16 @@ describe('building the shop', () => {
     expect(sim.canPlace('bed', 2, 2, true)).toBe('overlap')
     expect(sim.canPlace('bed', 2, 2, true, 1)).toBeNull()
     expect(sim.move(2, 4, 2, true)).toBe('overlap') // its work tile would be bed 1's
+  })
+
+  it('tells the view after a move and after a sale', () => {
+    const sim = shop()
+    const lotus = idOf(sim, 'lotus')
+    sim.drainEvents()
+    expect(sim.move(lotus, 6, 10, false)).toBeNull()
+    expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
+    expect(sim.sell(lotus)).toBeNull()
+    expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
   })
 
   it('moves people out of the way', () => {
