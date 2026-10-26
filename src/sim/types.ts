@@ -1,3 +1,7 @@
+/** Tips the shop shows once each; saved so they do not come back. */
+export const HINT_IDS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
+export type HintId = (typeof HINT_IDS)[number]
+
 export interface Tile {
   x: number
   y: number
@@ -31,6 +35,8 @@ export interface Customer {
   facing: Facing
   path: Tile[]
   patienceMs: number
+  /** patienceMs when the customer arrived; the view draws the bar against it. */
+  patienceMaxMs: number
   seat: Tile | null
   stationId: number | null
   mood: 'happy' | 'ok' | 'angry' | null

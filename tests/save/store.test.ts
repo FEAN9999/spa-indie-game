@@ -17,7 +17,7 @@ describe('save slots', () => {
     expect(s.save(1, shop(1))).toBe(true)
     s.save(2, shop(2))
     expect([s.load(1)?.money, s.load(2)?.money, s.load(3)]).toEqual([1, 2, null])
-    expect([s.info(2), s.info(3)]).toEqual([{ day: 1, money: 2 }, null])
+    expect([s.info(2), s.info(3)]).toEqual([{ day: 1, money: 2, name: 'Tiệm Spa' }, null])
   })
 
   it('sets aside a save it cannot read and treats the slot as empty', () => {

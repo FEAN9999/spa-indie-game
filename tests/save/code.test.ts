@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { decodeSaveCode, encodeSaveCode } from '../../src/save/code'
 import { SaveError, type SaveData } from '../../src/sim/save'
+import v1 from '../fixtures/save-v1.json'
 import { busyShop } from '../sim/helpers'
 
 describe('save codes', () => {
@@ -27,5 +28,10 @@ describe('save codes', () => {
     const notAShop = await encodeSaveCode({ v: 1 } as unknown as SaveData)
     for (const bad of ['', 'hello', 'SPA1.', 'SPA1.!!!!', code.slice(0, -10), notAShop])
       await expect(decodeSaveCode(bad)).rejects.toThrow(SaveError)
+  })
+
+  it('reads a code made before owners and names', async () => {
+    const d = await decodeSaveCode(await encodeSaveCode(v1 as unknown as SaveData))
+    expect([d.v, d.shopName, d.profileDone, d.money]).toEqual([2, 'Tiệm Spa', false, v1.money])
   })
 })

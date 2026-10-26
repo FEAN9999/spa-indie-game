@@ -1,5 +1,9 @@
+/** Name ideas for the shop; each fits the name limit as it is. */
+export const SHOP_NAME_IDEAS = ['Spa Hoa Sen', 'Spa Gạch Bông', 'Tiệm Gội Cô Ba', 'Spa Mây Tre', 'Spa Sen Hồng', 'Tiệm Spa Phố Cũ', 'Spa Thảo Mộc', 'Spa Lá Dừa'] as const
+
 export const vi = {
   loading: 'Đang tải...',
+  defaultShopName: 'Tiệm Spa',
   dayLabel: 'Ngày {day}',
   hintFirstCustomer: 'Chạm vào khách đang chờ để mời gội đầu',
   stationsBusy: 'Giường gội đầu đang bận',

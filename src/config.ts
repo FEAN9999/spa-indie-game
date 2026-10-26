@@ -7,6 +7,8 @@ export const MAP_X = 33
 export const MAP_Y = 210
 
 export const LOOK_COUNTS = { skin: 3, hair: 5, hairStyle: 2, shirt: 5 } as const
+/** What the owner can pick when making the shop. */
+export const OWNER_LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 4 } as const
 
 // Day: 8:00 to 20:00, 35 real seconds per game hour (about 7 minutes a day).
 export const DAY_START_MIN = 480

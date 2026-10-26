@@ -6,6 +6,7 @@ export const SLOTS: SlotId[] = [1, 2, 3]
 export interface SlotInfo {
   day: number
   money: number
+  name: string
 }
 
 export type KeyValueStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
@@ -52,7 +53,7 @@ export class SaveStore {
 
   info(slot: SlotId): SlotInfo | null {
     const d = this.load(slot)
-    return d && { day: d.day, money: d.money }
+    return d && { day: d.day, money: d.money, name: d.shopName }
   }
 
   flag(name: Flag): boolean {

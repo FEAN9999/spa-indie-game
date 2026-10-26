@@ -14,14 +14,16 @@ import {
   STARTING_MONEY,
   STEP_MS,
 } from '../config'
+import { t } from '../strings/vi'
 import { DayClock } from './clock'
 import { arrivalIntervalMs, rating as ratingOf, reviewScore, tipFor, type Stars } from './economy'
 import { isBedSlot, isWalkable, manhattan, parseLayout, tileEq, type Grid } from './grid'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
+import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
-import type { Customer, CustomerState, DayStats, Facing, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
+import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Owner, Seat, SimEvent, Station, Tile, Vec } from './types'
 
 interface Mover {
   pos: Vec
@@ -72,6 +74,10 @@ export class SpaSim {
   paused = false
   servingCustomerId: number | null = null
   dayOver = false
+  shopName = t('defaultShopName')
+  ownerLook: Look = { ...DEFAULT_OWNER_LOOK }
+  profileDone = false
+  hints: HintId[] = []
 
   private readonly rng: Rng
   private readonly autoSpawn: boolean
@@ -101,6 +107,21 @@ export class SpaSim {
     this.advance(Math.min(dtMs, MAX_FRAME_MS))
   }
 
+  /** The owner's look and the shop's name, chosen when the shop is made. */
+  setProfile(look: Look, name: string): void {
+    this.ownerLook = { ...look }
+    this.shopName = cleanShopName(name, this.shopName)
+    this.profileDone = true
+  }
+
+  hintDone(id: HintId): boolean {
+    return this.hints.includes(id)
+  }
+
+  markHint(id: HintId): void {
+    if (!this.hints.includes(id)) this.hints.push(id)
+  }
+
   spawnCustomer(): Customer {
     const c: Customer = {
       id: this.nextId++,
@@ -111,6 +132,7 @@ export class SpaSim {
       facing: 'up',
       path: [],
       patienceMs: PATIENCE_MS,
+      patienceMaxMs: PATIENCE_MS,
       seat: null,
       stationId: null,
       mood: null,
@@ -197,6 +219,10 @@ export class SpaSim {
       seatCustomers: this.seats.map(s => s.customerId),
       nextId: this.nextId,
       untilArrivalMs: this.untilArrivalMs,
+      shopName: this.shopName,
+      ownerLook: this.ownerLook,
+      profileDone: this.profileDone,
+      hints: this.hints,
     })
   }
 
@@ -219,6 +245,10 @@ export class SpaSim {
     d.seatCustomers.forEach((id, i) => (sim.seats[i].customerId = id))
     sim.nextId = d.nextId
     sim.untilArrivalMs = d.untilArrivalMs
+    sim.shopName = d.shopName
+    sim.ownerLook = d.ownerLook
+    sim.profileDone = d.profileDone
+    sim.hints = d.hints
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })

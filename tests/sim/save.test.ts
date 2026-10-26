@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_START_MIN, RATING_WINDOW, SHAMPOO_PRICE } from '../../src/config'
+import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SHAMPOO_PRICE } from '../../src/config'
 import { tipFor } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
+import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { parseSave, SaveError } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
+import { HINT_IDS } from '../../src/sim/types'
+import v1 from '../fixtures/save-v1.json'
 import { advanceUntil, busyShop, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -55,5 +58,50 @@ describe('saving the shop', () => {
     for (const raw of [null, 'x', [], {}, { ...good, v: 99 }, { ...good, money: 'lots' }, { ...good, customers: null }, { ...good, owner: {} }])
       expect(() => parseSave(raw)).toThrow(SaveError)
     expect(() => SpaSim.fromSave({ ...good, seatCustomers: [null] }, opts())).toThrow(SaveError)
+  })
+})
+
+describe('save version 2', () => {
+  it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
+    const data = parseSave(structuredClone(v1))
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([2, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect(data.hints).toEqual([...HINT_IDS])
+    expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
+    const sim = SpaSim.fromSave(data, opts())
+    expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
+    expect(sim.toSave().v).toBe(2)
+  })
+
+  it('still reopens the mini-game of an upgraded shop', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const c = startService(sim)
+    const old = { ...sim.toSave(), v: 1 } as Record<string, unknown>
+    for (const k of ['shopName', 'ownerLook', 'profileDone', 'hints']) delete old[k]
+    const copy = SpaSim.fromSave(parseSave(old), opts())
+    expect(copy.drainEvents()).toContainEqual({ type: 'serviceReady', customerId: c.id, stationId: c.stationId })
+  })
+
+  it('keeps the owner, the shop name and the hints already shown', () => {
+    const sim = busyShop()
+    sim.setProfile({ skin: 3, hair: 4, hairStyle: 3, shirt: 2 }, '  Spa Hoa Sen ')
+    sim.markHint('money')
+    sim.markHint('money')
+    const copy = viaJson(sim)
+    expect([copy.shopName, copy.ownerLook, copy.profileDone, copy.hints]).toEqual(['Spa Hoa Sen', { skin: 3, hair: 4, hairStyle: 3, shirt: 2 }, true, ['money']])
+  })
+
+  it('rejects an owner look outside the choices', () => {
+    const good = busyShop().toSave()
+    const look = (o: object) => ({ skin: 0, hair: 0, hairStyle: 0, shirt: 0, ...o })
+    for (const ownerLook of [look({ skin: 4 }), look({ shirt: 7 }), look({ skin: -1 }), look({ hair: 1.5 }), null])
+      expect(() => parseSave({ ...good, ownerLook })).toThrow(SaveError)
+  })
+
+  it('cleans the saved shop name and drops hints it does not know', () => {
+    const good = busyShop().toSave()
+    const d = parseSave({ ...good, shopName: '  Spa   Sen  ', hints: ['money', 'fly'] })
+    expect([d.shopName, d.hints]).toEqual(['Spa Sen', ['money']])
+    expect(parseSave({ ...good, shopName: '   ' }).shopName).toBe('Tiệm Spa')
+    expect(() => parseSave({ ...good, shopName: 5 })).toThrow(SaveError)
   })
 })

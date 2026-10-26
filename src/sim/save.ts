@@ -1,7 +1,10 @@
-import type { Customer, DayStats, Owner } from './types'
+import { PATIENCE_MS } from '../config'
+import { t } from '../strings/vi'
+import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
+import { HINT_IDS, type Customer, type DayStats, type HintId, type Look, type Owner } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 1
+export const SAVE_VERSION = 2
 
 export class SaveError extends Error {}
 
@@ -25,6 +28,11 @@ export interface SaveData {
   seatCustomers: (number | null)[]
   nextId: number
   untilArrivalMs: number
+  shopName: string
+  ownerLook: Look
+  profileDone: boolean
+  /** Hints already shown. */
+  hints: HintId[]
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -33,7 +41,7 @@ const isNumber = (x: unknown): x is number => typeof x === 'number' && Number.is
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
-  if (raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers', 'stationCustomers', 'seatCustomers'])
@@ -43,5 +51,24 @@ export function parseSave(raw: unknown): SaveData {
   if (!isObject(raw.stats)) throw new SaveError('stats are missing')
   if (typeof raw.dayOver !== 'boolean') throw new SaveError('dayOver is not a boolean')
   if (raw.servingCustomerId !== null && !isNumber(raw.servingCustomerId)) throw new SaveError('servingCustomerId is not a number')
-  return raw as unknown as SaveData
+  if (raw.v === 1) {
+    return {
+      ...raw,
+      customers: (raw.customers as object[]).map(c => ({ ...c, patienceMaxMs: PATIENCE_MS })),
+      v: SAVE_VERSION,
+      shopName: t('defaultShopName'),
+      ownerLook: { ...DEFAULT_OWNER_LOOK },
+      profileDone: false,
+      hints: [...HINT_IDS],
+    } as unknown as SaveData
+  }
+  if (typeof raw.shopName !== 'string') throw new SaveError('shopName is not a string')
+  if (!isOwnerLook(raw.ownerLook)) throw new SaveError('ownerLook is not a look')
+  if (typeof raw.profileDone !== 'boolean') throw new SaveError('profileDone is not a boolean')
+  if (!Array.isArray(raw.hints)) throw new SaveError('hints is not a list')
+  return {
+    ...raw,
+    shopName: cleanShopName(raw.shopName, t('defaultShopName')),
+    hints: raw.hints.filter((h): h is HintId => (HINT_IDS as readonly unknown[]).includes(h)),
+  } as unknown as SaveData
 }

@@ -1,0 +1,139 @@
+{
+  "v": 1,
+  "day": 1,
+  "minutes": 488.7428571428575,
+  "money": 123456,
+  "reviews": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": null,
+  "owner": {
+    "pos": {
+      "x": 7.5,
+      "y": 13
+    },
+    "facing": "left",
+    "path": [
+      {
+        "x": 7,
+        "y": 13
+      },
+      {
+        "x": 7,
+        "y": 14
+      },
+      {
+        "x": 6,
+        "y": 14
+      },
+      {
+        "x": 5,
+        "y": 14
+      },
+      {
+        "x": 4,
+        "y": 14
+      },
+      {
+        "x": 3,
+        "y": 14
+      },
+      {
+        "x": 2,
+        "y": 14
+      }
+    ],
+    "task": {
+      "kind": "fetch",
+      "customerId": 1
+    }
+  },
+  "customers": [
+    {
+      "id": 1,
+      "look": {
+        "skin": 1,
+        "hair": 0,
+        "hairStyle": 1,
+        "shirt": 4
+      },
+      "state": "waiting",
+      "stateMs": 2000,
+      "pos": {
+        "x": 2,
+        "y": 13
+      },
+      "facing": "up",
+      "path": [],
+      "patienceMs": 58000,
+      "seat": {
+        "x": 2,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    },
+    {
+      "id": 2,
+      "look": {
+        "skin": 2,
+        "hair": 1,
+        "hairStyle": 1,
+        "shirt": 3
+      },
+      "state": "toSeat",
+      "stateMs": 500,
+      "pos": {
+        "x": 6,
+        "y": 14.5
+      },
+      "facing": "up",
+      "path": [
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 13
+        }
+      ],
+      "patienceMs": 60000,
+      "seat": {
+        "x": 3,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null
+    }
+  ],
+  "stationCustomers": [
+    null,
+    null
+  ],
+  "seatCustomers": [
+    1,
+    2,
+    null
+  ],
+  "nextId": 3,
+  "untilArrivalMs": 3000
+}
