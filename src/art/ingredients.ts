@@ -5,8 +5,8 @@ import { svgDoc } from './svg'
 const S = `stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"`
 const VEIN = (d: string, color: string) => `<path d="${d}" stroke="${color}" stroke-width="2" stroke-linecap="round" fill="none"/>`
 
-/** One icon on a 40-unit square, shown a tile wide. */
-const icon = (body: string) => svgDoc([0, 0, 40, 40], TILE / 40, body)
+/** One icon on a 40-unit square, drawn two tiles wide (156 px) so it stays sharp when a scene shows it larger. */
+const icon = (body: string) => svgDoc([0, 0, 40, 40], 2 * TILE / 40, body)
 
 const THINGS: Record<string, string> = {
   // a pointed pomelo leaf with a pale midrib

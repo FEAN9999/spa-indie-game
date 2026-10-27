@@ -552,7 +552,7 @@ const tentEdge = (i: number, n: number): [number, number] => {
 const tentWedges = Array.from({ length: 10 }, (_, i) => {
   const [x0, y0] = tentEdge(i, 10)
   const [x1, y1] = tentEdge(i + 1, 10)
-  return `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${x0},${y0} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 1 ${x1},${y1}Z" fill="${i % 2 ? C.terracotta : C.cream}" ${ink(FINE)}/>`
+  return `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${x0},${y0} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 0 ${x1},${y1}Z" fill="${i % 2 ? C.terracotta : C.cream}" ${ink(FINE)}/>`
 }).join('')
 const steamTent =
   `<ellipse cx="1" cy="2.3" rx="0.95" ry="0.26" fill="${C.ink}" opacity="0.15"/>` +
