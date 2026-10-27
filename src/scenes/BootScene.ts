@@ -2,10 +2,12 @@ import * as Phaser from 'phaser'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { furnitureTextures } from '../art/furniture'
+import { ingredientTextures } from '../art/ingredients'
 import { maskTextures } from '../art/maskArt'
 import { massageTextures } from '../art/massageArt'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
+import { steamTextures } from '../art/steamArt'
 import { loadSvgTextures } from '../art/svg'
 import { GAME_H, GAME_W } from '../config'
 import { buildGrid } from '../sim/grid'
@@ -31,6 +33,8 @@ export class BootScene extends Phaser.Scene {
       ...shampooTextures(),
       ...maskTextures(),
       ...massageTextures(),
+      ...ingredientTextures(),
+      ...steamTextures(),
     })
     this.scene.start('SpaScene')
   }

@@ -13,4 +13,7 @@ describe('fx art', () => {
 
   it('has the heart, card and book icons', () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['heart-full', 'heart-empty', 'icon-card', 'icon-book'])))
+
+  it('has the steam service badge, the herbs stock badge and the steam curls', () =>
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['svc-steam', 'stock-herbs', 'fx-steam'])))
 })

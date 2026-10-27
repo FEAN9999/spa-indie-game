@@ -142,6 +142,14 @@ export function fxTextures(): Record<string, string> {
         `<path d="M23,19.5 Q26,17.6 29,18 M21,29 Q25,26.8 29,27.2 M19,39 Q24,36.6 29,37" fill="none" stroke="${C.clayLight}" stroke-width="2" stroke-linecap="round"/>` +
         `<path d="M36,17 Q38,8 46,9 Q45,17 36,17Z" fill="${C.leaf}" ${INNER}/>`,
     ),
+    // a pot of leaves over a small fire with two curls of steam
+    'svc-steam': badge(
+      C.mintTeal,
+      `<path d="M21,15 q4,-4 0,-8 M35,15 q4,-4 0,-8" fill="none" stroke="${C.cream}" stroke-width="2.6" stroke-linecap="round"/>` +
+        `<path d="M12,25 H44 C44,36 38,42 28,42 C18,42 12,36 12,25Z" fill="${C.cobalt}" ${INNER}/>` +
+        `<ellipse cx="28" cy="25" rx="16" ry="4.5" fill="${C.leaf}" ${INNER}/>` +
+        `<path d="M18,50 l4,-6 l4,6 M26,50 l4,-7 l4,7 M34,50 l3,-5 l3,5" fill="${C.mustard}" stroke="${C.terracotta}" stroke-width="1.5" stroke-linejoin="round"/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -167,6 +175,20 @@ export function fxTextures(): Record<string, string> {
         `<rect x="22" y="14" width="12" height="6" rx="2" fill="${C.woodDark}" ${INNER}/>` +
         `<path d="M22,20 H34 L40,32 V43 Q40,48 35,48 H21 Q16,48 16,43 V32Z" fill="${C.clay}" ${INNER}/>` +
         `<path d="M28,28 Q34,35 28,41 Q22,35 28,28Z" fill="${C.mustard}" ${INNER}/>`,
+    ),
+    // a bundle of herbs: three leaves tied with a cucumber-green band
+    'stock-herbs': badge(
+      C.cucumber,
+      `<path d="M28,40 C14,38 11,24 15,11 C26,14 31,28 28,40Z" fill="${C.leaf}" ${INNER}/>` +
+        `<path d="M28,40 C42,38 45,24 41,11 C30,14 25,28 28,40Z" fill="${C.leafLight}" ${INNER}/>` +
+        `<path d="M28,41 C26,30 28,19 28,8" stroke="${C.tealDark}" stroke-width="2.6" fill="none" stroke-linecap="round"/>` +
+        `<rect x="21" y="38" width="14" height="9" rx="3" fill="${C.mustard}" ${INNER}/>`,
+    ),
+    // two curls of steam, blue-grey, drawn over a steaming customer
+    'fx-steam': svgDoc(
+      [0, 0, 56, 64],
+      1,
+      `<g stroke="#9FB8BF" stroke-width="6" fill="none" stroke-linecap="round"><path d="M18,60 q10,-12 0,-24 q-10,-12 0,-24"/><path d="M38,56 q10,-12 0,-24 q-10,-12 0,-24"/></g>`,
     ),
     'icon-dice': svgDoc(
       [0, 0, 64, 64],

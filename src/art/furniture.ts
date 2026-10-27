@@ -542,6 +542,26 @@ const goldBoard =
   }).join('') +
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
+// lều xông: a round cream-and-terracotta striped tent seen from above at three-quarters, a wedge per stripe up to a mustard knob
+const TENT_APEX: [number, number] = [1, 0.8]
+const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
+const tentEdge = (i: number, n: number): [number, number] => {
+  const a = (i / n) * Math.PI * 2 + Math.PI / n
+  return [f(TENT_BASE.cx + TENT_BASE.rx * Math.sin(a)), f(TENT_BASE.cy + TENT_BASE.ry * Math.cos(a))]
+}
+const tentWedges = Array.from({ length: 10 }, (_, i) => {
+  const [x0, y0] = tentEdge(i, 10)
+  const [x1, y1] = tentEdge(i + 1, 10)
+  return `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${x0},${y0} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 1 ${x1},${y1}Z" fill="${i % 2 ? C.terracotta : C.cream}" ${ink(FINE)}/>`
+}).join('')
+const steamTent =
+  `<ellipse cx="1" cy="2.3" rx="0.95" ry="0.26" fill="${C.ink}" opacity="0.15"/>` +
+  `<ellipse cx="${TENT_BASE.cx}" cy="${TENT_BASE.cy}" rx="${TENT_BASE.rx}" ry="${TENT_BASE.ry}" fill="${C.cream}" ${ink()}/>` +
+  tentWedges +
+  `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${f(TENT_BASE.cx - TENT_BASE.rx)},${TENT_BASE.cy} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 0 ${f(TENT_BASE.cx + TENT_BASE.rx)},${TENT_BASE.cy}Z" fill="none" ${ink()}/>` +
+  `<path d="M0.45,2.18 Q1,2.55 1.55,2.18" fill="none" stroke="${C.ink}" stroke-opacity="0.3" stroke-width="0.04" stroke-linecap="round"/>` +
+  `<circle cx="${TENT_APEX[0]}" cy="${TENT_APEX[1] - 0.03}" r="0.11" fill="${C.mustard}" ${ink(0.04)}/>`
+
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
@@ -574,6 +594,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   bambooLamp: { w: 1, h: 2.05, body: bambooLamp },
   clayJar: { w: 1, h: 1.45, body: clayJar },
   areca: { w: 1, h: 2, body: areca },
+  steamTent: { w: 2, h: 2.6, body: steamTent },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

@@ -47,4 +47,6 @@ describe('furniture art', () => {
       expect(FURNITURE[kind].w, kind).toBe(FURNITURE.bed.w)
     }
   })
+
+  it('draws the steam tent as wide as its footprint', () => expect(FURNITURE.steamTent.w).toBe(2))
 })
