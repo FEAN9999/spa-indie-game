@@ -67,6 +67,12 @@ export class SpeechBubble {
     return this
   }
 
+  /** Hidden while its customer is on a floor that is not in view. */
+  setVisible(visible: boolean): this {
+    this.box.setVisible(visible)
+    return this
+  }
+
   get done(): boolean {
     return this.over
   }

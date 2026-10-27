@@ -1,10 +1,12 @@
 import * as Phaser from 'phaser'
 import { C, staffColors } from '../art/palette'
+import { TILE } from '../config'
 import type { SpaSim } from '../sim/spa'
 import type { Staff } from '../sim/staff'
 import type { SimEvent } from '../sim/types'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from './CharacterView'
+import { climbPose } from './floors'
 import type { RoomView } from './RoomView'
 import { textStyle } from './text'
 
@@ -103,6 +105,20 @@ export class StaffLayer {
   private sync(sim: SpaSim, s: Staff, sp: StaffSprite, dt: number): void {
     const at = this.room.tileToWorld(s.pos)
     const task = s.task
+    // on the stairs, they rise toward the next floor and fade, here on the floor they are leaving
+    const climb = climbPose(s)
+    if (climb) at.y -= climb.lift * TILE
+    if (!this.room.onFloor(s.pos.y) && !isHidden(sim, s)) {
+      // on another floor: out of sight, with whatever is over their head
+      sp.view.container.setVisible(false)
+      sp.bar.clear()
+      sp.cup.setVisible(false)
+      sp.clock.setVisible(false)
+      sp.chat?.setVisible(false)
+      sp.pill?.setVisible(false)
+      sp.sweat?.setVisible(false)
+      return
+    }
     if (isHidden(sim, s)) {
       // a deft technician not in yet: nobody stands here
       sp.view.container.setVisible(false)
@@ -114,7 +130,10 @@ export class StaffLayer {
       sp.sweat = null
       return
     }
-    sp.view.container.setVisible(true)
+    sp.view.container.setVisible(true).setAlpha(climb?.alpha ?? 1)
+    sp.chat?.setVisible(true)
+    sp.pill?.setVisible(true)
+    sp.sweat?.setVisible(true)
     const pending = this.pendingCelebration.get(s.id)
     if (pending !== undefined) {
       this.pendingCelebration.delete(s.id)
@@ -202,7 +221,7 @@ export class StaffLayer {
   /** A studious person's level-up: a coin pops over the head, hops and fades. */
   private coin(sim: SpaSim, staffId: number): void {
     const person = sim.staff.find(s => s.id === staffId)
-    if (!person || !this.sprites.has(staffId) || isHidden(sim, person)) return
+    if (!person || !this.sprites.has(staffId) || isHidden(sim, person) || !this.room.onFloor(person.pos.y)) return
     const { x, y: feet } = this.room.tileToWorld(person.pos)
     const top = feet + HEAD_TOP
     const coin = this.scene.add.image(x, top, 'coin').setOrigin(0.5, 1).setDepth(FX_DEPTH + 10).setScale(0)
@@ -242,7 +261,7 @@ export class StaffLayer {
       this.pendingCelebration.set(staffId, text)
       return
     }
-    if (!this.sprites.has(staffId)) return
+    if (!this.sprites.has(staffId) || !this.room.onFloor(person.pos.y)) return
     const { x, y: feet } = this.room.tileToWorld(person.pos)
     const y = feet + HEAD_MID
     for (let i = 0; i < SPARKS; i++) {

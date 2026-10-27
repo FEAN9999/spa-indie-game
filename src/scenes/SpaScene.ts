@@ -10,6 +10,7 @@ import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
+import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
 import { ITEMS } from '../sim/items'
 import { bookOpen } from '../sim/regulars'
@@ -26,6 +27,7 @@ import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { RECIPE_HINT_TEXT, t } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
+import { climbPose, followFloor } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
@@ -109,6 +111,8 @@ interface Placement {
 export class SpaScene extends Phaser.Scene {
   sim!: SpaSim
   private room!: RoomView
+  /** The floor on view, from 1; only showFloor changes it. */
+  private viewFloor = 1
   private hud!: Hud
   private owner!: CharacterView
   private customers = new Map<number, CustomerSprite>()
@@ -135,7 +139,7 @@ export class SpaScene extends Phaser.Scene {
   private vipHintMs = 0
   /** Each customer's speech bubble; one that outlives its customer stays where it last was until it is done. */
   private bubbles = new Map<number, SpeechBubble>()
-  private bubbleSpots = new Map<number, { x: number; y: number }>()
+  private bubbleSpots = new Map<number, { x: number; y: number; floor: number }>()
   /** A line waiting for that customer's live bubble to finish. */
   private queuedLines = new Map<number, { text: string; ms: number }>()
 
@@ -169,7 +173,7 @@ export class SpaScene extends Phaser.Scene {
     }
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
-    this.syncRoom()
+    this.showFloor(floorOf(this.sim.owner.pos.y))
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
@@ -393,6 +397,18 @@ export class SpaScene extends Phaser.Scene {
     this.studiedToastMs = vipToday ? LATE_TOAST_MS : 0
   }
 
+  /** Brings a floor into view, the one place that does, and draws its furniture. */
+  private showFloor(floor: number): void {
+    this.viewFloor = floor
+    this.room.setFloor(floor, this.sim.floors, this.sim.maxFloors())
+    this.syncRoom()
+  }
+
+  /** The floor a customer is shown on: the street, where arrivals and leavers walk, counts as floor 1. */
+  private floorOfCustomer(c: Customer): number {
+    return this.streetPlacement(c) ? 1 : floorOf(c.pos.y)
+  }
+
   /** Draws the furniture as the sim has it, and a bed slot wherever a bed would fit. */
   private syncRoom(): void {
     const sim = this.sim
@@ -448,15 +464,21 @@ export class SpaScene extends Phaser.Scene {
       if (low.length > 0) this.hud.toast(stockLowText(low))
     }
 
+    const follow = followFloor(this.sim, this.viewFloor)
+    if (follow !== this.viewFloor) this.showFloor(follow)
+
     const dt = this.sim.paused || this.modal ? 0 : delta
     const o = this.sim.owner
     const at = this.room.tileToWorld(o.pos)
+    // on the stairs, the owner rises toward the next floor and fades
+    const climb = climbPose(o)
+    if (climb) at.y -= climb.lift * TILE
     // serving: face the bed beside the work tile
     const task = o.task
     const station = task?.kind === 'serve' && o.path.length === 0 ? this.sim.stations.find(s => s.id === task.stationId) : undefined
     this.owner.setFacing(station ? (station.bed.x < station.work.x ? 'left' : 'right') : o.facing)
     this.owner.setPose(o.path.length > 0 ? 'walk' : 'stand')
-    this.owner.container.setPosition(at.x, at.y).setDepth(at.y)
+    this.owner.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(climb?.alpha ?? 1).setVisible(this.room.onFloor(o.pos.y))
     this.owner.update(dt)
 
     // a badge tells which service a waiting customer wants once the shop offers more than one
@@ -515,7 +537,7 @@ export class SpaScene extends Phaser.Scene {
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container
-    if (!pick || !at) {
+    if (!pick || !at || !at.visible) {
       this.pointer.hide()
       return
     }
@@ -683,6 +705,9 @@ export class SpaScene extends Phaser.Scene {
       case 'roomChanged':
         this.syncRoom()
         return
+      case 'floorOpened':
+        this.showFloor(e.floor)
+        return
       case 'bedSlot':
         this.offerBed(e.slot)
         return
@@ -694,6 +719,7 @@ export class SpaScene extends Phaser.Scene {
           onNewDay: () => {
             this.sim.markHint('summary')
             this.sim.startDay()
+            this.showFloor(1)
             this.session.saveNow()
             this.showMorningBanner()
           },
@@ -729,7 +755,22 @@ export class SpaScene extends Phaser.Scene {
     // a VIP with no seat free stands by the desk, facing down
     const sitting = c.state === 'waiting' && !this.sim.isStanding(c)
     const street = this.streetPlacement(c)
+    const floor = street ? 1 : floorOf(c.pos.y)
+    if (floor !== this.viewFloor) {
+      // on a floor that is not in view: nothing of them shows
+      const gone = [s.view.container, s.badge, s.ripple, s.heart, s.vipStar, s.steam, s.stones, s.bubble]
+      for (const g of gone) g?.setVisible(false)
+      s.bar.clear()
+      this.bubbleSpots.set(c.id, { x: 0, y: 0, floor })
+      return
+    }
     const p: Placement = street ?? { ...this.room.tileToWorld(c.pos), facing: c.facing, alpha: 1 }
+    // on the stairs, they rise toward the next floor and fade, here on the floor they are leaving
+    const climb = climbPose(c)
+    if (climb) {
+      p.y -= climb.lift * TILE
+      p.alpha = climb.alpha
+    }
     // lying in a mud tub, the customer is drawn half a tile towards its other column, the side the tent's steam takes, so the head sits in its middle
     const tub = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'mud') : undefined
     if (tub) p.x += tub.work.x > tub.bed.x ? -TILE / 2 : TILE / 2
@@ -797,8 +838,8 @@ export class SpaScene extends Phaser.Scene {
       s.ripple.setPosition(p.x, p.y - CHARACTER_HEIGHT_PX * 0.35).setScale(0.9 + 0.6 * k).setAlpha(0.9 * (1 - k)).setDepth(depth - 0.5)
     }
 
-    s.bubble?.setPosition(p.x, p.y - CHARACTER_HEIGHT_PX + 4).setAlpha(p.alpha)
-    this.bubbleSpots.set(c.id, { x: p.x, y: p.y + SPEECH_TIP })
+    s.bubble?.setPosition(p.x, p.y - CHARACTER_HEIGHT_PX + 4).setAlpha(p.alpha).setVisible(true)
+    this.bubbleSpots.set(c.id, { x: p.x, y: p.y + SPEECH_TIP, floor })
   }
 
   /** Follows each customer; one whose customer has left holds its last spot until it fades out, then goes. */
@@ -818,12 +859,14 @@ export class SpaScene extends Phaser.Scene {
         continue
       }
       const spot = this.bubbleSpots.get(id)
-      if (spot) b.setPosition(spot.x, spot.y)
+      if (spot) b.setPosition(spot.x, spot.y).setVisible(spot.floor === this.viewFloor)
     }
   }
 
   /** A customer's line of speech; a new one replaces the old. */
   private say(customerId: number, text: string, ms: number): void {
+    // a customer not yet drawn is on the street, floor 1
+    if ((this.bubbleSpots.get(customerId)?.floor ?? 1) !== this.viewFloor) return
     this.bubbles.get(customerId)?.destroy()
     const b = new SpeechBubble(this, text, ms)
     this.bubbles.set(customerId, b)
@@ -840,7 +883,7 @@ export class SpaScene extends Phaser.Scene {
   /** A "+1" with a heart over the customer's head, tweened like floatMoney. */
   private floatHeart(customerId: number): void {
     const at = this.bubbleSpots.get(customerId)
-    if (!at) return
+    if (!at || at.floor !== this.viewFloor) return
     const label = this.add.text(0, 0, '+1', { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
     const width = 56 + 8 + label.width
     const heart = this.add.image(-width / 2 + 28, 0, 'heart-full')
@@ -873,6 +916,7 @@ export class SpaScene extends Phaser.Scene {
   }
 
   private floatMoney(tile: Tile, amount: number): void {
+    if (!this.room.onFloor(tile.y)) return
     const at = this.room.tileToWorld(tile)
     const label = this.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
     const width = 48 + 8 + label.width
@@ -885,7 +929,8 @@ export class SpaScene extends Phaser.Scene {
 
   private showBubble(customerId: number, score: number): void {
     const s = this.customers.get(customerId)
-    if (!s) return
+    const c = this.sim.customers.find(x => x.id === customerId)
+    if (!s || (c && this.floorOfCustomer(c) !== this.viewFloor)) return
     const key = score >= 4 ? 'bubble-happy' : score === 3 ? 'bubble-ok' : 'bubble-angry'
     s.bubble?.destroy()
     s.bubble = this.add.image(0, 0, key).setOrigin(0.5, 1).setDepth(FX_DEPTH).setScale(0)
@@ -897,7 +942,7 @@ export class SpaScene extends Phaser.Scene {
     if (Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
     // A seated customer's head covers the tile above the seat, so test the figure before the floor.
     const hit = this.sim.customers.find(c => {
-      if (c.state !== 'waiting' || !c.seat) return false
+      if (c.state !== 'waiting' || !c.seat || this.floorOfCustomer(c) !== this.viewFloor) return false
       const at = this.room.tileToWorld(c.pos)
       return Math.abs(p.x - at.x) <= TILE / 2 && p.y <= at.y && p.y >= at.y - CHARACTER_HEIGHT_PX
     })
