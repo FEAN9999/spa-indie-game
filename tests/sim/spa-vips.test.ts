@@ -140,11 +140,28 @@ describe('a VIP walking in', () => {
 
   it('asks for a service the shop has when hers is gone', () => {
     // massage is open, but there is no massage bed
-    const sim = withMask()
+    const r = counting(1)
+    const sim = withMask(r.rng)
     expect(sim.openService('massage')).toBeNull()
     expect(VIPS.singer.service).toBe('massage')
+    const before = r.draws
     const c = sim.spawnCustomer({ vip: 'singer' })
+    expect(c.service).not.toBe('massage')
     expect(sim.availableServices()).toContain(c.service)
+    // drawService, like a regular: here one draw sends the celebrity to her favourite the shop has
+    expect(r.draws).toBe(before + 1)
+  })
+
+  it('drops a booking for a day gone by when the next day starts', () => {
+    const sim = fresh()
+    // today's VIP never came
+    sim.vip.booking = { vip: 'chef', day: sim.day, minute: 600 }
+    sim.startDay()
+    expect(sim.vip.booking).toBeNull()
+    // tomorrow's stays
+    sim.vip.booking = { vip: 'chef', day: sim.day + 1, minute: 600 }
+    sim.startDay()
+    expect(sim.vip.booking).toEqual({ vip: 'chef', day: sim.day, minute: 600 })
   })
 })
 
@@ -199,6 +216,23 @@ describe('a VIP standing', () => {
     advanceUntil(sim, () => c.state === 'waiting')
     expect(tileOf(c.pos)).toEqual(c.seat)
     expect(sim.isStanding(c)).toBe(true)
+  })
+
+  it('walks a standing VIP to her new spot when the furniture over hers leaves no way out', () => {
+    const sim = fresh()
+    sim.money = 2_000_000
+    fillSeats(sim)
+    const c = seatAndWait(sim, { vip: 'chef' })
+    const spot = { ...c.seat! }
+    // the desk is on her right; plants above and below her leave one way out, and a tea table covers it and her
+    expect(sim.grid.cells[spot.y][spot.x + 1]).toBe('desk')
+    expect(sim.buy('plant', spot.x, spot.y - 1, false)).toBeNull()
+    expect(sim.buy('plant', spot.x, spot.y + 1, false)).toBeNull()
+    expect(c.seat).toEqual(spot)
+    expect(sim.buy('tea', spot.x - 1, spot.y, false)).toBeNull()
+    expect(c.seat).not.toEqual(spot)
+    advanceUntil(sim, () => c.state === 'waiting')
+    expect(tileOf(c.pos)).toEqual(c.seat)
   })
 })
 

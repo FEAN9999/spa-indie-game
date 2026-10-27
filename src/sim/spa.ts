@@ -193,16 +193,16 @@ export class SpaSim {
   spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId; vip?: VipId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
     const greetFactor = greeter ? greetPatience(greeter.stats.friendly) : 1
-    const vip = opts.vip && VIPS[opts.vip]
+    const vipSpec = opts.vip && VIPS[opts.vip]
     const spec = opts.regular && REGULARS[opts.regular]
     const state = opts.regular && this.book.regulars[opts.regular]
-    const look = vip ? { ...vip.look } : spec ? { ...spec.look } : randomLook(this.rng)
-    const kind = vip ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
+    const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : randomLook(this.rng)
+    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
     const available = this.availableServices()
-    const likes = vip ? vip.service : spec ? spec.likes : null
+    const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
     const service = opts.service ?? (likes && available.includes(likes) ? likes : drawService(kind, available, this.rng))
     const patience = Math.round(
-      vip
+      vipSpec
         ? PATIENCE_MS * VIP_PATIENCE * greetFactor
         : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1),
     )
@@ -551,22 +551,20 @@ export class SpaSim {
   private changeRoom(): void {
     this.rebuildRoom()
     this.repickLostServices()
-    this.restandVips()
+    // a VIP's new spot is picked first, so settling never leaves her on the old one as if it were still her goal;
+    // then she walks there from wherever settling left her, even off a tile that had no way out
+    const restood = this.restandVips()
     this.settleCharacters()
+    for (const c of restood) this.sendToSeat(c, c.seat!)
     this.emit({ type: 'roomChanged' })
   }
 
-  /** A standing VIP whose spot is now under furniture, or out of the door's reach, walks to a new one. */
-  private restandVips(): void {
+  /** Gives each standing VIP whose spot is now under furniture, or out of the door's reach, a new one; returns them. */
+  private restandVips(): Customer[] {
     const reached = doorReach(this.grid, this.grid.door)
-    for (const c of this.customers) {
-      if (!['toSeat', 'waiting'].includes(c.state) || !this.isStanding(c)) continue
-      if (isWalkable(this.grid, c.seat!) && reached(c.seat!)) continue
-      const spot = this.standSpot()
-      c.seat = spot
-      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, spot)) ?? []
-      this.setState(c, 'toSeat')
-    }
+    const moved = this.customers.filter(c => ['toSeat', 'waiting'].includes(c.state) && this.isStanding(c) && !(isWalkable(this.grid, c.seat!) && reached(c.seat!)))
+    for (const c of moved) c.seat = this.standSpot()
+    return moved
   }
 
   /** Whoever is still to be served and wants a service that is no longer available picks again among those that are. */
@@ -819,9 +817,13 @@ export class SpaSim {
       return
     }
     if (seat) seat.customerId = c.id
-    const spot = seat ? seat.tile : this.standSpot()
+    this.sendToSeat(c, seat ? seat.tile : this.standSpot())
+  }
+
+  /** Walks the customer from where they are to `spot`: their seat, or where a VIP stands. */
+  private sendToSeat(c: Customer, spot: Tile): void {
     c.seat = spot
-    c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, spot)) ?? []
+    c.path = this.walkTo(c, t => tileEq(t, spot)) ?? []
     this.setState(c, 'toSeat')
   }
 
