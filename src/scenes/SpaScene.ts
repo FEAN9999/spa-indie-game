@@ -308,9 +308,12 @@ export class SpaScene extends Phaser.Scene {
     this.modal = true
     const intro = !sim.hintDone('openStaff')
     sim.markHint('openStaff')
+    const studyIntro = !intro && !sim.hintDone('study') && sim.staff.some(s => s.role === 'technician' && !s.leaving)
+    if (studyIntro) sim.markHint('study')
     const data: StaffData = {
       sim,
       intro,
+      studyIntro,
       onChange: () => this.session.saveNow(),
       onClose: () => {
         this.modal = false

@@ -9,7 +9,7 @@ import type { Course } from './staff'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'regular', 'openBook', 'vip', 'bookVip'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'regular', 'openBook', 'vip', 'bookVip', 'study'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
