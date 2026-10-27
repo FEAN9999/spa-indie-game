@@ -407,6 +407,10 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-shelf': { w: 3, h: 1.3, body: shelf },
   'decor-lotus': { w: 2, h: 1.1, body: lotus },
   'decor-vase': { w: 1, h: 1.9, body: vase },
+  // placeholders until Task 4 draws the gifts
+  'decor-vyPainting': { w: 1, h: 1.9, body: vase },
+  'decor-silkScreen': { w: 2, h: 1.9, body: vase },
+  'decor-regularsBoard': { w: 2, h: 1.9, body: vase },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

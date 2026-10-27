@@ -1,7 +1,7 @@
 /** Name ideas for the shop; each fits the name limit as it is. */
 export const SHOP_NAME_IDEAS = ['Spa Hoa Sen', 'Spa Gạch Bông', 'Tiệm Gội Cô Ba', 'Spa Mây Tre', 'Spa Sen Hồng', 'Tiệm Spa Phố Cũ', 'Spa Thảo Mộc', 'Spa Lá Dừa'] as const
 
-export const STAFF_NAMES = ['Lan', 'Mai', 'Hoa', 'Cúc', 'Thảo', 'Hương', 'Linh', 'Ngọc', 'Trang', 'Vy', 'Tùng', 'Minh', 'Nam', 'Phúc', 'Khang', 'Bảo', 'Hùng', 'Tâm', 'An', 'Duy', 'Hạnh', 'Yến', 'Quân', 'Sơn'] as const
+export const STAFF_NAMES = ['Mai', 'Hoa', 'Cúc', 'Hương', 'Linh', 'Ngọc', 'Trang', 'Tùng', 'Minh', 'Nam', 'Phúc', 'Khang', 'Bảo', 'Hùng', 'Tâm', 'An', 'Duy', 'Yến', 'Quân', 'Sơn'] as const
 
 export const vi = {
   loading: 'Đang tải...',
@@ -111,6 +111,9 @@ export const vi = {
   itemCabinet: 'Tủ khăn',
   itemLotus: 'Bể sen sứ xanh',
   itemVase: 'Bình hoa đào',
+  itemVyPainting: 'Tranh của Vy',
+  itemSilkScreen: 'Bình phong lụa',
+  itemRegularsBoard: 'Bảng ảnh khách quen',
   itemTeaChest: 'Tủ chè',
   itemJar: 'Chum sứ xanh trắng',
   itemBambooBench: 'Ghế chờ tre',

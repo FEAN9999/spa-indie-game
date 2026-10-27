@@ -6,6 +6,7 @@ export type ItemKind =
   | 'bed' | 'maskBed' | 'massageBed' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
+  | 'vyPainting' | 'silkScreen' | 'regularsBoard'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor'
 export type SetId = 'saigon' | 'bamboo'
@@ -18,6 +19,8 @@ export interface ItemSpec {
   group: ItemGroup
   set?: SetId
   name: StringKey
+  /** Given by a regular, never sold in the catalogue. */
+  giftOnly?: true
 }
 
 export const ITEMS: Record<ItemKind, ItemSpec> = {
@@ -41,6 +44,9 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   bambooLamp: { w: 1, h: 1, price: 60000, beauty: 2, group: 'decor', set: 'bamboo', name: 'itemBambooLamp' },
   clayJar: { w: 1, h: 1, price: 90000, beauty: 3, group: 'decor', set: 'bamboo', name: 'itemClayJar' },
   areca: { w: 1, h: 1, price: 80000, beauty: 3, group: 'decor', set: 'bamboo', name: 'itemAreca' },
+  vyPainting: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' },
+  silkScreen: { w: 2, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemSilkScreen' },
+  regularsBoard: { w: 2, h: 1, price: 0, beauty: 6, group: 'decor', giftOnly: true, name: 'itemRegularsBoard' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]

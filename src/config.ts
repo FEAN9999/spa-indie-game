@@ -161,3 +161,24 @@ export const GREET_PATIENCE_BASE = 1.15
 export const GREET_PATIENCE_PER_DOT = 0.02
 export const GREET_TIP_PER_DOT = 0.05
 export const STAFF_TIP_PER_DOT = 0.05
+
+// Regulars
+export const REGULARS_FROM_DAY = 7
+export const REGULAR_MEET_GAP_DAYS = 2
+/** A day's regulars come between these game minutes: 9:00 and 17:00. */
+export const REGULAR_VISIT_FROM_MIN = 540
+export const REGULAR_VISIT_TO_MIN = 1020
+export const REGULARS_PER_DAY = 3
+/** The chance a met regular comes on a given day, before and after their member card. */
+export const REGULAR_VISIT_CHANCE = { plain: 1 / 3, member: 1 / 2 } as const
+/** Points for 1, 2 and 3 stars, by who served; a walk-out costs HEART_POINTS_ANGRY. */
+export const HEART_POINTS = { owner: [0, 2, 4], staff: [0, 1, 2] } as const
+export const HEART_POINTS_ANGRY = -2
+/** Points at which hearts 1 to 5 are reached. */
+export const HEART_AT = [4, 8, 12, 16, 20] as const
+export const MEMBER_HEARTS = 3
+export const MEMBER_PATIENCE = 1.5
+/** Staff leave a waiting regular to the owner this long, counted only while a bed of their service is free. */
+export const REGULAR_OWNER_MS = 10_000
+/** How long a speech bubble stays, for a greeting and for a story line. */
+export const BUBBLE_MS = { greet: 4000, story: 6000 } as const

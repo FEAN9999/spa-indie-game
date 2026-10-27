@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ITEM_KINDS, type ItemGroup } from '../../src/sim/items'
+import { ITEMS, ITEM_KINDS, type ItemGroup } from '../../src/sim/items'
 import { catalogPage } from '../../src/view/catalog'
 
 describe('build mode catalogue', () => {
@@ -25,12 +25,12 @@ describe('build mode catalogue', () => {
     expect(catalogPage('decor', 4, ['shampoo'])).toEqual(catalogPage('decor', 0, ['shampoo']))
   })
 
-  it('offers every kind exactly once', () => {
+  it('offers every kind but the gifts exactly once', () => {
     const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
       const all = ['shampoo', 'mask', 'massage'] as const
       const { pages } = catalogPage(g, 0, [...all])
       return Array.from({ length: pages }, (_, p) => catalogPage(g, p, [...all]).kinds).flat()
     })
-    expect([...shown].sort()).toEqual([...ITEM_KINDS].sort())
+    expect([...shown].sort()).toEqual(ITEM_KINDS.filter(k => !ITEMS[k].giftOnly).sort())
   })
 })
