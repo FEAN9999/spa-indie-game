@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { REGULAR_IDS } from '../../src/sim/regulars'
 import { formatMoney } from '../../src/strings/format'
 import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
-import { t } from '../../src/strings/vi'
+import { RECIPE_HINT_TEXT, t } from '../../src/strings/vi'
 import { VIP_TEXT } from '../../src/strings/vips'
 import { VIP_IDS } from '../../src/sim/vips'
 
@@ -65,5 +65,11 @@ describe('strings', () => {
         expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
       }
     }
+  })
+
+  it('the steam recipe hints name Lá bưởi and Sả, each line at most 60 characters', () => {
+    const hints = RECIPE_HINT_TEXT.steam
+    expect(Object.keys(hints).sort()).toEqual(['lemongrass', 'pomelo'])
+    for (const line of Object.values(hints)) expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
   })
 })

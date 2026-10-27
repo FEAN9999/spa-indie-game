@@ -23,7 +23,7 @@ import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
-import { t } from '../strings/vi'
+import { RECIPE_HINT_TEXT, t } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
@@ -132,6 +132,8 @@ export class SpaScene extends Phaser.Scene {
   /** Each customer's speech bubble; one that outlives its customer stays where it last was until it is done. */
   private bubbles = new Map<number, SpeechBubble>()
   private bubbleSpots = new Map<number, { x: number; y: number }>()
+  /** A line waiting for that customer's live bubble to finish. */
+  private queuedLines = new Map<number, { text: string; ms: number }>()
 
   constructor() {
     super('SpaScene')
@@ -150,6 +152,7 @@ export class SpaScene extends Phaser.Scene {
     this.vipHintMs = 0
     this.bubbles = new Map()
     this.bubbleSpots = new Map()
+    this.queuedLines = new Map()
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
     let saved: SaveData | null
@@ -609,6 +612,11 @@ export class SpaScene extends Phaser.Scene {
         if (e.member) this.hud.toast(t('memberToast', { name: r.name }))
         return
       }
+      case 'recipeHint': {
+        const line = RECIPE_HINT_TEXT[e.recipe][e.ingredient]
+        if (line) this.sayNext(e.customerId, line, BUBBLE_MS.story)
+        return
+      }
       case 'gift': {
         const name = REGULAR_TEXT[e.regular].name
         const g = e.gift
@@ -775,6 +783,13 @@ export class SpaScene extends Phaser.Scene {
   private moveBubbles(): void {
     for (const [id, b] of this.bubbles) {
       if (b.done) {
+        const next = this.queuedLines.get(id)
+        if (next) {
+          // hands its spot to the queued line, which shows even when the customer has gone
+          this.queuedLines.delete(id)
+          this.say(id, next.text, next.ms)
+          continue
+        }
         b.destroy()
         this.bubbles.delete(id)
         this.bubbleSpots.delete(id)
@@ -792,6 +807,12 @@ export class SpaScene extends Phaser.Scene {
     this.bubbles.set(customerId, b)
     const spot = this.bubbleSpots.get(customerId)
     if (spot) b.setPosition(spot.x, spot.y)
+  }
+
+  /** Like say, but waits for a live bubble of that customer to finish instead of replacing it. */
+  private sayNext(customerId: number, text: string, ms: number): void {
+    if (this.bubbles.has(customerId)) this.queuedLines.set(customerId, { text, ms })
+    else this.say(customerId, text, ms)
   }
 
   /** A "+1" with a heart over the customer's head, tweened like floatMoney. */

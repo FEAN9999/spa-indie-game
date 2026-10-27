@@ -1,7 +1,16 @@
+import type { Ingredient, RecipeId } from '../sim/recipes'
 import type { SteamThing } from '../sim/steam'
 
 /** Name ideas for the shop; each fits the name limit as it is. */
 export const SHOP_NAME_IDEAS = ['Spa Hoa Sen', 'Spa Gạch Bông', 'Tiệm Gội Cô Ba', 'Spa Mây Tre', 'Spa Sen Hồng', 'Tiệm Spa Phố Cũ', 'Spa Thảo Mộc', 'Spa Lá Dừa'] as const
+
+/** What a regular says about a recipe, by the ingredient she hints at. */
+export const RECIPE_HINT_TEXT: Record<RecipeId, Partial<Record<Ingredient, string>>> = {
+  steam: {
+    pomelo: 'Hồi xưa má tui nấu nồi xông có lá bưởi, thơm cả nhà.',
+    lemongrass: 'Nồi xông mà thiếu sả là mất nửa mùi.',
+  },
+}
 
 export const STAFF_NAMES = ['Mai', 'Hoa', 'Cúc', 'Hương', 'Linh', 'Ngọc', 'Trang', 'Tùng', 'Minh', 'Nam', 'Phúc', 'Khang', 'Bảo', 'Hùng', 'Tâm', 'An', 'Duy', 'Yến', 'Quân', 'Sơn'] as const
 
