@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
+import { REGULAR_IDS } from '../../src/sim/regulars'
 import { formatMoney } from '../../src/strings/format'
+import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
 import { t } from '../../src/strings/vi'
 
 describe('strings', () => {
@@ -30,5 +32,25 @@ describe('strings', () => {
     expect(t('setDone', { name: t('setSaigon') })).toBe('Sài Gòn xưa · Đủ bộ!')
     expect(t('beautyPlus', { n: 5 })).toBe('Đẹp +5')
     expect(t('sell', { money: formatMoney(Math.floor(150000 / 2)) })).toBe('Bán · 75.000 đ')
+  })
+
+  it('every regular has a name, a job, an intro and five story lines, each at most 60 characters', () => {
+    expect(BUBBLE_MAX_CHARS).toBe(60)
+    for (const id of REGULAR_IDS) {
+      const { name, job, intro, story } = REGULAR_TEXT[id]
+      expect(name, id).not.toBe('')
+      expect(job, id).not.toBe('')
+      expect(story, id).toHaveLength(5)
+      for (const line of [intro, ...story]) {
+        expect(line, id).not.toBe('')
+        expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
+      }
+    }
+  })
+
+  it('greetings fit a bubble with the longest name', () => {
+    const longest = REGULAR_IDS.map(id => REGULAR_TEXT[id].name).reduce((a, b) => (b.length > a.length ? b : a))
+    expect(GREETINGS).toHaveLength(5)
+    for (const text of GREETINGS) expect(t('greetingLine', { name: longest, text }).length, text).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
   })
 })

@@ -10,4 +10,7 @@ describe('fx art', () => {
     const fx = fxTextures()
     for (const item of STOCK_ITEMS) expect(fx[`stock-${item}`], item).toBeDefined()
   })
+
+  it('has the heart, card and book icons', () =>
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['heart-full', 'heart-empty', 'icon-card', 'icon-book'])))
 })

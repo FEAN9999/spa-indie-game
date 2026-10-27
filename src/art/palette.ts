@@ -1,4 +1,5 @@
 import type { CustomerKind } from '../sim/customers'
+import type { RegularId } from '../sim/regulars'
 import type { Look } from '../sim/types'
 
 /** Named colors from the approved style A board (spec 7.1). */
@@ -69,16 +70,18 @@ export interface CharacterColors {
   apron?: boolean
   /** A customer's kind, which decides what they wear. */
   kind?: CustomerKind
+  /** The regular a customer is, who wears their own things in place of the kind's. */
+  regular?: RegularId
 }
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
 }
 
-/** A customer's colors: their look, with an elder's hair grey, and their kind. */
-export function customerColors(look: Look, kind: CustomerKind): CharacterColors {
+/** A customer's colors: their look, with an elder's hair grey, their kind, and the regular they are, if any. */
+export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null): CharacterColors {
   const colors = lookColors(look)
-  return { ...colors, hair: kind === 'elder' ? ELDER_HAIR : colors.hair, kind }
+  return { ...colors, hair: kind === 'elder' ? ELDER_HAIR : colors.hair, kind, ...(regular ? { regular } : {}) }
 }
 
 export function ownerColors(look: Look): CharacterColors {

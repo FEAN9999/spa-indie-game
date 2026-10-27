@@ -3,6 +3,7 @@ import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
 import { PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
 import type { CustomerKind } from '../sim/customers'
+import type { RegularId } from '../sim/regulars'
 import type { Facing } from '../sim/types'
 
 export type Pose = 'stand' | 'walk' | 'sit' | 'lie'
@@ -35,6 +36,24 @@ const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]
   ],
 }
 
+/** What each regular wears in place of their kind's things; the face still comes from the kind. */
+const REGULAR_WORN: Record<RegularId, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
+  hanh: [{ key: 'redApron', on: 'body' }],
+  vy: [{ key: 'artTube', on: 'body' }],
+  sau: [{ key: 'helmet', on: 'hair' }],
+  khoa: [{ key: 'headphones', on: 'body' }],
+  tu: [
+    { key: 'goldGlasses', on: 'face' },
+    { key: 'silkScarf', on: 'body' },
+  ],
+  ba: [
+    { key: 'readingGlasses', on: 'face' },
+    { key: 'paperFan', on: 'body' },
+  ],
+  thao: [{ key: 'flowerClip', on: 'hair' }],
+  lan: [{ key: 'daisies', on: 'body' }],
+}
+
 /** A chibi built from tinted part textures and animated in code, with its feet at the container origin. */
 export class CharacterView {
   readonly container: Phaser.GameObjects.Container
@@ -51,7 +70,7 @@ export class CharacterView {
   private readonly frontFace: string
   private readonly hair: Phaser.GameObjects.Image
   private readonly hairStyle: number
-  /** What the kind wears, each with its key without the side. */
+  /** What the kind or the regular wears, each with its key without the side. */
   private readonly worn = new Map<Phaser.GameObjects.Image, string>()
   /** The pieces worn on the body, which breathe with it. */
   private readonly bodyWorn: Phaser.GameObjects.Image[]
@@ -76,7 +95,7 @@ export class CharacterView {
     const withLines = (imgs: Phaser.GameObjects.Image[]) => imgs.flatMap(img => [img, ...(this.lines.has(img) ? [this.lines.get(img)!] : [])])
     this.hairStyle = colors.hairStyle
     const wear = (on: 'body' | 'face' | 'hair') =>
-      (colors.kind ? WORN[colors.kind] : [])
+      (colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
         .filter(w => w.on === on)
         .map(w => {
           const img = part(`${w.key}-down`, 0, on === 'body' ? BODY_Y : HEAD_Y)
@@ -131,7 +150,7 @@ export class CharacterView {
     this.arms[1].x = (side ? 0 : 9) * U
     // the apron shows its front or its side, and hides from behind and with the body
     this.apron?.setTexture(`apron-${side ? 'side' : 'down'}`).setFlipX(f === 'left').setVisible(f !== 'up' && this.body.visible)
-    // what the kind wears comes off on the bed
+    // what the kind or the regular wears comes off on the bed
     for (const [img, key] of this.worn) {
       const tex = `${key}-${dir}`
       const shown = !lying && tex in PART_ANCHORS

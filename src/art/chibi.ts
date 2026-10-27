@@ -174,6 +174,188 @@ const hatDown = hat(0, '')
 const hatSide = hat(-1, `<path d="M-9.6,-8.4 Q-12.4,-6 -13,-2.2 L-10.8,-2.8 Q-10.6,-5.6 -9.4,-6.6Z" ${BAND}/>`)
 const hatUp = hat(0, `<path d="M0,-7.4 Q-3.6,-10.2 -3.8,-6.6 Q-3.6,-4 0,-6.4 Q3.6,-4 3.8,-6.6 Q3.6,-10.2 0,-7.4Z" ${BAND}/>`)
 
+// Not tinted: what each regular wears in place of their kind's things, on the same origins and centred the same way.
+
+/** A thin band in `color` with an ink edge: a strap, a wire or a gold rim. */
+const twoTone = (d: string, color: string, w = 1.1) =>
+  `<path d="${d}" stroke="${INK}" stroke-width="${w + 1.4}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+  `<path d="${d}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`
+const PETAL = `stroke="${INK}" stroke-width=".8"`
+/** A flower of `n` round petals around a centre. */
+const flower = (cx: number, cy: number, r: number, n: number, petal: string, centre: string) =>
+  Array.from({ length: n }, (_, i) => {
+    const a = ((i * 360) / n - 90) * (Math.PI / 180)
+    return `<circle cx="${(cx + Math.cos(a) * r * 0.56).toFixed(2)}" cy="${(cy + Math.sin(a) * r * 0.56).toFixed(2)}" r="${(r * 0.46).toFixed(2)}" fill="${petal}" ${PETAL}/>`
+  }).join('') + `<circle cx="${cx}" cy="${cy}" r="${(r * 0.36).toFixed(2)}" fill="${centre}" ${PETAL}/>`
+/** Hides what is drawn under the body's shape, for a thing carried behind it. */
+const behindBody = (id: string, inner: string) =>
+  `<mask id="${id}" maskUnits="userSpaceOnUse" x="-30" y="-30" width="60" height="60"><rect x="-30" y="-30" width="60" height="60" fill="#fff"/>` +
+  `<rect x="-9" y="0" width="18" height="18" rx="7" fill="#000"/></mask><g mask="url(#${id})">${inner}</g>`
+
+// cô Hạnh: a red bib apron with a white pocket
+const RED = '#D8463A'
+const POCKET = `fill="#FBF7EE" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"`
+const redApronDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    twoTone('M-3.4,3.8 Q-3.4,1.6 -2.4,0.4 M3.4,3.8 Q3.4,1.6 2.4,0.4', RED) +
+    `<path d="M-4,3.4 H4 L4.6,9.6 L8,17.4 Q0,19 -8,17.4 L-4.6,9.6Z" fill="${RED}" ${LINE}/>` +
+    `<path d="M-5,9.8 H5" ${FINE}/>` +
+    `<rect x="-2.8" y="11.6" width="5.6" height="3.8" rx=".8" ${POCKET}/>`,
+}
+const redApronSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    twoTone('M4.6,4.6 Q2.8,1.6 0.6,0.6', RED) +
+    `<path d="M4,4.4 H7.8 Q9,4.4 9,5.8 V16.6 Q9,17.6 8,17.6 H4Z" fill="${RED}" ${LINE}/>` +
+    `<path d="M4.4,9.8 H8.6" ${FINE}/>` +
+    `<rect x="5.4" y="11.6" width="2.8" height="3.4" rx=".6" ${POCKET}/>`,
+}
+
+// Vy: a teal drawing tube slung across her back on a brown strap; from the front its ends show past the shoulder and the hip
+const TUBE = '#2F7D6E'
+const TUBE_CAP = '#2A6B5C'
+const BROWN = '#8A5634'
+/** A drawing tube from (x1, y1) to (x2, y2), capped at both ends. */
+const tube = (x1: number, y1: number, x2: number, y2: number) => {
+  const len = Math.hypot(x2 - x1, y2 - y1)
+  const deg = (Math.atan2(y2 - y1, x2 - x1) * 180) / Math.PI
+  return (
+    `<g transform="translate(${x1} ${y1}) rotate(${deg.toFixed(1)})">` +
+    `<rect x="0" y="-2.2" width="${len.toFixed(2)}" height="4.4" rx="1.4" fill="${TUBE}" ${LINE}/>` +
+    `<path d="M3.8,-0.9 H${(len - 3.8).toFixed(2)}" ${SHINE}/>` +
+    `<rect x="-0.4" y="-2.6" width="3" height="5.2" rx="1" fill="${TUBE_CAP}" ${LINE}/>` +
+    `<rect x="${(len - 2.6).toFixed(2)}" y="-2.6" width="3" height="5.2" rx="1" fill="${TUBE_CAP}" ${LINE}/></g>`
+  )
+}
+const artTubeDown: Part = {
+  viewBox: [-16, -7.5, 32, 29.5],
+  body: behindBody('tube', tube(-13, -4.6, 11.6, 18.6)) + twoTone('M-5,0.6 L7.4,14.2', BROWN),
+}
+const artTubeSide: Part = {
+  viewBox: [-16, -6.5, 32, 26],
+  body: behindBody('tube', tube(-10, -4.5, -12.6, 14.5)) + twoTone('M-9.4,1.8 Q-3,-1 3.4,2.4 L6,13', BROWN),
+}
+const artTubeUp: Part = { viewBox: [-16, -6.5, 32, 27], body: tube(11.4, -3.4, -11.4, 17.4) }
+
+// chú Sáu: an olive-green "nón cối", a round helmet with a narrow brim and a vent on top
+const OLIVE = '#7E8C4A'
+const OLIVE_DARK = '#5F6B36'
+const OLIVE_LIGHT = '#9AA862'
+const helmet = (cx: number): Part => ({
+  viewBox: [-17.5, -22.5, 35, 22],
+  body:
+    `<ellipse cx="0" cy="-5" rx="15" ry="3.6" fill="${OLIVE_DARK}" ${LINE}/>` +
+    `<path d="M${cx - 11.6},-5.4 Q${cx - 12.4},-19.4 ${cx},-19.4 Q${cx + 12.4},-19.4 ${cx + 11.6},-5.4 Q${cx},-3.2 ${cx - 11.6},-5.4Z" fill="${OLIVE}" ${LINE}/>` +
+    `<path d="M${cx - 5},-18.4 Q${cx - 8},-12 ${cx - 7.4},-4.6 M${cx + 5},-18.4 Q${cx + 8},-12 ${cx + 7.4},-4.6" ${FINE}/>` +
+    `<path d="M${cx - 9},-12.6 Q${cx - 7.6},-16.4 ${cx - 3.6},-17.6" ${SHINE}/>` +
+    `<ellipse cx="${cx}" cy="-19.6" rx="2.4" ry="1.3" fill="${OLIVE_LIGHT}" ${LINE}/>`,
+})
+const helmetDown = helmet(0)
+const helmetSide = helmet(-1)
+const helmetUp = helmet(0)
+
+// anh Khoa: black headphones resting round his neck
+const PHONE = `fill="${EYE}" ${LINE}`
+const PHONE_BAND = '#5A4A44'
+const headphonesDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    twoTone('M-4.8,2.4 Q-8.4,-1.8 0,-1.8 Q8.4,-1.8 4.8,2.4', PHONE_BAND) +
+    `<rect x="-7" y="1.4" width="4.6" height="5.2" rx="2" ${PHONE}/><rect x="2.4" y="1.4" width="4.6" height="5.2" rx="2" ${PHONE}/>` +
+    `<path d="M-5.6,2.9 V4.6 M3.8,2.9 V4.6" ${SHINE}/>`,
+}
+const headphonesSide: Part = {
+  viewBox: body.viewBox,
+  body: twoTone('M4.4,2.4 Q-1,-2.4 -8,1', PHONE_BAND) + `<rect x="2.6" y="1" width="4.2" height="5" rx="1.9" ${PHONE}/><path d="M3.9,2.4 V3.8" ${SHINE}/>`,
+}
+const headphonesUp: Part = {
+  viewBox: body.viewBox,
+  body:
+    twoTone('M-7,2.2 Q0,5.6 7,2.2', PHONE_BAND) +
+    `<rect x="-9.6" y="0.4" width="4" height="4.6" rx="1.8" ${PHONE}/><rect x="5.6" y="0.4" width="4" height="4.6" rx="1.8" ${PHONE}/>`,
+}
+
+// bà Tư: gold-rimmed round glasses, and a jade silk scarf knotted at the neck
+const GOLD = '#E3A73B'
+const ring = (cx: number, cy: number, r: number) => `M${cx - r},${cy} a${r},${r} 0 1 0 ${2 * r},0 a${r},${r} 0 1 0 ${-2 * r},0`
+const goldGlassesDown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<circle cx="-4.2" cy="2.2" r="3.1" ${GLASS}/><circle cx="4.2" cy="2.2" r="3.1" ${GLASS}/>` +
+    twoTone(`M-7.3,1.4 L-10.8,0.2 M7.3,1.4 L10.8,0.2 M-1.2,1.6 Q0,0.8 1.2,1.6 ${ring(-4.2, 2.2, 3.1)} ${ring(4.2, 2.2, 3.1)}`, GOLD, 0.9),
+}
+const goldGlassesSide: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<ellipse cx="6.7" cy="2.2" rx="2.3" ry="3.1" ${GLASS}/>` +
+    twoTone('M4.4,1.4 L-3.6,0.4 M4.4,2.2 a2.3,3.1 0 1 0 4.6,0 a2.3,3.1 0 1 0 -4.6,0', GOLD, 0.9),
+}
+const JADE = '#4FA383'
+const JADE_LIGHT = '#8CCFB4'
+const SILK = `fill="${JADE}" ${LINE}`
+const silkScarfDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-6.8,0.4 Q0,4.4 6.8,0.4 L6.4,3.2 Q0,7.4 -6.4,3.2Z" ${SILK}/>` +
+    `<path d="M-4.8,2.6 Q0,5 4.8,2.6" stroke="${JADE_LIGHT}" stroke-width=".9" stroke-linecap="round" fill="none"/>` +
+    `<path d="M-3.8,6 L-6.2,12.4 L-3.6,11.6 L-2.6,6.4Z" ${SILK}/><path d="M-2.2,6.2 L-0.4,11.8 L1.8,10.4 L-1.2,5.8Z" ${SILK}/>` +
+    `<ellipse cx="-2.8" cy="5.4" rx="1.9" ry="1.5" ${SILK}/>`,
+}
+const silkScarfSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-7,0 Q0,3 6.6,1 L6.4,3.8 Q0,6 -6.8,2.8Z" ${SILK}/>` +
+    `<path d="M5,4.4 L4.2,10.8 L6.8,10 L6.6,4.4Z" ${SILK}/>` +
+    `<ellipse cx="5.6" cy="3.8" rx="1.6" ry="1.5" ${SILK}/>`,
+}
+const silkScarfUp: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-6.8,0.4 Q0,3.6 6.8,0.4 L6.4,3 Q0,6.4 -6.4,3Z" ${SILK}/>` +
+    `<path d="M-4.8,2.2 Q0,4.2 4.8,2.2" stroke="${JADE_LIGHT}" stroke-width=".9" stroke-linecap="round" fill="none"/>`,
+}
+
+// ông Ba: half-moon reading glasses low on the nose, and a folded paper fan held at the chest
+const readingGlassesDown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<path d="M-7.2,3 L-10.8,1.6 M7.2,3 L10.8,1.6 M-1.4,3.2 Q0,2.4 1.4,3.2" ${FINE}/>` +
+    `<path d="M-7.2,2.8 H-1.4 Q-1.6,5.8 -4.3,5.8 Q-7,5.8 -7.2,2.8Z" ${GLASS} ${LINE}/>` +
+    `<path d="M7.2,2.8 H1.4 Q1.6,5.8 4.3,5.8 Q7,5.8 7.2,2.8Z" ${GLASS} ${LINE}/>`,
+}
+const readingGlassesSide: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body: `<path d="M4.4,3 L-3.6,1" ${FINE}/><path d="M4.4,2.8 H9 Q8.8,5.6 6.8,5.6 Q4.6,5.6 4.4,2.8Z" ${GLASS} ${LINE}/>`,
+}
+/** The point `deg` degrees clockwise from +x and `r` from the origin, as "x,y". */
+const polar = (deg: number, r: number) => `${(Math.cos((deg * Math.PI) / 180) * r).toFixed(2)},${(Math.sin((deg * Math.PI) / 180) * r).toFixed(2)}`
+// a paper fan opened upward from its rivet at (0, 0), from 220 to 320 degrees: cream paper, a terracotta rim and five folds
+const fan =
+  `<path d="M0,0 L${polar(220, 7.4)} A7.4,7.4 0 0 1 ${polar(320, 7.4)}Z" fill="#FBF7EE" ${LINE}/>` +
+  `<path d="M${polar(220, 5)} A5,5 0 0 1 ${polar(320, 5)} L${polar(320, 7.4)} A7.4,7.4 0 0 0 ${polar(220, 7.4)}Z" fill="#C65D3B" ${LINE}/>` +
+  `<path d="${[1, 2, 3, 4, 5].map(i => `M0,0 L${polar(220 + (i * 100) / 6, 7.4)}`).join(' ')}" ${FINE}/>` +
+  `<circle cx="0" cy="0" r="1" fill="${BROWN}" stroke="${INK}" stroke-width=".8"/>`
+const paperFanDown: Part = { viewBox: body.viewBox, body: `<g transform="translate(-1.5 12.6)">${fan}</g>` }
+const paperFanSide: Part = { viewBox: [-14, -1, 28, 20], body: `<g transform="translate(4.6 12.6) rotate(35)">${fan}</g>` }
+
+// Thảo: a white flower clip on the right side of her hair
+const flowerClip = (cx: number, cy: number): Part => ({ viewBox: [-14.5, -14, 29, 28], body: flower(cx, cy, 3.2, 5, '#ffffff', GOLD) })
+const flowerClipDown = flowerClip(-7.4, -6.8)
+const flowerClipSide = flowerClip(-4, -7.4)
+const flowerClipUp = flowerClip(7.4, -6.8)
+
+// Lan: a bunch of yellow daisies in brown paper, held at the chest
+const daisies =
+  `<ellipse cx="-3.8" cy="-8.4" rx="1.3" ry="2.8" transform="rotate(-35 -3.8 -8.4)" fill="#4E9A6B" ${PETAL}/>` +
+  `<ellipse cx="3.8" cy="-8.4" rx="1.3" ry="2.8" transform="rotate(35 3.8 -8.4)" fill="#4E9A6B" ${PETAL}/>` +
+  `<path d="M-4.2,-8 H4.2 L1.2,0 H-1.2Z" fill="#D9A866" ${LINE}/><path d="M-2.4,-3.2 H2.4" stroke="${RED}" stroke-width="1.2" stroke-linecap="round"/>` +
+  flower(-2.6, -9.4, 2.8, 6, '#F2CC6B', BROWN) +
+  flower(2.6, -9.4, 2.8, 6, '#F2CC6B', BROWN) +
+  flower(0, -11.4, 2.8, 6, '#F2CC6B', BROWN)
+const daisiesDown: Part = { viewBox: body.viewBox, body: `<g transform="translate(0 15.4)">${daisies}</g>` }
+const daisiesSide: Part = { viewBox: [-14, -1, 28, 20], body: `<g transform="translate(5.4 15.2) rotate(20)">${daisies}</g>` }
+
 // lying face up under the mask: a mint layer over the face with a cucumber slice on each eye
 const CUCUMBER = 'fill="#DCEFB4" stroke="#4E9A6B" stroke-width="1.1"'
 const maskFace: Part = {
@@ -230,6 +412,31 @@ const parts: Record<string, Part> = {
   'hat-down': hatDown,
   'hat-side': hatSide,
   'hat-up': hatUp,
+  'redApron-down': redApronDown,
+  'redApron-side': redApronSide,
+  'artTube-down': artTubeDown,
+  'artTube-side': artTubeSide,
+  'artTube-up': artTubeUp,
+  'helmet-down': helmetDown,
+  'helmet-side': helmetSide,
+  'helmet-up': helmetUp,
+  'headphones-down': headphonesDown,
+  'headphones-side': headphonesSide,
+  'headphones-up': headphonesUp,
+  'goldGlasses-down': goldGlassesDown,
+  'goldGlasses-side': goldGlassesSide,
+  'silkScarf-down': silkScarfDown,
+  'silkScarf-side': silkScarfSide,
+  'silkScarf-up': silkScarfUp,
+  'readingGlasses-down': readingGlassesDown,
+  'readingGlasses-side': readingGlassesSide,
+  'paperFan-down': paperFanDown,
+  'paperFan-side': paperFanSide,
+  'flowerClip-down': flowerClipDown,
+  'flowerClip-side': flowerClipSide,
+  'flowerClip-up': flowerClipUp,
+  'daisies-down': daisiesDown,
+  'daisies-side': daisiesSide,
   'mask-face': maskFace,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
   'hair0-up': hair(path(bobUp), strandsBack),
@@ -245,8 +452,8 @@ const parts: Record<string, Part> = {
   'hair3-side': hair(bunSide + path(bobSide), strandsFront, -18),
 }
 
-/** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. */
-const TINTED = /^(leg|arm|body|head|hair\d)/
+/** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. Whole names, so `headphones` stays untinted. */
+const TINTED = /^(leg|arm|body|head|hair\d)(-|$)/
 
 const textures: Record<string, Part> = Object.fromEntries(
   Object.entries(parts).flatMap(([key, p]) =>

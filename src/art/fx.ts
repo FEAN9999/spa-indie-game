@@ -2,6 +2,7 @@ import { C } from './palette'
 import { svgDoc } from './svg'
 
 const STAR_PATH = 'M50,6 L62,36 L94,38 L69,58 L78,90 L50,72 L22,90 L31,58 L6,38 L38,36Z'
+const HEART_PATH = 'M28,47 C14,38 5,29 5,19 C5,11 11,6 17.5,6 C22,6 26,9 28,13 C30,9 34,6 38.5,6 C45,6 51,11 51,19 C51,29 42,38 28,47Z'
 const OUTLINE = `stroke="${C.ink}" stroke-width="4" stroke-linejoin="round"`
 const INNER = `stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"`
 const ICON = `stroke="${C.ink}" stroke-width="2.6"`
@@ -156,6 +157,34 @@ export function fxTextures(): Record<string, string> {
       1,
       `<rect x="7" y="7" width="50" height="50" rx="12" fill="${C.cream}" ${ICON}/>` +
         `<g fill="${C.terracotta}"><circle cx="21" cy="21" r="4.5"/><circle cx="43" cy="21" r="4.5"/><circle cx="32" cy="32" r="4.5"/><circle cx="21" cy="43" r="4.5"/><circle cx="43" cy="43" r="4.5"/></g>`,
+    ),
+    // a regular's hearts, earned and not yet
+    'heart-full': svgDoc(
+      [0, 0, 56, 52],
+      1,
+      `<path d="${HEART_PATH}" fill="${C.lantern}" ${OUTLINE}/>` +
+        `<path d="M12,20 Q12,13.5 18,12.5" fill="none" stroke="${C.cream}" stroke-opacity="0.7" stroke-width="3.5" stroke-linecap="round"/>`,
+    ),
+    'heart-empty': svgDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.cream}" ${OUTLINE}/>`),
+    // a regular's member card: teal with a gold stripe and a line for the name
+    'icon-card': svgDoc(
+      [0, 0, 56, 40],
+      1,
+      `<rect x="3" y="3" width="50" height="34" rx="6" fill="${C.teal}" ${OUTLINE}/>` +
+        `<rect x="5" y="10" width="46" height="7" fill="${C.mustard}"/><path d="M5,10 H51 M5,17 H51" stroke="${C.ink}" stroke-width="2"/>` +
+        `<rect x="10" y="25" width="20" height="5" rx="2.5" fill="${C.cream}"/>`,
+    ),
+    // the guest book, for the top-bar button: a closed brown book with a gạch bông tile on its cover
+    'icon-book': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<g ${ICON}><rect x="15" y="9" width="40" height="50" rx="4" fill="${C.cream}"/><rect x="10" y="5" width="40" height="50" rx="4" fill="${C.wood}"/>` +
+        `<rect x="10" y="5" width="9" height="50" rx="3" fill="${C.woodDark}"/></g>` +
+        `<g stroke="${C.ink}" stroke-width="1.5" stroke-linejoin="round"><rect x="23" y="18" width="22" height="22" rx="1.5" fill="${C.cream}" stroke-width="2"/>` +
+        `<path d="M23.5,23 A4.5,4.5 0 0 0 28,18.5 H23.5Z M44.5,23 A4.5,4.5 0 0 1 40,18.5 H44.5Z M23.5,35 A4.5,4.5 0 0 1 28,39.5 H23.5Z M44.5,35 A4.5,4.5 0 0 0 40,39.5 H44.5Z" fill="${C.teal}"/>` +
+        `<ellipse cx="34" cy="24.2" rx="2.4" ry="3.6" fill="${C.terracotta}"/><ellipse cx="34" cy="33.8" rx="2.4" ry="3.6" fill="${C.terracotta}"/>` +
+        `<ellipse cx="29.2" cy="29" rx="3.6" ry="2.4" fill="${C.terracotta}"/><ellipse cx="38.8" cy="29" rx="3.6" ry="2.4" fill="${C.terracotta}"/>` +
+        `<circle cx="34" cy="29" r="2.4" fill="${C.mustard}"/></g>`,
     ),
     'icon-lock': svgDoc(
       [0, 0, 40, 46],

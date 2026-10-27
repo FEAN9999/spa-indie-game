@@ -34,4 +34,10 @@ describe('look palettes', () => {
     expect(customerColors(look, 'student').hair).toBe(lookColors(look).hair)
     expect(customerColors(look, 'celeb')).toEqual({ ...lookColors(look), kind: 'celeb' })
   })
+
+  it('names the regular a customer is, on top of their kind', () => {
+    const look = { skin: 2, hair: 1, hairStyle: 0, shirt: 3 }
+    expect(customerColors(look, 'elder', 'sau')).toEqual({ ...customerColors(look, 'elder'), regular: 'sau' })
+    expect(customerColors(look, 'picky').regular).toBeUndefined()
+  })
 })
