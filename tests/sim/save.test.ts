@@ -868,7 +868,6 @@ describe('the recipe book', () => {
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
       expect([key, saved[key]]).toEqual([key, raw[key]])
     }
-    expect(saved.v).toBe(13)
     expect(saved.v).toBe(SAVE_VERSION)
     expect(saved.recipes.steam).toEqual(raw.recipes.steam)
     expect(saved.recipes.stone).toEqual(emptyRecipes().stone)
@@ -884,7 +883,7 @@ describe('the recipe book', () => {
   })
 
   it('opens every older save with empty recipes', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10]) expect(open(raw).recipes).toEqual(emptyRecipes())
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11]) expect(open(raw).recipes).toEqual(emptyRecipes())
   })
 
   it('drops a try with two items, an unknown ingredient or a repeat', () => {
