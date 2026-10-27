@@ -21,7 +21,7 @@ const NAME: Record<number, StringKey> = { 1: 'floorName1', 2: 'floorName2', 3: '
 export class FloorBar {
   private box: Phaser.GameObjects.Container | null = null
   /** What the row on screen was drawn from, so an unchanged frame draws nothing. */
-  private shown = ''
+  private drawn = ''
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -31,19 +31,24 @@ export class FloorBar {
 
   show(pills: Pill[], look: Look): void {
     const key = JSON.stringify([pills, look])
-    if (key === this.shown) return
+    if (key === this.drawn) return
     this.hide()
-    this.shown = key
+    this.drawn = key
     const box = this.scene.add.container(0, 0).setDepth(this.depth)
     const left = CENTER.x - (pills.length * PILL_W + (pills.length - 1) * GAP) / 2 + PILL_W / 2
     pills.forEach((p, i) => box.add(this.pill(p, look, left + i * (PILL_W + GAP))))
     this.box = box
   }
 
+  /** Whether the row is on screen. */
+  get shown(): boolean {
+    return this.box !== null
+  }
+
   hide(): void {
     this.box?.destroy()
     this.box = null
-    this.shown = ''
+    this.drawn = ''
   }
 
   private pill(p: Pill, look: Look, x: number): Phaser.GameObjects.Container {

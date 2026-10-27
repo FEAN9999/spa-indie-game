@@ -59,3 +59,11 @@ export function pills(sim: SpaSim, viewed: number): Pill[] {
 export function carryTo(item: Item, floor: number): Item {
   return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }
 }
+
+/** Gives each sprite the floor its item now stands on, so one carried to another floor shows there. */
+export function retagFloors(tags: Map<number, { floor: number }>, items: Item[]): void {
+  for (const item of items) {
+    const tag = tags.get(item.id)
+    if (tag) tag.floor = floorOf(item.y)
+  }
+}

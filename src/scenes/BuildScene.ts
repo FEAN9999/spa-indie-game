@@ -119,6 +119,8 @@ export class BuildScene extends Phaser.Scene {
   private tint!: Phaser.GameObjects.Graphics
   private grid: Phaser.GameObjects.Graphics | null = null
   private floorBar!: FloorBar
+  /** The floor in view when the held piece was taken, which Thôi goes back to after a carry. */
+  private pickedOn = 1
   private toastBox: Phaser.GameObjects.Container | null = null
 
   constructor() {
@@ -305,6 +307,7 @@ export class BuildScene extends Phaser.Scene {
 
   private hold(held: Held): void {
     this.held = held
+    this.pickedOn = this.params.room.floor
     this.ghost = this.add.image(0, 0, itemTexture(held.item.kind)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(2)
     this.drawGhost()
     this.readyAt = performance.now() + SETTLE_MS
@@ -331,12 +334,12 @@ export class BuildScene extends Phaser.Scene {
     const refund = formatMoney(Math.floor(ITEMS[item.kind].price / 2))
     const row: { label: string; kind: 'primary' | 'plain'; w: number; onTap: () => void }[] = buying
       ? [
-          { label: t('cancel'), kind: 'plain', w: 310, onTap: () => this.letGo() },
+          { label: t('cancel'), kind: 'plain', w: 310, onTap: () => this.cancel() },
           { label: t('flip'), kind: 'plain', w: 310, onTap: () => this.flip() },
           { label: t('place'), kind: 'primary', w: 380, onTap: () => this.place() },
         ]
       : [
-          { label: t('cancel'), kind: 'plain', w: 180, onTap: () => this.letGo() },
+          { label: t('cancel'), kind: 'plain', w: 180, onTap: () => this.cancel() },
           { label: t('flip'), kind: 'plain', w: 180, onTap: () => this.flip() },
           // on a gift, tapping it only says gifts are not sold
           { label: item.gift ? t('sellGiftButton') : t('sell', { money: refund }), kind: 'plain', w: 404, onTap: () => this.sell() },
@@ -372,6 +375,15 @@ export class BuildScene extends Phaser.Scene {
     item.y = spot.y
     this.drawGhost()
     this.showFloorBar()
+  }
+
+  /** "Thôi": a piece of the shop stays where it was, so the view goes back to that floor. */
+  private cancel(): void {
+    if (!this.held?.buying && this.params.room.floor !== this.pickedOn) {
+      this.params.showFloor(this.pickedOn)
+      this.drawGrid()
+    }
+    this.letGo()
   }
 
   private flip(): void {
@@ -436,7 +448,7 @@ export class BuildScene extends Phaser.Scene {
   private onDown(p: Phaser.Input.Pointer): void {
     this.pressAt = performance.now()
     const held = this.held?.item
-    const onPill = held !== undefined && p.y >= PILL_BAND.top && p.y <= PILL_BAND.bottom
+    const onPill = held !== undefined && this.floorBar.shown && p.y >= PILL_BAND.top && p.y <= PILL_BAND.bottom
     this.drag = p.y < this.panelTop() && !onPill ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
   }
 
@@ -457,9 +469,10 @@ export class BuildScene extends Phaser.Scene {
     const { held } = this
     if (!drag.from || !held) return
     const { w, h } = ITEMS[held.item.kind]
-    const { cols, rows } = this.params.sim.grid
+    const { cols } = this.params.sim.grid
+    const top = (this.params.room.floor - 1) * FLOOR_ROWS
     const x = Phaser.Math.Clamp(drag.from.x + Math.round((p.x - drag.x) / TILE), 0, cols - w)
-    const y = Phaser.Math.Clamp(drag.from.y + Math.round((p.y - drag.y) / TILE), 0, rows - h)
+    const y = Phaser.Math.Clamp(drag.from.y + Math.round((p.y - drag.y) / TILE), top, top + FLOOR_ROWS - h)
     if (x === held.item.x && y === held.item.y) return
     held.item.x = x
     held.item.y = y

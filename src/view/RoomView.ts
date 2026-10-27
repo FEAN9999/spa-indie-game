@@ -5,6 +5,7 @@ import { floorOf } from '../sim/floors'
 import { tileRuns, type Grid } from '../sim/grid'
 import { ITEMS, workTile, type Item } from '../sim/items'
 import type { Tile, Vec } from '../sim/types'
+import { retagFloors } from './floors'
 
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
 const PART_DEPTH = 1
@@ -82,6 +83,7 @@ export class RoomView {
       s.part?.destroy()
       this.items.delete(id)
     }
+    retagFloors(this.items, items)
     for (const item of items) {
       const s = this.items.get(item.id) ?? this.addItem(item)
       const { w, h } = ITEMS[item.kind]
@@ -118,7 +120,7 @@ export class RoomView {
   itemAt(x: number, y: number): number | null {
     let front: { id: number; depth: number } | null = null
     for (const [id, s] of this.items) {
-      if (s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
+      if (s.floor === this.floor && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
     }
     return front?.id ?? null
   }

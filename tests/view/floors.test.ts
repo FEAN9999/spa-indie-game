@@ -4,7 +4,7 @@ import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
 import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
-import { carryTo, followFloor, climbPose, pills, showPills } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, pills, showPills } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -98,5 +98,15 @@ describe('carryTo', () => {
   it('leaves the original untouched', () => {
     carryTo(plant, 3)
     expect(plant.y).toBe(12)
+  })
+})
+
+describe('retagFloors', () => {
+  it('moves a sprite to the floor its item was carried to, and leaves unknown items alone', () => {
+    const tags = new Map([[3, { floor: 1 }]])
+    const at = (id: number, y: number): Item => ({ id, kind: 'plant', x: 4, y, flip: false, gift: false })
+    retagFloors(tags, [at(3, 30), at(9, 30)])
+    expect(tags.get(3)!.floor).toBe(2)
+    expect(tags.has(9)).toBe(false)
   })
 })
