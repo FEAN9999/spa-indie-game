@@ -423,18 +423,19 @@ export class SpaScene extends Phaser.Scene {
     this.room.sync(sim.items, sim.grid.bedSlots.map(tile => ({ tile, open: sim.canPlace('bed', tile.x, tile.y, false) === null })))
   }
 
-  /** The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game. */
+  /** The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game, nor while waiting on an update check. */
   private updateFloorBar(): void {
     const sim = this.sim
-    if (!showPills(sim) || this.modal || sim.paused || sim.dayOver || sim.servingCustomerId !== null) {
+    if (!showPills(sim) || this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) {
       this.floorBar.hide()
       return
     }
     this.floorBar.show(pills(sim, this.viewFloor), sim.ownerLook)
   }
 
-  /** A viewed or open pill brings its floor into view; a locked one offers to open it. */
+  /** A viewed or open pill brings its floor into view; a locked one offers to open it. Nothing while waiting on an update check, which hides the pills on its next frame. */
   private tapFloor(floor: number): void {
+    if (this.holding) return
     if (floor <= this.sim.floors) this.showFloor(floor)
     else this.offerFloor(floor)
   }
@@ -1024,6 +1025,9 @@ ${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { wi
       const at = this.room.tileToWorld(c.pos)
       return Math.abs(p.x - at.x) <= TILE / 2 && p.y <= at.y && p.y >= at.y - CHARACTER_HEIGHT_PX
     })
-    this.sim.tapTile(hit?.seat ?? this.room.worldToTile(p.x, p.y))
+    const tile = hit?.seat ?? this.room.worldToTile(p.x, p.y)
+    // a point above or below the floor in view would land on the rows of the next floor
+    if (!this.room.onFloor(tile.y)) return
+    this.sim.tapTile(tile)
   }
 }

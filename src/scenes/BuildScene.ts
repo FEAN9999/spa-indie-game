@@ -295,7 +295,8 @@ export class BuildScene extends Phaser.Scene {
     const tile = room.worldToTile(x, y)
     // the top of a tall piece covers the tile behind it
     const drawn = room.itemAt(x, y)
-    const item = sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) ?? sim.items.find(i => i.id === drawn)
+    // a point above or below the floor in view would land on the rows of the next floor
+    const item = (room.onFloor(tile.y) ? sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) : undefined) ?? sim.items.find(i => i.id === drawn)
     if (!item) return
     if (sim.isBusy(item.id)) {
       this.toast(t(PROBLEM_TEXT.busy))
