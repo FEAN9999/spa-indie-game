@@ -6,7 +6,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import { noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS } from '../../src/sim/staff'
@@ -23,6 +23,7 @@ import v8 from '../fixtures/save-v8.json'
 import v9 from '../fixtures/save-v9.json'
 import v10 from '../fixtures/save-v10.json'
 import v11 from '../fixtures/save-v11.json'
+import v12 from '../fixtures/save-v12.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -84,12 +85,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([12, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([13, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(12)
+    expect(sim.toSave().v).toBe(13)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -221,10 +222,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 12', () => {
+  it('still leaves alone only saves newer than version 13', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 12 }).v).toBe(12)
-    expect(() => parseSave({ ...good, v: 13 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 13 }).v).toBe(13)
+    expect(() => parseSave({ ...good, v: 14 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -464,7 +465,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(12)
+    expect(copy.toSave().v).toBe(13)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -849,13 +850,37 @@ describe('the recipe book', () => {
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
       expect([key, saved[key]]).toEqual([key, raw[key]])
     }
-    expect(saved.v).toBe(12)
+    expect(saved.v).toBe(SAVE_VERSION)
     expect(sim.recipes).toEqual(emptyRecipes())
     expect(saved.stock).toEqual({ ...raw.stock, herbs: 20, mud: 20 })
     const parsed = parseSave(structuredClone(raw))
     expect(parsed.staff.length).toBe(raw.staff.length)
     for (const p of [...parsed.staff, ...parsed.candidates]) expect(p.tiers.steam).toBe(0)
     expect(sim.staff.find(s => s.study)!.study).toEqual(raw.staff.find((s: any) => s.study).study)
+  })
+
+  it('opens a v12 shop with Đá nóng and Tắm bùn unsolved, fresh mineral mud and no new tiers, and nothing else changed', () => {
+    const raw = v12 as any
+    const sim = open(raw)
+    const saved = sim.toSave() as any
+    for (const key of Object.keys(raw)) {
+      // candidates are redrawn on load, so their day moves with them
+      if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
+      expect([key, saved[key]]).toEqual([key, raw[key]])
+    }
+    expect(saved.v).toBe(13)
+    expect(saved.v).toBe(SAVE_VERSION)
+    expect(saved.recipes.steam).toEqual(raw.recipes.steam)
+    expect(saved.recipes.stone).toEqual(emptyRecipes().stone)
+    expect(saved.recipes.mud).toEqual(emptyRecipes().mud)
+    expect(saved.stock).toEqual({ ...raw.stock, mud: 20 })
+    const parsed = parseSave(structuredClone(raw))
+    expect(parsed.staff.length).toBe(raw.staff.length)
+    for (const p of [...parsed.staff, ...parsed.candidates]) expect([p.tiers.stone, p.tiers.mud]).toEqual([0, 0])
+    expect(parsed.staff.find(s => s.tiers.steam === 2)).toBeDefined()
+    expect(sim.staff.find(s => s.study)!.study).toEqual(raw.staff.find((s: any) => s.study).study)
+    expect(sim.items.some(i => i.kind === 'steamTent')).toBe(true)
+    expect(sim.customers.some(c => c.service === 'steam')).toBe(true)
   })
 
   it('opens every older save with empty recipes', () => {
@@ -885,6 +910,16 @@ describe('the recipe book', () => {
     const raw = structuredClone(v11) as any
     raw.services = [...raw.services, 'steam']
     expect(open(raw).recipes.steam.solved).toBe(true)
+  })
+
+  it('recomputes a stone try, marks mud solved by an open service and drops a heard ingredient that is no hint', () => {
+    const stone = withRecipes({ stone: { solved: false, tries: [{ mix: ['coconut', 'cajeput', 'ginger'], right: 1 }], heard: ['ginger', 'coconut'] } }).stone
+    expect(stone.tries[0].right).toBe(3)
+    expect(stone.solved).toBe(true)
+    expect(stone.heard).toEqual(['coconut'])
+    const raw = structuredClone(v12) as any
+    raw.services = [...raw.services, 'mud']
+    expect(open(raw).recipes.mud.solved).toBe(true)
   })
 
   it('turns a non-object recipes into an empty book', () => {
