@@ -76,6 +76,39 @@ describe('booking a VIP', () => {
   })
 })
 
+describe('booking details', () => {
+  it('moves down the book as each VIP is met', () => {
+    const all: ServiceId[] = ['shampoo', 'massage', 'mask']
+    const book = emptyVipBook()
+    book.vips.singer.visits = 1
+    expect(planBooking(book, 5, 2, all, createRng(1))!.vip).toBe('miss')
+    book.booking = null
+    book.nextDay = 0
+    book.vips.miss.visits = 1
+    expect(planBooking(book, 5, 2, all, createRng(1))!.vip).toBe('star')
+  })
+
+  it('draws two numbers for a first meeting and three once everyone has visited', () => {
+    const first = counting(1)
+    planBooking(emptyVipBook(), 5, 2, ['massage'], first.rng)
+    expect(first.draws).toBe(2)
+    const book = emptyVipBook()
+    for (const id of VIP_IDS) book.vips[id].visits = 1
+    const again = counting(1)
+    planBooking(book, 5, 2, ['massage'], again.rng)
+    expect(again.draws).toBe(3)
+  })
+
+  it('opens the next booking exactly the day before nextDay', () => {
+    const book = emptyVipBook()
+    planBooking(book, 5, 2, ['massage'], createRng(1))
+    const n = book.nextDay
+    book.booking = null
+    expect(planBooking(book, n - 2, 2, ['massage'], createRng(1))).toBeNull()
+    expect(planBooking(book, n - 1, 2, ['massage'], createRng(1))!.day).toBe(n)
+  })
+})
+
 describe('a booking in time', () => {
   it('is due only on its day from its minute', () => {
     const book = emptyVipBook()
