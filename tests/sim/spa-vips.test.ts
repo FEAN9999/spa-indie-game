@@ -189,6 +189,22 @@ describe('a VIP standing', () => {
     expect(sim.servingCustomerId).toBe(c.id)
   })
 
+  it("keeps a standing VIP off a bed's work tile beside the desk", () => {
+    const sim = fresh()
+    sim.money = 2_000_000
+    expect(sim.openService('mask')).toBeNull()
+    // a mask bed may stand anywhere on legal floor; this one's work tile is the first free tile beside the desk from the door
+    expect(sim.buy('maskBed', 6, 13, false)).toBeNull()
+    const work = sim.grid.works[sim.grid.works.length - 1]
+    expect(work).toEqual({ x: 7, y: 14 })
+    expect(sim.grid.desks.some(d => manhattan(d, work) === 1)).toBe(true)
+    fillSeats(sim)
+    const c = seatAndWait(sim, { vip: 'chef' })
+    expect(sim.isStanding(c)).toBe(true)
+    expect(c.seat).not.toEqual(work)
+    expect(sim.grid.cells[c.seat!.y][c.seat!.x]).toBe('floor')
+  })
+
   it('keeps a standing VIP standing after a reload', () => {
     const sim = fresh()
     fillSeats(sim)
