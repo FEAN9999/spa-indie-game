@@ -2,7 +2,6 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
-import { bookOpen } from '../sim/regulars'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
@@ -11,6 +10,7 @@ import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
 import { layoutTopBar, TOP_BAR } from './topBar'
 import { addToast } from './ui'
+import { clockStar } from './vip'
 
 export const DEPTH = 10000
 const BANNER_Y = 300
@@ -60,6 +60,8 @@ export class Hud {
   private readonly star: Phaser.GameObjects.Image
   private readonly rating: Phaser.GameObjects.Text
   private readonly dayTime: Phaser.GameObjects.Text
+  /** The gold star after the time while a VIP's booking is near. */
+  private readonly clockStar: Phaser.GameObjects.Image
   private readonly plates: NavPlate[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
   private readonly book: Phaser.GameObjects.Container
@@ -91,6 +93,7 @@ export class Hud {
     this.star = add.image(0, 84, 'star').setScale(0.5).setDepth(DEPTH)
     this.rating = add.text(0, 84, '', textStyle(44)).setOrigin(0, 0.5).setDepth(DEPTH)
     this.dayTime = add.text(TOP_BAR.moneyX, 152, '', textStyle(40, '600')).setOrigin(0, 0.5).setDepth(DEPTH)
+    this.clockStar = add.image(0, 152, 'star').setScale(0.4).setDepth(DEPTH).setVisible(false)
 
     const pause = add.container(995, 115).setDepth(DEPTH)
     pause.add(add.circle(0, 0, 44, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
@@ -166,12 +169,14 @@ export class Hud {
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${this.sim.clock.label()}`)
+    this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
+    this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
     this.rating.x = row.ratingX
     // an invisible container is not hit-tested, so the book button takes no tap until a regular has come
-    this.book.setVisible(bookOpen(this.sim.book))
+    this.book.setVisible(this.sim.bookShown())
     this.bookBadge.setVisible(!this.sim.hintDone('openBook'))
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {

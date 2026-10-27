@@ -7,6 +7,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { summaryRows, type SummaryRow } from '../view/summary'
 import { textStyle } from '../view/text'
+import { summaryNotes } from '../view/vip'
 
 export interface SummaryData {
   sim: SpaSim
@@ -48,8 +49,14 @@ export class SummaryScene extends Phaser.Scene {
     ]
     const heights = rows.map(row => (row.kind === 'heading' ? HEADING_H : ROW_H))
     const rowsEnd = ROW_Y + heights.reduce((sum, h) => sum + h, 0)
-    const noteY = rowsEnd + 20 + 60
-    const buttonY = firstDay ? noteY + 60 + 20 + 75 : rowsEnd + 20 + 75
+    const notes = summaryNotes(firstDay, sim.vip, sim.day, sim.hintDone('vip'))
+    // the notes sit under the rows and the button under them, by the text's measured height; added first so the card is laid out to fit
+    const note = notes.length
+      ? this.add.text(GAME_W / 2, 0, notes.join('\n'),{ ...textStyle(34, '600'), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5).setDepth(1)
+      : null
+    const noteH = note ? note.height + 20 : 0
+    note?.setY(rowsEnd + 20 + note.height / 2)
+    const buttonY = rowsEnd + 20 + noteH + 75
     const cardH = buttonY + 75 + 60 - 420
 
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
@@ -62,11 +69,6 @@ export class SummaryScene extends Phaser.Scene {
     const name = this.add.text(GAME_W / 2, 485, sim.shopName, textStyle(44, '600')).setOrigin(0.5)
     if (name.width > 760) name.setScale(760 / name.width)
     this.add.text(GAME_W / 2, 565, t('summaryTitle', { day: sim.day }), textStyle(60)).setOrigin(0.5)
-    if (firstDay) {
-      this.add
-        .text(GAME_W / 2, noteY, t('summaryFirstDay'), { ...textStyle(34, '600'), align: 'center', wordWrap: { width: 760 } })
-        .setOrigin(0.5)
-    }
 
     let top = ROW_Y
     const values = rows.map((row, i) => {

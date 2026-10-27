@@ -23,11 +23,13 @@ import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { t } from '../strings/vi'
+import { VIP_TEXT } from '../strings/vips'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
 import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
 import { stockLowText } from '../view/stockText'
+import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
 import { StaffLayer } from '../view/StaffLayer'
@@ -62,6 +64,9 @@ const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
 const SPEECH_TIP = -CHARACTER_HEIGHT_PX - 70
 /** The heart badge's centre, left of the service badge. */
 const HEART_DX = -64
+/** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
+const STAR_TWINKLE = 0.04
+const STAR_TWINKLE_MS = 1200
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene' }
@@ -76,6 +81,8 @@ interface CustomerSprite {
   ripple: Phaser.GameObjects.Image
   /** A waiting regular's heart, just left of the service badge. */
   heart: Phaser.GameObjects.Image
+  /** A VIP's gold star: with the heart's place while she waits, over her head otherwise. */
+  vipStar: Phaser.GameObjects.Image
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -110,6 +117,7 @@ export class SpaScene extends Phaser.Scene {
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
   private patienceHintMs = 0
   private regularHintMs = 0
+  private vipHintMs = 0
   /** Each customer's speech bubble; one that outlives its customer stays where it last was until it is done. */
   private bubbles = new Map<number, SpeechBubble>()
   private bubbleSpots = new Map<number, { x: number; y: number }>()
@@ -128,6 +136,7 @@ export class SpaScene extends Phaser.Scene {
     this.tour = []
     this.patienceHintMs = 0
     this.regularHintMs = 0
+    this.vipHintMs = 0
     this.bubbles = new Map()
     this.bubbleSpots = new Map()
     this.store = openStore()
@@ -336,7 +345,7 @@ export class SpaScene extends Phaser.Scene {
   /** The guest book over the frozen shop, opened only when build mode would be. */
   private openBook(): void {
     const sim = this.sim
-    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    if (!sim.bookShown() || this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
     this.modal = true
     const intro = !sim.hintDone('openBook')
     sim.markHint('openBook')
@@ -353,6 +362,8 @@ export class SpaScene extends Phaser.Scene {
 
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
+    const b = this.sim.vip.booking
+    if (b?.day === this.sim.day) this.hud.toast(bookingText('vipTodayToast', b))
   }
 
   /** Draws the furniture as the sim has it, and a bed slot wherever a bed would fit. */
@@ -487,6 +498,12 @@ export class SpaScene extends Phaser.Scene {
       if (this.regularHintMs >= PATIENCE_HINT_MS) sim.markHint('regular')
       return
     }
+    if (pick.hint === 'vip') {
+      this.pointer.show(t('hintVip'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+      this.vipHintMs += delta
+      if (this.vipHintMs >= PATIENCE_HINT_MS) sim.markHint('vip')
+      return
+    }
     this.pointer.show(t('hintPatience'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
     this.patienceHintMs += delta
     if (this.patienceHintMs >= PATIENCE_HINT_MS) sim.markHint('patience')
@@ -510,6 +527,7 @@ export class SpaScene extends Phaser.Scene {
         s.ripple.destroy()
         s.bubble?.destroy()
         s.heart.destroy()
+        s.vipStar.destroy()
         this.customers.delete(e.id)
         if (!this.bubbles.has(e.id)) this.bubbleSpots.delete(e.id)
         return
@@ -523,7 +541,7 @@ export class SpaScene extends Phaser.Scene {
           look: c.look,
           kind: c.kind,
           extraMs: dayEase(this.sim.day).miniGameExtraMs,
-          hard: KINDS[c.kind].hard,
+          hard: c.vip !== null || KINDS[c.kind].hard,
           demo: !this.sim.hintDone(demo),
           onDone: stars => {
             this.sim.markHint(demo)
@@ -553,6 +571,17 @@ export class SpaScene extends Phaser.Scene {
         const r = REGULAR_TEXT[e.regular]
         const text = e.first ? r.intro : t('greetingLine', { name: r.name, text: GREETINGS[e.customerId % GREETINGS.length] })
         this.say(e.customerId, text, BUBBLE_MS.greet)
+        return
+      }
+      case 'vipArrived':
+        this.say(e.customerId, VIP_TEXT[e.vip].arrive, BUBBLE_MS.story)
+        return
+      case 'vipServed': {
+        const name = VIP_TEXT[e.vip].name
+        if (e.stars === 3) this.say(e.customerId, VIP_TEXT[e.vip].thanks, BUBBLE_MS.story)
+        if (e.photo) this.hud.toast(t('vipPhotoToast', { name }))
+        // later than the photo toast, which a toast right now would overwrite
+        if (e.board) this.time.delayedCall(2200, () => this.hud.toast(t('vipBoardToast')))
         return
       }
       case 'heart': {
@@ -622,6 +651,7 @@ export class SpaScene extends Phaser.Scene {
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
       heart: this.add.image(0, 0, 'heart-full').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
+      vipStar: this.add.image(0, 0, 'star').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
       bubble: null,
     })
   }
@@ -629,14 +659,15 @@ export class SpaScene extends Phaser.Scene {
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
     // on the bed from arrival until the owner finishes, waiting or being served
     const lying = c.stationId !== null && c.path.length === 0
-    const sitting = c.state === 'waiting'
+    // a VIP with no seat free stands by the desk, facing down
+    const sitting = c.state === 'waiting' && !this.sim.isStanding(c)
     const street = this.streetPlacement(c)
     const p: Placement = street ?? { ...this.room.tileToWorld(c.pos), facing: c.facing, alpha: 1 }
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
     // face down on the massage bed, face up anywhere else
-    s.view.setFacing(lying ? (c.service === 'massage' ? 'up' : 'down') : sitting ? 'down' : p.facing)
+    s.view.setFacing(lying ? (c.service === 'massage' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha)
@@ -664,6 +695,16 @@ export class SpaScene extends Phaser.Scene {
     const heart = c.state === 'waiting' && c.regular !== null
     s.heart.setVisible(heart)
     if (heart) s.heart.setPosition(p.x + (badge ? HEART_DX : 0), p.y + BADGE_BOTTOM - s.badge.height / 2)
+
+    const star = c.vip !== null && !lying
+    s.vipStar.setVisible(star)
+    if (star) {
+      const waiting = c.state === 'waiting'
+      const y = waiting ? p.y + BADGE_BOTTOM - s.badge.height / 2 : p.y + PATIENCE_BAR_TOP
+      s.vipStar
+        .setPosition(p.x + (waiting && badge ? HEART_DX : 0), y)
+        .setScale(0.5 + STAR_TWINKLE * Math.sin((time / STAR_TWINKLE_MS) * 2 * Math.PI))
+    }
 
     const pulsing = c.state === 'waiting' && this.sim.owner.task === null
     s.ripple.setVisible(pulsing)
