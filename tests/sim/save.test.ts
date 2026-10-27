@@ -5,6 +5,7 @@ import { DEFAULT_ITEMS } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
+import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
@@ -21,6 +22,7 @@ import v7 from '../fixtures/save-v7.json'
 import v8 from '../fixtures/save-v8.json'
 import v9 from '../fixtures/save-v9.json'
 import v10 from '../fixtures/save-v10.json'
+import v11 from '../fixtures/save-v11.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -82,12 +84,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([11, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([12, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(11)
+    expect(sim.toSave().v).toBe(12)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -219,10 +221,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 11', () => {
+  it('still leaves alone only saves newer than version 12', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 11 }).v).toBe(11)
-    expect(() => parseSave({ ...good, v: 12 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 12 }).v).toBe(12)
+    expect(() => parseSave({ ...good, v: 13 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -462,7 +464,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(11)
+    expect(copy.toSave().v).toBe(12)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -820,5 +822,73 @@ describe('late and chatting tasks', () => {
     expect(withTask({ kind: 'chat', leftMs: -1 })).toBeNull()
     expect(withTask({ kind: 'late', untilMinute: null })).toBeNull() // Infinity becomes null in JSON
     expect(withTask({ kind: 'chat', leftMs: Infinity })).toBeNull()
+  })
+})
+
+describe('the recipe book', () => {
+  const withRecipes = (recipes: unknown) => {
+    const raw = structuredClone(v11) as any
+    raw.recipes = recipes
+    return open(raw).recipes
+  }
+
+  it('keeps solved, tries and heard through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    sim.recipes.steam = { solved: false, tries: [{ mix: ['pomelo', 'salt', 'honey'], right: 1 }], heard: ['lemongrass'] }
+    expect(viaJson(sim).recipes).toEqual(sim.recipes)
+    sim.recipes.steam.solved = true
+    expect(viaJson(sim).recipes).toEqual(sim.recipes)
+  })
+
+  it('opens a v11 shop with an empty book, fresh herbs and no steam tier, and nothing else changed', () => {
+    const raw = v11 as any
+    const sim = open(raw)
+    const saved = sim.toSave() as any
+    for (const key of Object.keys(raw)) {
+      // candidates are redrawn on load, so their day moves with them
+      if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
+      expect([key, saved[key]]).toEqual([key, raw[key]])
+    }
+    expect(saved.v).toBe(12)
+    expect(sim.recipes).toEqual(emptyRecipes())
+    expect(saved.stock).toEqual({ ...raw.stock, herbs: 20 })
+    const parsed = parseSave(structuredClone(raw))
+    expect(parsed.staff.length).toBe(raw.staff.length)
+    for (const p of [...parsed.staff, ...parsed.candidates]) expect(p.tiers.steam).toBe(0)
+    expect(sim.staff.find(s => s.study)!.study).toEqual(raw.staff.find((s: any) => s.study).study)
+  })
+
+  it('opens every older save with empty recipes', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10]) expect(open(raw).recipes).toEqual(emptyRecipes())
+  })
+
+  it('drops a try with two items, an unknown ingredient or a repeat', () => {
+    const tries = [
+      { mix: ['pomelo', 'salt'], right: 1 },
+      { mix: ['pomelo', 'salt', 'pepper'], right: 1 },
+      { mix: ['pomelo', 'pomelo', 'salt'], right: 1 },
+      { mix: ['pomelo', 'salt', 'honey'], right: 1 },
+    ]
+    expect(withRecipes({ steam: { solved: false, tries, heard: [] } }).steam.tries).toEqual([{ mix: ['pomelo', 'salt', 'honey'], right: 1 }])
+  })
+
+  it('recomputes a right count that disagrees', () => {
+    expect(withRecipes({ steam: { solved: false, tries: [{ mix: ['pomelo', 'salt', 'honey'], right: 3 }], heard: [] } }).steam.tries[0].right).toBe(1)
+  })
+
+  it('drops a heard ingredient that is not one of the hints', () => {
+    expect(withRecipes({ steam: { solved: false, tries: [], heard: ['lemongrass', 'ginger', 'salt', 'lemongrass', 'x'] } }).steam.heard).toEqual(['lemongrass'])
+  })
+
+  it('marks a recipe solved by a try with all three right, or by an open service', () => {
+    expect(withRecipes({ steam: { solved: false, tries: [{ mix: ['ginger', 'pomelo', 'lemongrass'], right: 0 }], heard: [] } }).steam.solved).toBe(true)
+    const raw = structuredClone(v11) as any
+    raw.services = [...raw.services, 'steam']
+    expect(open(raw).recipes.steam.solved).toBe(true)
+  })
+
+  it('turns a non-object recipes into an empty book', () => {
+    for (const bad of [undefined, null, 5, 'steam', [1]]) expect(withRecipes(bad)).toEqual(emptyRecipes())
+    expect(withRecipes({ steam: 7 })).toEqual(emptyRecipes())
   })
 })

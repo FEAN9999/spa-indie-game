@@ -3,6 +3,7 @@ import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
+import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
@@ -12,7 +13,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 11
+export const SAVE_VERSION = 12
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -56,6 +57,8 @@ export interface SaveData {
   book: GuestBook
   /** The VIPs, the booking and the gold board. */
   vip: VipBook
+  /** The recipes tried and the hints heard. */
+  recipes: RecipeBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -173,6 +176,8 @@ export function parseSave(raw: unknown): SaveData {
   // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
   data.vip = repairVipBook(data.vip, data.day)
   data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
+  // shops saved before version 12 have an empty recipe book; a recipe whose service is open is solved
+  data.recipes = repairRecipes(data.recipes, data.services)
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
   data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
   return data
@@ -223,6 +228,20 @@ function repairVipBook(x: unknown, day: number): VipBook {
   book.nextDay = repairCount(x.nextDay)
   book.everBooked = repairBool(x.everBooked) || book.booking !== null || VIP_IDS.some(id => book.vips[id].visits > 0)
   book.boardGiven = repairBool(x.boardGiven)
+  return book
+}
+
+/** A well-formed recipe book: tries are whole mixes with their right count recomputed, heard are that recipe's hints, and a recipe is solved by an all-right try or an open service. */
+function repairRecipes(x: unknown, services: ServiceId[]): RecipeBook {
+  const book = emptyRecipes()
+  const saved: Record<string, unknown> = isObject(x) ? x : {}
+  for (const id of RECIPE_IDS) {
+    const r = isObject(saved[id]) ? saved[id] : {}
+    const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
+    const tries = list(r.tries).flatMap(t => (isObject(t) && isMix(t.mix) ? [{ mix: [...t.mix], right: rightCount(id, t.mix) }] : []))
+    const heard = RECIPES[id].hints.filter(h => list(r.heard).includes(h))
+    book[id] = { solved: r.solved === true || tries.some(t => t.right === 3) || services.includes(id), tries, heard }
+  }
   return book
 }
 
@@ -277,7 +296,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

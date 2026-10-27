@@ -451,6 +451,7 @@ export class SpaSim {
       stock: this.stock,
       book: this.book,
       vip: this.vip,
+      recipes: this.recipes,
     })
   }
 
@@ -469,6 +470,7 @@ export class SpaSim {
     sim.stock = d.stock
     sim.book = d.book
     sim.vip = d.vip
+    sim.recipes = d.recipes
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
