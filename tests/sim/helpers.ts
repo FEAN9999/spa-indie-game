@@ -1,6 +1,6 @@
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
-import { noTiers, wageFor, type Staff, type StaffRole, type StaffStats, type Tiers } from '../../src/sim/staff'
+import { noTiers, wageFor, type Staff, type StaffRole, type StaffStats, type Tiers, type TraitId } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
 
 export function advanceUntil(sim: SpaSim, pred: () => boolean, maxMs = 120_000, sink?: SimEvent[]) {
@@ -45,8 +45,8 @@ export function busyShop(): SpaSim {
 }
 
 /** Hires a person with a fixed look and name, without drawing from the sim's rng. */
-export function hireStaff(sim: SpaSim, role: StaffRole, stats: StaffStats = { skill: 3, speed: 3, friendly: 3, stamina: 3 }, tiers: Partial<Tiers> = {}): Staff {
-  sim.candidates.push({ name: `Test ${sim.staff.length + 1}`, role, look: { skin: 0, hair: 0, hairStyle: 0, shirt: 0 }, stats, wage: wageFor(stats), rare: false, tiers: { ...noTiers(), ...tiers } })
+export function hireStaff(sim: SpaSim, role: StaffRole, stats: StaffStats = { skill: 3, speed: 3, friendly: 3, stamina: 3 }, tiers: Partial<Tiers> = {}, trait: TraitId = 'studious'): Staff {
+  sim.candidates.push({ name: `Test ${sim.staff.length + 1}`, role, look: { skin: 0, hair: 0, hairStyle: 0, shirt: 0 }, stats, wage: wageFor(stats), rare: false, tiers: { ...noTiers(), ...tiers }, trait })
   const problem = sim.hire(sim.candidates.length - 1)
   if (problem) throw new Error(`cannot hire: ${problem}`)
   return sim.staff[sim.staff.length - 1]

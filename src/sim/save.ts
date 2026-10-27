@@ -7,12 +7,12 @@ import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } 
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { SERVICE_IDS, type ServiceId } from './services'
-import { drawTiers, noTiers, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 10
+export const SAVE_VERSION = 11
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -163,6 +163,10 @@ export function parseSave(raw: unknown): SaveData {
     study: repairStudy(s.study, s.role),
   }))
   data.candidates = data.candidates.map(c => ({ ...c, tiers: repairTiers(c.tiers, c.role, () => drawTiers(tierRng, c.role, c.rare ? RARE_TIER : 1, SERVICE_IDS)) }))
+  // a trait that does not fit the role (or none, saved before version 11) is drawn from its own stream, staff then candidates
+  const traitRng = createRng(data.day * 2003 + data.nextStaffId)
+  data.staff = data.staff.map(s => ({ ...s, trait: traitFits(s.trait, s.role) ? s.trait : drawTrait(traitRng, s.role) }))
+  data.candidates = data.candidates.map(c => ({ ...c, trait: traitFits(c.trait, c.role) ? c.trait : drawTrait(traitRng, c.role) }))
   // shops saved before the regulars have an empty book; a customer who is not a known regular is an ordinary one
   data.book = repairBook(data.book, data.day)
   data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
@@ -252,6 +256,9 @@ function repairTiers(x: unknown, role: StaffRole, fresh: () => Tiers): Tiers {
   return tiers
 }
 
+/** Whether `x` is a personality the role can have. */
+const traitFits = (x: unknown, role: StaffRole): boolean => (role === 'receptionist' ? RECEPTIONIST_TRAITS : TRAIT_IDS).includes(x as never)
+
 /** A pending course that fits the role and has a payment from zero up, or none. */
 function repairStudy(x: unknown, role: StaffRole): Study | null {
   if (!isObject(x) || !isNumber(x.paid) || x.paid < 0) return null
@@ -267,7 +274,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

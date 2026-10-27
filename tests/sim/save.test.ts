@@ -8,7 +8,7 @@ import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
-import { noTiers } from '../../src/sim/staff'
+import { noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS } from '../../src/sim/staff'
 import { emptyVipBook } from '../../src/sim/vips'
 import { TUTORIAL_HINTS, type SimEvent } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
@@ -20,6 +20,7 @@ import v6 from '../fixtures/save-v6.json'
 import v7 from '../fixtures/save-v7.json'
 import v8 from '../fixtures/save-v8.json'
 import v9 from '../fixtures/save-v9.json'
+import v10 from '../fixtures/save-v10.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -81,12 +82,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([10, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([11, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(10)
+    expect(sim.toSave().v).toBe(11)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -218,10 +219,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 10', () => {
+  it('still leaves alone only saves newer than version 11', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 10 }).v).toBe(10)
-    expect(() => parseSave({ ...good, v: 11 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 11 }).v).toBe(11)
+    expect(() => parseSave({ ...good, v: 12 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -461,7 +462,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(10)
+    expect(copy.toSave().v).toBe(11)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -733,5 +734,61 @@ describe('save version 10', () => {
     expect(out[3].tiers).toEqual(noTiers())
     expect(out.slice(0, 3).map(s => s.study)).toEqual([null, null, null])
     expect(out[3].study).toEqual({ course: 'greet', paid: 50000 })
+  })
+})
+
+describe('save version 11', () => {
+  const fits = (p: { role: string; trait: string }) => (p.role === 'receptionist' ? RECEPTIONIST_TRAITS : TRAIT_IDS).includes(p.trait as never)
+
+  it('opens a v10 shop with a trait for everyone and nothing else changed', () => {
+    const sim = open(v10)
+    expect(sim.staff.length).toBe(v10.staff.length)
+    sim.staff.forEach((s, i) => {
+      const old = v10.staff[i]
+      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.tiers, s.study]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, old.tiers, old.study])
+      expect(fits(s)).toBe(true)
+    })
+    expect(sim.candidates.length).toBe(v10.candidates.length)
+    sim.candidates.forEach((c, i) => {
+      expect([c.stats, c.tiers]).toEqual([v10.candidates[i].stats, v10.candidates[i].tiers])
+      expect(fits(c)).toBe(true)
+    })
+  })
+
+  it('draws the same traits every time the same save is opened', () => {
+    const a = open(v10)
+    const b = open(v10)
+    expect(a.staff.map(s => s.trait)).toEqual(b.staff.map(s => s.trait))
+    expect(a.candidates.map(c => c.trait)).toEqual(b.candidates.map(c => c.trait))
+    a.advance(30_000)
+    b.advance(30_000)
+    expect(a.toSave()).toEqual(b.toSave())
+  })
+
+  it('opens every older save with a fitting trait on everyone', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10]) {
+      const sim = open(raw)
+      expect([...sim.staff, ...sim.candidates].every(fits)).toBe(true)
+    }
+  })
+
+  it('keeps traits through a round trip', () => {
+    const sim = open(v10)
+    const copy = viaJson(sim)
+    expect(copy.staff.map(s => s.trait)).toEqual(sim.staff.map(s => s.trait))
+    expect(copy.candidates.map(c => c.trait)).toEqual(sim.candidates.map(c => c.trait))
+  })
+
+  it('redraws a damaged trait', () => {
+    const raw = structuredClone(v10) as any
+    const tech = raw.staff.find((s: any) => s.role === 'technician')
+    const desk = raw.staff.find((s: any) => s.role === 'receptionist')
+    tech.trait = 'grumpy'
+    desk.trait = 'deft'
+    delete raw.candidates[0].trait
+    const sim = open(raw)
+    expect(TRAIT_IDS).toContain(sim.staff.find(s => s.id === tech.id)!.trait)
+    expect(RECEPTIONIST_TRAITS).toContain(sim.staff.find(s => s.id === desk.id)!.trait)
+    expect(TRAIT_IDS).toContain(sim.candidates[0].trait)
   })
 })

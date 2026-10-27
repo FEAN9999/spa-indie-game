@@ -44,6 +44,11 @@ export interface Study {
   paid: number
 }
 
+export type TraitId = 'deft' | 'quick' | 'jolly' | 'diligent' | 'calm' | 'studious'
+export const TRAIT_IDS: readonly TraitId[] = ['deft', 'quick', 'jolly', 'diligent', 'calm', 'studious']
+/** The personalities a receptionist can have. */
+export const RECEPTIONIST_TRAITS: readonly TraitId[] = ['jolly', 'diligent', 'studious']
+
 /** Someone who can be hired. */
 export interface Candidate {
   name: string
@@ -53,6 +58,7 @@ export interface Candidate {
   wage: number
   rare: boolean
   tiers: Tiers
+  trait: TraitId
 }
 
 export type StaffTask =
@@ -87,6 +93,12 @@ export function drawTiers(rng: Rng, role: StaffRole, tier: number, pool: readonl
   return tiers
 }
 
+/** One personality picked evenly from the ones `role` can have. */
+export function drawTrait(rng: Rng, role: StaffRole): TraitId {
+  const list = role === 'receptionist' ? RECEPTIONIST_TRAITS : TRAIT_IDS
+  return list[Math.floor(rng() * list.length)]
+}
+
 /** The courses `s` can take: a technician's open services below MAX_TIER, a receptionist's Tiếp khách until 5 dots. */
 export function courses(s: Staff, open: readonly ServiceId[]): Course[] {
   if (s.role === 'receptionist') return s.stats.friendly < 5 ? ['greet'] : []
@@ -106,7 +118,8 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
   const free = STAFF_NAMES.filter(n => !taken.includes(n))
   const name = free[Math.floor(rng() * free.length)]
   const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, SERVICE_IDS)
-  return { name, role, look, stats, wage: wageFor(stats), rare, tiers }
+  const trait = drawTrait(rng, role)
+  return { name, role, look, stats, wage: wageFor(stats), rare, tiers, trait }
 }
 
 /** Time at the bed, in ms. */

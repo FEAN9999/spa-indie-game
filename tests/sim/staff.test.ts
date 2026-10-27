@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS } from '../../src/sim/services'
-import { courses, drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, serviceMs, staffStars, starSkill, tipFactor, tuition, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
+import { SpaSim } from '../../src/sim/spa'
+import { courses, drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -141,5 +142,27 @@ describe('courses', () => {
   it('prices a course by the step it climbs', () => {
     expect([0, 1, 2].map(tier => tuition(tech({ mask: tier }), 'mask'))).toEqual([100000, 200000, 400000])
     expect([1, 2, 3, 4].map(f => tuition(reception(f), 'greet'))).toEqual([50000, 100000, 200000, 400000])
+  })
+})
+
+describe('personalities', () => {
+  it('draws one of six traits for a technician and one of three for a receptionist', () => {
+    const rng = createRng(11)
+    const list = Array.from({ length: 400 }, () => makeCandidate(rng, []))
+    const techs = list.filter(c => c.role === 'technician').map(c => c.trait)
+    const desk = list.filter(c => c.role === 'receptionist').map(c => c.trait)
+    expect(techs.every(t => TRAIT_IDS.includes(t))).toBe(true)
+    expect(new Set(techs).size).toBe(6)
+    expect(desk.every(t => RECEPTIONIST_TRAITS.includes(t))).toBe(true)
+    expect(new Set(desk).size).toBe(3)
+  })
+
+  it('hires a person with the trait they had as a candidate', () => {
+    const sim = new SpaSim({ rng: createRng(3), autoSpawn: false })
+    sim.startDay()
+    sim.startDay()
+    const want = sim.candidates[0].trait
+    expect(sim.hire(0)).toBeNull()
+    expect(sim.staff[0].trait).toBe(want)
   })
 })

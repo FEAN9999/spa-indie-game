@@ -100,6 +100,7 @@ export function hire(h: CrewHost, index: number): HireProblem | null {
     wage: c.wage,
     rare: c.rare,
     tiers: { ...c.tiers },
+    trait: c.trait,
     id: h.takeStaffId(),
     level: 1,
     xp: 0,
