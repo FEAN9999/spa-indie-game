@@ -24,7 +24,7 @@ import {
   VIP_REVIEWS,
 } from '../config'
 import { t } from '../strings/vi'
-import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
+import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
@@ -40,6 +40,7 @@ import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, ty
 import { createRng, randomLook, type Rng } from './rng'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
+import { clearStairs } from './stairs'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
@@ -61,7 +62,7 @@ const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income
 /** Moves along the path at `speed` tiles per second; facing follows the movement. A step onto another floor is a climb: they stand on the foot for STAIRS_MS, then appear on the other foot. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
   let budget = (speed * dtMs) / 1000
-  if (m.path.length === 0 || floorOf(m.path[0].y) === floorOf(m.pos.y)) m.climbMs = 0
+  if (m.climbMs !== undefined && (m.path.length === 0 || floorOf(m.path[0].y) === floorOf(m.pos.y))) delete m.climbMs
   while (budget > 0 && m.path.length > 0) {
     const target = m.path[0]
     if (floorOf(target.y) !== floorOf(m.pos.y)) {
@@ -69,7 +70,7 @@ function moveAlong(m: Mover, speed: number, dtMs: number): void {
       m.climbMs = (m.climbMs ?? 0) + (budget / speed) * 1000
       if (m.climbMs < STAIRS_MS) return
       budget = ((m.climbMs - STAIRS_MS) / 1000) * speed
-      m.climbMs = 0
+      delete m.climbMs
       m.pos = { x: target.x, y: target.y }
       m.path.shift()
       continue
@@ -479,10 +480,14 @@ export class SpaSim {
     const sim = new SpaSim(options)
     const d = structuredClone(data)
     // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
-    sim.floors = d.floors ?? 1
+    sim.floors = d.floors
     const shell = parseLayout(sim.shell)
+    // an older shop may have furniture where the stairs now are: it goes first, with a refund
+    const note = d.clearStairs ? clearStairs(d, shell) : null
     const stray = d.items.find(i => offFloor(shell, i, sim.floors))
     if (stray) throw new SaveError(`item ${stray.id} is off the floor`)
+    const onFoot = d.items.find(i => claimed(i).some(t => shell.feet.some(f => tileEq(f, t))))
+    if (onFoot) throw new SaveError(`item ${onFoot.id} is on the foot of the stairs`)
     sim.items = d.items
     // never hand out an id a damaged save already uses
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
@@ -523,6 +528,11 @@ export class SpaSim {
     sim.nextStaffId = Math.max(d.nextStaffId, ...d.staff.map(s => s.id + 1))
     sim.repickLostServices()
     repairAfterLoad(sim.crew)
+    if (note) {
+      sim.settleCharacters()
+      for (const id of note.leavers) sim.startLeaving(sim.customers.find(c => c.id === id)!)
+      if (note.count > 0 || note.rebuy) sim.emit({ type: 'stairsCleared', count: note.count, refund: note.refund, rebuy: note.rebuy })
+    }
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })

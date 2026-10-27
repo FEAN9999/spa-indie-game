@@ -1,13 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import { CHAT_MS_MAX, DAY_START_MIN, LATE_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../src/config'
 import { tipFor } from '../../src/sim/economy'
+import { placeProblem } from '../../src/sim/build'
+import { FLOOR_PRICE, OWNER_START } from '../../src/config'
 import { DEFAULT_ITEMS } from '../../src/sim/items'
+import { parseLayout } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { BASIC_SERVICES } from '../../src/sim/services'
+import { floorOf, towerOf } from '../../src/sim/floors'
+import { shellOf } from '../../src/sim/items'
+import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
 import { noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS } from '../../src/sim/staff'
 import { emptyVipBook } from '../../src/sim/vips'
@@ -24,6 +30,7 @@ import v9 from '../fixtures/save-v9.json'
 import v10 from '../fixtures/save-v10.json'
 import v11 from '../fixtures/save-v11.json'
 import v12 from '../fixtures/save-v12.json'
+import v13 from '../fixtures/save-v13.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -85,12 +92,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([13, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([14, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(13)
+    expect(sim.toSave().v).toBe(14)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -222,10 +229,11 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 13', () => {
+  it('still leaves alone only saves newer than version 14', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 13 }).v).toBe(13)
-    expect(() => parseSave({ ...good, v: 14 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 14 }).v).toBe(14)
+    expect(() => parseSave({ ...good, v: 15 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -465,7 +473,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(13)
+    expect(copy.toSave().v).toBe(14)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -925,5 +933,134 @@ describe('the recipe book', () => {
   it('turns a non-object recipes into an empty book', () => {
     for (const bad of [undefined, null, 5, 'steam', [1]]) expect(withRecipes(bad)).toEqual(emptyRecipes())
     expect(withRecipes({ steam: 7 })).toEqual(emptyRecipes())
+  })
+})
+
+describe('save version 14', () => {
+  const upstairs = () => {
+    const sim = new SpaSim({ rng: createRng(5), autoSpawn: false })
+    sim.day = 6
+    sim.money = FLOOR_PRICE[2] + 1_000_000
+    expect(sim.openFloor(2)).toBeNull()
+    sim.drainEvents()
+    return sim
+  }
+  /** A v13-shaped save of a fresh shop: no floors, and the stairs spot still to clear. */
+  const old = (): any => {
+    const raw: any = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    delete raw.floors
+    raw.v = 13
+    return raw
+  }
+  const stairsEvents = (sim: SpaSim) => sim.drainEvents().filter(e => e.type === 'stairsCleared')
+
+  it('keeps the floors and a bed on floor 2 through a round trip', () => {
+    const sim = upstairs()
+    expect(sim.buy('bed', 2, 20, false)).toBeNull()
+    const copy = viaJson(sim)
+    expect(copy.floors).toBe(2)
+    expect(copy.items).toEqual(sim.items)
+  })
+
+  it('keeps a climb in progress and finishes it on time', () => {
+    const sim = upstairs()
+    Object.assign(sim.owner, { pos: { x: 11, y: 10 }, path: [{ x: 11, y: 28 }, { x: 11, y: 29 }], climbMs: 400 })
+    const copy = viaJson(sim)
+    expect(copy.owner.climbMs).toBe(400)
+    sim.advance(700)
+    copy.advance(700)
+    expect(floorOf(copy.owner.pos.y)).toBe(2)
+    expect(copy.owner).toEqual(sim.owner)
+  })
+
+  it('writes no climbMs for someone who is not climbing', () => {
+    const saved = busyShop().toSave()
+    for (const m of [saved.owner, ...saved.customers, ...saved.staff]) expect('climbMs' in m).toBe(false)
+  })
+
+  it('drops a climbMs that is not a number from zero up', () => {
+    const raw = JSON.parse(JSON.stringify(busyShop().toSave()))
+    raw.owner.climbMs = -5
+    raw.customers[0].climbMs = 'x'
+    raw.customers[1].climbMs = 300
+    const parsed = parseSave(raw)
+    expect('climbMs' in parsed.owner).toBe(false)
+    expect('climbMs' in parsed.customers[0]).toBe(false)
+    expect(parsed.customers[1].climbMs).toBe(300)
+  })
+
+  it('opens a floors count out of range with one floor, and then a floor-2 item is an error', () => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    expect(open({ ...raw, floors: 7 }).floors).toBe(1)
+    const item = { id: 90, kind: 'plant', x: 4, y: 20, flip: false }
+    expect(() => open({ ...raw, floors: 7, items: [...raw.items, item], nextItemId: 91 })).toThrow(SaveError)
+  })
+
+  it('refuses a v14 item on the stairs or on a foot', () => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    for (const [x, y] of [[11, 8], [11, 10]]) expect(() => open({ ...raw, items: [...raw.items, { id: 90, kind: 'plant', x, y, flip: false }], nextItemId: 91 })).toThrow(SaveError)
+  })
+
+  it('clears the stairs spot of a v13 shop and refunds it', () => {
+    const sim = open(v13)
+    expect(sim.items.some(i => i.id === 14 || i.id === 15)).toBe(false)
+    expect(sim.money).toBe(v13.money + 450_000)
+    expect(sim.book.gifts).toEqual(['vyPainting'])
+    const c = sim.customers.find(x => x.id === 1)!
+    expect(c.state).toBe('leaving')
+    expect([c.stationId, c.seat, sim.servingCustomerId]).toEqual([null, null, null])
+    expect(sim.owner.task).toBeNull()
+    expect([sim.stats.walkedAway, sim.stats.angry]).toEqual([v13.stats.walkedAway, v13.stats.angry])
+    expect(sim.reviews).toEqual(v13.reviews)
+    expect(sim.grid.cells[sim.owner.pos.y][sim.owner.pos.x]).toBe('floor')
+    const events = sim.drainEvents()
+    expect(events.some(e => e.type === 'serviceReady')).toBe(false)
+    expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, rebuy: null }])
+    const saved = sim.toSave()
+    expect(saved.v).toBe(14)
+    expect('clearStairs' in saved).toBe(false)
+    expect(saved.floors).toBe(1)
+  })
+
+  it('opens every older fixture with one floor and the same items', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12]) {
+      const sim = open(raw)
+      expect(sim.floors).toBe(1)
+      expect(sim.items).toEqual(parseSave(structuredClone(raw)).items)
+      expect(stairsEvents(sim)).toEqual([])
+    }
+  })
+
+  it('clears a bed by its work tile alone', () => {
+    const raw = old()
+    raw.items.push({ id: 100, kind: 'massageBed', x: 7, y: 8, flip: false }, { id: 101, kind: 'massageBed', x: 10, y: 9, flip: false })
+    raw.nextItemId = 102
+    const sim = open(raw)
+    expect(sim.items.map(i => i.id)).toContain(100)
+    expect(sim.items.map(i => i.id)).not.toContain(101)
+    expect(sim.money).toBe(raw.money + 450_000)
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, rebuy: null }])
+  })
+
+  it('moves the last shampoo bed instead of selling it, and sends its customer home quietly', () => {
+    const raw = old()
+    raw.items = raw.items.filter((i: any) => i.kind !== 'bed')
+    raw.items.push({ id: 100, kind: 'bed', x: 11, y: 7, flip: true })
+    raw.nextItemId = 101
+    const c = { ...(v13.customers[0] as any), id: 1, stationId: 100, service: 'shampoo' }
+    Object.assign(raw, { customers: [c], servingCustomerId: 1, nextId: 2 })
+    raw.owner.task = { kind: 'serve', customerId: 1, stationId: 100 }
+    const sim = open(raw)
+    const bed = sim.items.find(i => i.kind === 'bed')!
+    expect(bed.id).toBe(100)
+    const others = sim.items.filter(i => i !== bed)
+    expect(placeProblem(parseLayout(towerOf(shellOf(SPA_LAYOUT_1A))), others, bed, { door: sim.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
+    expect(sim.money).toBe(raw.money)
+    expect(stairsEvents(sim)).toEqual([])
+    expect(sim.customers[0].state).toBe('leaving')
+    expect(sim.customers[0].stationId).toBeNull()
+    expect(sim.stats.walkedAway).toBe(raw.stats.walkedAway)
+    expect(sim.reviews).toEqual(raw.reviews)
+    expect(sim.owner.task).toBeNull()
   })
 })

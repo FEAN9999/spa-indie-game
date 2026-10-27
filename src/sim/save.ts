@@ -1,4 +1,4 @@
-import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
@@ -13,7 +13,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 13
+export const SAVE_VERSION = 14
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -23,8 +23,10 @@ export class SaveTooNewError extends SaveError {}
 export interface SaveData {
   v: number
   day: number
-  /** How many floors are open; missing in a save from before floors. */
+  /** How many floors are open; 1 in a save from before floors. */
   floors: number
+  /** Set by parseSave on a save from before the stairs: fromSave clears the stairs spot of furniture. Never written by toSave. */
+  clearStairs?: true
   /** DayClock.minutes */
   minutes: number
   money: number
@@ -144,7 +146,18 @@ function withHalfWages(old: object): SaveData {
 
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
+  // read before parseVersioned, whose helpers rewrite `v` for the oldest saves
+  const before = isObject(raw) && typeof raw.v === 'number' && raw.v < SAVE_VERSION
   const data = parseVersioned(raw)
+  // floors are a whole number from 1 to MAX_FLOORS, else one; an older save has one, and its stairs spot is cleared on load
+  data.floors = !before && Number.isInteger(data.floors) && data.floors >= 1 && data.floors <= MAX_FLOORS ? data.floors : 1
+  if (before) data.clearStairs = true
+  else delete data.clearStairs
+  // a climb in progress is a time from zero up, else nothing
+  const climb = <T extends { climbMs?: number }>(m: T): T => {
+    if (!(isNumber(m.climbMs) && m.climbMs >= 0)) delete m.climbMs
+    return m
+  }
   // stock counts are whole numbers from zero up, else a full shelf; money spent restocking is a number, else nothing
   const stock: Record<string, unknown> = isObject(data.stock) ? data.stock : {}
   data.stock = Object.fromEntries(STOCK_ITEMS.map(i => [i, Number.isInteger(stock[i]) && (stock[i] as number) >= 0 ? stock[i] : STOCK_START])) as Record<StockItem, number>
@@ -182,6 +195,9 @@ export function parseSave(raw: unknown): SaveData {
   data.recipes = repairRecipes(data.recipes, data.services)
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
   data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
+  climb(data.owner)
+  data.customers.forEach(climb)
+  data.staff.forEach(climb)
   return data
 }
 
@@ -298,7 +314,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
