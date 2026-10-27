@@ -192,4 +192,16 @@ describe('staff per floor', () => {
       expect(tileEq(home, OWNER_START)).toBe(false)
     }
   })
+
+  it('gives everyone the same home with floor 2 open as with it closed', () => {
+    const sim = newSim()
+    sim.day = 6
+    sim.money = 8_000_000
+    hireStaff(sim, 'receptionist')
+    for (let i = 0; i < 3; i++) hireStaff(sim, 'technician')
+    const homes = () => sim.staff.map(s => homeOf({ sim } as CrewHost, s))
+    const closed = homes()
+    expect(sim.openFloor(2)).toBeNull()
+    expect(homes()).toEqual(closed)
+  })
 })

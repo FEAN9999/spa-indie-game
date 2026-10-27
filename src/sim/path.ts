@@ -11,8 +11,13 @@ export const DIRS = [
 
 /** The four steps from `t`, then the far end of every link at `t`. */
 export function neighbours(grid: Grid, t: Tile): Tile[] {
-  const far = grid.links.flatMap(([a, b]) => (tileEq(a, t) ? [b] : tileEq(b, t) ? [a] : []))
-  return [...DIRS.map(d => ({ x: t.x + d.x, y: t.y + d.y })), ...far]
+  const out: Tile[] = []
+  for (const d of DIRS) out.push({ x: t.x + d.x, y: t.y + d.y })
+  for (const [a, b] of grid.links) {
+    if (tileEq(a, t)) out.push(b)
+    else if (tileEq(b, t)) out.push(a)
+  }
+  return out
 }
 
 /**

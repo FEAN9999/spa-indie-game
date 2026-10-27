@@ -2,7 +2,7 @@ import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MI
 import { flood } from './build'
 import type { Stars } from './economy'
 import { floorOf } from './floors'
-import { besideSeat, isWalkable, manhattan, tileEq, tileOf } from './grid'
+import { besideSeat, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { footprint } from './items'
 import { findPath } from './path'
 import type { Rng } from './rng'
@@ -23,9 +23,20 @@ export interface CrewHost {
   takeStaffId(): number
 }
 
+/** groundFloor's answer for each laid-out room; a room is laid out afresh, never changed in place, so it stays right. */
+const groundFloors = new WeakMap<Grid, Tile[]>()
+
+/** The walkable tiles of floor 1, nearest the owner's start first; floor 2 is only reached through floor 1's foot, so leaving it out keeps the order. */
+function groundFloor({ sim }: CrewHost): Tile[] {
+  let tiles = groundFloors.get(sim.grid)
+  if (!tiles) groundFloors.set(sim.grid, (tiles = flood(sim.grid, OWNER_START, t => floorOf(t.y) === 1 && isWalkable(sim.grid, t))))
+  return tiles
+}
+
 /** Where the receptionist stands: the first floor tile beside the desk, nearest the owner's start; the start itself if there is none. */
-export function receptionSpot({ sim }: CrewHost): Tile {
-  const spot = flood(sim.grid, OWNER_START, t => isWalkable(sim.grid, t)).find(
+export function receptionSpot(h: CrewHost): Tile {
+  const { sim } = h
+  const spot = groundFloor(h).find(
     t => !tileEq(t, OWNER_START) && sim.grid.desks.some(d => manhattan(d, t) === 1),
   )
   return spot ?? { ...OWNER_START }
@@ -41,7 +52,7 @@ export function homeOf(h: CrewHost, s: Staff): Tile {
   const spot = receptionSpot(h)
   if (s.role === 'receptionist') return spot
   const k = sim.staff.filter(x => x.role === 'technician').indexOf(s)
-  const floor = flood(sim.grid, OWNER_START, t => isWalkable(sim.grid, t)).filter(t => floorOf(t.y) === 1 && !sim.grid.feet.some(f => tileEq(f, t)))
+  const floor = groundFloor(h).filter(t => !sim.grid.feet.some(f => tileEq(f, t)))
   const homes: Tile[] = [OWNER_START, spot]
   for (let i = 0; i <= k; i++) {
     const next = floor.find(t => !homes.some(home => home.x === t.x && Math.abs(home.y - t.y) <= 1))
