@@ -1,7 +1,7 @@
 # Đợt 2, phần 3: dịch vụ mới và pha công thức
 
 - Ngày: 2026-10-27
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-27)
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 5.9 và mục 6 (Đợt 2). Phần 1 xem `2026-10-27-dot-2-khach-design.md`, phần 2 xem `2026-10-27-dot-2-nhan-vien-design.md`.
 - Bản phác bấm thử (anh đã xem và chịu): https://claude.ai/artifact/NVKrBLM9G7huu7fLWH912X
 
