@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { offFloor } from '../../src/sim/build'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
@@ -77,7 +78,7 @@ describe('grid', () => {
 
   it('refuses a mud tub whose work tile would be on the wall', () => {
     const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
-    expect(offFloor(shell, { id: 20, kind: 'mudTub', x: 10, y: 8, flip: false })).toBe(true)
+    expect(offFloor(shell, { id: 20, kind: 'mudTub', x: 10, y: 8, flip: false }, 1)).toBe(true)
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
     expect(sim.canPlace('mudTub', 10, 8, false)).toBe('overlap')
     expect(sim.canPlace('mudTub', 8, 8, false)).toBeNull()
@@ -85,7 +86,7 @@ describe('grid', () => {
 
   it('refuses a steam tent whose work tile would be on the wall', () => {
     const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
-    expect(offFloor(shell, { id: 20, kind: 'steamTent', x: 10, y: 8, flip: false })).toBe(true)
+    expect(offFloor(shell, { id: 20, kind: 'steamTent', x: 10, y: 8, flip: false }, 1)).toBe(true)
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
     expect(sim.canPlace('steamTent', 10, 8, false)).toBe('overlap')
     expect(sim.canPlace('steamTent', 8, 8, false)).toBeNull()
@@ -105,5 +106,26 @@ describe('grid', () => {
     expect(beside(seat)).toBe(false)
     expect(beside({ x: seat.x, y: seat.y + 2 })).toBe(false)
     expect(beside({ x: 0, y: 0 })).toBe(false)
+  })
+})
+
+describe('stairs', () => {
+  const tower = towerOf(shellOf(SPA_LAYOUT_1A))
+
+  it('finds the stairs and the foot of each floor', () => {
+    const g = parseLayout(tower)
+    expect(g.stairs).toHaveLength(9)
+    expect(g.feet).toEqual([
+      { x: 11, y: 10 },
+      { x: 11, y: 28 },
+      { x: 11, y: 46 },
+    ])
+    expect(isWalkable(g, { x: 11, y: 8 })).toBe(false)
+    expect(isWalkable(g, { x: 11, y: 10 })).toBe(true)
+  })
+
+  it('links the feet of the open floors', () => {
+    expect(buildGrid(tower, [], 1).links).toEqual([])
+    expect(buildGrid(tower, [], 2).links).toEqual([[{ x: 11, y: 10 }, { x: 11, y: 28 }]])
   })
 })

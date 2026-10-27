@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { nearestSpot, PROBLEM_TEXT } from '../../src/sim/build'
-import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
-import type { ItemKind } from '../../src/sim/items'
+import { nearestSpot, placeProblem, PROBLEM_TEXT } from '../../src/sim/build'
+import { OWNER_START } from '../../src/config'
+import { towerOf } from '../../src/sim/floors'
+import { isWalkable, manhattan, parseLayout, tileEq } from '../../src/sim/grid'
+import { DEFAULT_ITEMS, shellOf, type ItemKind } from '../../src/sim/items'
+import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { formatMoney } from '../../src/strings/format'
@@ -189,6 +192,7 @@ describe('building the shop', () => {
       busy: 'Đang có khách',
       lastBed: 'Tiệm cần ít nhất một giường gội',
       lastSeat: 'Tiệm cần ít nhất một ghế chờ',
+      seatFloor: 'Ghế chờ chỉ đặt ở tầng 1',
       money: 'Còn thiếu 200.000 đ',
       gift: 'Quà không bán được',
     })
@@ -284,5 +288,29 @@ describe('where a new piece starts', () => {
     expect(nearestSpot({ cols: 13, rows: 18 }, centre, t => (tried.push(t), false))).toBeNull()
     expect(tried).toHaveLength(13 * 18)
     expect(new Set(tried.map(t => `${t.x},${t.y}`)).size).toBe(13 * 18)
+  })
+})
+
+describe('placeProblem on the tall grid', () => {
+  const shell = parseLayout(towerOf(shellOf(SPA_LAYOUT_1A)))
+  const others = DEFAULT_ITEMS
+  const extras = { door: shell.door, ownerStart: OWNER_START }
+  const problem = (kind: ItemKind, x: number, y: number, floors: number, flip = false) =>
+    placeProblem(shell, others, { id: 99, kind, x, y, flip }, { ...extras, floors })
+
+  it('keeps the stairs and their feet clear on every floor', () => {
+    expect(problem('plant', 11, 8, 3)).toBe('overlap')
+    expect(problem('plant', 11, 10, 3)).toBe('overlap')
+    expect(problem('plant', 11, 28, 3)).toBe('overlap')
+    expect(problem('massageBed', 11, 7, 3, true)).toBe('overlap')
+  })
+
+  it('keeps seats on floor 1 and off floors that are locked', () => {
+    expect(problem('bench', 2, 25, 2)).toBe('seatFloor')
+    expect(problem('plant', 5, 25, 1)).toBe('overlap')
+  })
+
+  it('refuses what would shut the floor-1 foot in', () => {
+    expect(problem('plant', 10, 10, 1)).toBe('blocksPath')
   })
 })

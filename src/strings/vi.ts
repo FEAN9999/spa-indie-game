@@ -177,6 +177,7 @@ export const vi = {
   problemBusy: 'Đang có khách',
   problemLastBed: 'Tiệm cần ít nhất một giường gội',
   problemLastSeat: 'Tiệm cần ít nhất một ghế chờ',
+  problemSeatFloor: 'Ghế chờ chỉ đặt ở tầng 1',
   problemMoney: 'Còn thiếu {money}',
   quickBuyBed: 'Mua giường gội {money}?',
   buy: 'Mua',

@@ -1,8 +1,9 @@
+import { FLOOR_ROWS } from '../config'
 import { BED_SLOTS, bedTile, footprint, ITEMS, seatTiles, workTile } from './items'
 import type { Item } from './items'
 import type { Tile, Vec } from './types'
 
-export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'bed' | 'bedEnd' | 'work' | 'desk' | 'plant' | 'decor'
+export type Cell = 'wall' | 'floor' | 'door' | 'seat' | 'bed' | 'bedEnd' | 'work' | 'desk' | 'plant' | 'decor' | 'stairs'
 
 export type DecorKind = 'screen' | 'cabinet' | 'shelf' | 'lotus' | 'vase' | 'tea' | 'slippers' | 'planter'
 
@@ -21,6 +22,11 @@ export interface Grid {
   /** Head tile of each empty bed slot; see bedSlotAt. */
   bedSlots: Tile[]
   decor: Record<DecorKind, Tile[]>
+  stairs: Tile[]
+  /** Per floor, from floor 1: the tile under that floor's lowest stairs cell, where the stairs are entered. */
+  feet: Tile[]
+  /** Pairs of tiles a walker steps between, in either direction. */
+  links: [Tile, Tile][]
 }
 
 /** Tiles in one row with consecutive x. */
@@ -41,6 +47,7 @@ const LEGEND: Record<string, Cell> = {
   E: 'floor',
   R: 'desk',
   P: 'plant',
+  U: 'stairs',
 }
 
 const DECOR: Record<string, DecorKind> = {
@@ -71,6 +78,9 @@ export function parseLayout(rows: string[]): Grid {
     plants: [],
     bedSlots: [],
     decor,
+    stairs: [],
+    feet: [],
+    links: [],
   }
   rows.forEach((row, y) => {
     grid.cells.push(
@@ -90,16 +100,20 @@ export function parseLayout(rows: string[]): Grid {
         else if (cell === 'work') grid.works.push(t)
         else if (cell === 'desk') grid.desks.push(t)
         else if (cell === 'plant') grid.plants.push(t)
+        else if (cell === 'stairs') grid.stairs.push(t)
         return cell
       }),
     )
   })
+  // a floor's foot is the tile under its lowest stairs cell; stairs come in reading order, so the last one on a floor is the lowest
+  for (const s of grid.stairs) grid.feet[Math.floor(s.y / FLOOR_ROWS)] = { x: s.x, y: s.y + 1 }
   return grid
 }
 
-/** Builds the floor grid from a bare shell, as layout rows or already parsed, plus the items standing on it. */
-export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
+/** Builds the grid from a bare shell, as layout rows or already parsed, plus the items standing on it; the feet of the first `floors` floors are linked. */
+export function buildGrid(shell: string[] | Grid, items: Item[], floors = 1): Grid {
   const grid = Array.isArray(shell) ? parseLayout(shell) : structuredClone(shell)
+  grid.links = grid.feet.slice(0, floors).flatMap((f, k) => (k > 0 ? [[grid.feet[k - 1], f] as [Tile, Tile]] : []))
   grid.bedSlots = BED_SLOTS
   const sorted = [...items].sort((a, b) => a.id - b.id)
   for (const item of sorted) {

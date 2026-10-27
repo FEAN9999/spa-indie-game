@@ -179,7 +179,17 @@ export const AUTOSAVE_MS = 10_000
 export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json when the player comes back
 
 /** The day each feature button opens. */
-export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5 } as const
+export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6 } as const
+
+// Floors: the shop is one tall grid of three floors stacked, each this many rows
+export const FLOOR_ROWS = 18
+export const MAX_FLOORS = 3
+/** What opening floor 2 and the rooftop costs. */
+export const FLOOR_PRICE: Record<number, number> = { 2: 2_000_000, 3: 4_000_000 }
+/** How long someone spends on the stairs between two floors. */
+export const STAIRS_MS = 1000
+/** Each floor beyond the first lets the shop hire this many more technicians. */
+export const STAFF_PER_FLOOR = 2
 
 /** Beauty of the default shop, the beauty where the speed-up tops out, and the most it can shorten the arrival gap. */
 export const BEAUTY_BASE = 21

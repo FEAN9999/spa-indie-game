@@ -461,7 +461,7 @@ export class SpaSim {
     const d = structuredClone(data)
     // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
     const shell = parseLayout(sim.shell)
-    const stray = d.items.find(i => offFloor(shell, i))
+    const stray = d.items.find(i => offFloor(shell, i, 1))
     if (stray) throw new SaveError(`item ${stray.id} is off the floor`)
     sim.items = d.items
     // never hand out an id a damaged save already uses
@@ -552,7 +552,7 @@ export class SpaSim {
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number): BuildProblem | null {
     const others = this.items.filter(i => i.id !== movingId)
     const item = { id: movingId ?? this.nextItemId, kind, x, y, flip }
-    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START })
+    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START, floors: 1 })
   }
 
   buy(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
