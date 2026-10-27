@@ -23,6 +23,8 @@ export class SaveTooNewError extends SaveError {}
 export interface SaveData {
   v: number
   day: number
+  /** How many floors are open; missing in a save from before floors. */
+  floors: number
   /** DayClock.minutes */
   minutes: number
   money: number

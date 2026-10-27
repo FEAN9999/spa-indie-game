@@ -4,6 +4,7 @@ import {
   ARRIVE_MS,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
+  FLOOR_PRICE,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -14,6 +15,7 @@ import {
   RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
   RESTOCK_PRICE,
+  STAIRS_MS,
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
@@ -29,6 +31,7 @@ import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWage
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { floorOf, towerOf } from './floors'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
@@ -46,6 +49,8 @@ import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Sea
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
+/** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
+export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
 /** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
@@ -53,11 +58,22 @@ export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; ri
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0 })
 
-/** Moves along the path at `speed` tiles per second; facing follows the movement. */
+/** Moves along the path at `speed` tiles per second; facing follows the movement. A step onto another floor is a climb: they stand on the foot for STAIRS_MS, then appear on the other foot. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
   let budget = (speed * dtMs) / 1000
+  if (m.path.length === 0 || floorOf(m.path[0].y) === floorOf(m.pos.y)) m.climbMs = 0
   while (budget > 0 && m.path.length > 0) {
     const target = m.path[0]
+    if (floorOf(target.y) !== floorOf(m.pos.y)) {
+      m.facing = 'up'
+      m.climbMs = (m.climbMs ?? 0) + (budget / speed) * 1000
+      if (m.climbMs < STAIRS_MS) return
+      budget = ((m.climbMs - STAIRS_MS) / 1000) * speed
+      m.climbMs = 0
+      m.pos = { x: target.x, y: target.y }
+      m.path.shift()
+      continue
+    }
     const dx = target.x - m.pos.x
     const dy = target.y - m.pos.y
     const dist = Math.hypot(dx, dy)
@@ -116,6 +132,8 @@ export class SpaSim {
   private readonly autoSpawn: boolean
   /** The layout without its furniture: walls, door, screen and desk. */
   private shell: string[]
+  /** How many floors are open; the shell always holds every floor the layout has. */
+  floors = 1
   private nextItemId: number
   private events: SimEvent[] = []
   private nextId = 1
@@ -134,7 +152,7 @@ export class SpaSim {
       payFor: (c, station, stars, technician) => this.payFor(c, station, stars, technician),
       takeStaffId: () => this.nextStaffId++,
     }
-    this.shell = shellOf(layout)
+    this.shell = towerOf(shellOf(layout))
     this.items = itemsFromLayout(layout)
     this.nextItemId = this.items.length + 1
     this.rebuildRoom()
@@ -427,6 +445,7 @@ export class SpaSim {
     return structuredClone({
       v: SAVE_VERSION,
       day: this.day,
+      floors: this.floors,
       minutes: this.clock.minutes,
       money: this.money,
       reviews: this.reviews.slice(-RATING_WINDOW),
@@ -460,8 +479,9 @@ export class SpaSim {
     const sim = new SpaSim(options)
     const d = structuredClone(data)
     // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
+    sim.floors = d.floors ?? 1
     const shell = parseLayout(sim.shell)
-    const stray = d.items.find(i => offFloor(shell, i, 1))
+    const stray = d.items.find(i => offFloor(shell, i, sim.floors))
     if (stray) throw new SaveError(`item ${stray.id} is off the floor`)
     sim.items = d.items
     // never hand out an id a damaged save already uses
@@ -548,11 +568,37 @@ export class SpaSim {
     return study(this.crew, staffId, course)
   }
 
+  /** How many floors the shop's layout has: one, or every floor of the tower when it has stairs. */
+  maxFloors(): number {
+    return Math.max(1, this.grid.feet.length)
+  }
+
+  /** What stops floor `floor` being opened now, or null. */
+  floorProblem(floor: number): FloorProblem | null {
+    if (floor <= this.floors || floor > this.maxFloors()) return 'max'
+    if (this.day < UNLOCK_DAY.floors) return 'day'
+    if (floor > this.floors + 1) return 'order'
+    if (!doorReach(this.grid, this.grid.door)(this.grid.feet[floor - 2])) return 'blocked'
+    if (this.money < FLOOR_PRICE[floor]) return 'money'
+    return null
+  }
+
+  /** Takes the price and opens the floor. */
+  openFloor(floor: number): FloorProblem | null {
+    const problem = this.floorProblem(floor)
+    if (problem) return problem
+    this.money -= FLOOR_PRICE[floor]
+    this.floors = floor
+    this.changeRoom()
+    this.emit({ type: 'floorOpened', floor })
+    return null
+  }
+
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number): BuildProblem | null {
     const others = this.items.filter(i => i.id !== movingId)
     const item = { id: movingId ?? this.nextItemId, kind, x, y, flip }
-    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START, floors: 1 })
+    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START, floors: this.floors })
   }
 
   buy(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
@@ -644,10 +690,11 @@ export class SpaSim {
 
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
   private rebuildRoom(): void {
-    this.grid = buildGrid(this.shell, this.items)
+    this.grid = buildGrid(this.shell, this.items, this.floors)
     const byId = [...this.items].sort((a, b) => a.id - b.id)
     this.stations = byId
       .filter(item => ITEMS[item.kind].group === 'bed')
+      .sort((a, b) => floorOf(a.y) - floorOf(b.y))
       .map(item => ({
         id: item.id,
         service: serviceOfBed(item.kind)!,
@@ -655,7 +702,7 @@ export class SpaSim {
         work: workTile(item)!,
         customerId: this.stations.find(s => s.id === item.id)?.customerId ?? null,
       }))
-    this.seats = byId.flatMap(seatTiles).map(tile => ({ tile, customerId: this.seats.find(s => tileEq(s.tile, tile))?.customerId ?? null }))
+    this.seats = byId.filter(item => floorOf(item.y) === 1).flatMap(seatTiles).map(tile => ({ tile, customerId: this.seats.find(s => tileEq(s.tile, tile))?.customerId ?? null }))
   }
 
   /**

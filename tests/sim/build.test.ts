@@ -313,4 +313,11 @@ describe('placeProblem on the tall grid', () => {
   it('refuses what would shut the floor-1 foot in', () => {
     expect(problem('plant', 10, 10, 1)).toBe('blocksPath')
   })
+
+  it('refuses what would shut the foot of an open floor in', () => {
+    const plant = { id: 98, kind: 'plant' as const, x: 10, y: 28, flip: false }
+    const second = { id: 99, kind: 'plant' as const, x: 11, y: 29, flip: false }
+    expect(placeProblem(shell, [...others, plant], second, { ...extras, floors: 2 })).toBe('blocksPath')
+    expect(placeProblem(shell, [...others, plant], second, { ...extras, floors: 1 })).toBe('overlap')
+  })
 })

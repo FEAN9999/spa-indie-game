@@ -10,7 +10,7 @@ import type { Course } from './staff'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -39,6 +39,8 @@ export interface Mover {
   pos: Vec
   facing: Facing
   path: Tile[]
+  /** How long they have been on the stairs, while the next step is a climb; absent or 0 otherwise. */
+  climbMs?: number
 }
 
 export type CustomerState = 'arriving' | 'toSeat' | 'waiting' | 'toStation' | 'inService' | 'leaving' | 'exiting'
@@ -52,6 +54,7 @@ export interface Customer {
   pos: Vec
   facing: Facing
   path: Tile[]
+  climbMs?: number
   patienceMs: number
   /** patienceMs when the customer arrived; the view draws the bar against it. */
   patienceMaxMs: number
@@ -78,6 +81,7 @@ export interface Owner {
   pos: Vec
   facing: Facing
   path: Tile[]
+  climbMs?: number
   task: OwnerTask | null
 }
 
@@ -146,4 +150,6 @@ export type SimEvent =
   | { type: 'bedSlot'; slot: Tile }
   /** Furniture was bought, moved or sold. */
   | { type: 'roomChanged' }
+  /** A floor was bought and opened. */
+  | { type: 'floorOpened'; floor: number }
   | { type: 'dayEnded'; stats: DayStats }

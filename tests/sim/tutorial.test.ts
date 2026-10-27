@@ -230,3 +230,17 @@ describe('the stock hint', () => {
     expect(pickHint(sim)).toEqual({ hint: 'openStock' })
   })
 })
+
+describe('the floor hint', () => {
+  it('points at the build button once a second floor is open, until it is marked', () => {
+    const sim = fresh()
+    sim.markHint('tapCustomer')
+    sim.day = 6
+    sim.money = 2_000_000
+    expect(pickHint(sim)).toBeNull()
+    sim.openFloor(2)
+    expect(pickHint(sim)).toEqual({ hint: 'openFloor' })
+    sim.markHint('openFloor')
+    expect(pickHint(sim)).toBeNull()
+  })
+})

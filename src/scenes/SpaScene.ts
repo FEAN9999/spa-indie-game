@@ -494,6 +494,10 @@ export class SpaScene extends Phaser.Scene {
       this.pointer.show(t('hintBuild'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
       return
     }
+    if (pick?.hint === 'openFloor') {
+      this.pointer.show(t('hintOpenFloor'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
+      return
+    }
     if (pick?.hint === 'openStaff') {
       this.pointer.show(t('hintStaff'), STAFF_PLATE_TOP.x, STAFF_PLATE_TOP.y, 'down')
       return

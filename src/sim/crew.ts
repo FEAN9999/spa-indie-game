@@ -1,6 +1,7 @@
-import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
+import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS, UNLOCK_DAY } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
+import { floorOf } from './floors'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf } from './grid'
 import { footprint } from './items'
 import { findPath } from './path'
@@ -8,7 +9,7 @@ import type { Rng } from './rng'
 import type { HireProblem, SpaSim, StudyProblem } from './spa'
 import type { ServiceId } from './services'
 import { STOCK_USES, type StockItem } from './stock'
-import { courses, gainXp, makeCandidate, restAfter, serviceMs, staffStars, starSkill, tuition, type Course, type Staff } from './staff'
+import { courses, gainXp, makeCandidate, restAfter, serviceMs, staffStars, starSkill, tuition, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, Mover, SimEvent, Station, Tile } from './types'
 
 /** What the staff's behaviour needs from the shop; the sim hands it the private helpers it keeps for itself. */
@@ -40,7 +41,7 @@ export function homeOf(h: CrewHost, s: Staff): Tile {
   const spot = receptionSpot(h)
   if (s.role === 'receptionist') return spot
   const k = sim.staff.filter(x => x.role === 'technician').indexOf(s)
-  const floor = flood(sim.grid, OWNER_START, t => isWalkable(sim.grid, t))
+  const floor = flood(sim.grid, OWNER_START, t => isWalkable(sim.grid, t)).filter(t => floorOf(t.y) === 1 && !sim.grid.feet.some(f => tileEq(f, t)))
   const homes: Tile[] = [OWNER_START, spot]
   for (let i = 0; i <= k; i++) {
     const next = floor.find(t => !homes.some(home => home.x === t.x && Math.abs(home.y - t.y) <= 1))
@@ -79,11 +80,16 @@ export function refreshCandidates({ sim, rng }: CrewHost): void {
   sim.candidatesDay = sim.day
 }
 
+/** How many of the role the shop can hire with `floors` floors open: each floor beyond the first lets in STAFF_PER_FLOOR more technicians. */
+export function staffCap(role: StaffRole, floors: number): number {
+  return STAFF_CAP[role] + (role === 'technician' ? (floors - 1) * STAFF_PER_FLOOR : 0)
+}
+
 /** What stops the candidate being hired now: money is negative, or the role is full (staff who are leaving do not count); null if nothing. */
 export function hireProblem({ sim }: CrewHost, index: number): HireProblem | null {
   if (sim.money < 0) return 'money'
   const c = sim.candidates[index]
-  return sim.staff.filter(s => s.role === c.role && !s.leaving).length >= STAFF_CAP[c.role] ? 'full' : null
+  return sim.staff.filter(s => s.role === c.role && !s.leaving).length >= staffCap(c.role, sim.floors) ? 'full' : null
 }
 
 /** Free and at once: the new person stands on the door tile. */

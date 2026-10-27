@@ -275,6 +275,7 @@ export const vi = {
   serviceJustOpened: 'Đã mở {name}. Mua {bed} ở nút Xây dựng.',
   hintServices: 'Mở thêm dịch vụ mới ở đây',
   hintStock: 'Xem kho và nhập hàng ở đây',
+  hintOpenFloor: 'Bấm Xây dựng để kê giường lên tầng mới',
   tabServices: 'Dịch vụ',
   tabStock: 'Kho',
   stockIntro: 'Mỗi dịch vụ tốn 1 khăn và 1 món riêng. Thiếu tiền vẫn nhập được.',

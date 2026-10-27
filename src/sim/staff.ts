@@ -84,6 +84,7 @@ export interface Staff extends Candidate {
   pos: Vec
   facing: Facing
   path: Tile[]
+  climbMs?: number
   task: StaffTask | null
   /** Customers served or greeted since the last rest. */
   sinceRest: number
