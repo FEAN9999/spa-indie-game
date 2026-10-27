@@ -83,11 +83,12 @@ function stairs(): string {
  * red-and-cream rope with a small cream sign hanging from it.
  */
 function stairsRope(): string {
+  const rope = 'M0.12,0.42 Q0.5,0.62 0.88,0.42'
   const out: string[] = []
   for (const x of [0.12, 0.88]) out.push(rect(x - 0.06, 0.35, 0.12, 0.55, C.wood, `rx="0.03" ${outline(FINE)}`))
-  out.push(`<path d="M0.12,0.42 Q0.5,0.62 0.88,0.42" fill="none" stroke="${C.ink}" stroke-width="0.12" stroke-linecap="round"/>`)
-  out.push(`<path d="M0.12,0.42 Q0.5,0.62 0.88,0.42" fill="none" stroke="${C.cream}" stroke-width="0.08" stroke-linecap="round"/>`)
-  out.push(`<path d="M0.12,0.42 Q0.5,0.62 0.88,0.42" fill="none" stroke="${C.lantern}" stroke-width="0.08" stroke-linecap="butt" stroke-dasharray="0.08 0.08"/>`)
+  out.push(`<path d="${rope}" fill="none" stroke="${C.ink}" stroke-width="0.12" stroke-linecap="round"/>`)
+  out.push(`<path d="${rope}" fill="none" stroke="${C.cream}" stroke-width="0.08" stroke-linecap="round"/>`)
+  out.push(`<path d="${rope}" fill="none" stroke="${C.lantern}" stroke-width="0.08" stroke-linecap="butt" stroke-dasharray="0.08 0.08"/>`)
   out.push(`<path d="M0.5,0.53 V0.62" ${outline(FINE)}/>`, rect(0.38, 0.62, 0.24, 0.17, C.cream, `rx="0.02" ${outline(FINE)}`))
   return svgDoc([0, 0, 1, 1], TILE, out.join(''))
 }

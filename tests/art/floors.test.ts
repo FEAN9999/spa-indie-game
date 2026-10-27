@@ -38,9 +38,4 @@ describe('floor art', () => {
     for (const svg of Object.values(textures))
       for (const colour of svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []) expect(palette).toContain(colour.toLowerCase())
   })
-
-  it('draws a stairs cell in the floor-1 room as floor', () => {
-    const room = roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), []))
-    expect(room).toContain('url(#gachbong)')
-  })
 })

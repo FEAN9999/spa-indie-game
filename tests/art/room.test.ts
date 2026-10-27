@@ -20,3 +20,11 @@ describe('room art', () => {
     expect(roomTexture(parseLayout(SPA_LAYOUT_1A))).toBe(roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])))
   })
 })
+
+describe('room art stairs', () => {
+  it('draws the stairs cells as floor', () => {
+    const noStairs = SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.'))
+    expect(noStairs).not.toEqual(SPA_LAYOUT_1A)
+    expect(roomTexture(parseLayout(SPA_LAYOUT_1A))).toBe(roomTexture(parseLayout(noStairs)))
+  })
+})
