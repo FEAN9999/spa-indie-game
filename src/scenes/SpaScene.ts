@@ -74,6 +74,8 @@ const STAR_TWINKLE_MS = 1200
 /** Steam rises from the steam tent's knob, this many tiles over the tent's bottom edge, and bobs this far on this period. */
 const TENT_KNOB_TILES = 1.94
 const STEAM_BOB = { px: 8, ms: 1600 }
+/** Hot stones lie across a face-down back, this many tiles over the feet. */
+const STONES_TILES = 0.78
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene' }
@@ -92,6 +94,8 @@ interface CustomerSprite {
   vipStar: Phaser.GameObjects.Image
   /** Over the steam tent while the customer lies inside. */
   steam: Phaser.GameObjects.Image
+  /** On the back while the customer is served on the stone bed. */
+  stones: Phaser.GameObjects.Image
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -552,6 +556,7 @@ export class SpaScene extends Phaser.Scene {
         s.heart.destroy()
         s.vipStar.destroy()
         s.steam.destroy()
+        s.stones.destroy()
         this.customers.delete(e.id)
         if (!this.bubbles.has(e.id)) this.bubbleSpots.delete(e.id)
         return
@@ -704,6 +709,7 @@ export class SpaScene extends Phaser.Scene {
       heart: this.add.image(0, 0, 'heart-full').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
       vipStar: this.add.image(0, 0, 'star').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
       steam: this.add.image(0, 0, 'fx-steam').setOrigin(0.5, 1).setVisible(false),
+      stones: this.add.image(0, 0, 'fx-stones').setVisible(false),
       bubble: null,
     })
   }
@@ -723,8 +729,8 @@ export class SpaScene extends Phaser.Scene {
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
-    // face down on the massage bed, face up anywhere else
-    s.view.setFacing(lying ? (c.service === 'massage' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
+    // face down on the massage and stone beds, face up anywhere else
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // lying in a steam tent, the customer is out of sight and the tent steams
@@ -738,6 +744,10 @@ export class SpaScene extends Phaser.Scene {
       const bob = STEAM_BOB.px * Math.sin((time / STEAM_BOB.ms) * 2 * Math.PI)
       s.steam.setPosition(centreX, p.y - TENT_KNOB_TILES * TILE + bob).setDepth(depth)
     }
+    // served on the stone bed, the customer has hot stones along the back; a hair deeper, as an equal depth can sort them under the customer
+    const stones = c.service === 'stone' && c.state === 'inService'
+    s.stones.setVisible(stones)
+    if (stones) s.stones.setPosition(p.x, p.y - STONES_TILES * TILE).setDepth(depth + 0.5)
 
     s.bar.clear()
     if (c.state === 'waiting') {
