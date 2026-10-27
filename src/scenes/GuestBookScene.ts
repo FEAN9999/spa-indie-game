@@ -5,10 +5,12 @@ import type { CustomerKind } from '../sim/customers'
 import { REGULARS, isMember, type RegularId } from '../sim/regulars'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
+import { VIPS, VIP_KIND } from '../sim/vips'
 import { REGULAR_TEXT } from '../strings/regulars'
+import { VIP_TEXT } from '../strings/vips'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { detailLines, kindRows, regularRows, type KindRow, type RegularRow } from '../view/guestBook'
+import { bookTabs, detailLines, kindRows, regularRows, vipRows, type KindRow, type RegularRow, type VipRow } from '../view/guestBook'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -19,7 +21,7 @@ export interface GuestBookData {
   onClose: () => void
 }
 
-type Tab = 'regulars' | 'kinds'
+type Tab = ReturnType<typeof bookTabs>[number]
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -27,9 +29,13 @@ const TITLE_Y = 290
 const INTRO_Y = 380
 const INTRO_WRAP = 860
 const TAB_Y = 500
-const TAB_W = 440
 const TAB_H = 120
-const TAB_X = { regulars: 300, kinds: 780 } as const
+/** Two tabs of 440 across the card, or three of 300 once the VIP tab shows. */
+const TAB_LAYOUT = {
+  2: { w: 440, x: [300, 780] },
+  3: { w: 300, x: [200, 540, 880] },
+} as const
+const TAB_LABEL: Record<Tab, StringKey> = { regulars: 'tabRegulars', kinds: 'tabKinds', vip: 'tabVip' }
 const DONE_Y = 1895
 const GRID_TOP = 590
 const CELL_W = 430
@@ -43,6 +49,8 @@ const TEXT_WRAP = 270
 const HEART_SCALE = 0.7
 const STORY_WRAP = 860
 const KIND_ROW_H = 230
+const VIP_CELL_H = 520
+const STAR_SCALE = 0.5
 
 const KIND_NAME: Record<CustomerKind, StringKey> = {
   student: 'kindStudent',
@@ -96,15 +104,14 @@ export class GuestBookScene extends Phaser.Scene {
       if (this.params.intro) {
         this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
       }
-      const tabs: { tab: Tab; label: string }[] = [
-        { tab: 'regulars', label: t('tabRegulars') },
-        { tab: 'kinds', label: t('tabKinds') },
-      ]
-      for (const { tab, label } of tabs) {
-        this.keep(addButton(this, TAB_X[tab], TAB_Y, TAB_W, TAB_H, label, tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
-      }
+      const tabs = bookTabs(this.params.sim.vip)
+      const layout = TAB_LAYOUT[tabs.length as 2 | 3]
+      tabs.forEach((tab, i) => {
+        this.keep(addButton(this, layout.x[i], TAB_Y, layout.w, TAB_H, t(TAB_LABEL[tab]), tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
+      })
       if (this.tab === 'regulars') regularRows(this.params.sim.book).forEach((row, i) => this.cell(row, i))
-      else kindRows(this.params.sim.book).forEach((row, i) => this.kindRow(row, i))
+      else if (this.tab === 'kinds') kindRows(this.params.sim.book).forEach((row, i) => this.kindRow(row, i))
+      else vipRows(this.params.sim.vip).forEach((row, i) => this.vipCell(row, i))
     }
     if (this.detail) {
       this.keep(addButton(this, MID, DONE_Y, 560, 130, t('back'), 'primary', () => this.openDetail(null)))
@@ -196,6 +203,28 @@ export class GuestBookScene extends Phaser.Scene {
     this.keep(this.add.text(330, cy - 30, t(KIND_NAME[row.kind]), textStyle(46)).setOrigin(0, 0.5))
     const detail = row.met ? t('servedCount', { n: row.served }) : t('kindFrom', { day: row.fromDay })
     this.keep(this.add.text(330, cy + 25, detail, { ...textStyle(34, '600'), wordWrap: { width: 650 } }).setOrigin(0, 0.5))
+  }
+
+  /** One VIP in the grid: her figure in her colours, name and role, stars, visits and photo; in shadow until met. */
+  private vipCell(row: VipRow, i: number): void {
+    const x0 = COL_X[i % 2]
+    const y0 = GRID_TOP + Math.floor(i / 2) * VIP_CELL_H
+    const colors = customerColors(VIPS[row.id].look, VIP_KIND, null, row.id)
+    const mid = x0 + CELL_W / 2
+    this.keep(addCard(this, x0, y0, CELL_W, VIP_CELL_H - 20))
+    this.figure(mid, y0 + 230, FIGURE_SCALE, colors, row.met ? 1 : UNMET_ALPHA)
+    if (!row.met) {
+      this.keep(this.add.text(mid, y0 + 330, '???', textStyle(40)).setOrigin(0.5))
+      return
+    }
+    const text = VIP_TEXT[row.id]
+    this.keep(this.add.text(mid, y0 + 285, text.name, { ...textStyle(40), wordWrap: { width: CELL_W - 40 } }).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 328, text.role, { ...textStyle(28, '600'), wordWrap: { width: CELL_W - 40 } }).setOrigin(0.5))
+    for (let s = 0; s < 3; s++) {
+      this.keep(this.add.image(mid + (s - 1) * 56, y0 + 378, s < row.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
+    }
+    this.keep(this.add.text(mid, y0 + 422, t('vipVisits', { n: row.visits }), textStyle(30, '600')).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 458, t(row.photo ? 'vipPhotoYes' : 'vipPhotoNo'), textStyle(28, '800', row.photo ? C.teal : undefined)).setOrigin(0.5))
   }
 
   private close(): void {

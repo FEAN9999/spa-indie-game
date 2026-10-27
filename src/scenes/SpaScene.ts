@@ -12,6 +12,7 @@ import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
 import { onBed } from '../sim/grid'
 import { ITEMS } from '../sim/items'
+import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
 import type { ServiceId } from '../sim/services'
@@ -482,7 +483,7 @@ export class SpaScene extends Phaser.Scene {
       return
     }
     if (pick?.hint === 'openBook') {
-      this.pointer.show(t('hintBook'), BOOK_BUTTON.x, BOOK_BUTTON.y + 40, 'up')
+      this.pointer.show(t(bookOpen(this.sim.book) ? 'hintBook' : 'hintBookVip'), BOOK_BUTTON.x, BOOK_BUTTON.y + 40, 'up')
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { CELEB_FROM_DAY } from '../../src/config'
 import { CUSTOMER_KINDS, KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
+import { VIP_IDS, emptyVipBook } from '../../src/sim/vips'
 import { REGULAR_TEXT } from '../../src/strings/regulars'
-import { detailLines, kindRows, regularRows, toldLines } from '../../src/view/guestBook'
+import { bookTabs, detailLines, kindRows, regularRows, toldLines, vipRows } from '../../src/view/guestBook'
 
 describe('guest book rows', () => {
   it("shows a new shop's book with six soon and two by introduction", () => {
@@ -62,5 +63,26 @@ describe('guest book rows', () => {
     const rows = kindRows(emptyBook())
     for (const r of rows) expect(r.fromDay).toBe(KINDS[r.kind].fromDay)
     expect(rows.find(r => r.kind === 'celeb')!.fromDay).toBe(CELEB_FROM_DAY)
+  })
+
+  it('lists the four VIPs in book order, unmet at first', () => {
+    const rows = vipRows(emptyVipBook())
+    expect(rows.map(r => r.id)).toEqual(VIP_IDS)
+    expect(rows.every(r => !r.met && r.visits === 0 && r.best === 0 && !r.photo)).toBe(true)
+  })
+
+  it("shows a met VIP's visits, best stars and photo", () => {
+    const vip = emptyVipBook()
+    vip.vips.miss = { visits: 2, best: 3, photo: true }
+    const rows = vipRows(vip)
+    expect(rows[1]).toEqual({ id: 'miss', met: true, visits: 2, best: 3, photo: true })
+    expect(rows[0].met).toBe(false)
+  })
+
+  it('shows the VIP tab only once a VIP has been booked', () => {
+    const vip = emptyVipBook()
+    expect(bookTabs(vip)).toEqual(['regulars', 'kinds'])
+    vip.everBooked = true
+    expect(bookTabs(vip)).toEqual(['regulars', 'kinds', 'vip'])
   })
 })

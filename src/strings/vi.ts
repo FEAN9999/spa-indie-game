@@ -218,6 +218,7 @@ export const vi = {
   vipPhotoYes: 'Đã tặng ảnh',
   vipPhotoNo: 'Chưa có ảnh',
   hintBook: 'Xem khách quen trong sổ khách ở đây',
+  hintBookVip: 'Xem khách VIP trong sổ khách ở đây',
   memberToast: '{name} nhận thẻ thành viên',
   giftMoneyToast: '{name} tặng tiệm {money}',
   giftItemToast: '{name} tặng quà! Xem ở nút Xây dựng',
