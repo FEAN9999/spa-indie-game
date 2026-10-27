@@ -1,7 +1,24 @@
+import type { SteamThing } from '../sim/steam'
+
 /** Name ideas for the shop; each fits the name limit as it is. */
 export const SHOP_NAME_IDEAS = ['Spa Hoa Sen', 'Spa Gạch Bông', 'Tiệm Gội Cô Ba', 'Spa Mây Tre', 'Spa Sen Hồng', 'Tiệm Spa Phố Cũ', 'Spa Thảo Mộc', 'Spa Lá Dừa'] as const
 
 export const STAFF_NAMES = ['Mai', 'Hoa', 'Cúc', 'Hương', 'Linh', 'Ngọc', 'Trang', 'Tùng', 'Minh', 'Nam', 'Phúc', 'Khang', 'Bảo', 'Hùng', 'Tâm', 'An', 'Duy', 'Yến', 'Quân', 'Sơn'] as const
+
+/** The 8 recipe ingredients, in shelf order, then the leaf game's 3 decoys. */
+export const INGREDIENT_NAME: Record<SteamThing, string> = {
+  pomelo: 'Lá bưởi',
+  lemongrass: 'Sả',
+  ginger: 'Gừng',
+  salt: 'Muối hột',
+  mineralMud: 'Bùn khoáng',
+  honey: 'Mật ong',
+  coconut: 'Dầu dừa',
+  cajeput: 'Tinh dầu tràm',
+  guava: 'Lá ổi',
+  chili: 'Ớt',
+  banana: 'Lá chuối',
+}
 
 export const vi = {
   loading: 'Đang tải...',
@@ -236,6 +253,8 @@ export const vi = {
   massagePerfect: 'Tuyệt!',
   massageGood: 'Tốt',
   massageMiss: 'Trượt',
+  steamTap: 'Chạm lá bưởi, sả và gừng để bỏ vào nồi',
+  steamWrong: '{name} không có trong công thức',
   greetingLine: '{name}: {text}',
   hintRegular: 'Khách quen! Tự tay phục vụ thì tim tăng gấp đôi',
   vipBookingNote: 'Ngày mai {time},\n{title} {name} hẹn {service}',

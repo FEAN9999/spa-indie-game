@@ -71,6 +71,9 @@ const LATE_TOAST_MS = 2200
 /** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
 const STAR_TWINKLE = 0.04
 const STAR_TWINKLE_MS = 1200
+/** Steam rises from the steam tent's knob, this many tiles over the tent's bottom edge, and bobs this far on this period. */
+const TENT_KNOB_TILES = 1.94
+const STEAM_BOB = { px: 8, ms: 1600 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene' }
@@ -87,6 +90,8 @@ interface CustomerSprite {
   heart: Phaser.GameObjects.Image
   /** A VIP's gold star: with the heart's place while she waits, over her head otherwise. */
   vipStar: Phaser.GameObjects.Image
+  /** Over the steam tent while the customer lies inside. */
+  steam: Phaser.GameObjects.Image
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -540,6 +545,7 @@ export class SpaScene extends Phaser.Scene {
         s.bubble?.destroy()
         s.heart.destroy()
         s.vipStar.destroy()
+        s.steam.destroy()
         this.customers.delete(e.id)
         if (!this.bubbles.has(e.id)) this.bubbleSpots.delete(e.id)
         return
@@ -686,6 +692,7 @@ export class SpaScene extends Phaser.Scene {
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
       heart: this.add.image(0, 0, 'heart-full').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
       vipStar: this.add.image(0, 0, 'star').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
+      steam: this.add.image(0, 0, 'fx-steam').setOrigin(0.5, 1).setVisible(false),
       bubble: null,
     })
   }
@@ -709,8 +716,17 @@ export class SpaScene extends Phaser.Scene {
     s.view.setFacing(lying ? (c.service === 'massage' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
-    s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha)
+    // lying in a steam tent, the customer is out of sight and the tent steams
+    const tent = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'steam') : undefined
+    s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha).setVisible(!tent)
     s.view.update(dt)
+    s.steam.setVisible(tent !== undefined)
+    if (tent) {
+      // the bed tile is the tent's half beside the work tile
+      const centreX = p.x + (tent.work.x > tent.bed.x ? -TILE / 2 : TILE / 2)
+      const bob = STEAM_BOB.px * Math.sin((time / STEAM_BOB.ms) * 2 * Math.PI)
+      s.steam.setPosition(centreX, p.y - TENT_KNOB_TILES * TILE + bob).setDepth(depth)
+    }
 
     s.bar.clear()
     if (c.state === 'waiting') {
