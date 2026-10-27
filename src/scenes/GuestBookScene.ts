@@ -1,8 +1,15 @@
 import * as Phaser from 'phaser'
-import { C } from '../art/palette'
+import { C, customerColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
+import type { CustomerKind } from '../sim/customers'
+import { REGULARS, type RegularId } from '../sim/regulars'
+import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
-import { t } from '../strings/vi'
+import { REGULAR_TEXT } from '../strings/regulars'
+import { t, type StringKey } from '../strings/vi'
+import { CharacterView } from '../view/CharacterView'
+import { kindRows, regularRows, toldLines, type KindRow, type RegularRow } from '../view/guestBook'
+import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
 export interface GuestBookData {
@@ -12,11 +19,50 @@ export interface GuestBookData {
   onClose: () => void
 }
 
-const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+type Tab = 'regulars' | 'kinds'
 
-/** The guest book over the frozen shop. A bare card for now: it only closes. */
+const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+const MID = GAME_W / 2
+const TITLE_Y = 290
+const INTRO_Y = 380
+const INTRO_WRAP = 860
+const TAB_Y = 500
+const TAB_W = 440
+const TAB_H = 120
+const TAB_X = { regulars: 300, kinds: 780 } as const
+const DONE_Y = 1895
+const GRID_TOP = 590
+const CELL_W = 430
+const CELL_H = 290
+const COL_X = [70, 580] as const
+const FIGURE_SCALE = 1.4
+const DETAIL_SCALE = 2
+const UNMET_ALPHA = 0.25
+const TEXT_LEFT = 150
+const TEXT_WRAP = 270
+const HEART_SCALE = 0.7
+const STORY_WRAP = 860
+const KIND_ROW_H = 230
+
+const KIND_NAME: Record<CustomerKind, StringKey> = {
+  student: 'kindStudent',
+  office: 'kindOffice',
+  picky: 'kindPicky',
+  elder: 'kindElder',
+  celeb: 'kindCeleb',
+}
+
+/**
+ * The guest book over the frozen shop: the regulars with their hearts, cards and stories, and the five kinds of customer.
+ * Every tap stays in this scene, so the shop waits underneath.
+ */
 export class GuestBookScene extends Phaser.Scene {
   private params!: GuestBookData
+  /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
+  private shown: Phaser.GameObjects.GameObject[] = []
+  private tab: Tab = 'regulars'
+  /** The regular whose story is open, if any. */
+  private detail: RegularId | null = null
 
   constructor() {
     super('GuestBookScene')
@@ -24,14 +70,136 @@ export class GuestBookScene extends Phaser.Scene {
 
   init(data: GuestBookData) {
     this.params = data
+    this.shown = []
+    this.tab = 'regulars'
+    this.detail = null
   }
 
   create() {
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    addCard(this, 40, 230, 1000, 1760)
-    addButton(this, GAME_W / 2, 1895, 720, 120, t('done'), 'primary', () => {
-      this.params.onClose()
-      this.scene.stop()
-    })
+    this.show()
+  }
+
+  private keep<T extends Phaser.GameObjects.GameObject>(obj: T): T {
+    this.shown.push(obj)
+    return obj
+  }
+
+  /** Draws the whole panel again. */
+  private show(): void {
+    for (const obj of this.shown) obj.destroy()
+    this.shown = []
+    this.keep(addCard(this, 40, 230, 1000, 1760))
+    this.keep(this.add.text(MID, TITLE_Y, t('bookTitle'), textStyle(60)).setOrigin(0.5))
+    if (this.detail) this.showDetail(this.detail)
+    else {
+      if (this.params.intro) {
+        this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
+      }
+      const tabs: { tab: Tab; label: string }[] = [
+        { tab: 'regulars', label: t('tabRegulars') },
+        { tab: 'kinds', label: t('tabKinds') },
+      ]
+      for (const { tab, label } of tabs) {
+        this.keep(addButton(this, TAB_X[tab], TAB_Y, TAB_W, TAB_H, label, tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
+      }
+      if (this.tab === 'regulars') regularRows(this.params.sim.book).forEach((row, i) => this.cell(row, i))
+      else kindRows(this.params.sim.book).forEach((row, i) => this.kindRow(row, i))
+    }
+    if (this.detail) {
+      this.keep(addButton(this, MID, DONE_Y, 560, 130, t('back'), 'primary', () => this.openDetail(null)))
+    } else {
+      this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
+    }
+  }
+
+  private openTab(tab: Tab): void {
+    this.tab = tab
+    this.show()
+  }
+
+  private openDetail(id: RegularId | null): void {
+    this.detail = id
+    this.show()
+  }
+
+  /** A figure standing, facing down, with its feet at x, y. */
+  private figure(x: number, y: number, scale: number, colors: ReturnType<typeof customerColors>, alpha = 1): void {
+    const view = new CharacterView(this, colors)
+    view.container.setPosition(x, y).setScale(scale).setAlpha(alpha)
+    this.keep(view.container)
+  }
+
+  private heartRow(x: number, y: number, hearts: number): void {
+    for (let i = 0; i < 5; i++) {
+      this.keep(this.add.image(x + i * 42, y, i < hearts ? 'heart-full' : 'heart-empty').setScale(HEART_SCALE).setOrigin(0, 0.5))
+    }
+  }
+
+  /** One regular in the grid: a met one opens their story when tapped. */
+  private cell(row: RegularRow, i: number): void {
+    const x0 = COL_X[i % 2]
+    const y0 = GRID_TOP + Math.floor(i / 2) * CELL_H
+    const spec = REGULARS[row.id]
+    const colors = customerColors(spec.look, spec.kind, row.id)
+    this.keep(addCard(this, x0, y0, CELL_W, CELL_H - 20))
+    this.figure(x0 + 75, y0 + CELL_H - 60, FIGURE_SCALE, colors, row.shown === 'met' ? 1 : UNMET_ALPHA)
+    const tx = x0 + TEXT_LEFT
+    if (row.shown === 'met') {
+      this.keep(this.add.text(tx, y0 + 50, REGULAR_TEXT[row.id].name, { ...textStyle(40), wordWrap: { width: TEXT_WRAP } }).setOrigin(0, 0.5))
+      this.heartRow(tx, y0 + 115, row.hearts)
+      if (row.member) this.keep(this.add.image(tx, y0 + 175, 'icon-card').setScale(0.8).setOrigin(0, 0.5))
+      this.keep(
+        this.add
+          .rectangle(x0, y0, CELL_W, CELL_H - 20, 0xffffff, 0)
+          .setOrigin(0)
+          .setInteractive()
+          .on('pointerup', () => this.openDetail(row.id)),
+      )
+    } else {
+      this.keep(this.add.text(tx, y0 + 50, '???', textStyle(40)).setOrigin(0, 0.5))
+      const text = row.shown === 'friend' ? t('regularFriend', { name: REGULAR_TEXT[row.by].name }) : t('regularSoon')
+      this.keep(this.add.text(tx, y0 + 95, text, { ...textStyle(32, '600'), wordWrap: { width: TEXT_WRAP } }).setOrigin(0, 0))
+    }
+  }
+
+  /** One regular's story: lines 1 to their hearts, and a hint that more follow. */
+  private showDetail(id: RegularId): void {
+    const { sim } = this.params
+    const spec = REGULARS[id]
+    const text = REGULAR_TEXT[id]
+    const hearts = sim.book.regulars[id].hearts
+    this.figure(230, 690, DETAIL_SCALE, customerColors(spec.look, spec.kind, id))
+    const tx = 400
+    this.keep(this.add.text(tx, 450, text.name, { ...textStyle(54), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 515, text.job, { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 575, t('regularLikes', { service: t(SERVICES[spec.likes].name) }), textStyle(32, '600')).setOrigin(0, 0.5))
+    this.heartRow(tx, 635, hearts)
+    if (sim.book.regulars[id].hearts >= 3) {
+      this.keep(this.add.image(tx + 240, 635, 'icon-card').setScale(0.8).setOrigin(0, 0.5))
+      this.keep(this.add.text(tx, 700, t('memberCard'), textStyle(32, '800', C.teal)).setOrigin(0, 0.5))
+    }
+    let y = 790
+    const told = toldLines(sim.book, id)
+    for (let i = 0; i < told; i++) {
+      const line = this.keep(this.add.text(90, y, text.story[i], { ...textStyle(32, '600'), wordWrap: { width: STORY_WRAP } }).setOrigin(0, 0))
+      y += line.height + 28
+    }
+    if (told < 5) this.keep(this.add.text(MID, y + 20, t('storyLocked'), { ...textStyle(32, '800', C.lantern), align: 'center' }).setOrigin(0.5, 0))
+  }
+
+  private kindRow(row: KindRow, i: number): void {
+    const y0 = GRID_TOP + i * KIND_ROW_H
+    const cy = y0 + KIND_ROW_H / 2
+    if (i > 0) this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1).lineBetween(90, y0, 990, y0)
+    this.figure(190, y0 + KIND_ROW_H - 35, FIGURE_SCALE, customerColors({ skin: 0, hair: 0, hairStyle: 0, shirt: 0 }, row.kind), row.met ? 1 : UNMET_ALPHA)
+    this.keep(this.add.text(330, cy - 30, t(KIND_NAME[row.kind]), textStyle(46)).setOrigin(0, 0.5))
+    const detail = row.met ? t('servedCount', { n: row.served }) : t('kindFrom', { day: row.fromDay })
+    this.keep(this.add.text(330, cy + 25, detail, { ...textStyle(34, '600'), wordWrap: { width: 650 } }).setOrigin(0, 0.5))
+  }
+
+  private close(): void {
+    this.params.onClose()
+    this.scene.stop()
   }
 }
