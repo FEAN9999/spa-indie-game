@@ -7,6 +7,7 @@ import { sound } from './audio/engine'
 import { GAME_H, GAME_W } from './config'
 import { BootScene } from './scenes/BootScene'
 import { BuildScene } from './scenes/BuildScene'
+import { GuestBookScene } from './scenes/GuestBookScene'
 import { MaskScene } from './scenes/MaskScene'
 import { MassageScene } from './scenes/MassageScene'
 import { OwnerScene } from './scenes/OwnerScene'
@@ -34,7 +35,7 @@ async function start() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // all sound is made by src/audio, so Phaser never opens its own AudioContext
     audio: { noAudio: true },
-    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }

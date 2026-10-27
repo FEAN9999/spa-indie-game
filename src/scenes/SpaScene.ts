@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
@@ -21,18 +21,21 @@ import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
+import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { HandPointer } from '../view/HandPointer'
-import { BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
 import { stockLowText } from '../view/stockText'
 import { RoomView } from '../view/RoomView'
+import { SpeechBubble } from '../view/SpeechBubble'
 import { StaffLayer } from '../view/StaffLayer'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import type { BuildData } from './BuildScene'
+import type { GuestBookData } from './GuestBookScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
@@ -55,6 +58,10 @@ const TOP_ROW_TIP_Y = 120
 const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
 /** The bottom of the service badge, just above the patience bar. */
 const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
+/** A speech bubble's tail tip sits this far over the feet: over the head, above the mood bubble. */
+const SPEECH_TIP = -CHARACTER_HEIGHT_PX - 70
+/** The heart badge's centre, left of the service badge. */
+const HEART_DX = -64
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene' }
@@ -67,6 +74,8 @@ interface CustomerSprite {
   /** The service the customer wants, over the patience bar. */
   badge: Phaser.GameObjects.Image
   ripple: Phaser.GameObjects.Image
+  /** A waiting regular's heart, just left of the service badge. */
+  heart: Phaser.GameObjects.Image
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -100,6 +109,10 @@ export class SpaScene extends Phaser.Scene {
   /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
   private patienceHintMs = 0
+  private regularHintMs = 0
+  /** Each customer's speech bubble; one that outlives its customer stays where it last was until it is done. */
+  private bubbles = new Map<number, SpeechBubble>()
+  private bubbleSpots = new Map<number, { x: number; y: number }>()
 
   constructor() {
     super('SpaScene')
@@ -114,6 +127,9 @@ export class SpaScene extends Phaser.Scene {
     this.bannerOnResume = false
     this.tour = []
     this.patienceHintMs = 0
+    this.regularHintMs = 0
+    this.bubbles = new Map()
+    this.bubbleSpots = new Map()
     this.store = openStore()
     this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
     let saved: SaveData | null
@@ -130,7 +146,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices())
+    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook())
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
 
@@ -317,6 +333,24 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('ServicesScene', data)
   }
 
+  /** The guest book over the frozen shop, opened only when build mode would be. */
+  private openBook(): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
+    const intro = !sim.hintDone('openBook')
+    sim.markHint('openBook')
+    const data: GuestBookData = {
+      sim,
+      intro,
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('GuestBookScene', data)
+  }
+
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
   }
@@ -395,6 +429,7 @@ export class SpaScene extends Phaser.Scene {
     }
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
+    this.moveBubbles()
     this.hud.update()
     this.updatePointer(delta)
   }
@@ -433,9 +468,8 @@ export class SpaScene extends Phaser.Scene {
       this.pointer.show(t('hintStock'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
       return
     }
-    // the regular and guest-book hands have no drawing yet
-    if (pick?.hint === 'regular' || pick?.hint === 'openBook') {
-      this.pointer.hide()
+    if (pick?.hint === 'openBook') {
+      this.pointer.show(t('hintBook'), BOOK_BUTTON.x, BOOK_BUTTON.y + 40, 'up')
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container
@@ -445,6 +479,12 @@ export class SpaScene extends Phaser.Scene {
     }
     if (pick.hint === 'tapCustomer') {
       this.pointer.show(t('hintTapCustomer'), at.x, at.y - CHARACTER_HEIGHT_PX - 10, 'down')
+      return
+    }
+    if (pick.hint === 'regular') {
+      this.pointer.show(t('hintRegular'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+      this.regularHintMs += delta
+      if (this.regularHintMs >= PATIENCE_HINT_MS) sim.markHint('regular')
       return
     }
     this.pointer.show(t('hintPatience'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
@@ -469,7 +509,9 @@ export class SpaScene extends Phaser.Scene {
         s.badge.destroy()
         s.ripple.destroy()
         s.bubble?.destroy()
+        s.heart.destroy()
         this.customers.delete(e.id)
+        if (!this.bubbles.has(e.id)) this.bubbleSpots.delete(e.id)
         return
       }
       case 'serviceReady': {
@@ -506,6 +548,35 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'review':
         this.showBubble(e.customerId, e.score)
+        return
+      case 'regularArrived': {
+        const r = REGULAR_TEXT[e.regular]
+        const text = e.first ? r.intro : t('greetingLine', { name: r.name, text: GREETINGS[e.customerId % GREETINGS.length] })
+        this.say(e.customerId, text, BUBBLE_MS.greet)
+        return
+      }
+      case 'heart': {
+        const r = REGULAR_TEXT[e.regular]
+        this.say(e.customerId, r.story[e.hearts - 1], BUBBLE_MS.story)
+        this.floatHeart(e.customerId)
+        if (e.member) this.hud.toast(t('memberToast', { name: r.name }))
+        return
+      }
+      case 'gift': {
+        const name = REGULAR_TEXT[e.regular].name
+        const g = e.gift
+        if (g.kind === 'money') {
+          const tile = this.sim.customers.find(x => x.id === e.customerId)?.pos
+          if (tile) this.floatMoney(tile, g.amount)
+          this.hud.toast(t('giftMoneyToast', { name, money: formatMoney(g.amount) }))
+        } else if (g.kind === 'item') this.hud.toast(t('giftItemToast', { name }))
+        else if (g.kind === 'regular') this.hud.toast(t('giftFriendToast', { friend: REGULAR_TEXT[g.who].name }))
+        else this.hud.toast(t('giftExtraToast', { name }))
+        return
+      }
+      case 'bookPage':
+        // later than the gift toast, which a toast right now would overwrite
+        this.time.delayedCall(2200, () => this.hud.toast(t('bookPageToast')))
         return
       case 'greeted':
       case 'levelUp':
@@ -545,10 +616,11 @@ export class SpaScene extends Phaser.Scene {
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, customerColors(c.look, c.kind)),
+      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular)),
       bar: this.add.graphics(),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
+      heart: this.add.image(0, 0, 'heart-full').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
       bubble: null,
     })
   }
@@ -588,6 +660,10 @@ export class SpaScene extends Phaser.Scene {
       s.badge.setPosition(p.x, p.y + BADGE_BOTTOM)
     }
 
+    const heart = c.state === 'waiting' && c.regular !== null
+    s.heart.setVisible(heart)
+    if (heart) s.heart.setPosition(p.x + HEART_DX, p.y + BADGE_BOTTOM - s.badge.height / 2)
+
     const pulsing = c.state === 'waiting' && this.sim.owner.task === null
     s.ripple.setVisible(pulsing)
     if (pulsing) {
@@ -596,6 +672,43 @@ export class SpaScene extends Phaser.Scene {
     }
 
     s.bubble?.setPosition(p.x, p.y - CHARACTER_HEIGHT_PX + 4).setAlpha(p.alpha)
+    this.bubbleSpots.set(c.id, { x: p.x, y: p.y + SPEECH_TIP })
+  }
+
+  /** Follows each customer; one whose customer has left holds its last spot until it fades out, then goes. */
+  private moveBubbles(): void {
+    for (const [id, b] of this.bubbles) {
+      if (b.done) {
+        b.destroy()
+        this.bubbles.delete(id)
+        this.bubbleSpots.delete(id)
+        continue
+      }
+      const spot = this.bubbleSpots.get(id)
+      if (spot) b.setPosition(spot.x, spot.y)
+    }
+  }
+
+  /** A customer's line of speech; a new one replaces the old. */
+  private say(customerId: number, text: string, ms: number): void {
+    this.bubbles.get(customerId)?.destroy()
+    const b = new SpeechBubble(this, text, ms)
+    this.bubbles.set(customerId, b)
+    const spot = this.bubbleSpots.get(customerId)
+    if (spot) b.setPosition(spot.x, spot.y)
+  }
+
+  /** A "+1" with a heart over the customer's head, tweened like floatMoney. */
+  private floatHeart(customerId: number): void {
+    const at = this.bubbleSpots.get(customerId)
+    if (!at) return
+    const label = this.add.text(0, 0, '+1', { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
+    const width = 56 + 8 + label.width
+    const heart = this.add.image(-width / 2 + 28, 0, 'heart-full')
+    label.x = -width / 2 + 64
+    const box = this.add.container(at.x, at.y + 40, [heart, label]).setDepth(FX_DEPTH + 10)
+    this.tweens.add({ targets: box, y: box.y - 60, duration: 1000, ease: 'Cubic.easeOut' })
+    this.tweens.add({ targets: box, alpha: 0, duration: 1000, ease: 'Cubic.easeIn', onComplete: () => box.destroy() })
   }
 
   /** Arriving and exiting customers walk along the sidewalk and through the door. */

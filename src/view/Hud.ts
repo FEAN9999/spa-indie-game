@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
+import { bookOpen } from '../sim/regulars'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
@@ -27,6 +28,10 @@ export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
 export const STAFF_PLATE_TOP = { x: navX(1), y: NAV_Y - PLATE_R }
 /** The top of the services button's plate, where the hand points. */
 export const SERVICES_PLATE_TOP = { x: navX(2), y: NAV_Y - PLATE_R }
+
+/** The guest-book button, in the top bar's second row. */
+export const BOOK_BUTTON = { x: 870, y: 152 }
+const BOOK_R = 38
 
 /** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
 const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }[] = [
@@ -57,6 +62,8 @@ export class Hud {
   private readonly dayTime: Phaser.GameObjects.Text
   private readonly plates: NavPlate[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
+  private readonly book: Phaser.GameObjects.Container
+  private readonly bookBadge: Phaser.GameObjects.Container
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -65,6 +72,7 @@ export class Hud {
     onBuild: () => void,
     onStaff: () => void,
     onServices: () => void,
+    onBook: () => void,
   ) {
     const add = scene.add
 
@@ -92,6 +100,18 @@ export class Hud {
     pause.setSize(130, 130).setInteractive().on('pointerup', () => {
       sound.play('tap')
       onPause()
+    })
+
+    // the guest book, once the first regular has come; its "Mới" stays until the book is first opened
+    this.book = add.container(BOOK_BUTTON.x, BOOK_BUTTON.y).setDepth(DEPTH).setVisible(false)
+    this.book.add(add.circle(0, 0, BOOK_R, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
+    this.book.add(add.image(0, 0, 'icon-book').setScale(0.7))
+    this.bookBadge = this.badge()
+    this.bookBadge.setPosition(-BOOK_R, -BOOK_R)
+    this.book.add(this.bookBadge)
+    this.book.setSize(120, 110).setInteractive().on('pointerup', () => {
+      sound.play('tap')
+      onBook()
     })
 
     // bottom bar
@@ -150,6 +170,9 @@ export class Hud {
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
     this.rating.x = row.ratingX
+    // an invisible container is not hit-tested, so the book button takes no tap until a regular has come
+    this.book.setVisible(bookOpen(this.sim.book))
+    this.bookBadge.setVisible(!this.sim.hintDone('openBook'))
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
       const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
