@@ -205,3 +205,92 @@ describe('staff per floor', () => {
     expect(homes()).toEqual(closed)
   })
 })
+
+describe('the rooftop', () => {
+  /** Day 6, both floors opened through the sim, then a massage bed at the given tile. */
+  const roofShop = (bed: { x: number; y: number }) => {
+    const sim = newSim()
+    sim.day = 6
+    sim.money = 10_000_000
+    expect(sim.openFloor(2)).toBeNull()
+    expect(sim.openFloor(3)).toBeNull()
+    expect(sim.openService('mask')).toBeNull()
+    expect(sim.openService('massage')).toBeNull()
+    expect(sim.buy('massageBed', bed.x, bed.y, false)).toBeNull()
+    sim.drainEvents()
+    return sim
+  }
+
+  /** Ms from the tap that sends someone to fetch the waiting massage customer until the customer lies on the bed. */
+  const walkMs = (sim: SpaSim, sawFloor2: boolean[]) => {
+    const c = seatAndWait(sim, { kind: 'office', service: 'massage' })
+    sim.tapTile(c.seat!)
+    let ms = 0
+    advanceUntil(sim, () => {
+      sawFloor2.push(floorOf(sim.owner.pos.y) === 2 || sim.staff.some(s => floorOf(s.pos.y) === 2) || floorOf(c.pos.y) === 2)
+      if (c.state === 'inService') return true
+      ms += 100
+      return false
+    })
+    return ms
+  }
+
+  it('opens only after floor 2, for 4.000.000 đ', () => {
+    const sim = newSim()
+    sim.day = 6
+    sim.money = 10_000_000
+    expect(sim.floorProblem(3)).toBe('order')
+    expect(sim.openFloor(2)).toBeNull()
+    expect(sim.openFloor(3)).toBeNull()
+    expect(sim.floors).toBe(3)
+    expect(sim.money).toBe(10_000_000 - FLOOR_PRICE[2] - FLOOR_PRICE[3])
+    expect(sim.floorProblem(3)).toBe('max')
+  })
+
+  it('takes up to seven technicians', () => {
+    const sim = newSim()
+    sim.day = 6
+    sim.money = 10_000_000
+    sim.openFloor(2)
+    sim.openFloor(3)
+    for (let i = 0; i < 7; i++) hireStaff(sim, 'technician')
+    expect(sim.staff.filter(s => s.role === 'technician')).toHaveLength(7)
+    sim.candidates.push({ ...sim.staff[0], name: 'Extra' })
+    expect(sim.hire(sim.candidates.length - 1)).toBe('full')
+  })
+
+  it('gives seven technicians seven homes on floor 1', () => {
+    const sim = newSim()
+    sim.day = 6
+    sim.money = 10_000_000
+    sim.openFloor(2)
+    sim.openFloor(3)
+    for (let i = 0; i < 7; i++) hireStaff(sim, 'technician')
+    const homes = sim.staff.map(s => homeOf({ sim } as CrewHost, s))
+    expect(homes).toHaveLength(7)
+    for (const h of homes) {
+      expect(floorOf(h.y)).toBe(1)
+      expect(tileEq(h, { x: 11, y: 10 })).toBe(false)
+      expect(tileEq(h, OWNER_START)).toBe(false)
+    }
+    expect(new Set(homes.map(h => `${h.x},${h.y}`)).size).toBe(7)
+  })
+
+  it('leads a customer from floor 1 to a bed on the rooftop, through floor 2', () => {
+    const roof: boolean[] = []
+    const low: boolean[] = []
+    const roofMs = walkMs(roofShop({ x: 6, y: 38 }), roof)
+    const lowMs = walkMs(roofShop({ x: 6, y: 2 }), low)
+    expect(roof).toContain(true)
+    expect(low).not.toContain(true)
+    expect(roofMs - lowMs).toBeGreaterThanOrEqual(2 * STAIRS_MS)
+  })
+
+  it('keeps the rooftop through a save', () => {
+    const sim = roofShop({ x: 6, y: 38 })
+    expect(sim.buy('mudTub', 2, 39, false)).toBeNull()
+    const back = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(5), autoSpawn: false })
+    expect(back.floors).toBe(3)
+    expect(back.items.some(i => i.kind === 'mudTub' && i.x === 2 && i.y === 39)).toBe(true)
+  })
+})
