@@ -542,24 +542,24 @@ const goldBoard =
   }).join('') +
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
-// lều xông: a round cream-and-terracotta striped tent seen from above at three-quarters, a wedge per stripe up to a mustard knob
+// lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]
 const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
-const tentEdge = (i: number, n: number): [number, number] => {
-  const a = (i / n) * Math.PI * 2 + Math.PI / n
-  return [f(TENT_BASE.cx + TENT_BASE.rx * Math.sin(a)), f(TENT_BASE.cy + TENT_BASE.ry * Math.cos(a))]
+const TENT_WEDGES = 7
+const tentEdge = (i: number): [number, number] => {
+  const a = (i / TENT_WEDGES) * Math.PI
+  return [f(TENT_BASE.cx - TENT_BASE.rx * Math.cos(a)), f(TENT_BASE.cy + TENT_BASE.ry * Math.sin(a))]
 }
-const tentWedges = Array.from({ length: 10 }, (_, i) => {
-  const [x0, y0] = tentEdge(i, 10)
-  const [x1, y1] = tentEdge(i + 1, 10)
-  return `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${x0},${y0} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 0 ${x1},${y1}Z" fill="${i % 2 ? C.terracotta : C.cream}" ${ink(FINE)}/>`
+const tentArc = `A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 0`
+const tentWedges = Array.from({ length: TENT_WEDGES }, (_, i) => {
+  const [x0, y0] = tentEdge(i)
+  const [x1, y1] = tentEdge(i + 1)
+  return `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${x0},${y0} ${tentArc} ${x1},${y1}Z" fill="${i % 2 ? C.cream : C.terracotta}" ${ink(FINE)}/>`
 }).join('')
 const steamTent =
   `<ellipse cx="1" cy="2.3" rx="0.95" ry="0.26" fill="${C.ink}" opacity="0.15"/>` +
-  `<ellipse cx="${TENT_BASE.cx}" cy="${TENT_BASE.cy}" rx="${TENT_BASE.rx}" ry="${TENT_BASE.ry}" fill="${C.cream}" ${ink()}/>` +
   tentWedges +
-  `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${f(TENT_BASE.cx - TENT_BASE.rx)},${TENT_BASE.cy} A${TENT_BASE.rx},${TENT_BASE.ry} 0 0 0 ${f(TENT_BASE.cx + TENT_BASE.rx)},${TENT_BASE.cy}Z" fill="none" ${ink()}/>` +
-  `<path d="M0.45,2.18 Q1,2.55 1.55,2.18" fill="none" stroke="${C.ink}" stroke-opacity="0.3" stroke-width="0.04" stroke-linecap="round"/>` +
+  `<path d="M${TENT_APEX[0]},${TENT_APEX[1]} L${f(TENT_BASE.cx - TENT_BASE.rx)},${TENT_BASE.cy} ${tentArc} ${f(TENT_BASE.cx + TENT_BASE.rx)},${TENT_BASE.cy}Z" fill="none" ${ink()}/>` +
   `<circle cx="${TENT_APEX[0]}" cy="${TENT_APEX[1] - 0.03}" r="0.11" fill="${C.mustard}" ${ink(0.04)}/>`
 
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
