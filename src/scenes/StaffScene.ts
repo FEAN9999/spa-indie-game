@@ -52,10 +52,17 @@ const STUDY_DY = 54
 const LET_GO_DY = 154
 const PAIR_SIZE = 36
 // the specialty badges: a service icon and up to three small stars, in a line under the wage
-const BADGE_DY = 170
-const BADGE_ICON = 0.8
-const BADGE_STAR = 0.22
-const BADGE_STEP = 135
+const BADGE_DY = 172
+const BADGE_ICON = 0.93
+const BADGE_STAR = 0.31
+const BADGE_STAR_STEP = 28
+const BADGE_STEP = 158
+// the booked box: the book at the left, the text after it, both inside the rounded ends
+const BOOK_X = -90
+const BOOK_SCALE = 0.86
+const BOOKED_TEXT_X = -60
+const BOOKED_TEXT_W = 172
+const BOOKED_SIZE = 28
 const STAT_W = 225
 const DOT_R = 10
 const DOT_STEP = 26
@@ -221,8 +228,8 @@ export class StaffScene extends Phaser.Scene {
     specialtyOf(person, this.params.sim.services).forEach((b, i) => {
       const x = TEXT_X + i * BADGE_STEP
       const alpha = b.dim ? FADED_ALPHA : 1
-      this.keep(this.add.image(x + 22, y, `svc-${b.service}`).setScale(BADGE_ICON).setAlpha(alpha))
-      for (let s = 0; s < b.tier; s++) this.keep(this.add.image(x + 58 + s * 22, y, 'star').setScale(BADGE_STAR).setAlpha(alpha))
+      this.keep(this.add.image(x + 26, y, `svc-${b.service}`).setScale(BADGE_ICON).setAlpha(alpha))
+      for (let s = 0; s < b.tier; s++) this.keep(this.add.image(x + 72 + s * BADGE_STAR_STEP, y, 'star').setScale(BADGE_STAR).setAlpha(alpha))
     })
   }
 
@@ -235,8 +242,8 @@ export class StaffScene extends Phaser.Scene {
         .fillRoundedRect(-PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
         .lineStyle(4, hex(C.ink))
         .strokeRoundedRect(-PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
-      const book = this.add.image(-100, 0, 'icon-book').setScale(0.45)
-      const text = this.add.text(25, 0, t('studyTonight', { course: courseName(state.course) }), { ...textStyle(30, '600'), align: 'center', wordWrap: { width: 190 } }).setOrigin(0.5)
+      const book = this.add.image(BOOK_X, 0, 'icon-book').setScale(BOOK_SCALE)
+      const text = this.add.text(BOOKED_TEXT_X, 0, t('studyTonight', { course: courseName(state.course) }), { ...textStyle(BOOKED_SIZE, '600'), wordWrap: { width: BOOKED_TEXT_W } }).setOrigin(0, 0.5)
       this.keep(this.add.container(ACTION_X, y, [bg, book, text]))
       return
     }

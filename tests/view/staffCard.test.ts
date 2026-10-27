@@ -50,6 +50,6 @@ describe('staff card', () => {
   })
 
   it('fills the confirm line from the spec', () => {
-    expect(t('studyConfirm', { name: 'Lan', course: courseName('massage'), money: formatMoney(200000) })).toBe('Cho Lan đi học massage tối nay? 200.000 đ')
+    expect(t('studyConfirm', { name: 'Lan', course: courseName('massage'), money: formatMoney(200000) })).toBe('Cho Lan đi học massage tối nay?\n200.000 đ')
   })
 })

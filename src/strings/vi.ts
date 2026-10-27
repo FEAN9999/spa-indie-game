@@ -178,7 +178,7 @@ export const vi = {
   studyPick: '{name} học gì tối nay?',
   studyOption: '{course} → bậc {n} · {money}',
   studyGreetOption: 'Tiếp khách → {n} chấm · {money}',
-  studyConfirm: 'Cho {name} đi học {course} tối nay? {money}',
+  studyConfirm: 'Cho {name} đi học {course} tối nay?\n{money}',
   studyNoMoney: 'Chưa đủ tiền cho khoá học',
   courseGreet: 'tiếp khách',
   studyIntro: 'Cho nhân viên đi học để giỏi hơn một dịch vụ. Học tối nay, sáng mai giỏi lên.',
