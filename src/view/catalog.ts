@@ -4,10 +4,20 @@ import { serviceOfBed, type ServiceId } from '../sim/services'
 /** Build mode shows this many item cards at a time. */
 const CARDS_PER_PAGE = 4
 
-/** One page of a tab's kinds in catalogue order, a bed only once its service is open; turning past either end comes round to the other. */
-export function catalogPage(group: ItemGroup, page: number, open: ServiceId[]): { kinds: ItemKind[]; page: number; pages: number } {
-  const all = ITEM_KINDS.filter(k => ITEMS[k].group === group && !ITEMS[k].giftOnly && (group !== 'bed' || open.includes(serviceOfBed(k)!)))
+/** A card in the catalogue: a kind to buy, or a regular's gift waiting to be put down. */
+export interface CatalogEntry {
+  kind: ItemKind
+  gift: boolean
+}
+
+/**
+ * One page of a tab's cards in catalogue order, a bed only once its service is open; turning past either end comes round to the other.
+ * The decor tab starts with one card per waiting gift, oldest first; the gift-only kinds are never for sale.
+ */
+export function catalogPage(group: ItemGroup, page: number, open: ServiceId[], gifts: ItemKind[]): { entries: CatalogEntry[]; page: number; pages: number } {
+  const forSale = ITEM_KINDS.filter(k => ITEMS[k].group === group && !ITEMS[k].giftOnly && (group !== 'bed' || open.includes(serviceOfBed(k)!)))
+  const all = [...(group === 'decor' ? gifts.map(kind => ({ kind, gift: true })) : []), ...forSale.map(kind => ({ kind, gift: false }))]
   const pages = Math.ceil(all.length / CARDS_PER_PAGE)
   const p = ((page % pages) + pages) % pages
-  return { kinds: all.slice(p * CARDS_PER_PAGE, (p + 1) * CARDS_PER_PAGE), page: p, pages }
+  return { entries: all.slice(p * CARDS_PER_PAGE, (p + 1) * CARDS_PER_PAGE), page: p, pages }
 }

@@ -4,8 +4,8 @@ import { footprint, workTile, type Item } from './items'
 import { DIRS } from './path'
 import type { Tile } from './types'
 
-/** Why a piece of furniture cannot be bought, put down, moved or sold. */
-export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'money'
+/** Why a piece of furniture cannot be bought, put down, moved or sold; a `gift` is never sold, and is put down only while it waits in the guest book. */
+export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'money' | 'gift'
 
 /** What the player is told for each problem; `money` takes the missing amount as {money}. */
 export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
@@ -16,6 +16,7 @@ export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
   lastBed: 'problemLastBed',
   lastSeat: 'problemLastSeat',
   money: 'problemMoney',
+  gift: 'giftNoSell',
 }
 
 /** The tiles an item keeps for itself: its footprint and a bed's work tile. */

@@ -11,7 +11,7 @@ import type { SpaSim } from '../sim/spa'
 import type { Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
-import { catalogPage } from '../view/catalog'
+import { catalogPage, type CatalogEntry } from '../view/catalog'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
@@ -26,7 +26,7 @@ export interface BuildData {
   onClose: () => void
 }
 
-/** The piece on the finger: a new one to buy, or one of the shop's items, whose sprite is hidden meanwhile. */
+/** The piece on the finger: a new one to buy or a gift to put down, or one of the shop's items, whose sprite is hidden meanwhile. */
 interface Held {
   item: Item
   buying: boolean
@@ -91,7 +91,7 @@ const cardText = (size: number, weight: '600' | '800') => ({
 
 /**
  * Build mode over the frozen shop: a grid on the floor and a panel of furniture to buy.
- * A piece in hand follows the finger tile by tile; every change goes through the sim's buy, move and sell.
+ * A piece in hand follows the finger tile by tile; every change goes through the sim's buy, placeGift, move and sell.
  * Every tap stays in this scene, so the shop, its top bar and its buttons wait underneath.
  */
 export class BuildScene extends Phaser.Scene {
@@ -117,7 +117,8 @@ export class BuildScene extends Phaser.Scene {
 
   init(data: BuildData) {
     this.params = data
-    this.tab = 'bed'
+    // a regular's gift waits first on the decor tab
+    this.tab = data.sim.book.gifts.length > 0 ? 'decor' : 'bed'
     this.page = 0
     this.held = null
     this.drag = null
@@ -194,9 +195,10 @@ export class BuildScene extends Phaser.Scene {
     this.showScore(INFO_Y - lift)
 
     const top = CARD_TOP - lift
-    const { kinds, page, pages } = catalogPage(this.tab, this.page, this.params.sim.services)
+    const { sim } = this.params
+    const { entries, page, pages } = catalogPage(this.tab, this.page, sim.services, sim.book.gifts)
     this.page = page
-    kinds.forEach((kind, i) => this.card(kind, MID + (i - (kinds.length - 1) / 2) * CARD_STEP, top))
+    entries.forEach((entry, i) => this.card(entry, MID + (i - (entries.length - 1) / 2) * CARD_STEP, top))
     if (pages > 1) {
       const y = (top + CARD_BOTTOM) / 2
       this.button(EDGE + ARROW_W / 2, y, ARROW_W, ARROW_H, t('prevPage'), 'plain', () => this.turnPage(-1), 64)
@@ -216,14 +218,17 @@ export class BuildScene extends Phaser.Scene {
     this.keep(this.add.text(GAME_W - EDGE - 16, y, sets[1], textStyle(32, '600')).setOrigin(1, 0.5))
   }
 
-  /** The words stack up from the card's bottom; the picture fills what is left above them. One the shop cannot afford is faded and says what is missing. */
-  private card(kind: ItemKind, x: number, top: number): void {
+  /**
+   * The words stack up from the card's bottom; the picture fills what is left above them. One the shop cannot afford is faded and says what is missing.
+   * A gift says so where the price goes and is never faded.
+   */
+  private card({ kind, gift }: CatalogEntry, x: number, top: number): void {
     const { price, beauty, name } = ITEMS[kind]
-    const short = price - this.params.sim.money
+    const short = gift ? 0 : price - this.params.sim.money
     const box = this.add.container(0, 0, [addCard(this, x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top)])
     const lines = [
       this.add.text(x, 0, t(name), cardText(28, '800')),
-      this.add.text(x, 0, short > 0 ? t(PROBLEM_TEXT.money, { money: formatMoney(short) }) : formatMoney(price), cardText(28, '800')),
+      this.add.text(x, 0, gift ? t('giftLabel') : short > 0 ? t(PROBLEM_TEXT.money, { money: formatMoney(short) }) : formatMoney(price), cardText(28, '800')),
       this.add.text(x, 0, t('beautyPlus', { n: beauty }), cardText(26, '600')),
     ]
     let y = CARD_BOTTOM - CARD_PAD
@@ -238,7 +243,7 @@ export class BuildScene extends Phaser.Scene {
     this.keep(box.setAlpha(short > 0 ? FADED_ALPHA : 1))
     this.keep(this.add.zone(x, (top + CARD_BOTTOM) / 2, CARD_W, CARD_BOTTOM - top).setInteractive()).on('pointerup', () => {
       sound.play('tap')
-      if (this.panelTap()) this.takeNew(kind)
+      if (this.panelTap()) this.takeNew(kind, gift)
     })
   }
 
@@ -254,15 +259,15 @@ export class BuildScene extends Phaser.Scene {
   }
 
   /** A card tapped: the new piece appears on the free spot nearest the middle, or on the middle when none is free. */
-  private takeNew(kind: ItemKind): void {
+  private takeNew(kind: ItemKind, gift: boolean): void {
     const { sim } = this.params
-    if (sim.money < ITEMS[kind].price) {
+    if (!gift && sim.money < ITEMS[kind].price) {
       this.toast(this.problemText('money', kind))
       return
     }
     const spot = nearestSpot(sim.grid, CENTRE, s => sim.canPlace(kind, s.x, s.y, false) === null) ?? CENTRE
     // not in the shop yet, so it has no id of its own
-    this.hold({ item: { id: 0, kind, ...spot, flip: false }, buying: true })
+    this.hold({ item: { id: 0, kind, ...spot, flip: false, gift }, buying: true })
   }
 
   /** A tap or a drag on the floor: picks up the item standing there, or else the one drawn over the point, unless a customer is using it. */
@@ -315,7 +320,8 @@ export class BuildScene extends Phaser.Scene {
       : [
           { label: t('cancel'), kind: 'plain', w: 180, onTap: () => this.letGo() },
           { label: t('flip'), kind: 'plain', w: 180, onTap: () => this.flip() },
-          { label: t('sell', { money: refund }), kind: 'plain', w: 404, onTap: () => this.sell() },
+          // on a gift, tapping it only says gifts are not sold
+          { label: item.gift ? t('sellGiftButton') : t('sell', { money: refund }), kind: 'plain', w: 404, onTap: () => this.sell() },
           { label: t('place'), kind: 'primary', w: 220, onTap: () => this.place() },
         ]
     let left = EDGE
@@ -334,7 +340,11 @@ export class BuildScene extends Phaser.Scene {
   private place(): void {
     const { sim } = this.params
     const { item, buying } = this.held!
-    const problem = buying ? sim.buy(item.kind, item.x, item.y, item.flip) : sim.move(item.id, item.x, item.y, item.flip)
+    const problem = !buying
+      ? sim.move(item.id, item.x, item.y, item.flip)
+      : item.gift
+        ? sim.placeGift(item.kind, item.x, item.y, item.flip)
+        : sim.buy(item.kind, item.x, item.y, item.flip)
     if (problem) this.toast(this.problemText(problem, item.kind))
     else {
       sound.play('thud')

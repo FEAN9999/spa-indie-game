@@ -450,6 +450,18 @@ export class SpaSim {
     return null
   }
 
+  /** Puts down the oldest waiting gift of `kind`, free; it stays a gift, so it can be moved but never sold. */
+  placeGift(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
+    const waiting = this.book.gifts.indexOf(kind)
+    if (waiting < 0) return 'gift'
+    const problem = this.canPlace(kind, x, y, flip)
+    if (problem) return problem
+    this.items.push({ id: this.nextItemId++, kind, x, y, flip, gift: true })
+    this.book.gifts.splice(waiting, 1)
+    this.changeRoom()
+    return null
+  }
+
   /** Free; the item keeps its id, so a bed keeps its station. */
   move(id: number, x: number, y: number, flip: boolean): BuildProblem | null {
     const item = this.itemById(id)
@@ -461,9 +473,10 @@ export class SpaSim {
     return null
   }
 
-  /** Refunds half the price; the shop always keeps one shampoo bed and one seat. */
+  /** Refunds half the price; the shop always keeps one shampoo bed and one seat, and never sells a gift. */
   sell(id: number): BuildProblem | null {
-    const { kind } = this.itemById(id)
+    const { kind, gift } = this.itemById(id)
+    if (gift) return 'gift'
     if (this.isBusy(id)) return 'busy'
     if (kind === 'bed' && this.items.filter(i => i.kind === 'bed').length === 1) return 'lastBed'
     if (ITEMS[kind].group === 'seat' && this.items.filter(i => ITEMS[i.kind].group === 'seat').length === 1) return 'lastSeat'

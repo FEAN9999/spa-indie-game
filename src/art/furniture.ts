@@ -394,6 +394,82 @@ const areca =
   frond(0.5, 0.72, 0.42, 0.15, 0.6, 0.04, C.leafLight) +
   clayPot(0.5, 1.5, 1.96, 0.26)
 
+// Gifts from the regulars
+
+/** A wooden pole along `d`, outlined in ink. */
+const stick = (d: string, fill: string, w = 0.05) =>
+  `<path d="${d}" stroke="${C.ink}" stroke-width="${f(w + 0.045)}" stroke-linecap="round" fill="none"/>` +
+  `<path d="${d}" stroke="${fill}" stroke-width="${w}" stroke-linecap="round" fill="none"/>`
+
+// tranh của Vy: a wooden easel holding her small painting of a shop front with a red lantern under its awning
+const vyPainting =
+  stick('M0.5,0.14 L0.62,1.82', C.woodDark) +
+  stick('M0.46,0.14 L0.16,1.84', C.wood) +
+  stick('M0.54,0.14 L0.84,1.84', C.wood) +
+  `<circle cx="0.5" cy="0.12" r="0.05" fill="${C.woodLight}" ${ink(0.025)}/>` +
+  rect(0.12, 0.24, 0.76, 0.92, C.wood, `rx="0.03" ${ink()}`) +
+  rect(0.18, 0.3, 0.64, 0.8, C.water, ink(FINE)) +
+  rect(0.18, 0.94, 0.64, 0.16, C.sand) +
+  rect(0.28, 0.6, 0.44, 0.38, C.wall, ink(0.02)) +
+  rect(0.5, 0.72, 0.14, 0.26, C.teal, ink(0.02)) +
+  `<path d="M0.22,0.62 L0.33,0.47 H0.67 L0.78,0.62Z" fill="${C.terracotta}" ${ink(0.02)}/>` +
+  `<path d="M0.38,0.62 V0.7" stroke="${C.ink}" stroke-width="0.015"/>` +
+  rect(0.355, 0.68, 0.05, 0.02, C.mustard) +
+  `<ellipse cx="0.38" cy="0.75" rx="0.055" ry="0.06" fill="${C.lantern}" ${ink(0.015)}/>` +
+  rect(0.355, 0.8, 0.05, 0.02, C.mustard) +
+  `<path d="M0.18,1.1 H0.82" stroke="${C.ink}" stroke-width="${FINE}"/>` +
+  rect(0.08, 1.12, 0.84, 0.08, C.woodLight, `rx="0.03" ${ink(FINE)}`)
+
+/** A swallow on the wing, centred on (x, y): swept wings and a forked tail. */
+const swallow = (x: number, y: number) =>
+  `<path d="M${f(x - 0.16)},${f(y - 0.06)} Q${f(x - 0.06)},${f(y - 0.05)} ${x},${f(y + 0.02)} Q${f(x + 0.06)},${f(y - 0.05)} ${f(x + 0.16)},${f(y - 0.06)} ` +
+  `Q${f(x + 0.08)},${f(y + 0.03)} ${f(x + 0.03)},${f(y + 0.06)} L${f(x + 0.07)},${f(y + 0.15)} L${x},${f(y + 0.09)} L${f(x - 0.07)},${f(y + 0.15)} ` +
+  `L${f(x - 0.03)},${f(y + 0.06)} Q${f(x - 0.08)},${f(y + 0.03)} ${f(x - 0.16)},${f(y - 0.06)}Z" fill="${C.ink}"/>`
+
+// bình phong lụa: two red-lacquer panels with gold trim, their cream silk painted with a lotus on the left and two swallows on the right
+const silkScreen =
+  [0.06, 1.02].map(x =>
+    rect(f(x + 0.1), 1.5, 0.12, 0.2, C.lanternDark, ink(0.025)) +
+    rect(f(x + 0.7), 1.5, 0.12, 0.2, C.lanternDark, ink(0.025)) +
+    rect(x, 0.06, 0.92, 1.46, C.lanternDark, `rx="0.04" ${ink()}`) +
+    rect(f(x + 0.05), 0.11, 0.82, 1.36, 'none', `rx="0.02" stroke="${C.mustard}" stroke-width="0.02"`) +
+    rect(f(x + 0.09), 0.15, 0.74, 1.28, C.cream, ink(FINE)),
+  ).join('') +
+  rect(0.96, 0.36, 0.08, 0.1, C.mustard, ink(0.02)) +
+  rect(0.96, 1.14, 0.08, 0.1, C.mustard, ink(0.02)) +
+  `<path d="M0.5,1.38 Q0.44,1.1 0.52,0.86" stroke="${C.leaf}" stroke-width="0.03" fill="none"/>` +
+  `<path d="M0.62,1.38 Q0.66,1.24 0.72,1.16" stroke="${C.leaf}" stroke-width="0.03" fill="none"/>` +
+  `<ellipse cx="0.74" cy="1.12" rx="0.14" ry="0.07" fill="${C.leaf}" ${ink(0.015)}/>` +
+  `<g ${ink(0.02)}>` +
+  `<path d="M0.52,0.86 Q0.34,0.78 0.38,0.6 Q0.5,0.7 0.52,0.86Z M0.52,0.86 Q0.7,0.78 0.66,0.6 Q0.54,0.7 0.52,0.86Z" fill="${C.lotus}"/>` +
+  `<path d="M0.52,0.86 Q0.44,0.66 0.52,0.48 Q0.6,0.66 0.52,0.86Z" fill="${C.lotusDark}"/></g>` +
+  swallow(1.36, 0.42) +
+  swallow(1.6, 0.74)
+
+const PORTRAITS = [C.terracotta, C.mustard, C.cobalt, C.lotus, C.teal, C.lantern, C.leaf, C.woodLight]
+
+// bảng ảnh khách quen: a brown wooden board on two feet, eight small photos of the regulars in cream frames, and a red ribbon across its top
+const regularsBoard =
+  rect(0.3, 1.36, 0.14, 0.32, C.woodDark, ink(0.025)) +
+  rect(1.56, 1.36, 0.14, 0.32, C.woodDark, ink(0.025)) +
+  rect(0.06, 0.18, 1.88, 1.22, C.wood, `rx="0.06" ${ink()}`) +
+  rect(0.13, 0.25, 1.74, 1.08, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="${FINE}"`) +
+  PORTRAITS.map((shirt, i) => {
+    const x = f(0.22 + (i % 4) * 0.42)
+    const y = f(0.44 + Math.floor(i / 4) * 0.46)
+    return (
+      rect(x, y, 0.3, 0.36, C.cream, `rx="0.02" ${ink(FINE)}`) +
+      `<path d="M${f(x + 0.06)},${f(y + 0.31)} Q${f(x + 0.15)},${f(y + 0.17)} ${f(x + 0.24)},${f(y + 0.31)}Z" fill="${shirt}" ${ink(0.012)}/>` +
+      `<circle cx="${f(x + 0.15)}" cy="${f(y + 0.13)}" r="0.06" fill="${C.sand}" ${ink(0.012)}/>`
+    )
+  }).join('') +
+  `<path d="M0.12,0.26 Q1,0.46 1.88,0.26" stroke="${C.ink}" stroke-width="0.09" fill="none" stroke-linecap="round"/>` +
+  `<path d="M0.12,0.26 Q1,0.46 1.88,0.26" stroke="${C.lantern}" stroke-width="0.05" fill="none" stroke-linecap="round"/>` +
+  `<g ${ink(0.025)}>` +
+  `<path d="M0.97,0.34 L0.9,0.56 L0.95,0.53 L1,0.36Z M1.03,0.34 L1.1,0.56 L1.05,0.53 L1,0.36Z" fill="${C.lanternDark}"/>` +
+  `<path d="M1,0.3 Q0.78,0.12 0.8,0.34 Q0.9,0.4 1,0.3Z M1,0.3 Q1.22,0.12 1.2,0.34 Q1.1,0.4 1,0.3Z" fill="${C.lantern}"/>` +
+  `<circle cx="1" cy="0.32" r="0.05" fill="${C.lanternDark}"/></g>`
+
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
@@ -407,10 +483,9 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-shelf': { w: 3, h: 1.3, body: shelf },
   'decor-lotus': { w: 2, h: 1.1, body: lotus },
   'decor-vase': { w: 1, h: 1.9, body: vase },
-  // placeholders until Task 4 draws the gifts
-  'decor-vyPainting': { w: 1, h: 1.9, body: vase },
-  'decor-silkScreen': { w: 2, h: 1.9, body: vase },
-  'decor-regularsBoard': { w: 2, h: 1.9, body: vase },
+  'decor-vyPainting': { w: 1, h: 1.9, body: vyPainting },
+  'decor-silkScreen': { w: 2, h: 1.75, body: silkScreen },
+  'decor-regularsBoard': { w: 2, h: 1.7, body: regularsBoard },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

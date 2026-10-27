@@ -190,6 +190,7 @@ describe('building the shop', () => {
       lastBed: 'Tiệm cần ít nhất một giường gội',
       lastSeat: 'Tiệm cần ít nhất một ghế chờ',
       money: 'Còn thiếu 200.000 đ',
+      gift: 'Quà không bán được',
     })
   })
 
@@ -202,6 +203,60 @@ describe('building the shop', () => {
     sim.tapTile({ x: 6, y: 3 })
     expect(sim.drainEvents()).toEqual([])
     expect(sim.owner.path).toEqual([])
+  })
+})
+
+describe('gift furniture', () => {
+  it('places a pending gift once at no cost', () => {
+    const sim = shop()
+    sim.book.gifts = ['vase']
+    sim.drainEvents()
+    expect(sim.placeGift('vase', 2, 13, false)).toBe('overlap') // on the bench
+    expect(sim.book.gifts).toEqual(['vase'])
+    expect(sim.placeGift('vase', 6, 9, false)).toBeNull()
+    expect(sim.money).toBe(2_000_000)
+    expect(sim.items.at(-1)).toEqual({ id: 14, kind: 'vase', x: 6, y: 9, flip: false, gift: true })
+    expect(sim.book.gifts).toEqual([])
+    expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
+    expect(sim.placeGift('vase', 7, 11, false)).toBe('gift')
+    expect(sim.items).toHaveLength(14)
+  })
+
+  it('takes only the oldest of the same gift off the list', () => {
+    const sim = shop()
+    sim.book.gifts = ['vase', 'lotus', 'vase']
+    expect(sim.placeGift('vase', 6, 9, false)).toBeNull()
+    expect(sim.book.gifts).toEqual(['lotus', 'vase'])
+    expect(sim.placeGift('tea', 6, 11, false)).toBe('gift')
+  })
+
+  it('refuses to sell a gift', () => {
+    const sim = shop()
+    sim.book.gifts = ['vase']
+    expect(sim.placeGift('vase', 6, 9, false)).toBeNull()
+    const id = sim.items.at(-1)!.id
+    sim.drainEvents()
+    expect(sim.sell(id)).toBe('gift')
+    expect(sim.items.find(i => i.id === id)).toMatchObject({ kind: 'vase', gift: true })
+    expect(sim.money).toBe(2_000_000)
+    expect(sim.drainEvents()).toEqual([])
+
+    // before any other check: a gift bench in use, and the shop's last seat, still says it is a gift
+    const busy = shop()
+    const bench = busy.items.find(i => i.kind === 'bench')!
+    bench.gift = true
+    seatAndWait(busy)
+    expect(busy.sell(bench.id)).toBe('gift')
+  })
+
+  it('moves a gift like any piece', () => {
+    const sim = shop()
+    sim.book.gifts = ['silkScreen']
+    expect(sim.placeGift('silkScreen', 6, 9, false)).toBeNull()
+    const id = sim.items.at(-1)!.id
+    expect(sim.move(id, 6, 10, true)).toBeNull()
+    expect(sim.items.find(i => i.id === id)).toEqual({ id, kind: 'silkScreen', x: 6, y: 10, flip: true, gift: true })
+    expect(sim.money).toBe(2_000_000)
   })
 })
 
