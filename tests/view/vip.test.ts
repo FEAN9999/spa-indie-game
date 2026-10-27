@@ -8,7 +8,7 @@ const booked = (day: number, minute: number): VipBook => ({ ...emptyVipBook(), b
 
 describe('VIP notes and clock star', () => {
   it("writes tomorrow's booking with the time, title, name and service", () => {
-    expect(bookingText('vipBookingNote', { vip: 'singer', day: 4, minute: 900 })).toBe('Ngày mai 15:00, ca sĩ Mây Chiều hẹn massage')
+    expect(bookingText('vipBookingNote', { vip: 'singer', day: 4, minute: 900 })).toBe('Ngày mai 15:00,\nca sĩ Mây Chiều hẹn massage')
     expect(bookingText('vipTodayToast', { vip: 'chef', day: 4, minute: 630 })).toBe('Hôm nay 10:30, đầu bếp Tám Lửa hẹn gội đầu')
   })
 

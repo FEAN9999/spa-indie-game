@@ -207,7 +207,7 @@ export const vi = {
   massageMiss: 'Trượt',
   greetingLine: '{name}: {text}',
   hintRegular: 'Khách quen! Tự tay phục vụ thì tim tăng gấp đôi',
-  vipBookingNote: 'Ngày mai {time}, {title} {name} hẹn {service}',
+  vipBookingNote: 'Ngày mai {time},\n{title} {name} hẹn {service}',
   vipTodayToast: 'Hôm nay {time}, {title} {name} hẹn {service}',
   vipFirstNote: 'Khách VIP chỉ chủ tiệm phục vụ được. Nhớ có mặt đúng giờ!',
   hintVip: 'Khách VIP! Chạm để tự tay mời vào',
