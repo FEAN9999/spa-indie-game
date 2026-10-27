@@ -1,7 +1,7 @@
 # Đợt 2, phần 1: khách quen, sổ khách và khách VIP
 
 - Ngày: 2026-10-27
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-27)
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 6 (Đợt 2). Bước 1b xem `2026-10-26-step-1b-batches-2-7-design.md`.
 
 Cách đọc giống các spec trước: **(anh chọn)** là điều anh đã quyết, **(em đề xuất)** là em tự điền, anh sửa được. Ngày 2026-10-27 anh giao cho em tự quyết các chi tiết, nên phần lớn tài liệu là **(em đề xuất)**. Mọi con số là số khởi đầu, em chỉnh sau khi cả nhà chơi thử.
