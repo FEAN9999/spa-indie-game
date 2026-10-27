@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { UNLOCK_DAY } from '../../src/config'
+import { bookOpen } from '../../src/sim/regulars'
 import { createRng } from '../../src/sim/rng'
 import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import { pickHint } from '../../src/sim/tutorial'
 import { TUTORIAL_HINTS } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
-import { seatAndWait, startService } from './helpers'
+import { advanceUntil, seatAndWait, startService } from './helpers'
 
 const fresh = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
 
@@ -82,7 +83,11 @@ describe('the regulars hints', () => {
     expect(pickHint(sim)).toBeNull()
     seatAndWait(sim)
     expect(pickHint(sim)).toBeNull()
-    const r = seatAndWait(sim, { regular: 'hanh' })
+    // she is still walking in: the book is open, but its hand waits for hers
+    const r = sim.spawnCustomer({ regular: 'hanh' })
+    expect(bookOpen(sim.book)).toBe(true)
+    expect(pickHint(sim)).toBeNull()
+    advanceUntil(sim, () => r.state === 'waiting')
     seatAndWait(sim, { regular: 'vy' })
     expect(pickHint(sim)).toEqual({ hint: 'regular', customerId: r.id })
     sim.markHint('regular')

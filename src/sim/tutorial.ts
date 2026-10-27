@@ -20,7 +20,7 @@ export function pickHint(sim: SpaSim): Pointer | null {
     const c = waiting.find(x => x.regular !== null)
     if (c) return { hint: 'regular', customerId: c.id }
   }
-  if (bookOpen(sim.book) && !sim.hintDone('openBook')) return { hint: 'openBook' }
+  if (bookOpen(sim.book) && sim.hintDone('regular') && !sim.hintDone('openBook')) return { hint: 'openBook' }
   // only on the day each button opens: a shop already past it gets the badge but no hand
   if (sim.day === UNLOCK_DAY.build && !sim.hintDone('openBuild')) return { hint: 'openBuild' }
   if (sim.day === UNLOCK_DAY.staff && !sim.hintDone('openStaff')) return { hint: 'openStaff' }
