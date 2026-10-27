@@ -61,6 +61,29 @@ const massageBed =
   rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
 
+// stone bed: the massage bed with a column of four dark stones down the sheet, the second and fourth glowing warm round the rim
+const STONE = '#5B5450'
+const STONE_YS = [1.12, 1.4, 1.68, 1.96]
+const stoneBed =
+  massageBed +
+  STONE_YS.filter((_, i) => i % 2).map(y => `<ellipse cx="0.55" cy="${y}" rx="0.185" ry="0.15" fill="${C.mustard}"/>`).join('') +
+  STONE_YS.map(y => `<ellipse cx="0.55" cy="${y}" rx="0.15" ry="0.115" fill="${STONE}" ${ink(FINE)}/>`).join('')
+
+// mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
+const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
+const mudTub =
+  rect(0.06, 0.5, 1.88, 2.58, C.wood, `rx="0.6" ${ink()}`) +
+  tubStave(0.4, 3.0) + tubStave(0.7, 3.05) + tubStave(1, 3.06) + tubStave(1.3, 3.05) + tubStave(1.6, 3.0) +
+  rect(0.06, 0.1, 1.88, 2.72, C.woodLight, `rx="0.6" ${ink()}`) +
+  `<path d="M0.06,0.9 H0.3 M0.06,1.45 H0.3 M0.06,2 H0.3 M1.7,0.9 H1.94 M1.7,1.45 H1.94 M1.7,2 H1.94 M0.7,2.6 V2.82 M1,2.6 V2.82 M1.3,2.6 V2.82" ` +
+  `stroke="${C.woodDark}" stroke-width="0.035"/>` +
+  rect(0.3, 0.32, 1.4, 2.28, C.clay, `rx="0.45" ${ink(FINE)}`) +
+  `<path d="M0.42,1.1 Q0.42,0.72 0.58,0.58" stroke="${C.clayLight}" stroke-width="0.035" fill="none" stroke-linecap="round" opacity="0.7"/>` +
+  `<circle cx="0.72" cy="1.25" r="0.09" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  `<circle cx="1.28" cy="1.8" r="0.07" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  `<circle cx="0.84" cy="2.3" r="0.11" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  rect(0.6, 0.2, 0.8, 0.32, C.paper, `rx="0.14" ${ink(FINE)}`)
+
 const bench =
   WEAVE +
   rect(0.1, 0.05, 3.0, 0.3, C.wood, `rx="0.08" ${ink()}`) +
@@ -595,6 +618,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   clayJar: { w: 1, h: 1.45, body: clayJar },
   areca: { w: 1, h: 2, body: areca },
   steamTent: { w: 2, h: 2.6, body: steamTent },
+  stoneBed: { w: 1.1, h: 3.15, body: stoneBed },
+  mudTub: { w: 2, h: 3.15, body: mudTub },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

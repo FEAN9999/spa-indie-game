@@ -367,6 +367,16 @@ const maskFace: Part = {
     `<path d="M-1.6,6.4 Q0,7.7 1.6,6.4" ${MOUTH}/>`,
 }
 
+// lying face up in the mud tub: a cream towel wrapped round the hair, its two ends crossed and twisted over the forehead
+const TOWEL = `fill="#FBF3E4" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"`
+const towelWrap: Part = {
+  viewBox: [-14.5, -16, 29, 16],
+  body:
+    `<path d="M-11.9,-1.6 C-12.6,-11 -6.4,-14.4 0,-14.4 C6.4,-14.4 12.6,-11 11.9,-1.6 C9.2,-3.9 4.6,-5.3 0,-5.3 C-4.6,-5.3 -9.2,-3.9 -11.9,-1.6Z" fill="#FBF3E4" ${LINE}/>` +
+    `<path d="M-11.5,-2.8 C-8,-5.5 -3.4,-8 -0.2,-12.6 M11.5,-2.8 C8,-5.5 3.4,-8 0.2,-12.6" ${FINE}/>` +
+    `<path d="M-2.6,-11.8 C-1.9,-14.2 1.9,-14.2 2.6,-11.8 C2.1,-10 -2.1,-10 -2.6,-11.8Z" ${TOWEL}/>`,
+}
+
 const STRAND = `stroke="${SHADE}" stroke-width="1.1" fill="none" stroke-linecap="round"`
 const hair = (shape: string, strands: string, top = -14): Part => ({ viewBox: [-14.5, top, 29, 18 - top], body: `${shape}${strands}` })
 const path = (d: string) => `<path d="${d}" fill="${W}" ${LINE}/>`
@@ -556,6 +566,7 @@ const parts: Record<string, Part> = {
   'chefHat-side': chefHatSide,
   'chefHat-up': chefHatUp,
   'mask-face': maskFace,
+  'towel-wrap': towelWrap,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
   'hair0-up': hair(path(bobUp), strandsBack),
   'hair0-side': hair(path(bobSide), strandsFront),

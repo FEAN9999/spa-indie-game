@@ -5,9 +5,11 @@ import { furnitureTextures } from '../art/furniture'
 import { ingredientTextures } from '../art/ingredients'
 import { maskTextures } from '../art/maskArt'
 import { massageTextures } from '../art/massageArt'
+import { mudTextures } from '../art/mudArt'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { steamTextures } from '../art/steamArt'
+import { stoneTextures } from '../art/stoneArt'
 import { loadSvgTextures } from '../art/svg'
 import { GAME_H, GAME_W } from '../config'
 import { buildGrid } from '../sim/grid'
@@ -35,6 +37,8 @@ export class BootScene extends Phaser.Scene {
       ...massageTextures(),
       ...ingredientTextures(),
       ...steamTextures(),
+      ...stoneTextures(),
+      ...mudTextures(),
     })
     this.scene.start('SpaScene')
   }

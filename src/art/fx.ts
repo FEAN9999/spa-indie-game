@@ -1,4 +1,4 @@
-import { C } from './palette'
+import { C, SKIN } from './palette'
 import { svgDoc } from './svg'
 
 const STAR_PATH = 'M50,6 L62,36 L94,38 L69,58 L78,90 L50,72 L22,90 L31,58 L6,38 L38,36Z'
@@ -13,6 +13,19 @@ const bubble = (inner: string) =>
     1,
     `<path d="M8,4 H62 Q68,4 68,10 V40 Q68,46 62,46 H42 L35,58 L28,46 H8 Q2,46 2,40 V10 Q2,4 8,4Z" fill="${C.cream}" ${OUTLINE}/>${inner}`,
   )
+
+/** Dark stones `[cx, cy, rx, ry]` glowing warm round their ink rims, each with a pale shine; the glows go under every stone. */
+const hotStones = (stones: [number, number, number, number][], w = 2.5) =>
+  stones.map(([cx, cy, rx, ry]) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx + w * 1.1}" ry="${ry + w * 1.1}" fill="${C.mustard}"/>`).join('') +
+  stones
+    .map(
+      ([cx, cy, rx, ry]) =>
+        `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#5B5450" stroke="${C.ink}" stroke-width="${w}"/>` +
+        `<path d="M${cx - rx * 0.55},${cy - ry * 0.15} Q${cx - rx * 0.4},${cy - ry * 0.6} ${cx},${cy - ry * 0.6}" fill="none" stroke="#8C8580" stroke-width="${w * 0.7}" stroke-linecap="round"/>`,
+    )
+    .join('')
+/** A customer's skin on a badge. */
+const SKIN_TONE = `#${SKIN[1].toString(16)}`
 
 /** A round 56 px service badge on its own color. */
 const badge = (fill: string, inner: string) => svgDoc([0, 0, 56, 56], 1, `<circle cx="28" cy="28" r="25" fill="${fill}" ${OUTLINE}/>${inner}`)
@@ -150,6 +163,29 @@ export function fxTextures(): Record<string, string> {
         `<ellipse cx="28" cy="25" rx="16" ry="4.5" fill="${C.leaf}" ${INNER}/>` +
         `<path d="M18,50 l4,-6 l4,6 M26,50 l4,-7 l4,7 M34,50 l3,-5 l3,5" fill="${C.mustard}" stroke="${C.terracotta}" stroke-width="1.5" stroke-linejoin="round"/>`,
     ),
+    // three dark stones glowing at the rim along a customer's back, heat rising off them
+    'svc-stone': badge(
+      C.terracotta,
+      `<path d="M8.4,40 A23,23 0 0 0 47.6,40 Q28,30 8.4,40Z" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<path d="M16,28 q-2.5,-3.5 0,-7 q2.5,-3.5 0,-7 M28,24 q-2.5,-3.5 0,-7 q2.5,-3.5 0,-7 M40,28 q-2.5,-3.5 0,-7 q2.5,-3.5 0,-7" fill="none" stroke="${C.cream}" stroke-width="2.4" stroke-linecap="round"/>` +
+        hotStones([
+          [16, 36.5, 7, 5],
+          [40, 36.5, 7, 5],
+          [28, 33, 8.5, 6],
+        ]),
+    ),
+    // a towel-wrapped head in a wooden tub of mud
+    'svc-mud': badge(
+      C.glow,
+      `<path d="M12,35 H44 V40 Q44,45 39,45 H17 Q12,45 12,40Z" fill="${C.wood}" ${INNER}/>` +
+        `<path d="M20,37 V44.5 M28,37 V45 M36,37 V44.5" stroke="${C.woodDark}" stroke-width="2"/>` +
+        `<ellipse cx="28" cy="35" rx="16" ry="4" fill="${C.clay}" ${INNER}/>` +
+        `<circle cx="28" cy="24.5" r="8.8" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<path d="M18.3,23.2 C17.7,15.5 22.8,12.7 28,12.7 C33.2,12.7 38.3,15.5 37.7,23.2 C35.5,21.3 31.8,20.2 28,20.2 C24.2,20.2 20.5,21.3 18.3,23.2Z" fill="${C.paper}" ${INNER}/>` +
+        `<path d="M23.4,26 q1.5,1.4 3,0 M29.6,26 q1.5,1.4 3,0" fill="none" stroke="${C.ink}" stroke-width="1.5" stroke-linecap="round"/>` +
+        `<path d="M20.5,32 Q28,36 35.5,32" fill="${C.clay}" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/>` +
+        `<circle cx="17" cy="35.4" r="1.8" fill="${C.clayLight}"/><circle cx="39.5" cy="34.6" r="2" fill="${C.clayLight}"/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -184,11 +220,33 @@ export function fxTextures(): Record<string, string> {
         `<path d="M28,41 C26,30 28,19 28,8" stroke="${C.tealDark}" stroke-width="2.6" fill="none" stroke-linecap="round"/>` +
         `<rect x="21" y="38" width="14" height="9" rx="3" fill="${C.mustard}" ${INNER}/>`,
     ),
+    // a kraft sack of mineral mud, tied at the neck, a heap of mud on its label
+    'stock-mud': badge(
+      C.glow,
+      `<path d="M20,15 Q18,9 22,10 Q24,7 28,9 Q32,7 34,10 Q38,9 36,15Z" fill="${C.weave}" ${INNER}/>` +
+        `<path d="M19,19 C11,27 11,44 17,47 H39 C45,44 45,27 37,19Z" fill="${C.weave}" ${INNER}/>` +
+        `<rect x="18" y="14" width="20" height="6" rx="3" fill="${C.terracotta}" ${INNER}/>` +
+        `<rect x="19.5" y="27" width="17" height="13" rx="2.5" fill="${C.paper}" ${INNER}/>` +
+        `<path d="M23,37 Q23,31 28,31 Q33,31 33,37Z" fill="${C.clay}"/>`,
+    ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(
       [0, 0, 56, 64],
       1,
       `<g stroke="#9FB8BF" stroke-width="6" fill="none" stroke-linecap="round"><path d="M18,60 q10,-12 0,-24 q-10,-12 0,-24"/><path d="M38,56 q10,-12 0,-24 q-10,-12 0,-24"/></g>`,
+    ),
+    // a row of three hot stones, laid across a face-down customer's back
+    'fx-stones': svgDoc(
+      [0, 0, 64, 28],
+      1,
+      hotStones(
+        [
+          [12.5, 15, 9, 7],
+          [51.5, 15, 9, 7],
+          [32, 14, 10, 8],
+        ],
+        2.4,
+      ),
     ),
     'icon-dice': svgDoc(
       [0, 0, 64, 64],
