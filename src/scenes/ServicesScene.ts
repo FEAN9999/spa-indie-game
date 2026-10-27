@@ -144,7 +144,9 @@ export class ServicesScene extends Phaser.Scene {
     const { sim } = this.params
     const cy = y0 + STOCK_ROW_H / 2
     const users = stockUsers(item, SERVICE_IDS.filter(id => sim.services.includes(id)))
-    const usedBy = users.length ? t('stockUsedBy', { name: users.map(id => t(SERVICES[id].name)).join(', ') }) : t('stockUsedByAll')
+    // no-break spaces inside each name, so two names wrap after the comma, never inside "Đá nóng"
+    const names = users.map(id => t(SERVICES[id].name).replace(/ /g, ' ')).join(', ')
+    const usedBy = users.length ? t('stockUsedBy', { name: names }) : t('stockUsedByAll')
     const left = sim.stock[item]
     this.keep(this.add.image(ICON_X, cy, `stock-${item}`).setScale(1.5))
     this.keep(this.add.text(TEXT_X, cy - 58, t(STOCK_NAME[item]), textStyle(40)).setOrigin(0, 0.5))
