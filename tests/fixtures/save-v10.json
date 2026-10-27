@@ -1,0 +1,494 @@
+{
+  "v": 10,
+  "day": 6,
+  "minutes": 494.88000000000056,
+  "money": 900000,
+  "reviews": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0,
+    "wages": 0,
+    "restock": 0,
+    "gifts": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": null,
+  "owner": {
+    "pos": {
+      "x": 9,
+      "y": 13
+    },
+    "facing": "down",
+    "path": [],
+    "task": null
+  },
+  "customers": [
+    {
+      "id": 1,
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 3,
+        "shirt": 4
+      },
+      "state": "waiting",
+      "stateMs": 0,
+      "pos": {
+        "x": 2,
+        "y": 13
+      },
+      "facing": "up",
+      "path": [],
+      "patienceMs": 48000,
+      "patienceMaxMs": 48000,
+      "seat": {
+        "x": 2,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null,
+      "greet": 0,
+      "service": "shampoo",
+      "kind": "office",
+      "regular": null,
+      "heldMs": 0,
+      "vip": null
+    }
+  ],
+  "items": [
+    {
+      "kind": "bed",
+      "x": 2,
+      "y": 2,
+      "flip": false,
+      "id": 1
+    },
+    {
+      "kind": "bed",
+      "x": 4,
+      "y": 2,
+      "flip": false,
+      "id": 2
+    },
+    {
+      "kind": "cabinet",
+      "x": 9,
+      "y": 2,
+      "flip": false,
+      "id": 3
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 5,
+      "flip": false,
+      "id": 4
+    },
+    {
+      "kind": "shelf",
+      "x": 2,
+      "y": 7,
+      "flip": false,
+      "id": 5
+    },
+    {
+      "kind": "lotus",
+      "x": 9,
+      "y": 7,
+      "flip": false,
+      "id": 6
+    },
+    {
+      "kind": "vase",
+      "x": 11,
+      "y": 11,
+      "flip": false,
+      "id": 7
+    },
+    {
+      "kind": "planter",
+      "x": 2,
+      "y": 12,
+      "flip": false,
+      "id": 8
+    },
+    {
+      "kind": "bench",
+      "x": 2,
+      "y": 13,
+      "flip": false,
+      "id": 9
+    },
+    {
+      "kind": "tea",
+      "x": 3,
+      "y": 15,
+      "flip": false,
+      "id": 10
+    },
+    {
+      "kind": "plant",
+      "x": 1,
+      "y": 16,
+      "flip": false,
+      "id": 11
+    },
+    {
+      "kind": "slippers",
+      "x": 4,
+      "y": 16,
+      "flip": false,
+      "id": 12
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 16,
+      "flip": false,
+      "id": 13
+    }
+  ],
+  "nextItemId": 14,
+  "nextId": 2,
+  "untilArrivalMs": 3000,
+  "shopName": "Tiệm Spa",
+  "ownerLook": {
+    "skin": 0,
+    "hair": 0,
+    "hairStyle": 0,
+    "shirt": 0
+  },
+  "profileDone": false,
+  "hints": [],
+  "staff": [
+    {
+      "name": "Test 1",
+      "role": "receptionist",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 3,
+        "friendly": 3,
+        "stamina": 3
+      },
+      "wage": 40000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 0
+      },
+      "id": 1,
+      "level": 2,
+      "xp": 4,
+      "pos": {
+        "x": 10,
+        "y": 13
+      },
+      "facing": "down",
+      "path": [],
+      "task": null,
+      "sinceRest": 0,
+      "leaving": false,
+      "study": null
+    },
+    {
+      "name": "Test 2",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 2,
+        "speed": 4,
+        "friendly": 3,
+        "stamina": 2
+      },
+      "wage": 37500,
+      "rare": false,
+      "tiers": {
+        "shampoo": 2,
+        "mask": 0,
+        "massage": 0
+      },
+      "id": 2,
+      "level": 1,
+      "xp": 0,
+      "pos": {
+        "x": 8,
+        "y": 13
+      },
+      "facing": "down",
+      "path": [
+        {
+          "x": 7,
+          "y": 13
+        },
+        {
+          "x": 7,
+          "y": 14
+        },
+        {
+          "x": 6,
+          "y": 14
+        },
+        {
+          "x": 5,
+          "y": 14
+        },
+        {
+          "x": 4,
+          "y": 14
+        },
+        {
+          "x": 3,
+          "y": 14
+        },
+        {
+          "x": 2,
+          "y": 14
+        }
+      ],
+      "task": {
+        "kind": "fetch",
+        "customerId": 1
+      },
+      "sinceRest": 0,
+      "leaving": false,
+      "study": null
+    },
+    {
+      "name": "Test 3",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 4,
+        "speed": 2,
+        "friendly": 1,
+        "stamina": 3
+      },
+      "wage": 35000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 1,
+        "massage": 0
+      },
+      "id": 3,
+      "level": 1,
+      "xp": 0,
+      "pos": {
+        "x": 9,
+        "y": 11
+      },
+      "facing": "down",
+      "path": [],
+      "task": null,
+      "sinceRest": 0,
+      "leaving": false,
+      "study": {
+        "course": "shampoo",
+        "paid": 100000
+      }
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Linh",
+      "role": "technician",
+      "look": {
+        "skin": 2,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 1
+      },
+      "stats": {
+        "skill": 2,
+        "speed": 3,
+        "friendly": 1,
+        "stamina": 3
+      },
+      "wage": 32500,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 1
+      }
+    },
+    {
+      "name": "Duy",
+      "role": "technician",
+      "look": {
+        "skin": 3,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 2
+      },
+      "stats": {
+        "skill": 2,
+        "speed": 3,
+        "friendly": 2,
+        "stamina": 3
+      },
+      "wage": 35000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 1
+      }
+    },
+    {
+      "name": "Hương",
+      "role": "receptionist",
+      "look": {
+        "skin": 1,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 2,
+        "speed": 2,
+        "friendly": 1,
+        "stamina": 1
+      },
+      "wage": 25000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 0
+      }
+    }
+  ],
+  "candidatesDay": 6,
+  "nextStaffId": 4,
+  "services": [
+    "shampoo",
+    "mask"
+  ],
+  "stock": {
+    "shampoo": 20,
+    "towel": 20,
+    "mask": 20,
+    "oil": 20
+  },
+  "book": {
+    "regulars": {
+      "hanh": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "vy": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "sau": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "khoa": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "tu": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "ba": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "thao": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "lan": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      }
+    },
+    "served": {
+      "student": 0,
+      "office": 0,
+      "picky": 0,
+      "elder": 0,
+      "celeb": 0
+    },
+    "kindsMet": [],
+    "gifts": [],
+    "extraCustomer": false,
+    "extraAt": null,
+    "boardGiven": false
+  },
+  "vip": {
+    "vips": {
+      "singer": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "miss": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "star": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "chef": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      }
+    },
+    "booking": null,
+    "nextDay": 0,
+    "everBooked": false,
+    "boardGiven": false
+  }
+}
