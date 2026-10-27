@@ -19,6 +19,7 @@ const COUNT_MS = 800
 const ROW_Y = 650
 const ROW_H = 90
 const HEADING_H = 64
+const NOTE_GAP = 14
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 /** End-of-day card: the day's numbers count up, then the player starts the next day. */
@@ -50,13 +51,14 @@ export class SummaryScene extends Phaser.Scene {
     const heights = rows.map(row => (row.kind === 'heading' ? HEADING_H : ROW_H))
     const rowsEnd = ROW_Y + heights.reduce((sum, h) => sum + h, 0)
     const notes = summaryNotes(firstDay, sim.vip, sim.day, sim.hintDone('vip'))
-    // the notes sit under the rows and the button under them, by the text's measured height; added first so the card is laid out to fit
-    const note = notes.length
-      ? this.add.text(GAME_W / 2, 0, notes.join('\n'),{ ...textStyle(34, '600'), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5).setDepth(1)
-      : null
-    const noteH = note ? note.height + 20 : 0
-    note?.setY(rowsEnd + 20 + note.height / 2)
-    const buttonY = rowsEnd + 20 + noteH + 75
+    // each note is its own text, stacked under the rows; the button goes under their measured height, so they are drawn before the card (depth 1 keeps them above it)
+    let noteBottom = rowsEnd + 20
+    for (const note of notes) {
+      const style = note.booking ? textStyle(36, '800', C.teal) : textStyle(34, '600')
+      const text = this.add.text(GAME_W / 2, noteBottom, note.text, { ...style, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0).setDepth(1)
+      noteBottom += text.height + NOTE_GAP
+    }
+    const buttonY = (notes.length ? noteBottom - NOTE_GAP : rowsEnd) + 20 + 75
     const cardH = buttonY + 75 + 60 - 420
 
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()

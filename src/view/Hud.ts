@@ -175,7 +175,7 @@ export class Hud {
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
     this.rating.x = row.ratingX
-    // an invisible container is not hit-tested, so the book button takes no tap until a regular has come
+    // an invisible container is not hit-tested, so the book button takes no tap until a regular has come or a VIP is booked
     this.book.setVisible(this.sim.bookShown())
     this.bookBadge.setVisible(!this.sim.hintDone('openBook'))
     // checked every frame, so a new day opens its buttons at once

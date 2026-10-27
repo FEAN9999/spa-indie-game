@@ -64,6 +64,8 @@ const BADGE_BOTTOM = PATIENCE_BAR_TOP - 4
 const SPEECH_TIP = -CHARACTER_HEIGHT_PX - 70
 /** The heart badge's centre, left of the service badge. */
 const HEART_DX = -64
+/** The toast after another that a toast right now would overwrite. */
+const LATE_TOAST_MS = 2200
 /** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
 const STAR_TWINKLE = 0.04
 const STAR_TWINKLE_MS = 1200
@@ -581,7 +583,7 @@ export class SpaScene extends Phaser.Scene {
         if (e.stars === 3) this.say(e.customerId, VIP_TEXT[e.vip].thanks, BUBBLE_MS.story)
         if (e.photo) this.hud.toast(t('vipPhotoToast', { name }))
         // later than the photo toast, which a toast right now would overwrite
-        if (e.board) this.time.delayedCall(2200, () => this.hud.toast(t('vipBoardToast')))
+        if (e.board) this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('vipBoardToast')))
         return
       }
       case 'heart': {
@@ -606,7 +608,7 @@ export class SpaScene extends Phaser.Scene {
       }
       case 'bookPage':
         // later than the gift toast, which a toast right now would overwrite
-        this.time.delayedCall(2200, () => this.hud.toast(t('bookPageToast')))
+        this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('bookPageToast')))
         return
       case 'greeted':
       case 'levelUp':
@@ -656,6 +658,11 @@ export class SpaScene extends Phaser.Scene {
     })
   }
 
+  /** Where the heart and the VIP star sit while waiting: level with the service badge, shifted left of it when it shows. */
+  private badgeSide(p: Placement, s: CustomerSprite, badge: boolean): [number, number] {
+    return [p.x + (badge ? HEART_DX : 0), p.y + BADGE_BOTTOM - s.badge.height / 2]
+  }
+
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
     // on the bed from arrival until the owner finishes, waiting or being served
     const lying = c.stationId !== null && c.path.length === 0
@@ -694,15 +701,14 @@ export class SpaScene extends Phaser.Scene {
 
     const heart = c.state === 'waiting' && c.regular !== null
     s.heart.setVisible(heart)
-    if (heart) s.heart.setPosition(p.x + (badge ? HEART_DX : 0), p.y + BADGE_BOTTOM - s.badge.height / 2)
+    if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge))
 
     const star = c.vip !== null && !lying
     s.vipStar.setVisible(star)
     if (star) {
       const waiting = c.state === 'waiting'
-      const y = waiting ? p.y + BADGE_BOTTOM - s.badge.height / 2 : p.y + PATIENCE_BAR_TOP
       s.vipStar
-        .setPosition(p.x + (waiting && badge ? HEART_DX : 0), y)
+        .setPosition(...(waiting ? this.badgeSide(p, s, badge) : ([p.x, p.y + PATIENCE_BAR_TOP] as const)))
         .setScale(0.5 + STAR_TWINKLE * Math.sin((time / STAR_TWINKLE_MS) * 2 * Math.PI))
     }
 

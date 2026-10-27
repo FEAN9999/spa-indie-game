@@ -14,16 +14,19 @@ describe('VIP notes and clock star', () => {
 
   it('adds the VIP reminder until the VIP hint is done', () => {
     const vip = booked(4, 900)
-    expect(summaryNotes(false, vip, 3, false)).toEqual([bookingText('vipBookingNote', vip.booking!), t('vipFirstNote')])
-    expect(summaryNotes(false, vip, 3, true)).toEqual([bookingText('vipBookingNote', vip.booking!)])
+    expect(summaryNotes(false, vip, 3, false)).toEqual([
+      { text: bookingText('vipBookingNote', vip.booking!), booking: true },
+      { text: t('vipFirstNote'), booking: false },
+    ])
+    expect(summaryNotes(false, vip, 3, true)).toEqual([{ text: bookingText('vipBookingNote', vip.booking!), booking: true }])
   })
 
   it("puts the first day's note first and adds nothing without a booking for tomorrow", () => {
-    expect(summaryNotes(true, emptyVipBook(), 1, false)).toEqual([t('summaryFirstDay')])
+    expect(summaryNotes(true, emptyVipBook(), 1, false)).toEqual([{ text: t('summaryFirstDay'), booking: false }])
     expect(summaryNotes(false, emptyVipBook(), 1, false)).toEqual([])
     expect(summaryNotes(false, booked(6, 900), 3, false)).toEqual([])
     const vip = booked(4, 900)
-    expect(summaryNotes(true, vip, 3, true)[0]).toBe(t('summaryFirstDay'))
+    expect(summaryNotes(true, vip, 3, true)[0]).toEqual({ text: t('summaryFirstDay'), booking: false })
     expect(summaryNotes(true, vip, 3, true)).toHaveLength(2)
   })
 
