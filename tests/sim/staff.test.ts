@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { LEVEL_WAGE_RAISE, STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
-import { BASIC_SERVICES, SERVICE_IDS } from '../../src/sim/services'
+import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
-import { courses, drawTiers, gainXp, greeterPatience, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, staffWalkSpeed, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff, type TraitId } from '../../src/sim/staff'
+import { candidatePool, courses, drawTiers, gainXp, greeterPatience, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, staffWalkSpeed, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff, type TraitId } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -18,7 +18,7 @@ describe('staff rules', () => {
   it('draws candidates', () => {
     const rng = createRng(7)
     const n = 2000
-    const list = Array.from({ length: n }, () => makeCandidate(rng, ['Lan']))
+    const list = Array.from({ length: n }, () => makeCandidate(rng, ['Lan'], ['shampoo']))
     const receptionists = list.filter(c => c.role === 'receptionist').length / n
     const rare = list.filter(c => c.rare).length / n
     expect(receptionists).toBeGreaterThan(0.28)
@@ -100,9 +100,10 @@ describe('staff rules', () => {
 })
 
 describe('staff tiers', () => {
-  const draw = () => {
+  // an empty `taken` each time: there are only so many names
+  const draw = (open: ServiceId[] = ['shampoo']) => {
     const rng = createRng(7)
-    return Array.from({ length: 300 }, () => makeCandidate(rng, []))
+    return Array.from({ length: 300 }, () => makeCandidate(rng, [], open))
   }
 
   it('gives a new technician tier 1 in exactly one service, drawn from every basic service', () => {
@@ -121,6 +122,16 @@ describe('staff tiers', () => {
 
   it('draws a tier from the pool it is given', () => {
     expect(drawTiers(createRng(3), 'technician', 1, ['mask'])).toEqual({ ...noTiers(), mask: 1 })
+  })
+
+  it('pools the basic services and the recipe services the shop has open', () => {
+    expect(candidatePool(['shampoo'])).toEqual(['shampoo', 'mask', 'massage'])
+    expect(candidatePool(['shampoo', 'mask', 'massage', 'steam'])).toEqual(['shampoo', 'mask', 'massage', 'steam'])
+  })
+
+  it('draws a steam specialty only once steam is open', () => {
+    expect(draw(['shampoo', 'mask', 'massage']).filter(c => c.tiers.steam > 0)).toEqual([])
+    expect(draw(['shampoo', 'mask', 'massage', 'steam']).some(c => c.tiers.steam > 0)).toBe(true)
   })
 })
 
@@ -148,7 +159,7 @@ describe('courses', () => {
 describe('personalities', () => {
   it('draws one of six traits for a technician and one of three for a receptionist', () => {
     const rng = createRng(11)
-    const list = Array.from({ length: 400 }, () => makeCandidate(rng, []))
+    const list = Array.from({ length: 400 }, () => makeCandidate(rng, [], ['shampoo']))
     const techs = list.filter(c => c.role === 'technician').map(c => c.trait)
     const desk = list.filter(c => c.role === 'receptionist').map(c => c.trait)
     expect(techs.every(t => TRAIT_IDS.includes(t))).toBe(true)

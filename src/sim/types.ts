@@ -1,5 +1,6 @@
 import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
+import type { Ingredient, RecipeId } from './recipes'
 import type { RegularGift, RegularId } from './regulars'
 import type { VipId } from './vips'
 import type { ServiceId } from './services'
@@ -118,6 +119,8 @@ export type SimEvent =
   | { type: 'gift'; customerId: number; regular: RegularId; gift: RegularGift }
   /** Every regular has five hearts: the book's page is full. */
   | { type: 'bookPage' }
+  /** A regular told one of a recipe's ingredients, now in that recipe's `heard`. */
+  | { type: 'recipeHint'; customerId: number; regular: RegularId; recipe: RecipeId; ingredient: Ingredient }
   /** Right after her customerArrived; `first` on her first visit. */
   | { type: 'vipArrived'; customerId: number; vip: VipId; first: boolean }
   /** A VIP paid; `photo` when this visit brought her signed photo, `board` when it brought the gold board. */

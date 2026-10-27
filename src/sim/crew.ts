@@ -72,7 +72,7 @@ export function refreshCandidates({ sim, rng }: CrewHost): void {
   const taken = sim.staff.map(s => s.name)
   sim.candidates = []
   for (let i = 0; i < CANDIDATES_PER_DAY; i++) {
-    const c = makeCandidate(rng, taken)
+    const c = makeCandidate(rng, taken, sim.services)
     taken.push(c.name)
     sim.candidates.push(c)
   }

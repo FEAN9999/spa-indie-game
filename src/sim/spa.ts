@@ -11,6 +11,7 @@ import {
   OWNER_START,
   PATIENCE_MS,
   RATING_WINDOW,
+  RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
   RESTOCK_PRICE,
   STARTING_MONEY,
@@ -32,7 +33,7 @@ import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
-import { emptyRecipes, type RecipeBook } from './recipes'
+import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { createRng, randomLook, type Rng } from './rng'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -47,6 +48,8 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 export type HireProblem = 'money' | 'full'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
+/** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
+export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0 })
 
@@ -192,6 +195,27 @@ export class SpaSim {
   /** Whether the recipe bench is there: once massage is open. */
   benchOpen(): boolean {
     return this.services.includes('massage')
+  }
+
+  /**
+   * One bowl at the bench. A bowl tried before, in any order, answers again for free; a new one costs RECIPE_TRY_COST
+   * (not a day's cost), never while money is negative or short, and all 3 right solves the recipe.
+   * Throws for a bowl that is not 3 different ingredients, before the bench is there, or for a solved recipe.
+   */
+  mixRecipe(id: RecipeId, mix: readonly Ingredient[]): MixOutcome {
+    if (!isMix(mix)) throw new Error(`Not a mix: ${mix.join(', ')}`)
+    if (!this.benchOpen()) throw new Error('The recipe bench is not open')
+    const recipe = this.recipes[id]
+    if (recipe.solved) throw new Error(`Recipe ${id} is solved`)
+    const before = recipe.tries.find(t => sameMix(t.mix, mix))
+    if (before) return { kind: 'repeat', right: before.right }
+    if (this.money < 0) return { kind: 'problem', problem: 'debt' }
+    if (this.money < RECIPE_TRY_COST) return { kind: 'problem', problem: 'money' }
+    this.money -= RECIPE_TRY_COST
+    const right = rightCount(id, mix)
+    recipe.tries.push({ mix: [...mix], right })
+    if (right === 3) recipe.solved = true
+    return { kind: 'tried', right }
   }
 
   /** Opens the service for its price; opening an open one does nothing. */
@@ -348,6 +372,14 @@ export class SpaSim {
         this.emit({ type: 'gift', customerId: c.id, regular: c.regular, gift: r.gift })
       }
       if (r.board) this.emit({ type: 'bookPage' })
+      // a pleased regular may tell a recipe's secret once the bench is there, but not on the visit that brings their gift
+      if (stars >= 2 && this.benchOpen() && !r.gift) {
+        const hint = pickHint(this.recipes, this.rng)
+        if (hint) {
+          this.recipes[hint.recipe].heard.push(hint.ingredient)
+          this.emit({ type: 'recipeHint', customerId: c.id, regular: c.regular, ...hint })
+        }
+      }
     }
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null

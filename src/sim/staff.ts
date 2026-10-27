@@ -28,7 +28,7 @@ import {
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
 import { randomLook, type Rng } from './rng'
-import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
+import { BASIC_SERVICES, RECIPE_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import type { Facing, Look, Tile, Vec } from './types'
 
 export type StaffRole = 'receptionist' | 'technician'
@@ -121,8 +121,11 @@ export const tuition = (s: Staff, course: Course): number => {
   return s.trait === 'studious' ? Math.round((price * STUDIOUS_TUITION) / 1000) * 1000 : price
 }
 
-/** A random candidate whose name is not in `taken`. */
-export function makeCandidate(rng: Rng, taken: string[]): Candidate {
+/** The services a candidate's specialty is drawn from: every basic service, and the recipe services in `open`. */
+export const candidatePool = (open: readonly ServiceId[]): ServiceId[] => [...BASIC_SERVICES, ...RECIPE_SERVICES.filter(id => open.includes(id))]
+
+/** A random candidate whose name is not in `taken`, with a specialty in a service the shop can have, given the `open` ones. */
+export function makeCandidate(rng: Rng, taken: string[], open: readonly ServiceId[]): Candidate {
   const role: StaffRole = rng() < RECEPTIONIST_CHANCE ? 'receptionist' : 'technician'
   const rare = rng() < RARE_CHANCE
   const stats = {} as StaffStats
@@ -130,7 +133,7 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
   const look = randomLook(rng)
   const free = STAFF_NAMES.filter(n => !taken.includes(n))
   const name = free[Math.floor(rng() * free.length)]
-  const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, BASIC_SERVICES)
+  const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, candidatePool(open))
   const trait = drawTrait(rng, role)
   return { name, role, look, stats, wage: wageFor(stats), rare, tiers, trait }
 }
