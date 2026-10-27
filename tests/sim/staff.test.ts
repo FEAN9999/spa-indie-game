@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
+import { LEVEL_WAGE_RAISE, STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
-import { courses, drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
+import { courses, drawTiers, gainXp, greeterPatience, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, staffWalkSpeed, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff, type TraitId } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -164,5 +164,61 @@ describe('personalities', () => {
     const want = sim.candidates[0].trait
     expect(sim.hire(0)).toBeNull()
     expect(sim.staff[0].trait).toBe(want)
+  })
+})
+
+describe('personality numbers', () => {
+  const with_ = (trait: TraitId, extra: object = {}) => ({ trait, role: 'technician', stats: all(3), tiers: noTiers(), ...extra }) as Staff
+
+  it('adds a dot of skill for a deft technician, still up to 5', () => {
+    const at = (trait: TraitId, skill: number, tier: number) => with_(trait, { stats: { ...all(1), skill }, tiers: { ...noTiers(), mask: tier } })
+    expect(starSkill(at('deft', 3, 1), 'mask')).toBe(5)
+    expect(starSkill(at('deft', 5, 3), 'mask')).toBe(5)
+    expect(starSkill(at('calm', 3, 1), 'mask')).toBe(4)
+  })
+
+  it('works 20% faster when quick, never under the floor', () => {
+    const at = (speed: number, tier: number) => with_('quick', { stats: { ...all(1), speed }, tiers: { ...noTiers(), mask: tier } })
+    expect(serviceMs(at(3, 0), 'mask')).toBe(Math.round(workMs(3) * 0.8))
+    expect(serviceMs(at(5, 3), 'mask')).toBe(WORK_FLOOR_MS)
+  })
+
+  it("cuts a studious person's tuition by 30%, to the thousand", () => {
+    const tech = (tier: number) => with_('studious', { tiers: { ...noTiers(), mask: tier } })
+    expect([0, 1, 2].map(tier => tuition(tech(tier), 'mask'))).toEqual([70000, 140000, 280000])
+    expect(tuition(with_('studious', { role: 'receptionist', stats: { ...all(3), friendly: 1 } }), 'greet')).toBe(35000)
+  })
+
+  it('rests a diligent person one customer sooner', () => {
+    expect(restAfter({ role: 'technician', stats: all(3), trait: 'diligent' })).toBe(4)
+    expect(restAfter({ role: 'receptionist', stats: all(3), trait: 'diligent' })).toBe(9)
+    expect(restAfter({ role: 'technician', stats: all(1), trait: 'diligent' })).toBe(2)
+    expect(restAfter({ role: 'technician', stats: { ...all(1), stamina: 0 }, trait: 'diligent' })).toBe(1)
+  })
+
+  it('gives a diligent person 1.5 experience and a studious one a double raise', () => {
+    const person = (trait: TraitId, xp: number) => ({ trait, level: 1, xp, stats: all(5), wage: 100000 }) as Staff
+    const d = person('diligent', 0)
+    gainXp(d, createRng(1))
+    expect(d.xp).toBe(1.5)
+    const up = (trait: TraitId) => {
+      const s = person(trait, 2)
+      gainXp(s, createRng(1))
+      return s.wage
+    }
+    expect(up('studious')).toBe(100000 + 2 * LEVEL_WAGE_RAISE)
+    expect(up('calm')).toBe(100000 + LEVEL_WAGE_RAISE)
+    expect(up('diligent')).toBe(100000 + LEVEL_WAGE_RAISE)
+  })
+
+  it('walks a calm technician 20% slower', () => {
+    expect(staffWalkSpeed(with_('calm'))).toBeCloseTo(walkSpeed(3) * 0.8)
+    expect(staffWalkSpeed(with_('quick'))).toBe(walkSpeed(3))
+  })
+
+  it("gives a jolly greeter's customers more patience", () => {
+    const r = (trait: TraitId) => with_(trait, { role: 'receptionist' })
+    expect(greeterPatience(r('jolly'))).toBeCloseTo(greetPatience(3) + 0.1)
+    expect(greeterPatience(r('diligent'))).toBe(greetPatience(3))
   })
 })

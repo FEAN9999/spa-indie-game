@@ -173,6 +173,15 @@ export const GREET_PATIENCE_PER_DOT = 0.02
 export const GREET_TIP_PER_DOT = 0.05
 export const STAFF_TIP_PER_DOT = 0.05
 
+// Personalities: the numbers behind each good side and the flaws that are only numbers
+export const QUICK_WORK_FACTOR = 0.8
+export const JOLLY_TIP = 0.1
+export const JOLLY_GREET_PATIENCE = 0.1
+export const DILIGENT_XP = 1.5
+export const CALM_WALK_FACTOR = 0.8
+export const STUDIOUS_TUITION = 0.7
+export const STUDIOUS_RAISE = 2
+
 // Regulars
 export const REGULARS_FROM_DAY = 7
 export const REGULAR_MEET_GAP_DAYS = 2

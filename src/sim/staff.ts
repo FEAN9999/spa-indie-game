@@ -1,11 +1,15 @@
 import {
+  CALM_WALK_FACTOR,
+  DILIGENT_XP,
   GREET_PATIENCE_BASE,
   GREET_PATIENCE_PER_DOT,
   GREET_STUDY_PRICE,
   GREET_TIP_PER_DOT,
+  JOLLY_GREET_PATIENCE,
   LEVEL_WAGE_RAISE,
   LEVEL_XP,
   MAX_TIER,
+  QUICK_WORK_FACTOR,
   RARE_CHANCE,
   RARE_TIER,
   RECEPTIONIST_CHANCE,
@@ -13,6 +17,8 @@ import {
   STAFF_TIP_PER_DOT,
   STAFF_WORK_MS_SLOW,
   STAFF_WORK_MS_STEP,
+  STUDIOUS_RAISE,
+  STUDIOUS_TUITION,
   STUDY_PRICE,
   TIER_WORK_FACTOR,
   WAGE_BASE,
@@ -106,7 +112,10 @@ export function courses(s: Staff, open: readonly ServiceId[]): Course[] {
 }
 
 /** What `course` costs `s` now; the one place a price is worked out. */
-export const tuition = (s: Staff, course: Course): number => (course === 'greet' ? GREET_STUDY_PRICE[s.stats.friendly - 1] : STUDY_PRICE[s.tiers[course]])
+export const tuition = (s: Staff, course: Course): number => {
+  const price = course === 'greet' ? GREET_STUDY_PRICE[s.stats.friendly - 1] : STUDY_PRICE[s.tiers[course]]
+  return s.trait === 'studious' ? Math.round((price * STUDIOUS_TUITION) / 1000) * 1000 : price
+}
 
 /** A random candidate whose name is not in `taken`. */
 export function makeCandidate(rng: Rng, taken: string[]): Candidate {
@@ -126,16 +135,21 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
 export const workMs = (speed: number): number => STAFF_WORK_MS_SLOW - (speed - 1) * STAFF_WORK_MS_STEP
 
 /** Time at the bed for `service`: each tier of it takes 15% off, down to a floor. */
-export const serviceMs = (s: Candidate, service: ServiceId): number => Math.max(Math.round(workMs(s.stats.speed) * TIER_WORK_FACTOR ** s.tiers[service]), WORK_FLOOR_MS)
+export const serviceMs = (s: Candidate, service: ServiceId): number =>
+  Math.max(Math.round(workMs(s.stats.speed) * TIER_WORK_FACTOR ** s.tiers[service] * (s.trait === 'quick' ? QUICK_WORK_FACTOR : 1)), WORK_FLOOR_MS)
 
-/** The skill the star roll for `service` uses: skill plus the tier of that service, up to 5. */
-export const starSkill = (s: Candidate, service: ServiceId): number => Math.min(5, s.stats.skill + s.tiers[service])
+/** The skill the star roll for `service` uses: skill plus the tier of that service, plus a dot if deft, up to 5. */
+export const starSkill = (s: Candidate, service: ServiceId): number => Math.min(5, s.stats.skill + s.tiers[service] + (s.trait === 'deft' ? 1 : 0))
 
 /** Tiles per second. */
 export const walkSpeed = (speed: number): number => 3 + 0.5 * speed
 
-/** Customers served (or greetings, twice as many for a receptionist) before a rest. */
-export const restAfter = (s: Pick<Staff, 'role' | 'stats'>): number => (s.stats.stamina + 2) * (s.role === 'receptionist' ? 2 : 1)
+/** Tiles per second for `s`: a calm one is slower. */
+export const staffWalkSpeed = (s: Candidate): number => walkSpeed(s.stats.speed) * (s.trait === 'calm' ? CALM_WALK_FACTOR : 1)
+
+/** Customers served (or greetings, twice as many for a receptionist) before a rest, one fewer for a diligent person, never under 1. */
+export const restAfter = (s: Pick<Staff, 'role' | 'stats'> & { trait?: TraitId }): number =>
+  Math.max(1, (s.stats.stamina + 2) * (s.role === 'receptionist' ? 2 : 1) - (s.trait === 'diligent' ? 1 : 0))
 
 /** The stars a technician's work earns for a roll in [0, 1). */
 export function staffStars(skill: number, roll: number): Stars {
@@ -154,13 +168,13 @@ export function levelFor(xp: number): number {
 
 /** One more customer: true when that is a level up, which raises a random stat below 5 and the wage. */
 export function gainXp(s: Staff, rng: Rng): boolean {
-  s.xp++
+  s.xp += s.trait === 'diligent' ? DILIGENT_XP : 1
   const level = levelFor(s.xp)
   if (level <= s.level) return false
   s.level = level
   const room = STAT_KEYS.filter(k => s.stats[k] < 5)
   if (room.length > 0) s.stats[room[Math.floor(rng() * room.length)]]++
-  s.wage += LEVEL_WAGE_RAISE
+  s.wage += LEVEL_WAGE_RAISE * (s.trait === 'studious' ? STUDIOUS_RAISE : 1)
   return true
 }
 
@@ -170,3 +184,6 @@ export const greetPatience = (friendly: number): number => GREET_PATIENCE_BASE +
 /** The tip multiplier: `greet` is the receptionist's friendliness (0 if nobody greeted), the technician's counts above 1. */
 export const tipFactor = (greet: number, technicianFriendly: number | null): number =>
   1 + GREET_TIP_PER_DOT * greet + (technicianFriendly === null ? 0 : STAFF_TIP_PER_DOT * (technicianFriendly - 1))
+
+/** How much longer a customer waits for `greeter`: a jolly one adds a little. */
+export const greeterPatience = (greeter: Candidate): number => greetPatience(greeter.stats.friendly) + (greeter.trait === 'jolly' ? JOLLY_GREET_PATIENCE : 0)

@@ -447,7 +447,7 @@ describe('levels and wages', () => {
 
   it('each customer earns experience', () => {
     const sim = dayThree()
-    const tech = hireStaff(sim, 'technician')
+    const tech = hireStaff(sim, 'technician', undefined, {}, 'calm')
     tech.xp = 2
     const wage = tech.wage
     seated(sim, 1)
@@ -587,7 +587,7 @@ describe('studying', () => {
 
   it('takes the tuition at once and books the course', () => {
     const sim = maskShop()
-    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     const costs = { ...sim.stats }
     expect(sim.study(tech.id, 'mask')).toBeNull()
     expect(sim.money).toBe(300_000)
@@ -597,7 +597,7 @@ describe('studying', () => {
 
   it('refuses a second course the same night, an unoffered course and too little money', () => {
     const sim = maskShop()
-    const tech = hireStaff(sim, 'technician', stats, { mask: 1, shampoo: 3 })
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1, shampoo: 3 }, 'calm')
     expect(sim.study(tech.id, 'mask')).toBeNull()
     expect(sim.studyProblem(tech.id, 'mask')).toBe('booked')
     expect(sim.study(tech.id, 'mask')).toBe('booked')
@@ -605,7 +605,7 @@ describe('studying', () => {
     expect(sim.study(tech.id, 'shampoo')).toBe('course')
     expect(sim.study(99, 'mask')).toBe('course')
 
-    const poor = hireStaff(sim, 'technician', stats)
+    const poor = hireStaff(sim, 'technician', stats, {}, 'calm')
     const money = sim.money
     sim.money = 99_000
     expect(sim.studyProblem(poor.id, 'mask')).toBe('money')
@@ -616,7 +616,7 @@ describe('studying', () => {
     expect(sim.money).toBe(-5000)
     sim.money = money
 
-    const leaver = hireStaff(sim, 'technician', stats)
+    const leaver = hireStaff(sim, 'technician', stats, {}, 'calm')
     leaver.leaving = true
     expect(sim.studyProblem(leaver.id, 'mask')).toBe('course')
     expect(sim.study(leaver.id, 'mask')).toBe('course')
@@ -626,7 +626,7 @@ describe('studying', () => {
 
   it('raises the tier when the next day starts, once', () => {
     const sim = maskShop()
-    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     sim.study(tech.id, 'mask')
     advanceUntil(sim, () => sim.dayOver, 400_000)
     expect(tech.tiers.mask).toBe(1)
@@ -691,7 +691,7 @@ describe('studying', () => {
 
   it('keeps a booked course through a reload in the middle of the day', () => {
     const sim = maskShop()
-    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     sim.study(tech.id, 'mask')
     const copy = reload(sim)
     expect(copy.staff[0].tiers.mask).toBe(1)
@@ -716,14 +716,14 @@ describe('studying', () => {
 
   it('refunds the tuition when a booked person is let go', () => {
     const sim = maskShop()
-    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     sim.study(tech.id, 'mask')
     sim.money = -50_000
     sim.fire(tech.id)
     expect(sim.money).toBe(150_000)
     expect(tech.study).toBeNull()
 
-    const other = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const other = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     advanceUntil(sim, () => sim.dayOver, 400_000)
     sim.money = 500_000
     sim.study(other.id, 'mask')
@@ -743,5 +743,40 @@ describe('studying', () => {
     expect(sim.stats.wages).toBe(tech.wage)
     const ended = ev.find(e => e.type === 'dayEnded')
     expect(ended?.type === 'dayEnded' && ended.stats.wages).toBe(tech.wage)
+  })
+})
+
+describe('personality in the shop', () => {
+  type Payer = { payFor(c: Customer, station: unknown, stars: 1 | 2 | 3, tech: unknown): void }
+  const serve = (trait: 'jolly' | 'diligent' | 'calm', kind: 'office' | 'picky', stars: 1 | 2 | 3) => {
+    const sim = dayThree()
+    const c = seatAndWait(sim, { kind, service: 'shampoo' })
+    const tech = hireStaff(sim, 'technician', undefined, {}, trait)
+    c.state = 'inService'
+    ;(sim as unknown as Payer).payFor(c, sim.stations[0], stars, tech)
+    return sim
+  }
+
+  it('tips more after a jolly technician', () => {
+    const tipOf = (trait: 'jolly' | 'diligent') => {
+      const sim = serve(trait, 'office', 3)
+      return sim.stats.tips
+    }
+    expect(tipOf('diligent')).toBeGreaterThan(0)
+    expect(tipOf('jolly')).toBeGreaterThan(tipOf('diligent'))
+  })
+
+  it("lets a calm technician's picky customers grade like normal ones", () => {
+    expect(serve('calm', 'picky', 2).reviews).toContain(reviewScore(2, 'normal'))
+    expect(serve('diligent', 'picky', 2).reviews).toContain(reviewScore(2, 'harsh'))
+  })
+
+  it("serves a studious person's course at the cut price", () => {
+    const sim = dayThree()
+    sim.money = 500_000
+    sim.services = ['shampoo', 'mask']
+    const tech = hireStaff(sim, 'technician', { skill: 3, speed: 3, friendly: 4, stamina: 3 }, {}, 'studious')
+    expect(sim.study(tech.id, 'mask')).toBeNull()
+    expect(sim.money).toBe(430_000)
   })
 })

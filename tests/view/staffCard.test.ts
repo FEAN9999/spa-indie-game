@@ -28,7 +28,7 @@ describe('staff card', () => {
   it("shows the study button's state", () => {
     const sim = newSim()
     sim.services = ['shampoo', 'mask']
-    const tech = hireStaff(sim, 'technician', undefined, { shampoo: 1 })
+    const tech = hireStaff(sim, 'technician', undefined, { shampoo: 1 }, 'calm')
     sim.money = 500000
     expect(studyButton(sim, tech)).toEqual({ kind: 'open', courses: ['shampoo', 'mask'] })
 

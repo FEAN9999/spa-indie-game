@@ -1,4 +1,5 @@
 import {
+  JOLLY_TIP,
   ANGRY_REVIEW,
   ARRIVE_MS,
   EXIT_MS,
@@ -36,7 +37,7 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
-import { greetPatience, tipFactor, walkSpeed, type Candidate, type Course, type Staff } from './staff'
+import { greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
@@ -124,7 +125,7 @@ export class SpaSim {
       emit: e => this.emit(e),
       walkTo: (m, isGoal) => this.walkTo(m, isGoal),
       sendToBed: (c, station) => this.sendToBed(c, station),
-      payFor: (c, station, stars, friendly) => this.payFor(c, station, stars, friendly),
+      payFor: (c, station, stars, technician) => this.payFor(c, station, stars, technician),
       takeStaffId: () => this.nextStaffId++,
     }
     this.shell = shellOf(layout)
@@ -199,7 +200,7 @@ export class SpaSim {
    */
   spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId; vip?: VipId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
-    const greetFactor = greeter ? greetPatience(greeter.stats.friendly) : 1
+    const greetFactor = greeter ? greeterPatience(greeter) : 1
     const vipSpec = opts.vip && VIPS[opts.vip]
     const spec = opts.regular && REGULARS[opts.regular]
     const state = opts.regular && this.book.regulars[opts.regular]
@@ -303,25 +304,25 @@ export class SpaSim {
     this.owner.task = null
   }
 
-  /** The customer pays, reviews and leaves; `technicianFriendly` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one. */
-  private payFor(c: Customer, station: Station, stars: Stars, technicianFriendly: number | null): void {
+  /** The customer pays, reviews and leaves; `technician` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one. */
+  private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
     const base = SERVICES[c.service].price
     const price = c.vip ? base * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
-    const tip = Math.round(tipFor(base, stars) * spec.tip[stars - 1] * tipFactor(c.greet, technicianFriendly))
+    const tip = Math.round(tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)))
     this.money += price + tip
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
-    this.addReview(c, reviewScore(stars, spec.grading))
+    this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && technician?.trait === 'calm' ? 'normal' : spec.grading))
     // a VIP has her own page in the book, not a place among the kinds served
     if (c.vip) {
       const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
       this.emit({ type: 'vipServed', customerId: c.id, vip: c.vip, stars, photo: r.photo, board: r.board })
     } else noteServed(this.book, c.kind)
     if (c.regular) {
-      const r = addVisit(this.book, c.regular, stars, technicianFriendly === null, this.day)
+      const r = addVisit(this.book, c.regular, stars, technician === null, this.day)
       if (r.hearts) this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
       if (r.gift) {
         if (r.gift.kind === 'money') {
@@ -693,7 +694,7 @@ export class SpaSim {
     }
 
     moveAlong(this.owner, OWNER_SPEED, dt)
-    for (const s of this.staff) moveAlong(s, walkSpeed(s.stats.speed), dt)
+    for (const s of this.staff) moveAlong(s, staffWalkSpeed(s), dt)
     for (const c of [...this.customers]) this.updateCustomer(c, dt)
     this.updateOwnerTask()
     for (const s of this.staff) updateStaff(this.crew, s, dt)
