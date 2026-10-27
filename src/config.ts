@@ -224,3 +224,7 @@ export const VIP_PATIENCE = 0.7
 export const VIP_WARN_MIN = 60
 /** How long a speech bubble stays, for a greeting and for a story line. */
 export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
+/** What one try at the recipe bench costs. */
+export const RECIPE_TRY_COST = 20000
+/** Chance that a regular tells a recipe hint on a visit. */
+export const RECIPE_HINT_CHANCE = 0.5
