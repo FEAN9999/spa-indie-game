@@ -1,5 +1,6 @@
-import { FLOOR_PRICE, STAIRS_MS, UNLOCK_DAY } from '../config'
+import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
+import type { Item } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
 
@@ -52,4 +53,9 @@ export function pills(sim: SpaSim, viewed: number): Pill[] {
     })
   }
   return out
+}
+
+/** The same piece moved by whole floors onto `floor`, keeping its row within the floor. */
+export function carryTo(item: Item, floor: number): Item {
+  return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }
 }

@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
+import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
-import { followFloor, climbPose, pills, showPills } from '../../src/view/floors'
+import { carryTo, followFloor, climbPose, pills, showPills } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -80,5 +81,22 @@ describe('pills', () => {
     sim.customers.push({ state: 'waiting' } as Customer)
     expect(pills(sim, 2).map(p => p.dot)).toEqual([true, false])
     expect(pills(sim, 1).map(p => p.dot)).toEqual([false, false])
+  })
+})
+
+describe('carryTo', () => {
+  const plant: Item = { id: 3, kind: 'plant', x: 4, y: 12, flip: false, gift: false }
+
+  it('moves a piece up by whole floors, keeping its row in the floor', () => {
+    expect(carryTo(plant, 2)).toEqual({ ...plant, y: 30 })
+  })
+
+  it('brings it back down', () => {
+    expect(carryTo(carryTo(plant, 2), 1).y).toBe(12)
+  })
+
+  it('leaves the original untouched', () => {
+    carryTo(plant, 3)
+    expect(plant.y).toBe(12)
   })
 })

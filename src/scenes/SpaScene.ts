@@ -320,6 +320,7 @@ export class SpaScene extends Phaser.Scene {
         this.modal = false
         this.session.saveNow()
       },
+      showFloor: floor => this.showFloor(floor),
     }
     this.scene.launch('BuildScene', data)
   }

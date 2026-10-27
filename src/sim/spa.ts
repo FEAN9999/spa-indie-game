@@ -604,6 +604,11 @@ export class SpaSim {
     return null
   }
 
+  /** The tower shell parsed, with no furniture in it. */
+  shellGrid(): Grid {
+    return parseLayout(this.shell)
+  }
+
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number): BuildProblem | null {
     const others = this.items.filter(i => i.id !== movingId)

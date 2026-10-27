@@ -2,16 +2,18 @@ import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
-import { GAME_H, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
+import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, TILE } from '../config'
 import { nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
-import { parseLayout, tileEq } from '../sim/grid'
-import { footprint, ITEMS, setProgress, shellOf, workTile, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
-import { SPA_LAYOUT_1A } from '../sim/layout'
+import { floorOf } from '../sim/floors'
+import { tileEq } from '../sim/grid'
+import { footprint, ITEMS, setProgress, workTile, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { catalogPage, type CatalogEntry } from '../view/catalog'
+import { FloorBar } from '../view/FloorBar'
+import { carryTo, FLOOR_PILLS, pills, showPills } from '../view/floors'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
@@ -24,6 +26,8 @@ export interface BuildData {
   /** After a buy, a move or a sale: redraw the room and save. */
   onChange: () => void
   onClose: () => void
+  /** SpaScene's showFloor: the only way build mode changes the floor in view. */
+  showFloor: (floor: number) => void
 }
 
 /** The piece on the finger: a new one to buy or a gift to put down, or one of the shop's items, whose sprite is hidden meanwhile. */
@@ -34,8 +38,8 @@ interface Held {
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
-/** New pieces start on the free spot nearest the middle of the shop. */
-const CENTRE: Tile = { x: 6, y: 9 }
+/** New pieces start on the free spot nearest the middle of the floor in view. */
+const centre = (floor: number): Tile => ({ x: 6, y: 9 + (floor - 1) * FLOOR_ROWS })
 const TAP_SLOP_PX = 20
 /** The catalogue or the hold row that just took the other's place ignores presses this long, so the second tap of a double tap cannot land on it. */
 const SETTLE_MS = 300
@@ -70,6 +74,10 @@ const HOLD_TOP = 1940
 const HOLD_Y = 2050
 const HOLD_H = 130
 const HOLD_GAP = 16
+// the floor pills' band, above the hold row: a press there is a pill's, not the floor's
+const PILL_BAND = { top: 1807, bottom: 1903 }
+/** Where a toast sits while a piece is held, clear of the pill band. */
+const HOLD_TOAST_Y = 1690
 const EDGE = 24
 
 const TABS: { group: ItemGroup; label: StringKey }[] = [
@@ -109,6 +117,8 @@ export class BuildScene extends Phaser.Scene {
   private shown: Phaser.GameObjects.GameObject[] = []
   private ghost: Phaser.GameObjects.Image | null = null
   private tint!: Phaser.GameObjects.Graphics
+  private grid: Phaser.GameObjects.Graphics | null = null
+  private floorBar!: FloorBar
   private toastBox: Phaser.GameObjects.Container | null = null
 
   constructor() {
@@ -126,12 +136,14 @@ export class BuildScene extends Phaser.Scene {
     this.readyAt = 0
     this.shown = []
     this.ghost = null
+    this.grid = null
     this.toastBox = null
   }
 
   create() {
     // under everything else here: swallows every tap the panel does not take
     this.add.zone(0, 0, GAME_W, GAME_H).setOrigin(0).setInteractive()
+    this.floorBar = new FloorBar(this, PANEL_DEPTH, floor => this.panelTap() && this.carry(floor))
     this.drawGrid()
     this.tint = this.add.graphics().setDepth(1)
     this.input.on('pointerdown', this.onDown, this)
@@ -140,16 +152,18 @@ export class BuildScene extends Phaser.Scene {
     this.showCatalog()
   }
 
-  /** A faint line round every floor tile of the bare room, each edge drawn once. */
+  /** A faint line round every floor tile of the bare floor in view, each edge drawn once. */
   private drawGrid(): void {
-    const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
-    const floor = (x: number, y: number) => shell.cells[y]?.[x] === 'floor'
-    const g = this.add.graphics().lineStyle(2, hex(C.ink), 0.15)
+    const { sim, room } = this.params
+    const shell = sim.shellGrid()
+    const floor = (x: number, y: number) => floorOf(y) === room.floor && shell.cells[y]?.[x] === 'floor'
+    this.grid?.destroy()
+    const g = (this.grid = this.add.graphics().lineStyle(2, hex(C.ink), 0.15))
     for (let y = 0; y < shell.rows; y++) {
       for (let x = 0; x < shell.cols; x++) {
         if (!floor(x, y)) continue
         const left = MAP_X + x * TILE
-        const top = MAP_Y + y * TILE
+        const top = room.rowY(y)
         g.lineBetween(left, top, left + TILE, top)
         g.lineBetween(left, top, left, top + TILE)
         if (!floor(x, y + 1)) g.lineBetween(left, top + TILE, left + TILE, top + TILE)
@@ -181,6 +195,7 @@ export class BuildScene extends Phaser.Scene {
   /** The tabs, the shop's beauty and sets, a page of cards and "Xong". */
   private showCatalog(): void {
     this.clearPanel()
+    this.floorBar.hide()
     this.keep(addCard(this, 0, PANEL_TOP, GAME_W, GAME_H - PANEL_TOP + 60))
     const { intro } = this.params
     if (intro) {
@@ -265,7 +280,9 @@ export class BuildScene extends Phaser.Scene {
       this.toast(this.problemText('money', kind))
       return
     }
-    const spot = nearestSpot(sim.grid, CENTRE, s => sim.canPlace(kind, s.x, s.y, false) === null) ?? CENTRE
+    const { floor } = this.params.room
+    const start = centre(floor)
+    const spot = nearestSpot(sim.grid, start, s => floorOf(s.y + ITEMS[kind].h - 1) === floor && sim.canPlace(kind, s.x, s.y, false) === null) ?? start
     // not in the shop yet, so it has no id of its own
     this.hold({ item: { id: 0, kind, ...spot, flip: false, gift }, buying: true })
   }
@@ -298,11 +315,12 @@ export class BuildScene extends Phaser.Scene {
   private drawGhost(): void {
     const { item, buying } = this.held!
     const { w, h } = ITEMS[item.kind]
-    this.ghost!.setPosition(MAP_X + (item.x + w / 2) * TILE, MAP_Y + (item.y + h) * TILE - GHOST_LIFT_PX).setFlipX(item.flip)
+    const { room } = this.params
+    this.ghost!.setPosition(MAP_X + (item.x + w / 2) * TILE, room.rowY(item.y + h) - GHOST_LIFT_PX).setFlipX(item.flip)
     const fits = this.params.sim.canPlace(item.kind, item.x, item.y, item.flip, buying ? undefined : item.id) === null
     const work = workTile(item)
     this.tint.clear().fillStyle(hex(fits ? C.teal : C.lantern), TINT_ALPHA)
-    for (const s of work ? [...footprint(item), work] : footprint(item)) this.tint.fillRect(MAP_X + s.x * TILE, MAP_Y + s.y * TILE, TILE, TILE)
+    for (const s of work ? [...footprint(item), work] : footprint(item)) this.tint.fillRect(MAP_X + s.x * TILE, room.rowY(s.y), TILE, TILE)
   }
 
   /** "Thôi", "Lật", "Bán" for a piece the shop owns, and "Đặt". */
@@ -329,6 +347,31 @@ export class BuildScene extends Phaser.Scene {
       this.button(left + b.w / 2, HOLD_Y, b.w, HOLD_H, b.label, b.kind, b.onTap)
       left += b.w + HOLD_GAP
     }
+    this.showFloorBar()
+  }
+
+  /** While a piece is held and the shop has another floor open, the pills carry it there. */
+  private showFloorBar(): void {
+    const { sim, room } = this.params
+    if (showPills(sim) && sim.floors > 1) this.floorBar.show(pills(sim, room.floor).filter(p => p.floor <= Math.min(FLOOR_PILLS, sim.floors)), sim.ownerLook)
+  }
+
+  /** A pill tapped: the floor comes into view and the held piece moves onto it, to the nearest free spot there when its own does not fit. */
+  private carry(floor: number): void {
+    const { sim, room } = this.params
+    const held = this.held
+    if (!held || floor === room.floor || floor > sim.floors) return
+    this.params.showFloor(floor)
+    this.drawGrid()
+    const { item, buying } = held
+    const { h } = ITEMS[item.kind]
+    const moved = carryTo(item, floor)
+    const fits = (s: Tile) => floorOf(s.y + h - 1) === floor && sim.canPlace(item.kind, s.x, s.y, item.flip, buying ? undefined : item.id) === null
+    const spot = fits(moved) ? moved : nearestSpot(sim.grid, moved, fits) ?? moved
+    item.x = spot.x
+    item.y = spot.y
+    this.drawGhost()
+    this.showFloorBar()
   }
 
   private flip(): void {
@@ -383,7 +426,7 @@ export class BuildScene extends Phaser.Scene {
   /** Just above the panel, whichever size it has. */
   private toast(text: string): void {
     this.toastBox?.destroy()
-    this.toastBox = addToast(this, MID, this.panelTop() - 60, text).setDepth(TOAST_DEPTH)
+    this.toastBox = addToast(this, MID, this.held ? HOLD_TOAST_Y : this.panelTop() - 60, text).setDepth(TOAST_DEPTH)
   }
 
   private panelTop(): number {
@@ -393,7 +436,8 @@ export class BuildScene extends Phaser.Scene {
   private onDown(p: Phaser.Input.Pointer): void {
     this.pressAt = performance.now()
     const held = this.held?.item
-    this.drag = p.y < this.panelTop() ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
+    const onPill = held !== undefined && p.y >= PILL_BAND.top && p.y <= PILL_BAND.bottom
+    this.drag = p.y < this.panelTop() && !onPill ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
   }
 
   /**
