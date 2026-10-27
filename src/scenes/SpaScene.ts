@@ -34,6 +34,7 @@ import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
 import { StaffLayer } from '../view/StaffLayer'
+import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
@@ -118,6 +119,8 @@ export class SpaScene extends Phaser.Scene {
   private pointer!: HandPointer
   /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
+  /** Delay for the next "finished a course" toast this morning, so they follow the VIP-today toast and each other. */
+  private studiedToastMs = 0
   private patienceHintMs = 0
   private regularHintMs = 0
   private vipHintMs = 0
@@ -370,7 +373,9 @@ export class SpaScene extends Phaser.Scene {
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
     const b = this.sim.vip.booking
-    if (b?.day === this.sim.day) this.hud.toast(bookingText('vipTodayToast', b))
+    const vipToday = b?.day === this.sim.day
+    if (vipToday) this.hud.toast(bookingText('vipTodayToast', b))
+    this.studiedToastMs = vipToday ? LATE_TOAST_MS : 0
   }
 
   /** Draws the furniture as the sim has it, and a bed slot wherever a bed would fit. */
@@ -619,6 +624,19 @@ export class SpaScene extends Phaser.Scene {
       case 'levelUp':
         this.staffLayer.handle(e)
         return
+      case 'studied': {
+        this.staffLayer.handle(e)
+        const person = this.sim.staff.find(s => s.id === e.staffId)
+        if (!person) return
+        const text =
+          e.course === 'greet'
+            ? t('studiedGreetToast', { name: person.name, n: e.level })
+            : t('studiedToast', { name: person.name, course: courseName(e.course), n: e.level })
+        // one at a time: a toast replaces the one on screen
+        this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
+        this.studiedToastMs += LATE_TOAST_MS
+        return
+      }
       case 'toast':
         this.hud.toast(t(e.key))
         return

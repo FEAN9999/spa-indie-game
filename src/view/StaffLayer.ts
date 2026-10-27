@@ -60,7 +60,8 @@ export class StaffLayer {
 
   handle(e: SimEvent): void {
     if (e.type === 'greeted') this.greet(e.staffId)
-    else if (e.type === 'levelUp') this.levelUp(e.staffId)
+    else if (e.type === 'levelUp') this.celebrate(e.staffId, t('levelUp'))
+    else if (e.type === 'studied') this.celebrate(e.staffId, t('studiedPill'))
   }
 
   private add(s: Staff): StaffSprite {
@@ -136,8 +137,8 @@ export class StaffLayer {
     })
   }
 
-  /** Sparks burst from the head while "Lên cấp!" rises and fades. */
-  private levelUp(staffId: number): void {
+  /** Sparks burst from the head while the label ("Lên cấp!", "Giỏi lên!") rises and fades. */
+  private celebrate(staffId: number, text: string): void {
     const sp = this.sprites.get(staffId)
     if (!sp) return
     const { x, y: feet } = sp.view.container
@@ -155,7 +156,7 @@ export class StaffLayer {
     }
     // starts over where a greeting pill would be, and clear of the money rising over the bed beside
     const label = this.scene.add
-      .text(x, feet + HEAD_TOP - PILL_H - 8, t('levelUp'), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 })
+      .text(x, feet + HEAD_TOP - PILL_H - 8, text, { ...textStyle(46), stroke: C.cream, strokeThickness: 10 })
       .setOrigin(0.5, 1)
       .setDepth(FX_DEPTH + 10)
     this.scene.tweens.add({ targets: label, y: label.y - 80, duration: LEVEL_UP_MS, ease: 'Cubic.easeOut' })
