@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
+import { floorTextures } from '../art/floors'
 import { furnitureTextures } from '../art/furniture'
 import { ingredientTextures } from '../art/ingredients'
 import { maskTextures } from '../art/maskArt'
@@ -29,6 +30,7 @@ export class BootScene extends Phaser.Scene {
       .setOrigin(0.5)
     await loadSvgTextures(this, {
       room: roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])),
+      ...floorTextures(),
       ...furnitureTextures(),
       ...chibiTextures(),
       ...fxTextures(),

@@ -7,12 +7,12 @@ import { svgDoc } from './svg'
 /** Street strip below the front wall, in tiles. */
 export const STREET_TILES = 2
 
-const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
+export const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" ${extra}/>`
 
-const LINE = 0.05
-const FINE = 0.03
-const outline = (w = LINE) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
+export const LINE = 0.05
+export const FINE = 0.03
+export const outline = (w = LINE) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
 
 /** The board's gạch bông, one tile in 24 units. The flower is classed so the app icon can outline it. */
 export const GACH_BONG_TILE =
@@ -24,11 +24,11 @@ export const GACH_BONG_TILE =
   `<rect width="24" height="24" fill="none" stroke="${C.tileSeam}" stroke-width="0.6"/>`
 
 /** One gạch bông per grid tile: the 24-unit tile scaled into a 1×1 tile. */
-const GACH_BONG =
+export const GACH_BONG =
   `<pattern id="gachbong" width="1" height="1" patternUnits="userSpaceOnUse" viewBox="0 0 24 24">${GACH_BONG_TILE}</pattern>`
 
 /** Wood planks 0.5 tile tall with staggered joints. */
-const PLANKS =
+export const PLANKS =
   `<pattern id="planks" width="3.2" height="1" patternUnits="userSpaceOnUse" x="0.5" y="2">` +
   `<rect width="3.2" height="1" fill="${C.plank}"/>` +
   `<path d="M0,0.5 H3.2 M0,1 H3.2 M1,0 V0.5 M2.6,0.5 V1" stroke="${C.plankLine}" stroke-width="${FINE}"/></pattern>`
