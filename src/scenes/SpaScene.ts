@@ -482,13 +482,15 @@ export class SpaScene extends Phaser.Scene {
 ${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
     ]
     if (note) parts.push(this.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
-    parts.push(addButton(this, note ? GAME_W / 2 : GAME_W / 2 - 190, 1290, 340, 120, t('floorLater'), 'plain', close))
+    // the open button is wide enough for its price; "Để sau" beside it is narrower, so the pair keeps even margins inside the card
+    const openX = GAME_W / 2 + 165
+    parts.push(addButton(this, note ? GAME_W / 2 : GAME_W / 2 - 245, 1290, note ? 340 : 300, 120, t('floorLater'), 'plain', close))
     if (!note) {
-      const openBtn = addButton(this, GAME_W / 2 + 190, 1290, 340, 120, t('floorOpen', { money: formatMoney(price) }), 'primary', canOpen ? open : () => {}, 44)
+      const openBtn = addButton(this, openX, 1290, 460, 120, t('floorOpen', { money: formatMoney(price) }), 'primary', canOpen ? open : () => {}, 44)
       parts.push(openBtn)
       if (problem === 'money') {
         openBtn.setAlpha(0.45)
-        parts.push(this.add.text(GAME_W / 2 + 190, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
+        parts.push(this.add.text(openX, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
       }
     }
     for (const p of parts) p.setDepth(CARD_DEPTH)
