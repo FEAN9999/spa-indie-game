@@ -622,6 +622,7 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'greeted':
       case 'levelUp':
+      case 'sloppy':
         this.staffLayer.handle(e, this.sim)
         return
       case 'studied': {

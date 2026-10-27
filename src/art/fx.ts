@@ -50,6 +50,22 @@ export function fxTextures(): Record<string, string> {
         `<path d="M8,20 H42 V32 Q42,44 25,44 Q8,44 8,32Z" fill="${C.cream}" ${OUTLINE}/>` +
         `<path d="M8.5,26 H41.5 V31 H8.5Z" fill="${C.teal}" ${INNER}/>`,
     ),
+    // a round wall clock, shown above a technician who walks in late
+    'icon-clock': svgDoc(
+      [0, 0, 56, 56],
+      1,
+      `<circle cx="28" cy="30" r="21" fill="${C.cream}" ${OUTLINE}/>` +
+        `<path d="M21,6 Q28,1 35,6" fill="none" stroke="${C.ink}" stroke-width="3.5" stroke-linecap="round"/>` +
+        `<path d="M28,30 V17 M28,30 L37,35" fill="none" stroke="${C.ink}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>` +
+        `<circle cx="28" cy="30" r="2.5" fill="${C.ink}"/>`,
+    ),
+    // a blue sweat drop, for a sloppy service
+    'icon-sweat': svgDoc(
+      [0, 0, 56, 56],
+      1,
+      `<path d="M28,5 Q44,26 44,36 A16,16 0 0 1 12,36 Q12,26 28,5Z" fill="${C.water}" ${OUTLINE}/>` +
+        `<path d="M20,37 Q20,31 24,27" fill="none" stroke="${C.cream}" stroke-width="3.5" stroke-linecap="round"/>`,
+    ),
     // a four-point sparkle, drawn white so it can be tinted
     spark: svgDoc(
       [0, 0, 24, 24],

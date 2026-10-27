@@ -24,12 +24,22 @@ const SPARKS = 10
 const SPARK_TINTS = [C.mustard, C.lotus, C.teal]
 const SPARK_MS = 700
 const LEVEL_UP_MS = 1200
+const SWEAT_MS = 1000
+const SWEAT_SIDE_PX = 44
+const CHAT_TEXT = '…'
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+
+/** A deft technician waiting out their late start: no one stands there yet. */
+const isHidden = (sim: SpaSim, s: Staff): boolean => s.task?.kind === 'late' && sim.clock.minutes < s.task.untilMinute
 
 interface StaffSprite {
   view: CharacterView
   bar: Phaser.GameObjects.Graphics
   cup: Phaser.GameObjects.Image
+  clock: Phaser.GameObjects.Image
+  /** The "…" over someone chatting; never shown with a greeting. */
+  chat: Phaser.GameObjects.Container | null
+  sweat: Phaser.GameObjects.Image | null
   pill: Phaser.GameObjects.Container | null
 }
 
@@ -52,6 +62,9 @@ export class StaffLayer {
       sp.view.container.destroy()
       sp.bar.destroy()
       sp.cup.destroy()
+      sp.clock.destroy()
+      sp.chat?.destroy()
+      sp.sweat?.destroy()
       sp.pill?.destroy()
       this.sprites.delete(id)
     }
@@ -61,7 +74,10 @@ export class StaffLayer {
   /** `sim` gives where people stand now: morning events come before the sprites have caught up. */
   handle(e: SimEvent, sim: SpaSim): void {
     if (e.type === 'greeted') this.greet(e.staffId)
-    else if (e.type === 'levelUp') this.celebrate(sim, e.staffId, t('levelUp'))
+    else if (e.type === 'levelUp') {
+      this.celebrate(sim, e.staffId, t('levelUp'))
+      if (sim.staff.find(s => s.id === e.staffId)?.trait === 'studious') this.coin(sim, e.staffId)
+    } else if (e.type === 'sloppy') this.sweat(e.staffId)
     else if (e.type === 'studied') this.celebrate(sim, e.staffId, t('studiedPill'))
   }
 
@@ -70,6 +86,9 @@ export class StaffLayer {
       view: new CharacterView(this.scene, staffColors(s.look)),
       bar: this.scene.add.graphics().setDepth(FX_DEPTH),
       cup: this.scene.add.image(0, 0, 'tea-cup').setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
+      clock: this.scene.add.image(0, 0, 'icon-clock').setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
+      chat: null,
+      sweat: null,
       pill: null,
     }
     this.sprites.set(s.id, sp)
@@ -79,6 +98,18 @@ export class StaffLayer {
   private sync(sim: SpaSim, s: Staff, sp: StaffSprite, dt: number): void {
     const at = this.room.tileToWorld(s.pos)
     const task = s.task
+    if (isHidden(sim, s)) {
+      // a deft technician not in yet: nobody stands here
+      sp.view.container.setVisible(false)
+      sp.bar.clear()
+      sp.cup.setVisible(false)
+      sp.clock.setVisible(false)
+      this.dropPills(sp)
+      sp.sweat?.destroy()
+      sp.sweat = null
+      return
+    }
+    sp.view.container.setVisible(true)
     const still = s.path.length === 0
     // at work: face the bed beside the work tile, as the owner does
     const station = task?.kind === 'serve' && still ? sim.stations.find(x => x.id === task.stationId) : undefined
@@ -102,28 +133,81 @@ export class StaffLayer {
       sp.bar.fillStyle(hex(C.teal), 1).fillRoundedRect(x, y, Math.max(12, BAR_W * f), 12, 6)
     }
 
+    const late = task?.kind === 'late'
+    sp.clock.setVisible(late)
+    if (late) sp.clock.setPosition(at.x, at.y + HEAD_TOP + CUP_BOB_PX * Math.sin((this.clockMs / CUP_BOB_MS) * Math.PI * 2))
+
+    // the chat pill waits while a greeting pill is up, so two never stack
+    if (task?.kind === 'chat' && !sp.pill) sp.chat ??= this.makePill(CHAT_TEXT, at.x, at.y + HEAD_TOP)
+    else if (sp.chat) {
+      sp.chat.destroy()
+      sp.chat = null
+    }
+    sp.chat?.setPosition(at.x, at.y + HEAD_TOP)
     sp.pill?.setPosition(at.x, at.y + HEAD_TOP)
+    sp.sweat?.setPosition(at.x + SWEAT_SIDE_PX, at.y + HEAD_TOP)
   }
 
-  /** A "Xin chào!" pill over the receptionist's head for a moment; it follows them if they walk off. */
-  private greet(staffId: number): void {
-    const sp = this.sprites.get(staffId)
-    if (!sp) return
-    const label = this.scene.add.text(0, -PILL_H / 2, t('staffGreet'), textStyle(30, '800')).setOrigin(0.5)
-    const w = label.width + 44
+  private dropPills(sp: StaffSprite): void {
+    sp.pill?.destroy()
+    sp.pill = null
+    sp.chat?.destroy()
+    sp.chat = null
+  }
+
+  private makePill(text: string, x: number, y: number): Phaser.GameObjects.Container {
+    const label = this.scene.add.text(0, -PILL_H / 2, text, textStyle(30, '800')).setOrigin(0.5)
+    const w = Math.max(label.width + 44, PILL_H)
     const bg = this.scene.add
       .graphics()
       .fillStyle(hex(C.cream), 1)
       .fillRoundedRect(-w / 2, -PILL_H, w, PILL_H, PILL_H / 2)
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-w / 2, -PILL_H, w, PILL_H, PILL_H / 2)
+    // over a level-up's sparks, which come with a greeting
+    return this.scene.add.container(x, y, [bg, label]).setDepth(FX_DEPTH + 20)
+  }
+
+  /** A sweat drop pops in beside the head and fades; it follows them. */
+  private sweat(staffId: number): void {
+    const sp = this.sprites.get(staffId)
+    if (!sp || !sp.view.container.visible) return
+    sp.sweat?.destroy()
+    const { x, y } = sp.view.container
+    const drop = this.scene.add.image(x + SWEAT_SIDE_PX, y + HEAD_TOP, 'icon-sweat').setOrigin(0.5, 1).setDepth(FX_DEPTH + 20).setScale(0)
+    sp.sweat = drop
+    this.scene.tweens.chain({
+      targets: drop,
+      tweens: [
+        { scale: 1, duration: POP_MS, ease: 'Back.easeOut' },
+        { alpha: 0, delay: SWEAT_MS - 2 * POP_MS, duration: POP_MS },
+      ],
+      onComplete: () => {
+        drop.destroy()
+        if (sp.sweat === drop) sp.sweat = null
+      },
+    })
+  }
+
+  /** A studious person's level-up: a coin pops over the head and fades with the label. */
+  private coin(sim: SpaSim, staffId: number): void {
+    const person = sim.staff.find(s => s.id === staffId)
+    if (!person || !this.sprites.has(staffId) || isHidden(sim, person)) return
+    const { x, y: feet } = this.room.tileToWorld(person.pos)
+    const coin = this.scene.add.image(x, feet + HEAD_TOP - PILL_H - 8 - 70, 'coin').setOrigin(0.5, 1).setDepth(FX_DEPTH + 10).setScale(0)
+    this.scene.tweens.add({ targets: coin, scale: 1, duration: POP_MS, ease: 'Back.easeOut' })
+    this.scene.tweens.add({ targets: coin, y: coin.y - 80, duration: LEVEL_UP_MS, ease: 'Cubic.easeOut' })
+    this.scene.tweens.add({ targets: coin, alpha: 0, duration: LEVEL_UP_MS, ease: 'Cubic.easeIn', onComplete: () => coin.destroy() })
+  }
+
+  /** A "Xin chào!" pill over the receptionist's head for a moment; it follows them if they walk off. */
+  private greet(staffId: number): void {
+    const sp = this.sprites.get(staffId)
+    if (!sp) return
+    if (!sp.view.container.visible) return
     sp.pill?.destroy()
     const { x, y } = sp.view.container
-    const pill = this.scene.add
-      .container(x, y + HEAD_TOP, [bg, label])
-      // over a level-up's sparks, which come with a greeting
-      .setDepth(FX_DEPTH + 20)
-      .setScale(0)
+    const pill = this.makePill(t('staffGreet'), x, y + HEAD_TOP).setScale(0)
     sp.pill = pill
     this.scene.tweens.chain({
       targets: pill,
@@ -141,7 +225,7 @@ export class StaffLayer {
   /** Sparks burst from the head while the label ("Lên cấp!", "Giỏi lên!") rises and fades. */
   private celebrate(sim: SpaSim, staffId: number, text: string): void {
     const person = sim.staff.find(s => s.id === staffId)
-    if (!person || !this.sprites.has(staffId)) return
+    if (!person || !this.sprites.has(staffId) || isHidden(sim, person)) return
     const { x, y: feet } = this.room.tileToWorld(person.pos)
     const y = feet + HEAD_MID
     for (let i = 0; i < SPARKS; i++) {
