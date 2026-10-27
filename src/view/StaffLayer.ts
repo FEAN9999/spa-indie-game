@@ -48,6 +48,8 @@ interface StaffSprite {
 /** One chibi per staff member: a tea cup over a resting head, a work bar while serving, the receptionist's greeting and a level-up burst. */
 export class StaffLayer {
   private readonly sprites = new Map<number, StaffSprite>()
+  /** A celebration that came while the person was not in yet, played when they walk in. */
+  private readonly pendingCelebration = new Map<number, string>()
   /** Runs only while the shop does, so the cup's bob stops with it. */
   private clockMs = 0
 
@@ -69,6 +71,7 @@ export class StaffLayer {
       sp.sweat?.destroy()
       sp.pill?.destroy()
       this.sprites.delete(id)
+      this.pendingCelebration.delete(id)
     }
     for (const s of sim.staff) this.sync(sim, s, this.sprites.get(s.id) ?? this.add(s), dt)
   }
@@ -112,6 +115,11 @@ export class StaffLayer {
       return
     }
     sp.view.container.setVisible(true)
+    const pending = this.pendingCelebration.get(s.id)
+    if (pending !== undefined) {
+      this.pendingCelebration.delete(s.id)
+      this.celebrate(sim, s.id, pending)
+    }
     const still = s.path.length === 0
     // at work: face the bed beside the work tile, as the owner does
     const station = task?.kind === 'serve' && still ? sim.stations.find(x => x.id === task.stationId) : undefined
@@ -228,7 +236,13 @@ export class StaffLayer {
   /** Sparks burst from the head while the label ("Lên cấp!", "Giỏi lên!") rises and fades. */
   private celebrate(sim: SpaSim, staffId: number, text: string): void {
     const person = sim.staff.find(s => s.id === staffId)
-    if (!person || !this.sprites.has(staffId) || isHidden(sim, person)) return
+    if (!person) return
+    if (isHidden(sim, person)) {
+      // a late technician's morning: wait until she walks in from the door
+      this.pendingCelebration.set(staffId, text)
+      return
+    }
+    if (!this.sprites.has(staffId)) return
     const { x, y: feet } = this.room.tileToWorld(person.pos)
     const y = feet + HEAD_MID
     for (let i = 0; i < SPARKS; i++) {

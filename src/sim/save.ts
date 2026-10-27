@@ -1,4 +1,4 @@
-import { HEART_AT, LOOK_COUNTS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
@@ -238,8 +238,9 @@ function repairTask(x: unknown): StaffTask | null {
   if (!isObject(x)) return null
   if (x.kind === 'exit') return { kind: 'exit' }
   if (x.kind === 'rest' && isNumber(x.leftMs)) return { kind: 'rest', leftMs: x.leftMs }
-  if (x.kind === 'late' && isNumber(x.untilMinute)) return { kind: 'late', untilMinute: x.untilMinute }
-  if (x.kind === 'chat' && isNumber(x.leftMs)) return { kind: 'chat', leftMs: x.leftMs }
+  // a huge number would hide a technician or silence a receptionist all day: cap it, and drop a negative one
+  if (x.kind === 'late' && isNumber(x.untilMinute) && x.untilMinute >= 0) return { kind: 'late', untilMinute: Math.min(x.untilMinute, DAY_START_MIN + LATE_MIN) }
+  if (x.kind === 'chat' && isNumber(x.leftMs) && x.leftMs >= 0) return { kind: 'chat', leftMs: Math.min(x.leftMs, CHAT_MS_MAX) }
   if (x.kind === 'fetch' && isNumber(x.customerId)) return { kind: 'fetch', customerId: x.customerId }
   if (x.kind === 'serve' && isNumber(x.customerId) && isNumber(x.stationId) && isNumber(x.leftMs) && isNumber(x.totalMs))
     return { kind: 'serve', customerId: x.customerId, stationId: x.stationId, leftMs: x.leftMs, totalMs: x.totalMs }

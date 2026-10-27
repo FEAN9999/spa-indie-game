@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { DAY_END_MIN, DAY_START_MIN, LATE_MIN, OWNER_START, PATIENCE_MS, REGULAR_OWNER_MS, STAFF_REST_MS } from '../../src/config'
+import { homeOf, type CrewHost } from '../../src/sim/crew'
 import { dayEase, reviewScore, tipFor } from '../../src/sim/economy'
 import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
 import { footprint } from '../../src/sim/items'
@@ -802,11 +803,13 @@ describe('flaws', () => {
   it('walks home and clears the task when nobody is waiting', () => {
     const sim = dayThree()
     const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    const home = homeOf({ sim } as CrewHost, tech)
     sim.startDay()
     sim.clock.minutes = DAY_START_MIN + LATE_MIN
     advanceUntil(sim, () => tech.task === null)
     expect(tech.path).toEqual([])
     expect(tileEq(tileOf(tech), sim.grid.door)).toBe(false)
+    expect(tileOf(tech)).toEqual(home)
   })
 
   it('is not late on the day she is hired', () => {
@@ -823,6 +826,13 @@ describe('flaws', () => {
     const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(2), autoSpawn: false })
     expect(copy.staff[0].task).toEqual({ kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN })
     expect(copy.staff[0].id).toBe(tech.id)
+    expect(tileOf(copy.staff[0])).toEqual(copy.grid.door)
+    copy.clock.minutes = DAY_START_MIN + LATE_MIN - 1
+    copy.advance(200)
+    expect(copy.staff[0].task?.kind).toBe('late')
+    expect(tileOf(copy.staff[0])).toEqual(copy.grid.door)
+    advanceUntil(copy, () => !tileEq(tileOf(copy.staff[0]), copy.grid.door))
+    expect(copy.clock.minutes).toBeGreaterThanOrEqual(DAY_START_MIN + LATE_MIN)
   })
 
   it('leaves at once when let go before arriving', () => {

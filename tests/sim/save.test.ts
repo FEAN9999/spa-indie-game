@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../src/config'
+import { CHAT_MS_MAX, DAY_START_MIN, LATE_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../src/config'
 import { tipFor } from '../../src/sim/economy'
 import { DEFAULT_ITEMS } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
@@ -774,7 +774,10 @@ describe('save version 11', () => {
 
   it('keeps traits through a round trip', () => {
     const sim = open(v10)
+    const tech = sim.staff.find(s => s.role === 'technician')!
+    tech.trait = 'calm'
     const copy = viaJson(sim)
+    expect(copy.staff.find(s => s.id === tech.id)!.trait).toBe('calm')
     expect(copy.staff.map(s => s.trait)).toEqual(sim.staff.map(s => s.trait))
     expect(copy.candidates.map(c => c.trait)).toEqual(sim.candidates.map(c => c.trait))
   })
@@ -808,5 +811,14 @@ describe('late and chatting tasks', () => {
   it('drops a damaged late or chat task', () => {
     expect(withTask({ kind: 'late', untilMinute: 'soon' })).toBeNull()
     expect(withTask({ kind: 'chat' })).toBeNull()
+  })
+
+  it('caps a huge late or chat number and drops a negative or infinite one', () => {
+    expect(withTask({ kind: 'late', untilMinute: 1e9 })).toEqual({ kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN })
+    expect(withTask({ kind: 'chat', leftMs: 1e9 })).toEqual({ kind: 'chat', leftMs: CHAT_MS_MAX })
+    expect(withTask({ kind: 'late', untilMinute: -5 })).toBeNull()
+    expect(withTask({ kind: 'chat', leftMs: -1 })).toBeNull()
+    expect(withTask({ kind: 'late', untilMinute: null })).toBeNull() // Infinity becomes null in JSON
+    expect(withTask({ kind: 'chat', leftMs: Infinity })).toBeNull()
   })
 })
