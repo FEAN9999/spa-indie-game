@@ -58,10 +58,11 @@ export class StaffLayer {
     for (const s of sim.staff) this.sync(sim, s, this.sprites.get(s.id) ?? this.add(s), dt)
   }
 
-  handle(e: SimEvent): void {
+  /** `sim` gives where people stand now: morning events come before the sprites have caught up. */
+  handle(e: SimEvent, sim: SpaSim): void {
     if (e.type === 'greeted') this.greet(e.staffId)
-    else if (e.type === 'levelUp') this.celebrate(e.staffId, t('levelUp'))
-    else if (e.type === 'studied') this.celebrate(e.staffId, t('studiedPill'))
+    else if (e.type === 'levelUp') this.celebrate(sim, e.staffId, t('levelUp'))
+    else if (e.type === 'studied') this.celebrate(sim, e.staffId, t('studiedPill'))
   }
 
   private add(s: Staff): StaffSprite {
@@ -138,10 +139,10 @@ export class StaffLayer {
   }
 
   /** Sparks burst from the head while the label ("Lên cấp!", "Giỏi lên!") rises and fades. */
-  private celebrate(staffId: number, text: string): void {
-    const sp = this.sprites.get(staffId)
-    if (!sp) return
-    const { x, y: feet } = sp.view.container
+  private celebrate(sim: SpaSim, staffId: number, text: string): void {
+    const person = sim.staff.find(s => s.id === staffId)
+    if (!person || !this.sprites.has(staffId)) return
+    const { x, y: feet } = this.room.tileToWorld(person.pos)
     const y = feet + HEAD_MID
     for (let i = 0; i < SPARKS; i++) {
       const a = (i / SPARKS) * Math.PI * 2 + Phaser.Math.FloatBetween(-0.25, 0.25)

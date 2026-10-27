@@ -31,6 +31,8 @@ const TITLE_Y = 290
 const INTRO_Y = 385
 /** Breaks the intro after its first sentence. */
 const INTRO_WRAP = 680
+// the study intro is two short lines that must not wrap again (the card is 1000 wide)
+const STUDY_INTRO_WRAP = 940
 const TAB_Y = 500
 const TAB_W = 440
 const TAB_H = 120
@@ -130,7 +132,7 @@ export class StaffScene extends Phaser.Scene {
     this.keep(addCard(this, 40, 230, 1000, 1760))
     this.keep(this.add.text(MID, TITLE_Y, t('staffTitle'), textStyle(60)).setOrigin(0.5))
     if (intro || studyIntro) {
-      this.keep(this.add.text(MID, INTRO_Y, t(intro ? 'staffIntro' : 'studyIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
+      this.keep(this.add.text(MID, INTRO_Y, t(intro ? 'staffIntro' : 'studyIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: intro ? INTRO_WRAP : STUDY_INTRO_WRAP } }).setOrigin(0.5))
     }
     const working = sim.staff.filter(s => !s.leaving)
     const tabs: { tab: Tab; label: string }[] = [
@@ -149,7 +151,7 @@ export class StaffScene extends Phaser.Scene {
           action: t('letGo'),
           kind: 'plain',
           faded: false,
-          onTap: () => this.confirmLetGo(s.id, s.name, s.wage),
+          onTap: () => this.confirmLetGo(s.id, s.name, s.wage, s.study?.paid),
           study: { state: studyButton(sim, s), onTap: () => this.studyTap(s.id) },
         })),
         t('noStaff'),
@@ -288,7 +290,7 @@ export class StaffScene extends Phaser.Scene {
   }
 
   /** A card over the panel that asks before letting someone go. */
-  private confirmLetGo(id: number, name: string, wage: number): void {
+  private confirmLetGo(id: number, name: string, wage: number, refund?: number): void {
     const parts: Phaser.GameObjects.GameObject[] = []
     const close = () => {
       for (const p of parts) p.destroy()
@@ -299,7 +301,8 @@ export class StaffScene extends Phaser.Scene {
       this.params.onChange()
       this.show()
     }
-    const text = t('letGoConfirm', { name, money: formatMoney(wage) })
+    // a booked course is paid back when they go
+    const text = t('letGoConfirm', { name, money: formatMoney(wage) }) + (refund ? `\n${t('letGoRefund', { money: formatMoney(refund) })}` : '')
     parts.push(
       this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.4).setOrigin(0).setInteractive().setDepth(CONFIRM_DEPTH),
       addCard(this, 90, 800, 900, 560).setDepth(CONFIRM_DEPTH),

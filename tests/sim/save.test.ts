@@ -653,10 +653,12 @@ describe('save version 10', () => {
   const nonZero = (t: Record<string, number>) => Object.entries(t).filter(([, n]) => n !== 0)
 
   it('opens a v9 shop: every technician gets tier 1 in one open service, nothing else changes', () => {
-    const sim = open(v9)
-    expect(sim.staff.length).toBe(v9.staff.length)
+    const raw = structuredClone(v9)
+    raw.staff.forEach((p, i) => Object.assign(p, { level: 2 + (i % 3), xp: 7 + i, wage: 123_000 + i * 1000 }))
+    const sim = open(raw)
+    expect(sim.staff.length).toBe(raw.staff.length)
     sim.staff.forEach((s, i) => {
-      const old = v9.staff[i]
+      const old = raw.staff[i]
       expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.rare]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, old.rare])
       if (s.role === 'technician') {
         const set = nonZero(s.tiers)

@@ -131,6 +131,8 @@ export type SimEvent =
   | { type: 'levelUp'; staffId: number; level: number }
   /** A night course paid off this morning: `level` is the new tier, or the new friendly dots for `greet`. */
   | { type: 'studied'; staffId: number; course: Course; level: number }
+  /** A booked course taught nothing (already at the top), so the tuition went back to the till. */
+  | { type: 'studyRefunded'; staffId: number; amount: number }
   | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' }
   /** An item reached the low-stock count, or ran out when a customer needed it. */
   | { type: 'stockLow'; item: StockItem }

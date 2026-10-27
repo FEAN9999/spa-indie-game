@@ -366,9 +366,18 @@ export function startDay(h: CrewHost): void {
   for (const s of sim.staff) Object.assign(s, { pos: { ...homeOf(h, s) }, path: [], task: null, sinceRest: 0, facing: 'down' })
   for (const s of sim.staff) {
     if (!s.study) continue
-    const { course } = s.study
+    const { course, paid } = s.study
     s.study = null
-    const level = course === 'greet' ? (s.stats.friendly = Math.min(5, s.stats.friendly + 1)) : (s.tiers[course] = Math.min(MAX_TIER, s.tiers[course] + 1))
+    const before = course === 'greet' ? s.stats.friendly : s.tiers[course]
+    const level = Math.min(course === 'greet' ? 5 : MAX_TIER, before + 1)
+    // already at the top (levelled up meanwhile, or a damaged save): the course teaches nothing, so the tuition comes back
+    if (level === before) {
+      sim.money += paid
+      h.emit({ type: 'studyRefunded', staffId: s.id, amount: paid })
+      continue
+    }
+    if (course === 'greet') s.stats.friendly = level
+    else s.tiers[course] = level
     h.emit({ type: 'studied', staffId: s.id, course, level })
   }
   if (sim.day >= UNLOCK_DAY.staff) refreshCandidates(h)

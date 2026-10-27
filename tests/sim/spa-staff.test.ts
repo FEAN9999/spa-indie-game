@@ -653,6 +653,42 @@ describe('studying', () => {
     expect(courses(r, sim.services)).toEqual([])
   })
 
+  it('gives the tuition back when the receptionist reached 5 friendly meanwhile', () => {
+    const sim = maskShop()
+    const r = hireStaff(sim, 'receptionist', { skill: 3, speed: 3, friendly: 4, stamina: 3 })
+    const before = sim.money
+    expect(sim.study(r.id, 'greet')).toBeNull()
+    const paid = before - sim.money
+    expect(paid).toBeGreaterThan(0)
+    r.stats.friendly = 5
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.drainEvents()
+    const money = sim.money
+    sim.startDay()
+    expect(sim.money).toBe(money + paid)
+    expect(r.stats.friendly).toBe(5)
+    expect(r.study).toBeNull()
+    const events = sim.drainEvents()
+    expect(events.some(e => e.type === 'studied')).toBe(false)
+    expect(events.filter(e => e.type === 'studyRefunded')).toEqual([{ type: 'studyRefunded', staffId: r.id, amount: paid }])
+  })
+
+  it('gives the tuition back for a technician already at tier 3', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 3 })
+    tech.study = { course: 'mask', paid: 400_000 }
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.drainEvents()
+    const money = sim.money
+    sim.startDay()
+    expect(sim.money).toBe(money + 400_000)
+    expect(tech.tiers.mask).toBe(3)
+    expect(tech.study).toBeNull()
+    const events = sim.drainEvents()
+    expect(events.some(e => e.type === 'studied')).toBe(false)
+    expect(events.filter(e => e.type === 'studyRefunded')).toEqual([{ type: 'studyRefunded', staffId: tech.id, amount: 400_000 }])
+  })
+
   it('keeps a booked course through a reload in the middle of the day', () => {
     const sim = maskShop()
     const tech = hireStaff(sim, 'technician', stats, { mask: 1 })

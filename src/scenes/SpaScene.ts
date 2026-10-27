@@ -622,10 +622,10 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'greeted':
       case 'levelUp':
-        this.staffLayer.handle(e)
+        this.staffLayer.handle(e, this.sim)
         return
       case 'studied': {
-        this.staffLayer.handle(e)
+        this.staffLayer.handle(e, this.sim)
         const person = this.sim.staff.find(s => s.id === e.staffId)
         if (!person) return
         const text =
@@ -633,6 +633,14 @@ export class SpaScene extends Phaser.Scene {
             ? t('studiedGreetToast', { name: person.name, n: e.level })
             : t('studiedToast', { name: person.name, course: courseName(e.course), n: e.level })
         // one at a time: a toast replaces the one on screen
+        this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
+        this.studiedToastMs += LATE_TOAST_MS
+        return
+      }
+      case 'studyRefunded': {
+        const person = this.sim.staff.find(s => s.id === e.staffId)
+        if (!person) return
+        const text = t('studyRefundToast', { name: person.name, money: formatMoney(e.amount) })
         this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
         this.studiedToastMs += LATE_TOAST_MS
         return
