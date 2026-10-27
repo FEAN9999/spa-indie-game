@@ -65,7 +65,9 @@ const BOOK_SCALE = 0.71
 const BOOKED_TEXT_X = -70
 const BOOKED_SIZE = 26
 const TRAIT_SIZE = 22
-const TRAIT_H = 58
+const TRAIT_H = 63
+const TRAIT_TOP = 34
+const TRAIT_TEXT_DY = -7
 const TRAIT_DY = 38
 const STAT_W = 225
 const DOT_R = 10
@@ -285,15 +287,15 @@ export class StaffScene extends Phaser.Scene {
   /** A cream two-line pill, good side over flaw, whose left edge is at x and centre line at y. */
   private traitPill(x: number, y: number, trait: TraitId): void {
     const [good, flaw] = traitLines(trait)
-    const top = this.add.text(0, -13, good, textStyle(TRAIT_SIZE, '800')).setOrigin(0.5)
-    const bottom = this.add.text(0, 13, flaw, textStyle(TRAIT_SIZE, '600')).setOrigin(0.5)
+    const top = this.add.text(0, TRAIT_TEXT_DY - 13, good, textStyle(TRAIT_SIZE, '800')).setOrigin(0.5)
+    const bottom = this.add.text(0, TRAIT_TEXT_DY + 13, flaw, textStyle(TRAIT_SIZE, '600')).setOrigin(0.5)
     const w = Math.max(top.width, bottom.width) + 24
     const pill = this.add
       .graphics()
       .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(-w / 2, -TRAIT_H / 2, w, TRAIT_H, 18)
+      .fillRoundedRect(-w / 2, -TRAIT_TOP, w, TRAIT_H, 18)
       .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -TRAIT_H / 2, w, TRAIT_H, 18)
+      .strokeRoundedRect(-w / 2, -TRAIT_TOP, w, TRAIT_H, 18)
     this.keep(this.add.container(x + w / 2, y, [pill, top, bottom]))
   }
 
