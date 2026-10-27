@@ -56,6 +56,7 @@ export function doorReach(grid: Grid, door: Tile): (t: Tile) => boolean {
 /**
  * Why `item` cannot stand where it says, or null; `items` is the rest of the shop, without it.
  * Nothing covers the tile inside the door or the owner's start, and every bed and seat stays in reach of the door, and so does a walkable tile beside each open floor's stairs foot (the stairs themselves would otherwise let a shut-in upper foot count as reached).
+ * A foot the door did not reach without `item` either, as in an older shop built before the stairs, is left as it is.
  */
 export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; ownerStart: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'blocksPath' | null {
   const { door, ownerStart, floors } = extras
@@ -68,8 +69,13 @@ export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { d
 
   const grid = buildGrid(shell, [...items, item], floors)
   const reached = doorReach(grid, door)
-  const reachedBeside = (seat: Tile) => DIRS.some(d => reached({ x: seat.x + d.x, y: seat.y + d.y }))
-  return grid.works.every(reached) && grid.seats.every(reachedBeside) && reached(ownerStart) && shell.feet.slice(0, floors).every(reachedBeside) ? null : 'blocksPath'
+  const beside = (reach: (t: Tile) => boolean) => (seat: Tile) => DIRS.some(d => reach({ x: seat.x + d.x, y: seat.y + d.y }))
+  const reachedBeside = beside(reached)
+  if (!(grid.works.every(reached) && grid.seats.every(reachedBeside) && reached(ownerStart))) return 'blocksPath'
+  const feet = shell.feet.slice(0, floors)
+  if (feet.every(reachedBeside)) return null
+  const before = beside(doorReach(buildGrid(shell, items, floors), door))
+  return feet.every(f => reachedBeside(f) || !before(f)) ? null : 'blocksPath'
 }
 
 /** The tile nearest `from` that `fits`, trying square rings of growing size, each row by row; null when no tile on the grid fits. */

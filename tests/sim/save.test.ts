@@ -1064,6 +1064,22 @@ describe('save version 14', () => {
     expect(sim.owner.task).toBeNull()
   })
 
+  it('moves the last bench off the stairs even when something already shuts the foot in', () => {
+    const raw = old()
+    raw.items = raw.items.filter((i: any) => i.kind !== 'bench')
+    raw.items.push({ id: 100, kind: 'bench', x: 9, y: 8, flip: false }, { id: 101, kind: 'plant', x: 10, y: 10, flip: false })
+    raw.nextItemId = 102
+    const sim = open(raw)
+    const bench = sim.items.find(i => i.kind === 'bench')!
+    expect(bench.id).toBe(100)
+    expect(bench.x === 9 && bench.y === 8).toBe(false)
+    expect(sim.items.some(i => i.id === 101)).toBe(true)
+    expect(sim.money).toBe(raw.money)
+    expect(stairsEvents(sim)).toEqual([])
+    sim.day = 6
+    expect(sim.floorProblem(2)).toBe('blocked')
+  })
+
   it('still clears the stairs spot when an older save was stored already parsed, with its version rewritten', () => {
     const raw = old()
     raw.items.push({ id: 100, kind: 'massageBed', x: 11, y: 7, flip: true })

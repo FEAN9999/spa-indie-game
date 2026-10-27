@@ -5,6 +5,7 @@ import { floorOf } from '../../src/sim/floors'
 import { tileEq, tileOf } from '../../src/sim/grid'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
+import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
 import { advanceUntil, hireStaff, seatAndWait } from './helpers'
@@ -58,6 +59,22 @@ describe('opening a floor', () => {
     const sim = SpaSim.fromSave(data, { rng: createRng(5), autoSpawn: false })
     sim.day = 6
     sim.money = FLOOR_PRICE[2]
+    expect(sim.floorProblem(2)).toBe('blocked')
+  })
+
+  it('still lets an old shop with its foot shut in build everywhere else', () => {
+    const raw: any = JSON.parse(JSON.stringify(newSim().toSave()))
+    delete raw.floors
+    raw.v = 13
+    raw.items.push({ id: 90, kind: 'plant', x: 10, y: 10, flip: false })
+    raw.nextItemId = 91
+    const sim = SpaSim.fromSave(parseSave(raw), { rng: createRng(5), autoSpawn: false })
+    sim.day = 6
+    sim.money = FLOOR_PRICE[2]
+    expect(sim.floorProblem(2)).toBe('blocked')
+    expect(sim.canPlace('bed', 6, 2, false)).toBeNull()
+    expect(sim.buy('plant', 2, 10, false)).toBeNull()
+    expect(sim.buy('plant', 6, 9, false)).toBeNull()
     expect(sim.floorProblem(2)).toBe('blocked')
   })
 })

@@ -320,4 +320,12 @@ describe('placeProblem on the tall grid', () => {
     expect(placeProblem(shell, [...others, plant], second, { ...extras, floors: 2 })).toBe('blocksPath')
     expect(placeProblem(shell, [...others, plant], second, { ...extras, floors: 1 })).toBe('overlap')
   })
+
+  it('lets a shop whose foot is shut in already build elsewhere, but not shut in a foot the door still reaches', () => {
+    const shutIn = [...others, { id: 97, kind: 'plant' as const, x: 10, y: 28, flip: false }, { id: 98, kind: 'plant' as const, x: 11, y: 29, flip: false }]
+    const at = (x: number, y: number) => placeProblem(shell, shutIn, { id: 99, kind: 'plant', x, y, flip: false }, { ...extras, floors: 2 })
+    expect(at(2, 20)).toBeNull()
+    expect(at(6, 9)).toBeNull()
+    expect(at(10, 10)).toBe('blocksPath')
+  })
 })
