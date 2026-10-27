@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { RECIPE_TRY_COST } from '../../src/config'
 import { REGULAR_IDS } from '../../src/sim/regulars'
 import { formatMoney } from '../../src/strings/format'
 import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
@@ -65,6 +66,14 @@ describe('strings', () => {
         expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
       }
     }
+  })
+
+  it('fills the recipe bench strings', () => {
+    expect(t('benchMix', { money: formatMoney(RECIPE_TRY_COST) })).toBe('Pha thử · 20.000 đ')
+    expect(t('benchRight', { n: 2 })).toBe('Đúng 2 món')
+    expect(t('benchRepeat', { n: 1 })).toBe('Chén này pha rồi: đúng 1 món')
+    expect(t('benchSolved', { name: t('serviceSteam') })).toBe('Đúng cả 3 món! Giờ mở được Xông lá.')
+    expect(t('benchTry', { n: 2 })).toBe('đúng 2/3')
   })
 
   it('the steam recipe hints name Lá bưởi and Sả, each line at most 60 characters', () => {

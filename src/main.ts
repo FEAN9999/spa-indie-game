@@ -12,6 +12,7 @@ import { MaskScene } from './scenes/MaskScene'
 import { MassageScene } from './scenes/MassageScene'
 import { OwnerScene } from './scenes/OwnerScene'
 import { PauseScene } from './scenes/PauseScene'
+import { RecipeScene } from './scenes/RecipeScene'
 import { ShampooScene } from './scenes/ShampooScene'
 import { SpaScene } from './scenes/SpaScene'
 import { ServicesScene } from './scenes/ServicesScene'
@@ -36,7 +37,7 @@ async function start() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // all sound is made by src/audio, so Phaser never opens its own AudioContext
     audio: { noAudio: true },
-    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }

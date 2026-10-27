@@ -2,13 +2,14 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { GAME_H, GAME_W, LOW_STOCK, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../config'
 import { ITEMS } from '../sim/items'
-import { isRecipeService, SERVICE_IDS, SERVICES, type ServiceId } from '../sim/services'
+import { isRecipeService, SERVICE_IDS, SERVICES, type RecipeService, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { STOCK_ITEMS, STOCK_NAME, STOCK_USES, type StockItem } from '../sim/stock'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
+import type { RecipeData } from './RecipeScene'
 
 export interface ServicesData {
   sim: SpaSim
@@ -187,7 +188,7 @@ export class ServicesScene extends Phaser.Scene {
       this.keep(this.add.text(ACTION_X, cy, t('serviceOrder', { name: t(SERVICES.massage.name) }), { ...textStyle(30, '800', C.lantern), align: 'center', wordWrap: { width: ACTION_W } }).setOrigin(0.5))
       return
     }
-    if (problem === 'recipe') {
+    if (problem === 'recipe' && isRecipeService(id)) {
       this.keep(addButton(this, ACTION_X, cy, ACTION_W, ACTION_H, t('serviceRecipe'), 'primary', () => this.openBench(id), 32))
       return
     }
@@ -208,8 +209,20 @@ export class ServicesScene extends Phaser.Scene {
     this.keep(this.add.container(x, y, [pill, label]))
   }
 
-  /** Task 11 opens the recipe bench here. */
-  private openBench(_id: ServiceId): void {}
+  /** The recipe bench over this panel, which steps aside so the shop is dimmed once, then redraws with the solved row's open button. */
+  private openBench(id: RecipeService): void {
+    const data: RecipeData = {
+      sim: this.params.sim,
+      service: id,
+      onChange: this.params.onChange,
+      onClose: () => {
+        this.scene.setVisible(true)
+        this.show()
+      },
+    }
+    this.scene.setVisible(false)
+    this.scene.launch('RecipeScene', data)
+  }
 
   private open(id: ServiceId): void {
     const { sim } = this.params
