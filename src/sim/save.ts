@@ -1,17 +1,18 @@
-import { HEART_AT, LOOK_COUNTS, PATIENCE_MS, STOCK_START } from '../config'
+import { HEART_AT, LOOK_COUNTS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
+import { createRng } from './rng'
 import { SERVICE_IDS, type ServiceId } from './services'
-import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } from './staff'
+import { drawTiers, noTiers, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 9
+export const SAVE_VERSION = 10
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -154,6 +155,14 @@ export function parseSave(raw: unknown): SaveData {
   // damaged staff data is repaired, never a reason to lose the shop
   data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
   data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))
+  // tiers and courses are repaired; a record with no tiers (saved before version 10) draws a specialty from one stream, staff then candidates
+  const tierRng = createRng(data.day * 1009 + data.nextStaffId)
+  data.staff = data.staff.map(s => ({
+    ...s,
+    tiers: repairTiers(s.tiers, s.role, () => drawTiers(tierRng, s.role, 1, data.services)),
+    study: repairStudy(s.study, s.role),
+  }))
+  data.candidates = data.candidates.map(c => ({ ...c, tiers: repairTiers(c.tiers, c.role, () => drawTiers(tierRng, c.role, c.rare ? RARE_TIER : 1, SERVICE_IDS)) }))
   // shops saved before the regulars have an empty book; a customer who is not a known regular is an ordinary one
   data.book = repairBook(data.book, data.day)
   data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
@@ -231,6 +240,25 @@ function repairTask(x: unknown): StaffTask | null {
   return null
 }
 
+/** A receptionist has no tiers; a technician's are whole numbers from 0 to MAX_TIER, and `fresh` draws them when there is no tiers object at all. */
+function repairTiers(x: unknown, role: StaffRole, fresh: () => Tiers): Tiers {
+  if (role === 'receptionist') return noTiers()
+  if (!isObject(x)) return fresh()
+  const tiers = noTiers()
+  for (const id of SERVICE_IDS) {
+    const n = x[id]
+    if (Number.isInteger(n)) tiers[id] = Math.min(MAX_TIER, Math.max(0, n as number))
+  }
+  return tiers
+}
+
+/** A pending course that fits the role and has a payment from zero up, or none. */
+function repairStudy(x: unknown, role: StaffRole): Study | null {
+  if (!isObject(x) || !isNumber(x.paid) || x.paid < 0) return null
+  const fits = role === 'receptionist' ? x.course === 'greet' : SERVICE_IDS.includes(x.course as ServiceId)
+  return fits ? { course: x.course as Study['course'], paid: x.paid } : null
+}
+
 /** A list of whole tiles, or an empty one. */
 const repairPath = (x: unknown): Tile[] => (Array.isArray(x) && x.every(t => isObject(t) && Number.isInteger(t.x) && Number.isInteger(t.y)) ? (x as Tile[]) : [])
 
@@ -239,7 +267,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

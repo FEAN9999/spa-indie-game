@@ -99,6 +99,7 @@ export function hire(h: CrewHost, index: number): HireProblem | null {
     stats: c.stats,
     wage: c.wage,
     rare: c.rare,
+    tiers: { ...c.tiers },
     id: h.takeStaffId(),
     level: 1,
     xp: 0,
@@ -108,6 +109,7 @@ export function hire(h: CrewHost, index: number): HireProblem | null {
     task: null,
     sinceRest: 0,
     leaving: false,
+    study: null,
   })
   const s = sim.staff[sim.staff.length - 1]
   const home = homeOf(h, s)

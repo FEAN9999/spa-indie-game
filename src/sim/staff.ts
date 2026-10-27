@@ -5,6 +5,7 @@ import {
   LEVEL_WAGE_RAISE,
   LEVEL_XP,
   RARE_CHANCE,
+  RARE_TIER,
   RECEPTIONIST_CHANCE,
   STAFF_STAR_ODDS,
   STAFF_TIP_PER_DOT,
@@ -16,6 +17,7 @@ import {
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
 import { randomLook, type Rng } from './rng'
+import { SERVICE_IDS, type ServiceId } from './services'
 import type { Facing, Look, Tile, Vec } from './types'
 
 export type StaffRole = 'receptionist' | 'technician'
@@ -25,6 +27,18 @@ export const STAT_KEYS = ['skill', 'speed', 'friendly', 'stamina'] as const
 export type StatKey = (typeof STAT_KEYS)[number]
 export type StaffStats = Record<StatKey, number>
 
+/** How well a technician does each service, 0 to MAX_TIER. */
+export type Tiers = Record<ServiceId, number>
+
+/** What a course teaches: a service, or greeting for a receptionist. */
+export type Course = ServiceId | 'greet'
+
+/** A paid course not yet finished: what it teaches and what has been paid so far. */
+export interface Study {
+  course: Course
+  paid: number
+}
+
 /** Someone who can be hired. */
 export interface Candidate {
   name: string
@@ -33,6 +47,7 @@ export interface Candidate {
   stats: StaffStats
   wage: number
   rare: boolean
+  tiers: Tiers
 }
 
 export type StaffTask =
@@ -52,10 +67,20 @@ export interface Staff extends Candidate {
   /** Customers served or greeted since the last rest. */
   sinceRest: number
   leaving: boolean
+  study: Study | null
 }
 
 /** Daily wage: 20 000 for all ones, 2 500 more for each dot above that. */
 export const wageFor = (stats: StaffStats): number => WAGE_BASE + (STAT_KEYS.reduce((sum, k) => sum + stats[k], 0) - STAT_KEYS.length) * WAGE_PER_DOT
+
+export const noTiers = (): Tiers => Object.fromEntries(SERVICE_IDS.map(id => [id, 0])) as Tiers
+
+/** A receptionist has no tiers; a technician has `tier` in one service picked from `pool` and 0 in the rest. */
+export function drawTiers(rng: Rng, role: StaffRole, tier: number, pool: readonly ServiceId[]): Tiers {
+  const tiers = noTiers()
+  if (role === 'technician') tiers[pool[Math.floor(rng() * pool.length)]] = tier
+  return tiers
+}
 
 /** A random candidate whose name is not in `taken`. */
 export function makeCandidate(rng: Rng, taken: string[]): Candidate {
@@ -66,7 +91,8 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
   const look = randomLook(rng)
   const free = STAFF_NAMES.filter(n => !taken.includes(n))
   const name = free[Math.floor(rng() * free.length)]
-  return { name, role, look, stats, wage: wageFor(stats), rare }
+  const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, SERVICE_IDS)
+  return { name, role, look, stats, wage: wageFor(stats), rare, tiers }
 }
 
 /** Time at the bed, in ms. */

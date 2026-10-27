@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { STAFF_STAR_ODDS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
-import { gainXp, greetPatience, levelFor, makeCandidate, restAfter, staffStars, tipFactor, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
+import { SERVICE_IDS } from '../../src/sim/services'
+import { drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, staffStars, tipFactor, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -78,5 +79,30 @@ describe('staff rules', () => {
     expect(tipFactor(0, null)).toBe(1)
     expect(tipFactor(4, null)).toBeCloseTo(1.2)
     expect(tipFactor(0, 3)).toBeCloseTo(1.1)
+  })
+})
+
+describe('staff tiers', () => {
+  const draw = () => {
+    const rng = createRng(7)
+    return Array.from({ length: 300 }, () => makeCandidate(rng, []))
+  }
+
+  it('gives a new technician tier 1 in exactly one service, drawn from every service', () => {
+    const techs = draw().filter(c => c.role === 'technician')
+    for (const c of techs) {
+      const set = Object.values(c.tiers).filter(v => v !== 0)
+      expect(set).toEqual([c.rare ? 2 : 1])
+    }
+    const seen = new Set(techs.map(c => SERVICE_IDS.find(id => c.tiers[id] !== 0)))
+    expect([...seen].sort()).toEqual([...SERVICE_IDS].sort())
+  })
+
+  it('gives a receptionist candidate no tiers', () => {
+    for (const c of draw().filter(c => c.role === 'receptionist')) expect(c.tiers).toEqual(noTiers())
+  })
+
+  it('draws a tier from the pool it is given', () => {
+    expect(drawTiers(createRng(3), 'technician', 1, ['mask'])).toEqual({ ...noTiers(), mask: 1 })
   })
 })

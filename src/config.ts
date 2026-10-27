@@ -146,6 +146,10 @@ export const STAFF_CAP = { receptionist: 1, technician: 3 } as const
 export const CANDIDATES_PER_DAY = 3
 export const RECEPTIONIST_CHANCE = 1 / 3
 export const RARE_CHANCE = 0.1
+/** The highest tier a technician can reach in one service. */
+export const MAX_TIER = 3
+/** The tier a rare technician starts with in their specialty. */
+export const RARE_TIER = 2
 export const WAGE_BASE = 20000
 export const WAGE_PER_DOT = 2500
 export const LEVEL_WAGE_RAISE = 2500

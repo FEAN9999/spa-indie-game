@@ -6,7 +6,9 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
+import { noTiers } from '../../src/sim/staff'
 import { emptyVipBook } from '../../src/sim/vips'
 import { TUTORIAL_HINTS, type SimEvent } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
@@ -17,6 +19,7 @@ import v5 from '../fixtures/save-v5.json'
 import v6 from '../fixtures/save-v6.json'
 import v7 from '../fixtures/save-v7.json'
 import v8 from '../fixtures/save-v8.json'
+import v9 from '../fixtures/save-v9.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -78,12 +81,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([9, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([10, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(9)
+    expect(sim.toSave().v).toBe(10)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -215,10 +218,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 9', () => {
+  it('still leaves alone only saves newer than version 10', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 9 }).v).toBe(9)
-    expect(() => parseSave({ ...good, v: 10 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 10 }).v).toBe(10)
+    expect(() => parseSave({ ...good, v: 11 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -458,7 +461,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(9)
+    expect(copy.toSave().v).toBe(10)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -643,5 +646,90 @@ describe('save version 9', () => {
     const raw = JSON.parse(JSON.stringify(busyShop().toSave()))
     raw.customers = raw.customers.map((c: object) => ({ ...c, vip: 'nobody' }))
     expect(parseSave(raw).customers.every(c => c.vip === null)).toBe(true)
+  })
+})
+
+describe('save version 10', () => {
+  const nonZero = (t: Record<string, number>) => Object.entries(t).filter(([, n]) => n !== 0)
+
+  it('opens a v9 shop: every technician gets tier 1 in one open service, nothing else changes', () => {
+    const sim = open(v9)
+    expect(sim.staff.length).toBe(v9.staff.length)
+    sim.staff.forEach((s, i) => {
+      const old = v9.staff[i]
+      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.rare]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, old.rare])
+      if (s.role === 'technician') {
+        const set = nonZero(s.tiers)
+        expect(set.length).toBe(1)
+        expect(set[0][1]).toBe(1)
+        expect(v9.services).toContain(set[0][0])
+      } else expect(s.tiers).toEqual(noTiers())
+      expect(s.study).toBeNull()
+    })
+    expect(sim.staff.some(s => s.role === 'technician')).toBe(true)
+  })
+
+  it('gives v9 candidates a specialty by the new-candidate rule', () => {
+    const sim = open(v9)
+    expect(sim.candidates.map(c => c.stats)).toEqual(v9.candidates.map(c => c.stats))
+    for (const c of sim.candidates) {
+      if (c.role === 'technician') {
+        const set = nonZero(c.tiers)
+        expect(set.length).toBe(1)
+        expect(set[0][1]).toBe(c.rare ? 2 : 1)
+        expect(SERVICE_IDS).toContain(set[0][0])
+      } else expect(c.tiers).toEqual(noTiers())
+    }
+  })
+
+  it('draws the same specialties every time the same save is opened', () => {
+    const a = open(v9)
+    const b = open(v9)
+    expect(a.staff.map(s => s.tiers)).toEqual(b.staff.map(s => s.tiers))
+    expect(a.candidates.map(c => c.tiers)).toEqual(b.candidates.map(c => c.tiers))
+    a.advance(30_000)
+    b.advance(30_000)
+    expect(a.toSave()).toEqual(b.toSave())
+  })
+
+  it('opens every older save with a specialty on each technician', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9]) {
+      const sim = open(raw)
+      for (const s of sim.staff.filter(s => s.role === 'technician')) {
+        const set = nonZero(s.tiers)
+        expect(set.length).toBe(1)
+        expect(set[0][1]).toBe(1)
+        expect(sim.services).toContain(set[0][0])
+      }
+    }
+  })
+
+  it('keeps tiers and a pending course through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const tech = hireStaff(sim, 'technician', undefined, { shampoo: 2, mask: 1, massage: 0 })
+    tech.study = { course: 'mask', paid: 200000 }
+    const rec = hireStaff(sim, 'receptionist')
+    rec.study = { course: 'greet', paid: 50000 }
+    expect(viaJson(sim).toSave()).toEqual(sim.toSave())
+    expect(sim.toSave().staff[0].tiers).toEqual({ shampoo: 2, mask: 1, massage: 0 })
+  })
+
+  it('repairs damaged tiers and courses field by field', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    for (let i = 0; i < 3; i++) hireStaff(sim, 'technician')
+    hireStaff(sim, 'receptionist')
+    const raw = JSON.parse(JSON.stringify(sim.toSave()))
+    const [t1, t2, t3, r1] = raw.staff
+    t1.tiers = { shampoo: 7, mask: -1, massage: 'x' }
+    t1.study = { course: 'mask', paid: -3 }
+    t2.study = { course: 'nails', paid: 5 }
+    t3.study = { course: 'greet', paid: 50000 }
+    r1.tiers = { shampoo: 2 }
+    r1.study = { course: 'greet', paid: 50000 }
+    const out = parseSave(raw).staff
+    expect(out[0].tiers).toEqual({ shampoo: 3, mask: 0, massage: 0 })
+    expect(out[3].tiers).toEqual(noTiers())
+    expect(out.slice(0, 3).map(s => s.study)).toEqual([null, null, null])
+    expect(out[3].study).toEqual({ course: 'greet', paid: 50000 })
   })
 })
