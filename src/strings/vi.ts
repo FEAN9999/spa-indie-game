@@ -174,7 +174,7 @@ export const vi = {
   letGoConfirm: 'Cho {name} nghỉ việc? Hôm nay vẫn trả lương {money}.',
   study: 'Cho đi học',
   studyBest: 'Đã giỏi nhất',
-  studyTonight: 'Tối nay học: {course}',
+  studyTonight: 'Tối nay học:\n{course}',
   studyPick: '{name} học gì tối nay?',
   studyOption: '{course} → bậc {n} · {money}',
   studyGreetOption: 'Tiếp khách → {n} chấm · {money}',

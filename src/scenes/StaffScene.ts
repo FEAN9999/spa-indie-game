@@ -58,11 +58,10 @@ const BADGE_STAR = 0.31
 const BADGE_STAR_STEP = 28
 const BADGE_STEP = 158
 // the booked box: the book at the left, the text after it, both inside the rounded ends
-const BOOK_X = -90
-const BOOK_SCALE = 0.86
-const BOOKED_TEXT_X = -60
-const BOOKED_TEXT_W = 172
-const BOOKED_SIZE = 28
+const BOOK_X = -100
+const BOOK_SCALE = 0.71
+const BOOKED_TEXT_X = -70
+const BOOKED_SIZE = 26
 const STAT_W = 225
 const DOT_R = 10
 const DOT_STEP = 26
@@ -243,7 +242,7 @@ export class StaffScene extends Phaser.Scene {
         .lineStyle(4, hex(C.ink))
         .strokeRoundedRect(-PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
       const book = this.add.image(BOOK_X, 0, 'icon-book').setScale(BOOK_SCALE)
-      const text = this.add.text(BOOKED_TEXT_X, 0, t('studyTonight', { course: courseName(state.course) }), { ...textStyle(BOOKED_SIZE, '600'), wordWrap: { width: BOOKED_TEXT_W } }).setOrigin(0, 0.5)
+      const text = this.add.text(BOOKED_TEXT_X, 0, t('studyTonight', { course: courseName(state.course) }), textStyle(BOOKED_SIZE, '600')).setOrigin(0, 0.5)
       this.keep(this.add.container(ACTION_X, y, [bg, book, text]))
       return
     }
