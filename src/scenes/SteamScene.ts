@@ -16,7 +16,7 @@ const LABEL = { dy: 88, size: 38, stroke: 10 }
 /** The tap box round an icon centre: wider than the icon, and down over the name. */
 const HIT = { halfW: 85, top: -85, bottom: 120 }
 /** The pot at the card's foot, its bottom just over the time bar; a caught thing drops into its leaves. */
-const POT = { x: GAME_W / 2, bottom: 1592, scale: 2, mouthY: 1462, bumpScale: 1.06, bumpMs: 90 }
+const POT = { x: GAME_W / 2, bottom: 1592, scale: 1, mouthY: 1462, bumpScale: 1.06, bumpMs: 90 }
 /** Things drift side to side as they fall, and fade in and out over this share of the fall at each end. */
 const SWAY = { px: 14, perMs: 1 / 450 }
 const FADE = 0.08

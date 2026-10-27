@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { serviceArrivalFactor, tipFor } from '../../src/sim/economy'
-import { bedTile } from '../../src/sim/items'
+import { bedTile, workTile } from '../../src/sim/items'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { createRng } from '../../src/sim/rng'
 import { BASIC_SERVICES, isRecipeService, RECIPE_SERVICES, SERVICE_IDS, SERVICES } from '../../src/sim/services'
+import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
 import { t } from '../../src/strings/vi'
@@ -111,6 +112,31 @@ describe('opening Xông lá', () => {
     expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'steam', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
     expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
     expect(sim.stock).toMatchObject({ herbs: 19, towel: 19, shampoo: 20 })
+  })
+})
+
+describe('a Xông lá service across a save', () => {
+  it('keeps a flipped tent, its customer and its one herbs through save and load, and still completes', () => {
+    const sim = fresh()
+    sim.day = 5
+    sim.services = ['shampoo', 'mask', 'massage']
+    sim.recipes.steam.solved = true
+    expect(sim.openService('steam')).toBeNull()
+    expect(sim.buy('steamTent', 8, 8, true)).toBeNull()
+    const tent = sim.items.find(i => i.kind === 'steamTent')!
+    const c = startService(sim, { kind: 'elder', service: 'steam' })
+    expect(sim.stock.herbs).toBe(19)
+    const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(3), autoSpawn: false })
+    const copyTent = copy.items.find(i => i.kind === 'steamTent')!
+    expect(copyTent.flip).toBe(true)
+    const back = copy.customers.find(x => x.id === c.id)!
+    expect(copy.stations.find(s => s.id === back.stationId)).toMatchObject({ service: 'steam', bed: bedTile(tent), work: workTile(tent), customerId: c.id })
+    expect(back.pos).toEqual(bedTile(tent))
+    expect(back.state).toBe('inService')
+    expect(copy.stock.herbs).toBe(19)
+    copy.completeService(back.id, 3)
+    expect(copy.stock.herbs).toBe(19)
+    expect(copy.customers.find(x => x.id === c.id)?.state).not.toBe('inService')
   })
 })
 

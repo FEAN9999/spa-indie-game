@@ -55,10 +55,10 @@ const LET_GO_DY = 154
 const PAIR_SIZE = 36
 // the specialty badges: a service icon and up to three small stars, in a line under the wage
 const BADGE_DY = 172
-const BADGE_ICON = 0.93
-const BADGE_STAR = 0.31
-const BADGE_STAR_STEP = 28
-const BADGE_STEP = 158
+const BADGE_ICON = 0.7
+const BADGE_STAR = 0.25
+const BADGE_STAR_STEP = 20
+const BADGE_STEP = 120
 // the booked box: the book at the left, the text after it, both inside the rounded ends
 const BOOK_X = -100
 const BOOK_SCALE = 0.71
@@ -235,8 +235,8 @@ export class StaffScene extends Phaser.Scene {
     specialtyOf(person, this.params.sim.services).forEach((b, i) => {
       const x = TEXT_X + i * BADGE_STEP
       const alpha = b.dim ? FADED_ALPHA : 1
-      this.keep(this.add.image(x + 26, y, `svc-${b.service}`).setScale(BADGE_ICON).setAlpha(alpha))
-      for (let s = 0; s < b.tier; s++) this.keep(this.add.image(x + 72 + s * BADGE_STAR_STEP, y, 'star').setScale(BADGE_STAR).setAlpha(alpha))
+      this.keep(this.add.image(x + 22, y, `svc-${b.service}`).setScale(BADGE_ICON).setAlpha(alpha))
+      for (let s = 0; s < b.tier; s++) this.keep(this.add.image(x + 54 + s * BADGE_STAR_STEP, y, 'star').setScale(BADGE_STAR).setAlpha(alpha))
     })
   }
 

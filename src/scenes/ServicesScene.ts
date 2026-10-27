@@ -183,12 +183,13 @@ export class ServicesScene extends Phaser.Scene {
       return
     }
     const problem = sim.serviceProblem(id)
-    if (isRecipeService(id) && problem === 'order') {
+    // a recipe row follows the bench, not the debt: the bench opens in debt too
+    if (isRecipeService(id) && !sim.benchOpen()) {
       for (const obj of this.shown.slice(first)) (obj as Phaser.GameObjects.Image).setAlpha(FADED_ALPHA)
       this.keep(this.add.text(ACTION_X, cy, t('serviceOrder', { name: t(SERVICES.massage.name) }), { ...textStyle(30, '800', C.lantern), align: 'center', wordWrap: { width: ACTION_W } }).setOrigin(0.5))
       return
     }
-    if (problem === 'recipe' && isRecipeService(id)) {
+    if (isRecipeService(id) && !sim.recipes[id].solved) {
       this.keep(addButton(this, ACTION_X, cy, ACTION_W, ACTION_H, t('serviceRecipe'), 'primary', () => this.openBench(id), 32))
       return
     }
