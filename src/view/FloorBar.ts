@@ -61,7 +61,12 @@ export class FloorBar {
     const parts: Phaser.GameObjects.GameObject[] = [g]
     const ink = viewed ? C.cream : C.ink
     const label = locked ? formatMoney(p.price) : t(NAME[p.floor])
-    parts.push(add.text(locked ? 16 : 24, 0, label, textStyle(locked ? 36 : 44, '800', ink)).setOrigin(0.5))
+    const text = add.text(24, 0, label, textStyle(locked ? 36 : 44, '800', ink)).setOrigin(0.5)
+    // Fit the label between the icon slot and the pill's round end: names in -70..136, prices in -80..136.
+    const from = locked ? -80 : -70
+    const room = 136 - from
+    if (locked || text.width > room) text.setScale(Math.min(1, room / text.width)).setX(from + room / 2)
+    parts.push(text)
     if (locked) parts.push(add.image(-PILL_W / 2 + 56, 0, 'icon-lock').setScale(0.8))
     if (p.face) parts.push(this.face(look, -PILL_W / 2 + 56, 0))
     if (p.dot) parts.push(add.circle(PILL_W / 2 - 22, -PILL_H / 2 + 18, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)))
