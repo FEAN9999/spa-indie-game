@@ -15,8 +15,8 @@ const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)?.[1]
 describe('floor art', () => {
   const textures = floorTextures()
 
-  it('draws the floor-2 room, the stairs and the rope as well-formed SVG', () => {
-    expect(Object.keys(textures).sort()).toEqual(['room-2', 'stairs', 'stairsRope'])
+  it('draws the floor-2 and rooftop rooms, the coop, the stairs and the rope as well-formed SVG', () => {
+    expect(Object.keys(textures).sort()).toEqual(['coop', 'room-2', 'room-3', 'stairs', 'stairsRope'])
     for (const svg of Object.values(textures)) {
       expect(svg.startsWith('<svg')).toBe(true)
       expect(svg.endsWith('</svg>')).toBe(true)
@@ -29,6 +29,13 @@ describe('floor art', () => {
     expect(viewBox(textures['room-2'])).toBe(`0 0 13 ${FLOOR_ROWS + STREET_TILES}`)
     expect(viewBox(textures.stairs)).toBe('0 0 1 3')
     expect(viewBox(textures.stairsRope)).toBe('0 0 1 1')
+  })
+
+  it('sizes the rooftop like the floor-1 room and the coop to 1.5 × 4 tiles, and lays the roof in gạch tàu', () => {
+    const room = roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), []))
+    expect(viewBox(textures['room-3'])).toBe(viewBox(room))
+    expect(viewBox(textures.coop)).toBe('0 0 1.5 4')
+    expect(textures['room-3']).toContain('fill="url(#gachtau)"')
   })
 
   it('lays floor 2 with planks inside and gạch bông on the balcony, in the game colours', () => {

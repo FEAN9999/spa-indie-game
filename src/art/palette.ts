@@ -57,6 +57,20 @@ export const C = {
   stoneHot: '#EE8A2E',
   steamBlue: '#9FB8BF',
   deepBrown: '#2B201C',
+  // rooftop (floor 3) and its pigeon coop
+  cloud: '#FFFFFF',
+  tank: '#CBD2D6',
+  tankRib: '#9AA5AB',
+  tin: '#A9BEC4',
+  tinRib: '#8EA6AD',
+  gachTauBase: '#C98062',
+  gachTauFace: '#DB9677',
+  gachTauGlint: '#E9B095',
+  bougainvillea: '#D6457E',
+  coopDoor: '#3B2A22',
+  coopStepLow: '#94633C',
+  coopStepMid: '#7E5232',
+  coopStepHigh: '#56331F',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]
