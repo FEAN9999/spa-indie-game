@@ -25,6 +25,8 @@ const SPARK_TINTS = [C.mustard, C.lotus, C.teal]
 const SPARK_MS = 700
 const LEVEL_UP_MS = 1200
 const SWEAT_MS = 1000
+const COIN_SCALE = 1.3
+const COIN_HOP_PX = 12
 const SWEAT_SIDE_PX = 44
 const CHAT_TEXT = '…'
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -189,14 +191,15 @@ export class StaffLayer {
     })
   }
 
-  /** A studious person's level-up: a coin pops over the head and fades with the label. */
+  /** A studious person's level-up: a coin pops over the head, hops and fades. */
   private coin(sim: SpaSim, staffId: number): void {
     const person = sim.staff.find(s => s.id === staffId)
     if (!person || !this.sprites.has(staffId) || isHidden(sim, person)) return
     const { x, y: feet } = this.room.tileToWorld(person.pos)
-    const coin = this.scene.add.image(x, feet + HEAD_TOP - PILL_H - 8 - 70, 'coin').setOrigin(0.5, 1).setDepth(FX_DEPTH + 10).setScale(0)
-    this.scene.tweens.add({ targets: coin, scale: 1, duration: POP_MS, ease: 'Back.easeOut' })
-    this.scene.tweens.add({ targets: coin, y: coin.y - 80, duration: LEVEL_UP_MS, ease: 'Cubic.easeOut' })
+    const top = feet + HEAD_TOP
+    const coin = this.scene.add.image(x, top, 'coin').setOrigin(0.5, 1).setDepth(FX_DEPTH + 10).setScale(0)
+    this.scene.tweens.add({ targets: coin, scale: COIN_SCALE, duration: POP_MS, ease: 'Back.easeOut' })
+    this.scene.tweens.add({ targets: coin, y: top - COIN_HOP_PX, duration: POP_MS, yoyo: true, ease: 'Quad.easeOut' })
     this.scene.tweens.add({ targets: coin, alpha: 0, duration: LEVEL_UP_MS, ease: 'Cubic.easeIn', onComplete: () => coin.destroy() })
   }
 
