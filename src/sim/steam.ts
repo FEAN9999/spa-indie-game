@@ -3,6 +3,8 @@ import {
   STEAM_DECOY_SHARE_HARD,
   STEAM_FALL_MS,
   STEAM_FALL_MS_HARD,
+  STEAM_LANE_JITTER,
+  STEAM_LANES,
   STEAM_LIMIT_MS,
   STEAM_NEED,
   STEAM_SPAWN_MS,
@@ -43,6 +45,8 @@ export class SteamGame {
   misses = 0
   private items: Item[] = []
   private nextId = 1
+  /** The lanes of the last two spawns, newest last. */
+  private recentLanes: number[] = []
   /** Until the next spawn; the first comes at the first tick. */
   private waitMs = 0
   private readonly decoyShare: number
@@ -96,12 +100,15 @@ export class SteamGame {
     return this.got >= STEAM_STAR2.got && this.misses <= STEAM_STAR2.misses ? 2 : 1
   }
 
-  /** Draws decoy or good, then which thing, then x, then the fall time. */
+  /** Draws decoy or good, then which thing, then a lane not used by the last two spawns, the jitter in it, then the fall time. */
   private spawn(): Item {
     const good = this.rng() >= this.decoyShare
     const pool: readonly SteamThing[] = good ? RECIPES.steam.ingredients : DECOYS
     const thing = pool[Math.floor(this.rng() * pool.length)]
-    const x = this.rng()
+    const free = Array.from({ length: STEAM_LANES }, (_, i) => i).filter(l => !this.recentLanes.includes(l))
+    const lane = free[Math.floor(this.rng() * free.length)]
+    this.recentLanes = [...this.recentLanes, lane].slice(-2)
+    const x = (lane + 0.5) / STEAM_LANES + (this.rng() * 2 - 1) * STEAM_LANE_JITTER
     const fallMs = between(this.rng, this.fallMs)
     return { id: this.nextId++, thing, x, y: 0, good, ageMs: 0, fallMs }
   }

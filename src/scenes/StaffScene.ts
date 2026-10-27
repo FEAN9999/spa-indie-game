@@ -59,6 +59,10 @@ const BADGE_ICON = 0.7
 const BADGE_STAR = 0.25
 const BADGE_STAR_STEP = 20
 const BADGE_STEP = 120
+// with 5 or 6 specialties the step shrinks and each tier's stars stand in a column right of the icon
+const BADGE_STEP_TIGHT = 80
+const BADGE_STAR_COLUMN_STEP = 16
+const BADGE_TIGHT_FROM = 5
 // the booked box: the book at the left, the text after it, both inside the rounded ends
 const BOOK_X = -100
 const BOOK_SCALE = 0.71
@@ -232,11 +236,18 @@ export class StaffScene extends Phaser.Scene {
 
   /** A service icon and its tier's stars for each specialty, closed services faded. */
   private badges(person: Candidate, y: number): void {
-    specialtyOf(person, this.params.sim.services).forEach((b, i) => {
-      const x = TEXT_X + i * BADGE_STEP
+    const list = specialtyOf(person, this.params.sim.services)
+    const tight = list.length >= BADGE_TIGHT_FROM
+    const step = tight ? BADGE_STEP_TIGHT : BADGE_STEP
+    list.forEach((b, i) => {
+      const x = TEXT_X + i * step
       const alpha = b.dim ? FADED_ALPHA : 1
       this.keep(this.add.image(x + 22, y, `svc-${b.service}`).setScale(BADGE_ICON).setAlpha(alpha))
-      for (let s = 0; s < b.tier; s++) this.keep(this.add.image(x + 54 + s * BADGE_STAR_STEP, y, 'star').setScale(BADGE_STAR).setAlpha(alpha))
+      for (let s = 0; s < b.tier; s++) {
+        const sx = tight ? x + 54 : x + 54 + s * BADGE_STAR_STEP
+        const sy = tight ? y + (s - (b.tier - 1) / 2) * BADGE_STAR_COLUMN_STEP : y
+        this.keep(this.add.image(sx, sy, 'star').setScale(BADGE_STAR).setAlpha(alpha))
+      }
     })
   }
 

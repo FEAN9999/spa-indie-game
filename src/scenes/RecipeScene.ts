@@ -36,10 +36,10 @@ const MIX = { y: 900, w: 600, h: 120 }
 const RESULT_Y = 1010
 const DOT = { r: 13, step: 36, gap: 24 }
 // two rows of four ingredients
-const SHELF = { top: 1060, w: 210, h: 180, gap: 16, r: 28, iconPx: 100, iconDy: -20, nameDy: 55, nameSize: 28 }
+const SHELF = { top: 1060, w: 210, h: 156, gap: 12, r: 28, iconPx: 90, iconDy: -18, nameDy: 48, nameSize: 28 }
 const SHELF_LEFT = MID - (4 * SHELF.w + 3 * SHELF.gap) / 2
 const NAME_PAD = 16
-const HINT = { top: 1462, x: 90, w: 900, padX: 28, padY: 16, gap: 12, size: 30, r: 24, tail: 6 }
+const HINT = { top: 1410, x: 90, w: 900, padX: 28, padY: 12, gap: 10, size: 28, r: 24, tail: 6 }
 // the last tries, newest first, two to a row
 const TRIES_SHOWN = 4
 const TRY = { x: 90, w: 440, h: 72, gapX: 20, gapY: 12, r: 20, iconPx: 56, iconX: 48, iconStep: 64, textPad: 24 }

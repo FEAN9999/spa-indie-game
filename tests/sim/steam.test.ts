@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { STEAM_FALL_MS_HARD, STEAM_LIMIT_MS, STEAM_NEED } from '../../src/config'
+import { STEAM_FALL_MS_HARD, STEAM_LANES, STEAM_LANE_JITTER, STEAM_LIMIT_MS, STEAM_NEED } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { RECIPES } from '../../src/sim/recipes'
 import { DECOYS, SteamGame, type Falling } from '../../src/sim/steam'
@@ -140,5 +140,30 @@ describe('SteamGame', () => {
       expect(ms).toBeLessThanOrEqual(STEAM_FALL_MS_HARD.max + 1)
     }
     expect(Math.abs(decoys / 200 - 0.6)).toBeLessThanOrEqual(0.08)
+  })
+
+  it('over 200+ spawns, never reuses either of the last two lanes and stays near its lane centre', () => {
+    let spawns = 0
+    for (let seed = 1; seed <= 12; seed++) {
+      const g = new SteamGame(createRng(seed))
+      const xs: number[] = []
+      const seen = new Set<number>()
+      while (g.phase === 'play') {
+        g.tick(50)
+        for (const f of g.falling()) {
+          if (seen.has(f.id)) continue
+          seen.add(f.id)
+          xs.push(f.x)
+        }
+      }
+      const lanes = xs.map(x => Math.floor(x * STEAM_LANES))
+      lanes.forEach((lane, i) => {
+        if (i >= 1) expect(lane).not.toBe(lanes[i - 1])
+        if (i >= 2) expect(lane).not.toBe(lanes[i - 2])
+        expect(Math.abs(xs[i] - (lane + 0.5) / STEAM_LANES)).toBeLessThanOrEqual(STEAM_LANE_JITTER + 1e-9)
+      })
+      spawns += xs.length
+    }
+    expect(spawns).toBeGreaterThanOrEqual(200)
   })
 })
