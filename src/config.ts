@@ -157,6 +157,9 @@ export const LEVEL_WAGE_RAISE = 2500
 export const LEVEL_XP = [0, 3, 8, 15, 25] as const
 export const STAFF_WORK_MS_SLOW = 24000
 export const STAFF_WORK_MS_STEP = 3000
+/** Each tier of a service cuts a technician's time on it to this fraction, never under the floor: half of what speed 5 takes. */
+export const TIER_WORK_FACTOR = 0.85
+export const WORK_FLOOR_MS = (STAFF_WORK_MS_SLOW - 4 * STAFF_WORK_MS_STEP) / 2
 /** A tea break lasts one game hour. */
 export const STAFF_REST_MS = 60 * REAL_MS_PER_GAME_MIN
 /** Chance of three stars and of one star, by skill 1 to 5. */

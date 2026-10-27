@@ -11,8 +11,10 @@ import {
   STAFF_TIP_PER_DOT,
   STAFF_WORK_MS_SLOW,
   STAFF_WORK_MS_STEP,
+  TIER_WORK_FACTOR,
   WAGE_BASE,
   WAGE_PER_DOT,
+  WORK_FLOOR_MS,
 } from '../config'
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
@@ -97,6 +99,12 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
 
 /** Time at the bed, in ms. */
 export const workMs = (speed: number): number => STAFF_WORK_MS_SLOW - (speed - 1) * STAFF_WORK_MS_STEP
+
+/** Time at the bed for `service`: each tier of it takes 15% off, down to a floor. */
+export const serviceMs = (s: Candidate, service: ServiceId): number => Math.max(Math.round(workMs(s.stats.speed) * TIER_WORK_FACTOR ** s.tiers[service]), WORK_FLOOR_MS)
+
+/** The skill the star roll for `service` uses: skill plus the tier of that service, up to 5. */
+export const starSkill = (s: Candidate, service: ServiceId): number => Math.min(5, s.stats.skill + s.tiers[service])
 
 /** Tiles per second. */
 export const walkSpeed = (speed: number): number => 3 + 0.5 * speed

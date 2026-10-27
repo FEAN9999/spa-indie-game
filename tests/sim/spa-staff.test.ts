@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
-import { DAY_END_MIN, OWNER_START, PATIENCE_MS, STAFF_REST_MS } from '../../src/config'
-import { dayEase, tipFor } from '../../src/sim/economy'
+import { DAY_END_MIN, OWNER_START, PATIENCE_MS, REGULAR_OWNER_MS, STAFF_REST_MS } from '../../src/config'
+import { dayEase, reviewScore, tipFor } from '../../src/sim/economy'
 import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
 import { footprint } from '../../src/sim/items'
 import { SpaSim } from '../../src/sim/spa'
-import { greetPatience, tipFactor, workMs } from '../../src/sim/staff'
+import { greetPatience, serviceMs, tipFactor, workMs } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
 import { advanceUntil, hireStaff, seatAndWait, startService } from './helpers'
 
@@ -73,6 +73,106 @@ const dayThree = () => {
 
 /** Spawns a customer and waits until they sit; the next one is spawned only after this returns. */
 const seated = (sim: SpaSim, n: number): Customer[] => Array.from({ length: n }, () => seatAndWait(sim))
+
+/** Day three with mask and massage open, a bed for each and a second shampoo bed already there. */
+const withBeds = () => {
+  const sim = dayThree()
+  sim.money = 2_000_000
+  expect(sim.openService('mask')).toBeNull()
+  expect(sim.openService('massage')).toBeNull()
+  expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+  expect(sim.buy('massageBed', 8, 2, false)).toBeNull()
+  sim.drainEvents()
+  return sim
+}
+
+const fetchedBy = (s: { task: unknown }) => (s.task as { kind: string; customerId: number } | null)?.customerId
+
+describe('technicians and their tiers', () => {
+  it('serves a tiered service in the shorter time', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', undefined, { shampoo: 2 })
+    const c = seatAndWait(sim)
+    advanceUntil(sim, () => tech.task?.kind === 'serve')
+    expect(c.state).not.toBe('leaving')
+    const task = tech.task as { totalMs: number }
+    expect(task.totalMs).toBe(serviceMs(tech, 'shampoo'))
+    expect(task.totalMs).toBeLessThan(workMs(tech.stats.speed))
+  })
+
+  it('rolls stars with the tier of the service served', () => {
+    const threes = (tier: number): number => {
+      const sim = dayThree()
+      hireStaff(sim, 'technician', { skill: 1, speed: 3, friendly: 3, stamina: 3 }, { shampoo: tier })
+      for (let i = 0; i < 20; i++) {
+        sim.startDay()
+        const c = seatAndWait(sim)
+        advanceUntil(sim, () => c.state === 'leaving')
+      }
+      return sim.reviews.filter(r => r === reviewScore(3)).length
+    }
+    expect(threes(3)).toBeGreaterThan(threes(0))
+  })
+
+  it('prefers the service of her highest tier', () => {
+    const sim = withBeds()
+    seatAndWait(sim)
+    const mask = seatAndWait(sim, { kind: 'office', service: 'mask' })
+    const tech = hireStaff(sim, 'technician', undefined, { mask: 1 })
+    sim.advance(300)
+    expect(fetchedBy(tech)).toBe(mask.id)
+  })
+
+  it('takes the longest wait when no customer is of her specialty', () => {
+    const sim = withBeds()
+    const first = seatAndWait(sim)
+    seatAndWait(sim, { kind: 'office', service: 'mask' })
+    const tech = hireStaff(sim, 'technician', undefined, { massage: 1 })
+    sim.advance(300)
+    expect(fetchedBy(tech)).toBe(first.id)
+  })
+
+  it('fetches a customer past half her patience first, specialty or not', () => {
+    const sim = withBeds()
+    const mask = seatAndWait(sim, { kind: 'office', service: 'mask' })
+    const shampoo = seatAndWait(sim)
+    shampoo.patienceMs = shampoo.patienceMaxMs / 2 - 1
+    const tech = hireStaff(sim, 'technician', undefined, { mask: 2 })
+    sim.advance(300)
+    expect(fetchedBy(tech)).toBe(shampoo.id)
+    expect(mask.state).toBe('waiting')
+
+    // two past half: the longer wait goes first
+    const both = withBeds()
+    const early = seatAndWait(both)
+    const late = seatAndWait(both, { kind: 'office', service: 'mask' })
+    for (const c of [early, late]) c.patienceMs = c.patienceMaxMs / 2 - 1
+    const t2 = hireStaff(both, 'technician', undefined, { mask: 2 })
+    both.advance(300)
+    expect(fetchedBy(t2)).toBe(early.id)
+  })
+
+  it("keeps the regular's owner window and the VIP hold over a specialty", () => {
+    const sim = withBeds()
+    const reg = seatAndWait(sim, { regular: 'hanh' })
+    expect(reg.service).toBe('massage')
+    reg.patienceMs = reg.patienceMaxMs / 2 - 1
+    const tech = hireStaff(sim, 'technician', undefined, { massage: 2 })
+    sim.advance(REGULAR_OWNER_MS / 2)
+    expect(reg.heldMs).toBeLessThan(REGULAR_OWNER_MS)
+    expect(tech.task).toBeNull()
+
+    const vipShop = withBeds()
+    const office = vipShop.spawnCustomer({ kind: 'office', service: 'mask' })
+    const miss = vipShop.spawnCustomer({ vip: 'miss' })
+    expect(miss.service).toBe('mask')
+    const t2 = hireStaff(vipShop, 'technician', undefined, { mask: 3 })
+    advanceUntil(vipShop, () => office.state === 'waiting' && miss.state === 'waiting')
+    office.patienceMs = office.patienceMaxMs / 2 - 1
+    vipShop.advance(3_000)
+    expect(t2.task).toBeNull()
+  })
+})
 
 describe('hire problems', () => {
   it('tells why a candidate cannot be hired without hiring them', () => {

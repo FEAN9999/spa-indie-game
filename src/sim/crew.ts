@@ -8,7 +8,7 @@ import type { Rng } from './rng'
 import type { HireProblem, SpaSim } from './spa'
 import type { ServiceId } from './services'
 import { STOCK_USES, type StockItem } from './stock'
-import { gainXp, makeCandidate, restAfter, staffStars, workMs, type Staff } from './staff'
+import { gainXp, makeCandidate, restAfter, serviceMs, staffStars, starSkill, type Staff } from './staff'
 import type { Customer, Mover, SimEvent, Station, Tile } from './types'
 
 /** What the staff's behaviour needs from the shop; the sim hands it the private helpers it keeps for itself. */
@@ -236,7 +236,7 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
     }
     h.sendToBed(c, station)
     s.path = h.walkTo(s, t => tileEq(t, station.work)) ?? []
-    const total = workMs(s.stats.speed)
+    const total = serviceMs(s, c.service)
     s.task = { kind: 'serve', customerId: c.id, stationId: station.id, leftMs: total, totalMs: total }
     return
   }
@@ -257,7 +257,7 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
   if (c.state !== 'inService') return
   task.leftMs -= dt
   if (task.leftMs > 0) return
-  h.payFor(c, station, staffStars(s.stats.skill, h.rng()), s.stats.friendly)
+  h.payFor(c, station, staffStars(starSkill(s, c.service), h.rng()), s.stats.friendly)
   finishWork(h, s, earnXp(h, s))
 }
 
@@ -269,8 +269,9 @@ function finishWork(h: CrewHost, s: Staff, due = false): void {
 }
 
 /**
- * Starts walking to the waiting customer who has waited longest, if a bed of their service is free and nobody else is on the way to them;
- * false if nothing started. A regular is left to the owner until they have had REGULAR_OWNER_MS of free-bed time.
+ * Starts walking to a waiting customer, if a bed of their service is free and nobody else is on the way to them;
+ * false if nothing started. Whoever is past half their patience goes first, the longest wait among them; the rest by the tier she has
+ * in their service, then the longest wait. A regular is left to the owner until they have had REGULAR_OWNER_MS of free-bed time.
  * A VIP is always left to the owner, and while one is in the shop and not yet sent to a bed, nobody of her service is fetched.
  */
 function fetchWaiting(h: CrewHost, s: Staff): boolean {
@@ -288,9 +289,10 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const heldFor = (c: Customer) => queue.some(r => ownersTurn(r) && r.service === c.service && r.stateMs >= c.stateMs)
   // a VIP's service waits for her: its beds stay free until the owner sends her to one
   const vipHeld = sim.customers.filter(c => c.vip !== null && c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state)).map(c => c.service)
+  const urgent = (c: Customer) => c.patienceMs < c.patienceMaxMs / 2
   const next = queue
     .filter(c => !vipHeld.includes(c.service) && !heldFor(c) && hasRoom(c.service) && hasStock(c.service))
-    .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
+    .sort((a, b) => Number(urgent(b)) - Number(urgent(a)) || (urgent(a) ? 0 : s.tiers[b.service] - s.tiers[a.service]) || b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))
   if (!path) return false

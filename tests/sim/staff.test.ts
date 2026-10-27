@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { STAFF_STAR_ODDS } from '../../src/config'
+import { STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS } from '../../src/sim/services'
-import { drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, staffStars, tipFactor, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
+import { drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, serviceMs, staffStars, starSkill, tipFactor, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -31,6 +31,22 @@ describe('staff rules', () => {
       expect(STAFF_NAMES).toContain(c.name)
       expect(c.name).not.toBe('Lan')
     }
+  })
+
+  it('adds the tier of the service served to the skill for stars, up to 5', () => {
+    const s = { stats: { ...all(3) }, tiers: { ...noTiers(), mask: 1 } } as Staff
+    expect([starSkill(s, 'mask'), starSkill(s, 'shampoo')]).toEqual([4, 3])
+    const top = { stats: { ...all(5) }, tiers: { ...noTiers(), mask: 2 } } as Staff
+    expect(starSkill(top, 'mask')).toBe(5)
+  })
+
+  it('works a tiered service 15% faster per tier, never under the floor', () => {
+    const at = (speed: number, tier: number) => ({ stats: { ...all(1), speed }, tiers: { ...noTiers(), mask: tier } }) as Staff
+    expect(serviceMs(at(3, 0), 'mask')).toBe(workMs(3))
+    expect(serviceMs(at(3, 1), 'mask')).toBe(Math.round(workMs(3) * 0.85))
+    expect(serviceMs(at(1, 3), 'mask')).toBe(Math.round(workMs(1) * 0.85 ** 3))
+    expect(WORK_FLOOR_MS).toBe(workMs(5) / 2)
+    for (let speed = 1; speed <= 5; speed++) for (let tier = 0; tier <= 3; tier++) expect(serviceMs(at(speed, tier), 'mask')).toBeGreaterThanOrEqual(WORK_FLOOR_MS)
   })
 
   it('works 24 s at speed 1 and 12 s at speed 5, and walks 3.5 to 5.5 tiles a second', () => {
