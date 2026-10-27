@@ -4,7 +4,8 @@ import { CUSTOMER_KINDS, KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
 import { VIP_IDS, emptyVipBook } from '../../src/sim/vips'
 import { REGULAR_TEXT } from '../../src/strings/regulars'
-import { bookTabs, detailLines, firstTab, kindRows, regularRows, toldLines, vipRows } from '../../src/view/guestBook'
+import { VIP_TEXT } from '../../src/strings/vips'
+import { bookTabs, detailLines, firstTab, kindRows, regularRows, toldLines, vipDetailLines, vipRows } from '../../src/view/guestBook'
 
 describe('guest book rows', () => {
   it("shows a new shop's book with six soon and two by introduction", () => {
@@ -77,6 +78,12 @@ describe('guest book rows', () => {
     const rows = vipRows(vip)
     expect(rows[1]).toEqual({ id: 'miss', met: true, visits: 2, best: 3, photo: true })
     expect(rows[0].met).toBe(false)
+  })
+
+  it("shows a VIP's words only once said: none unmet, her arrival after a visit, her thanks after 3 stars", () => {
+    expect(vipDetailLines('chef', { visits: 0, best: 0, photo: false })).toEqual([])
+    expect(vipDetailLines('chef', { visits: 1, best: 2, photo: false })).toEqual([VIP_TEXT.chef.arrive])
+    expect(vipDetailLines('chef', { visits: 2, best: 3, photo: true })).toEqual([VIP_TEXT.chef.arrive, VIP_TEXT.chef.thanks])
   })
 
   it('shows the VIP tab only once a VIP has been booked', () => {

@@ -5,12 +5,12 @@ import type { CustomerKind } from '../sim/customers'
 import { REGULARS, isMember, type RegularId } from '../sim/regulars'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
-import { VIPS, VIP_KIND } from '../sim/vips'
+import { VIPS, VIP_KIND, type VipId } from '../sim/vips'
 import { REGULAR_TEXT } from '../strings/regulars'
 import { VIP_TEXT } from '../strings/vips'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { bookTabs, detailLines, firstTab, kindRows, regularRows, vipRows, type KindRow, type RegularRow, type Tab, type VipRow } from '../view/guestBook'
+import { bookTabs, detailLines, firstTab, kindRows, regularRows, vipDetailLines, vipRows, type KindRow, type RegularRow, type Tab, type VipRow } from '../view/guestBook'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -20,6 +20,8 @@ export interface GuestBookData {
   intro: boolean
   onClose: () => void
 }
+
+type Detail = { kind: 'regular'; id: RegularId } | { kind: 'vip'; id: VipId }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -67,8 +69,8 @@ export class GuestBookScene extends Phaser.Scene {
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
   private tab: Tab = 'regulars'
-  /** The regular whose story is open, if any. */
-  private detail: RegularId | null = null
+  /** The regular or VIP whose page is open, if any. */
+  private detail: Detail | null = null
 
   constructor() {
     super('GuestBookScene')
@@ -97,7 +99,8 @@ export class GuestBookScene extends Phaser.Scene {
     this.shown = []
     this.keep(addCard(this, 40, 230, 1000, 1760))
     this.keep(this.add.text(MID, TITLE_Y, t('bookTitle'), textStyle(60)).setOrigin(0.5))
-    if (this.detail) this.showDetail(this.detail)
+    if (this.detail?.kind === 'regular') this.showDetail(this.detail.id)
+    else if (this.detail?.kind === 'vip') this.showVipDetail(this.detail.id)
     else {
       if (this.params.intro && this.tab === 'regulars') {
         this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
@@ -123,8 +126,8 @@ export class GuestBookScene extends Phaser.Scene {
     this.show()
   }
 
-  private openDetail(id: RegularId | null): void {
-    this.detail = id
+  private openDetail(detail: Detail | null): void {
+    this.detail = detail
     this.show()
   }
 
@@ -159,7 +162,7 @@ export class GuestBookScene extends Phaser.Scene {
           .rectangle(x0, y0, CELL_W, CELL_H - 20, 0xffffff, 0)
           .setOrigin(0)
           .setInteractive()
-          .on('pointerup', () => this.openDetail(row.id)),
+          .on('pointerup', () => this.openDetail({ kind: 'regular', id: row.id })),
       )
     } else {
       this.keep(this.add.text(tx, y0 + 50, '???', textStyle(40)).setOrigin(0, 0.5))
@@ -193,6 +196,26 @@ export class GuestBookScene extends Phaser.Scene {
     if (hearts < 5) this.keep(this.add.text(MID, y + 20, t('storyLocked'), { ...textStyle(32, '800', C.lantern), align: 'center' }).setOrigin(0.5, 0))
   }
 
+  /** One VIP's page: her figure, name, role, service and stars, then the lines she has said so far. */
+  private showVipDetail(id: VipId): void {
+    const { sim } = this.params
+    const text = VIP_TEXT[id]
+    const state = sim.vip.vips[id]
+    this.figure(230, 690, DETAIL_SCALE, customerColors(VIPS[id].look, VIP_KIND, null, id))
+    const tx = 400
+    this.keep(this.add.text(tx, 450, text.name, { ...textStyle(54), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 515, text.role, { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 575, t('regularLikes', { service: t(SERVICES[VIPS[id].service].name) }), textStyle(32, '600')).setOrigin(0, 0.5))
+    for (let s = 0; s < 3; s++) {
+      this.keep(this.add.image(tx + 28 + s * 56, 640, s < state.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
+    }
+    let y = 790
+    for (const words of vipDetailLines(id, state)) {
+      const line = this.keep(this.add.text(90, y, words, { ...textStyle(32, '600'), wordWrap: { width: STORY_WRAP } }).setOrigin(0, 0))
+      y += line.height + 28
+    }
+  }
+
   private kindRow(row: KindRow, i: number): void {
     const y0 = GRID_TOP + i * KIND_ROW_H
     const cy = y0 + KIND_ROW_H / 2
@@ -203,7 +226,7 @@ export class GuestBookScene extends Phaser.Scene {
     this.keep(this.add.text(330, cy + 25, detail, { ...textStyle(34, '600'), wordWrap: { width: 650 } }).setOrigin(0, 0.5))
   }
 
-  /** One VIP in the grid: her figure in her colours, name and role, stars, visits and photo; in shadow until met. */
+  /** One VIP in the grid: her figure in her colours, name and role, stars, visits and photo; in shadow until met, and a met one opens her page when tapped. */
   private vipCell(row: VipRow, i: number): void {
     const x0 = COL_X[i % 2]
     const y0 = GRID_TOP + Math.floor(i / 2) * VIP_CELL_H
@@ -223,6 +246,13 @@ export class GuestBookScene extends Phaser.Scene {
     }
     this.keep(this.add.text(mid, y0 + 422, t('vipVisits', { n: row.visits }), textStyle(30, '600')).setOrigin(0.5))
     this.keep(this.add.text(mid, y0 + 458, t(row.photo ? 'vipPhotoYes' : 'vipPhotoNo'), textStyle(28, '800', row.photo ? C.teal : undefined)).setOrigin(0.5))
+    this.keep(
+      this.add
+        .rectangle(x0, y0, CELL_W, VIP_CELL_H - 20, 0xffffff, 0)
+        .setOrigin(0)
+        .setInteractive()
+        .on('pointerup', () => this.openDetail({ kind: 'vip', id: row.id })),
+    )
   }
 
   private close(): void {

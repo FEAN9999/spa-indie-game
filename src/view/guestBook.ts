@@ -1,7 +1,8 @@
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from '../sim/customers'
 import { REGULAR_TEXT } from '../strings/regulars'
+import { VIP_TEXT } from '../strings/vips'
 import { REGULARS, REGULAR_IDS, bookOpen, isMember, type GuestBook, type RegularId } from '../sim/regulars'
-import { VIP_IDS, type VipBook, type VipId } from '../sim/vips'
+import { VIP_IDS, type VipBook, type VipId, type VipState } from '../sim/vips'
 
 export type RegularRow =
   | { id: RegularId; shown: 'met'; hearts: number; member: boolean }
@@ -46,6 +47,12 @@ export interface VipRow {
 /** One row per VIP, in book order; she is met once she has visited. */
 export function vipRows(vip: VipBook): VipRow[] {
   return VIP_IDS.map(id => ({ id, met: vip.vips[id].visits > 0, ...vip.vips[id] }))
+}
+
+/** What a VIP's detail shows: her words on arriving once she has visited, her thanks once she has earned 3 stars. */
+export const vipDetailLines = (id: VipId, state: VipState): string[] => {
+  if (state.visits === 0) return []
+  return state.best === 3 ? [VIP_TEXT[id].arrive, VIP_TEXT[id].thanks] : [VIP_TEXT[id].arrive]
 }
 
 export type Tab = 'regulars' | 'kinds' | 'vip'
