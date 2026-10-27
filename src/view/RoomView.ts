@@ -90,7 +90,7 @@ export class RoomView {
       const bottom = this.rowY(item.y + h)
       s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(bottom + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
-      if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY(0))
+      if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY((floorOf(item.y) - 1) * FLOOR_ROWS))
       else if (s.part) this.placeMat(s.part, item)
     }
     for (const { tile, open } of slots) {
