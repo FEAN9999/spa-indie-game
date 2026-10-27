@@ -245,6 +245,8 @@ export const vi = {
   serviceNoBed: 'Chưa có {bed}',
   serviceDebt: 'Tiền đang âm, chưa mở dịch vụ được',
   serviceOrder: 'Mở {name} trước',
+  serviceRecipe: 'Pha công thức',
+  recipesIntro: 'Dịch vụ mới phải pha đúng công thức mới mở được. Khách quen đôi khi kể bí quyết.',
   serviceJustOpened: 'Đã mở {name}. Mua {bed} ở nút Xây dựng.',
   hintServices: 'Mở thêm dịch vụ mới ở đây',
   hintStock: 'Xem kho và nhập hàng ở đây',

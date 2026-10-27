@@ -345,13 +345,16 @@ export class SpaScene extends Phaser.Scene {
     const stockIntro = stock && !sim.hintDone('openStock')
     const tab = stock && (stockIntro || sim.lowStock().length > 0) ? 'stock' : 'services'
     if (stock) sim.markHint('openStock')
+    const recipesIntro = !intro && tab === 'services' && sim.benchOpen() && !sim.hintDone('recipes')
     const data: ServicesData = {
       sim,
       intro,
       tab,
       stockIntro,
+      recipesIntro,
       onChange: () => this.session.saveNow(),
       onClose: () => {
+        if (recipesIntro) sim.markHint('recipes')
         this.modal = false
         this.session.saveNow()
       },
