@@ -347,13 +347,13 @@ export class SpaSim {
   }
 
   /**
-   * Where a VIP stands when every seat is taken: in walking order from the door, the first floor beside the desk
-   * that is not the receptionist's spot, the owner's start or the door; with none, the first floor in from the door.
+   * Where a VIP stands when every seat is taken: in walking order from the door, the first plain floor beside the desk
+   * (never a bed's work tile) that is not the receptionist's spot, the owner's start or the door; with none, the first floor in from the door.
    */
   private standSpot(): Tile {
     const floor = flood(this.grid, this.grid.door, t => isWalkable(this.grid, t)).filter(t => !tileEq(t, this.grid.door))
     const desk = this.receptionSpot()
-    const byDesk = floor.find(t => !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
+    const byDesk = floor.find(t => this.grid.cells[t.y][t.x] === 'floor' && !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
     return byDesk ?? floor[0]
   }
 
