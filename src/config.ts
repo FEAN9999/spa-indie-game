@@ -95,6 +95,18 @@ export const MASSAGE_SCORE = { perfect: 2, good: 1, miss: 0 } as const
 export const MASSAGE_STAR3_SCORE = 16
 export const MASSAGE_STAR2_SCORE = 10
 
+// Xông lá leaf-drop game: collect the recipe's three leaves from the falling things within the limit.
+export const STEAM_LIMIT_MS = 15000
+export const STEAM_NEED = 6
+export const STEAM_SPAWN_MS = { min: 550, max: 800 }
+export const STEAM_FALL_MS = { min: 4000, max: 6000 }
+export const STEAM_FALL_MS_HARD = { min: 3000, max: 4500 }
+/** The share of falling things that are decoys. */
+export const STEAM_DECOY_SHARE = 0.5
+export const STEAM_DECOY_SHARE_HARD = 0.6
+/** Caught and misses for 2 stars; 3 stars is all caught with no misses. */
+export const STEAM_STAR2 = { got: 4, misses: 2 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000 } as const
 export const RESTOCK_AMOUNT = 20
