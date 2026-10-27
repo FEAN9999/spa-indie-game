@@ -3,11 +3,11 @@ import { C, staffColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
 import type { SpaSim } from '../sim/spa'
 import { SERVICES } from '../sim/services'
-import { STAT_KEYS, tuition, type Candidate, type Course, type StaffRole, type StatKey } from '../sim/staff'
+import { STAT_KEYS, tuition, type Candidate, type Course, type StaffRole, type StatKey, type TraitId } from '../sim/staff'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { courseName, specialtyOf, studyButton, type StudyButton } from '../view/staffCard'
+import { courseName, specialtyOf, studyButton, traitLines, type StudyButton } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
 
@@ -64,6 +64,9 @@ const BOOK_X = -100
 const BOOK_SCALE = 0.71
 const BOOKED_TEXT_X = -70
 const BOOKED_SIZE = 26
+const TRAIT_SIZE = 22
+const TRAIT_H = 58
+const TRAIT_DY = 38
 const STAT_W = 225
 const DOT_R = 10
 const DOT_STEP = 26
@@ -201,7 +204,8 @@ export class StaffScene extends Phaser.Scene {
     this.keep(view.container.setPosition(FEET_X, y0 + 185))
 
     const name = this.keep(this.add.text(TEXT_X, y0 + 40, person.name, textStyle(46)).setOrigin(0, 0.5))
-    if (person.rare) this.rarePill(name.x + name.width + 18, y0 + 40)
+    const rare = person.rare ? this.rarePill(name.x + name.width + 18, y0 + 40) : 0
+    this.traitPill(name.x + name.width + (rare ? rare + 36 : 18), y0 + TRAIT_DY, person.trait)
     this.keep(this.add.text(TEXT_X, y0 + 86, row.role, textStyle(32, '600')).setOrigin(0, 0.5))
     this.keep(this.add.text(TEXT_X, y0 + 126, t('wagePerDay', { money: formatMoney(person.wage) }), textStyle(32, '600')).setOrigin(0, 0.5))
     this.badges(person, y0 + BADGE_DY)
@@ -264,8 +268,8 @@ export class StaffScene extends Phaser.Scene {
     else if (state.kind === 'open') this.chooseCourse(id, state.courses)
   }
 
-  /** A mustard "Hiếm" pill whose left edge is at x. */
-  private rarePill(x: number, y: number): void {
+  /** A mustard "Hiếm" pill whose left edge is at x; returns its width. */
+  private rarePill(x: number, y: number): number {
     const label = this.add.text(0, 0, t('rare'), textStyle(26, '800')).setOrigin(0.5)
     const w = label.width + 28
     const pill = this.add
@@ -275,6 +279,22 @@ export class StaffScene extends Phaser.Scene {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-w / 2, -21, w, 42, 21)
     this.keep(this.add.container(x + w / 2, y, [pill, label]))
+    return w
+  }
+
+  /** A cream two-line pill, good side over flaw, whose left edge is at x and centre line at y. */
+  private traitPill(x: number, y: number, trait: TraitId): void {
+    const [good, flaw] = traitLines(trait)
+    const top = this.add.text(0, -13, good, textStyle(TRAIT_SIZE, '800')).setOrigin(0.5)
+    const bottom = this.add.text(0, 13, flaw, textStyle(TRAIT_SIZE, '600')).setOrigin(0.5)
+    const w = Math.max(top.width, bottom.width) + 24
+    const pill = this.add
+      .graphics()
+      .fillStyle(hex(C.cream), 1)
+      .fillRoundedRect(-w / 2, -TRAIT_H / 2, w, TRAIT_H, 18)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, -TRAIT_H / 2, w, TRAIT_H, 18)
+    this.keep(this.add.container(x + w / 2, y, [pill, top, bottom]))
   }
 
   private hire(index: number): void {

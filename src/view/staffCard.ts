@@ -1,7 +1,7 @@
 import { SERVICE_IDS, SERVICES, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
-import { courses, tuition, type Candidate, type Course, type Staff } from '../sim/staff'
-import { t } from '../strings/vi'
+import { courses, tuition, type Candidate, type Course, type Staff, type TraitId } from '../sim/staff'
+import { t, type StringKey } from '../strings/vi'
 
 /** The services a person has a tier in, in service order; `dim` when the shop has not opened them. */
 export function specialtyOf(person: Pick<Candidate, 'tiers'>, open: readonly ServiceId[]): { service: ServiceId; tier: number; dim: boolean }[] {
@@ -10,6 +10,18 @@ export function specialtyOf(person: Pick<Candidate, 'tiers'>, open: readonly Ser
 
 /** A course in lower case, for the middle of a sentence. */
 export const courseName = (course: Course): string => (course === 'greet' ? t('courseGreet') : t(SERVICES[course].name).toLocaleLowerCase('vi'))
+
+const TRAIT_KEYS: Record<TraitId, [StringKey, StringKey]> = {
+  deft: ['traitDeft', 'flawDeft'],
+  quick: ['traitQuick', 'flawQuick'],
+  jolly: ['traitJolly', 'flawJolly'],
+  diligent: ['traitDiligent', 'flawDiligent'],
+  calm: ['traitCalm', 'flawCalm'],
+  studious: ['traitStudious', 'flawStudious'],
+}
+
+/** A trait's good side and its flaw, for the two lines of the pill on a staff card. */
+export const traitLines = (trait: TraitId): [string, string] => [t(TRAIT_KEYS[trait][0]), t(TRAIT_KEYS[trait][1])]
 
 export type StudyButton = { kind: 'booked'; course: Course } | { kind: 'best' } | { kind: 'noMoney' } | { kind: 'open'; courses: Course[] }
 

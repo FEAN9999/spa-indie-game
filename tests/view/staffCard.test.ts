@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
-import { noTiers } from '../../src/sim/staff'
+import { noTiers, TRAIT_IDS } from '../../src/sim/staff'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { courseName, specialtyOf, studyButton } from '../../src/view/staffCard'
+import { courseName, specialtyOf, studyButton, traitLines } from '../../src/view/staffCard'
 import { hireStaff } from '../sim/helpers'
 
 const newSim = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
@@ -51,5 +51,15 @@ describe('staff card', () => {
 
   it('fills the confirm line from the spec', () => {
     expect(t('studyConfirm', { name: 'Lan', course: courseName('massage'), money: formatMoney(200000) })).toBe('Cho Lan đi học massage tối nay?\n200.000 đ')
+  })
+
+  it("names each trait's good side and flaw", () => {
+    expect(traitLines('deft')).toEqual(['Khéo tay', 'hay đi trễ'])
+    expect(traitLines('studious')).toEqual(['Ham học', 'hay đòi lương'])
+    for (const id of TRAIT_IDS) {
+      const [good, flaw] = traitLines(id)
+      expect(good.length).toBeGreaterThan(0)
+      expect(flaw.length).toBeGreaterThan(0)
+    }
   })
 })
