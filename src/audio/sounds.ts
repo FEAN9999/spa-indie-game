@@ -192,8 +192,22 @@ function levelUp(ctx: BaseAudioContext, out: AudioNode, at: number): void {
   }
 }
 
+/** A VIP's fanfare: three quick rising notes, then a held major chord with a sparkle on top, about 1.1 s. */
+function vip(ctx: BaseAudioContext, out: AudioNode, at: number): void {
+  for (const [i, degree] of [7, 9, 10].entries()) {
+    const t = at + i * 0.11
+    tone(ctx, out, 'triangle', noteFreq(degree), t, 0.22, t + 0.2)
+  }
+  const chord = at + 0.36
+  for (const degree of [10, 12, 14]) tone(ctx, out, 'triangle', noteFreq(degree), chord, 0.16, at + 1.1, 0.01)
+  for (const [i, degree] of [19, 21].entries()) {
+    const t = chord + 0.05 + i * 0.09
+    tone(ctx, out, 'sine', noteFreq(degree), t, 0.05, t + 0.55, 0.002)
+  }
+}
+
 type Recipe = (ctx: BaseAudioContext, out: AudioNode, at: number, step: number) => void
-const RECIPES: Record<OneShot, Recipe> = { chime, coin, foam, star, tap, huff, thud, levelUp }
+const RECIPES: Record<OneShot, Recipe> = { chime, coin, foam, star, tap, huff, thud, levelUp, vip }
 
 /** Plays one effect at `at` into `out`; each ends by itself. `step` (0..2) raises the star's pitch. */
 export function playSfx(ctx: BaseAudioContext, out: AudioNode, name: OneShot, at: number, step = 0): void {

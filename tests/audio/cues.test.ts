@@ -8,6 +8,7 @@ describe('sound cues', () => {
     expect(cueFor({ type: 'customerLeft', id: 1, angry: true })).toBe('huff')
     expect(cueFor({ type: 'levelUp', staffId: 1, level: 2 })).toBe('levelUp')
     expect(cueFor({ type: 'heart', customerId: 1, regular: 'hanh', hearts: 1, member: false })).toBe('star')
+    expect(cueFor({ type: 'vipArrived', customerId: 1, vip: 'singer', first: true })).toBe('vip')
   })
   it('stays quiet for a calm leave and other events', () => {
     expect(cueFor({ type: 'customerLeft', id: 1, angry: false })).toBeNull()

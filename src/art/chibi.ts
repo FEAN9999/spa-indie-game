@@ -389,6 +389,106 @@ const bunSide = '<circle cx="-8.5" cy="-9" r="4.6" fill="#ffffff" stroke="#4A2E2
 const strandsFront = `<path d="M-6,-8.5 Q-2,-11 3,-9.8" ${STRAND}/>`
 const strandsBack = `<path d="M-5,-7 Q0,-9 5,-7 M-7,0 Q0,2 7,0" ${STRAND}/>`
 
+// Lô B's VIPs. Mây Chiều: a fluffy pink boa round the shoulders, and a small silver microphone pinned on the chest
+const LOTUS = '#F28CA0'
+const LOTUS_LIGHT = '#F9B9C5'
+const CREAM = '#FBF7EE'
+const SILVER = '#C9CED6'
+const fluff = (cx: number, cy: number, r: number) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${LOTUS}" ${LINE}/>`
+const featherBoaDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    [-6.4, -3.2, 0, 3.2, 6.4].map((x, i) => fluff(x, 1.6 + (i % 2 ? 0.8 : 0) + (i === 2 ? 0.8 : 0), 2.6)).join('') +
+    fluff(-7, 6, 2.4) + fluff(7, 6, 2.4) +
+    `<path d="M-5,1.4 Q-3,0.4 -1.6,1.4 M1.6,1.8 Q3,0.8 5,1.6" stroke="${LOTUS_LIGHT}" stroke-width=".9" stroke-linecap="round" fill="none"/>`,
+}
+const featherBoaSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    [-5.6, -2.4, 0.8, 4].map((x, i) => fluff(x, 1.4 + (i % 2) * 0.9, 2.7)).join('') + fluff(4.6, 6.4, 2.5) +
+    `<path d="M-4,1 Q-2,0 -0.4,1" stroke="${LOTUS_LIGHT}" stroke-width=".9" stroke-linecap="round" fill="none"/>`,
+}
+const featherBoaUp: Part = {
+  viewBox: body.viewBox,
+  body: [-6.6, -3.3, 0, 3.3, 6.6].map((x, i) => fluff(x, 1.4 + (i % 2) * 0.9, 2.8)).join('') + fluff(-7.4, 5.4, 2.4) + fluff(7.4, 5.4, 2.4),
+}
+const micPinDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<circle cx="4.2" cy="7" r="2.3" fill="${SILVER}" ${LINE}/><path d="M2.4,6.4 H6 M2.6,7.8 H5.8" ${FINE}/>` +
+    `<rect x="3.5" y="9" width="1.5" height="3.6" rx=".7" fill="${SILVER}" ${LINE}/>`,
+}
+const micPinSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<circle cx="6.2" cy="7" r="2" fill="${SILVER}" ${LINE}/><path d="M4.8,6.6 H7.6" ${FINE}/>` +
+    `<rect x="5.5" y="8.8" width="1.4" height="3.2" rx=".7" fill="${SILVER}" ${LINE}/>`,
+}
+
+// Ngân Sa: a small gold tiara with a red gem, and a cream sash with red edges across the chest
+const gem = (cx: number, cy: number) => `<path d="M${cx},${cy - 1.9} L${cx + 1.5},${cy} L${cx},${cy + 1.9} L${cx - 1.5},${cy}Z" fill="${RED}" ${LINE}/>`
+const tiara = (cx: number, w: number): Part => ({
+  viewBox: [-17.5, -22.5, 35, 22],
+  body:
+    `<path d="M${cx - w},-10.6 L${cx - w + 1.2},-15 L${cx - w / 2},-12.8 L${cx},-17.6 L${cx + w / 2},-12.8 L${cx + w - 1.2},-15 L${cx + w},-10.6 Q${cx},-8.4 ${cx - w},-10.6Z" fill="${GOLD}" ${LINE}/>` +
+    gem(cx, -13.2) +
+    `<path d="M${cx - w + 2.4},-11.2 Q${cx - w / 2},-10.2 ${cx - 2.4},-10.4" ${SHINE}/>`,
+})
+const tiaraDown = tiara(0, 8)
+const tiaraSide = tiara(-1, 6.4)
+const tiaraUp = tiara(0, 8)
+const sashDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-6.6,2 L-3.4,0.8 L8.6,13.6 L7.8,17 Z" fill="${CREAM}" ${LINE}/>` +
+    `<path d="M-6,2.6 L8.2,15.4 M-4.4,0.9 L8.9,13.9" stroke="${RED}" stroke-width="1" stroke-linecap="round" fill="none"/>`,
+}
+const sashSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    `<path d="M-6,3 L-2.4,1.6 L8.8,11.6 L8.8,15 Z" fill="${CREAM}" ${LINE}/>` +
+    `<path d="M-5.4,3.4 L8.6,14.4 M-3.2,1.8 L8.7,12.4" stroke="${RED}" stroke-width="1" stroke-linecap="round" fill="none"/>`,
+}
+
+// Bích Câu: big round dark glasses with gold rims, and a mustard silk scarf over the hair
+const bigShadesDown: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<circle cx="-4.6" cy="2.4" r="4.2" fill="${EYE}" ${LINE}/><circle cx="4.6" cy="2.4" r="4.2" fill="${EYE}" ${LINE}/>` +
+    twoTone(`M-0.4,1.6 Q0,0.8 0.4,1.6 M-8.8,1.4 L-11.2,0.4 M8.8,1.4 L11.2,0.4 ${ring(-4.6, 2.4, 4.2)} ${ring(4.6, 2.4, 4.2)}`, GOLD, 0.9) +
+    `<path d="M-7.2,0.8 Q-6,-0.2 -4.6,-0.2 M2,0.8 Q3.2,-0.2 4.6,-0.2" ${SHINE}/>`,
+}
+const bigShadesSide: Part = {
+  viewBox: [-14.5, -14, 29, 28],
+  body:
+    `<ellipse cx="6.6" cy="2.4" rx="3.2" ry="4.2" fill="${EYE}" ${LINE}/>` +
+    twoTone('M3.4,1.6 L-3.8,0.4 M3.4,2.4 a3.2,4.2 0 1 0 6.4,0 a3.2,4.2 0 1 0 -6.4,0', GOLD, 0.9) +
+    `<path d="M5.2,0.4 Q6.2,-0.2 7.4,0.2" ${SHINE}/>`,
+}
+const MUSTARD_DARK = '#C98A1F'
+const headscarf = (cx: number): Part => ({
+  viewBox: [-17.5, -22.5, 35, 22],
+  body:
+    `<path d="M${cx - 11.8},-5 Q${cx - 13},-20 ${cx},-20 Q${cx + 13},-20 ${cx + 11.8},-5 Q${cx},-9.6 ${cx - 11.8},-5Z" fill="${GOLD}" ${LINE}/>` +
+    `<path d="M${cx - 8},-15.4 Q${cx - 2},-11.6 ${cx + 9},-14.6 M${cx - 10.4},-9.4 Q${cx},-6.2 ${cx + 10.6},-9.4" stroke="${MUSTARD_DARK}" stroke-width=".9" stroke-linecap="round" fill="none"/>` +
+    `<path d="M${cx + 9.6},-8 L${cx + 14.6},-3.6 L${cx + 11.4},-2.4 L${cx + 8.6},-5.2Z" fill="${GOLD}" ${LINE}/>`,
+})
+const headscarfDown = headscarf(0)
+const headscarfSide = headscarf(-1)
+const headscarfUp = headscarf(0)
+
+// Tám Lửa: a tall white chef's hat, puffed at the top and pleated on the band
+const chefHat = (cx: number): Part => ({
+  viewBox: [-17.5, -32.5, 35, 32],
+  body:
+    `<path d="M${cx - 9},-5.6 Q${cx - 11.4},-15 ${cx - 7.4},-17.6 Q${cx - 8.6},-26 ${cx - 2},-26.4 Q${cx + 1},-30.4 ${cx + 4.6},-26.4 Q${cx + 11},-26 ${cx + 7.4},-17.6 Q${cx + 11.4},-15 ${cx + 9},-5.6 Q${cx},-3.6 ${cx - 9},-5.6Z" fill="${CREAM}" ${LINE}/>` +
+    `<path d="M${cx - 5},-16.6 Q${cx - 5.6},-10 ${cx - 4.6},-4.8 M${cx},-16.8 V-4 M${cx + 5},-16.6 Q${cx + 5.6},-10 ${cx + 4.6},-4.8" ${FINE}/>` +
+    `<path d="M${cx - 9},-12 Q${cx},-10 ${cx + 9},-12" ${FINE}/>`,
+})
+const chefHatDown = chefHat(0)
+const chefHatSide = chefHat(-1)
+const chefHatUp = chefHat(0)
+
 const parts: Record<string, Part> = {
   leg,
   arm,
@@ -437,6 +537,24 @@ const parts: Record<string, Part> = {
   'flowerClip-up': flowerClipUp,
   'daisies-down': daisiesDown,
   'daisies-side': daisiesSide,
+  'featherBoa-down': featherBoaDown,
+  'featherBoa-side': featherBoaSide,
+  'featherBoa-up': featherBoaUp,
+  'micPin-down': micPinDown,
+  'micPin-side': micPinSide,
+  'tiara-down': tiaraDown,
+  'tiara-side': tiaraSide,
+  'tiara-up': tiaraUp,
+  'sash-down': sashDown,
+  'sash-side': sashSide,
+  'bigShades-down': bigShadesDown,
+  'bigShades-side': bigShadesSide,
+  'headscarf-down': headscarfDown,
+  'headscarf-side': headscarfSide,
+  'headscarf-up': headscarfUp,
+  'chefHat-down': chefHatDown,
+  'chefHat-side': chefHatSide,
+  'chefHat-up': chefHatUp,
   'mask-face': maskFace,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
   'hair0-up': hair(path(bobUp), strandsBack),

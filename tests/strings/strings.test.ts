@@ -3,6 +3,8 @@ import { REGULAR_IDS } from '../../src/sim/regulars'
 import { formatMoney } from '../../src/strings/format'
 import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
 import { t } from '../../src/strings/vi'
+import { VIP_TEXT } from '../../src/strings/vips'
+import { VIP_IDS } from '../../src/sim/vips'
 
 describe('strings', () => {
   it('formats money with dot separators', () => {
@@ -52,5 +54,16 @@ describe('strings', () => {
     const longest = REGULAR_IDS.map(id => REGULAR_TEXT[id].name).reduce((a, b) => (b.length > a.length ? b : a))
     expect(GREETINGS).toHaveLength(5)
     for (const text of GREETINGS) expect(t('greetingLine', { name: longest, text }).length, text).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
+  })
+
+  it('every VIP has a name, a role, a title and two lines, each line at most 60 characters', () => {
+    for (const id of VIP_IDS) {
+      const { name, role, title, arrive, thanks } = VIP_TEXT[id]
+      for (const field of [name, role, title]) expect(field, id).not.toBe('')
+      for (const line of [arrive, thanks]) {
+        expect(line, id).not.toBe('')
+        expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
+      }
+    }
   })
 })

@@ -617,7 +617,7 @@ export class SpaScene extends Phaser.Scene {
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular)),
+      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip)),
       bar: this.add.graphics(),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),

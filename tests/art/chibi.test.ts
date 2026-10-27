@@ -61,6 +61,30 @@ describe('chibi and fx art', () => {
       }
   })
 
+  it("has every VIP's accessories in each side they list", () => {
+    const keys = Object.keys(chibiTextures())
+    const sides: Record<string, string[]> = {
+      featherBoa: ['down', 'side', 'up'],
+      micPin: ['down', 'side'],
+      tiara: ['down', 'side', 'up'],
+      sash: ['down', 'side'],
+      bigShades: ['down', 'side'],
+      headscarf: ['down', 'side', 'up'],
+      chefHat: ['down', 'side', 'up'],
+    }
+    for (const [part, listed] of Object.entries(sides))
+      for (const side of ['down', 'side', 'up']) {
+        const key = `${part}-${side}`
+        if (!listed.includes(side)) {
+          expect(keys, key).not.toContain(key)
+          continue
+        }
+        expect(keys, key).toContain(key)
+        expect(keys, key).not.toContain(`${key}-line`)
+        expect(PART_ANCHORS[key], key).toBeDefined()
+      }
+  })
+
   it('draws a badge for every service', () => {
     const fx = fxTextures()
     for (const id of SERVICE_IDS) expect(fx[`svc-${id}`], id).toBeDefined()

@@ -40,4 +40,10 @@ describe('look palettes', () => {
     expect(customerColors(look, 'elder', 'sau')).toEqual({ ...customerColors(look, 'elder'), regular: 'sau' })
     expect(customerColors(look, 'picky').regular).toBeUndefined()
   })
+
+  it('customerColors passes the VIP through', () => {
+    const look = { skin: 2, hair: 1, hairStyle: 0, shirt: 3 }
+    expect(customerColors(look, 'celeb', null, 'miss')).toEqual({ ...customerColors(look, 'celeb'), vip: 'miss' })
+    expect(customerColors(look, 'picky').vip).toBeUndefined()
+  })
 })
