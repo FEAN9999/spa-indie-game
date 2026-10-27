@@ -180,5 +180,19 @@ export const MEMBER_HEARTS = 3
 export const MEMBER_PATIENCE = 1.5
 /** Staff leave a waiting regular to the owner this long, counted only while a bed of their service is free. */
 export const REGULAR_OWNER_MS = 10_000
+
+/** VIPs begin booking once the shop has this many technicians who are not leaving. */
+export const VIP_MIN_TECHNICIANS = 2
+/** A booked hour falls on a half hour between these game minutes: 10:00 and 17:00. */
+export const VIP_FROM_MIN = 600
+export const VIP_TO_MIN = 1020
+/** Days from one VIP visit to the day of the next, at least and at most. */
+export const VIP_GAP_DAYS = [2, 4] as const
+export const VIP_PRICE_FACTOR = 3
+export const VIP_REVIEWS = 3
+/** A VIP's patience against PATIENCE_MS; the early days' extra patience does not apply. */
+export const VIP_PATIENCE = 0.7
+/** The clock's gold star shows from this many game minutes before the booked time. */
+export const VIP_WARN_MIN = 60
 /** How long a speech bubble stays, for a greeting and for a story line. */
 export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
