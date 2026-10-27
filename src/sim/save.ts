@@ -147,11 +147,13 @@ function withHalfWages(old: object): SaveData {
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   // read before parseVersioned, whose helpers rewrite `v` for the oldest saves
+  // a stored parsed save keeps the flag, with `v` already rewritten, until the sim saves itself again
   const before = isObject(raw) && typeof raw.v === 'number' && raw.v < SAVE_VERSION
+  const flagged = before || (isObject(raw) && raw.clearStairs === true)
   const data = parseVersioned(raw)
   // floors are a whole number from 1 to MAX_FLOORS, else one; an older save has one, and its stairs spot is cleared on load
   data.floors = !before && Number.isInteger(data.floors) && data.floors >= 1 && data.floors <= MAX_FLOORS ? data.floors : 1
-  if (before) data.clearStairs = true
+  if (flagged) data.clearStairs = true
   else delete data.clearStairs
   // a climb in progress is a time from zero up, else nothing
   const climb = <T extends { climbMs?: number }>(m: T): T => {

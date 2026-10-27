@@ -1063,4 +1063,18 @@ describe('save version 14', () => {
     expect(sim.reviews).toEqual(raw.reviews)
     expect(sim.owner.task).toBeNull()
   })
+
+  it('still clears the stairs spot when an older save was stored already parsed, with its version rewritten', () => {
+    const raw = old()
+    raw.items.push({ id: 100, kind: 'massageBed', x: 11, y: 7, flip: true })
+    raw.nextItemId = 101
+    const stored = JSON.parse(JSON.stringify({ ...parseSave(raw), v: 14 }))
+    expect(stored.clearStairs).toBe(true)
+    const sim = open(stored)
+    expect(sim.items.some(i => i.id === 100)).toBe(false)
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, rebuy: null }])
+    const saved = sim.toSave()
+    expect('clearStairs' in saved).toBe(false)
+    expect(stairsEvents(open(saved))).toEqual([])
+  })
 })
