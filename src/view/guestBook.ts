@@ -1,6 +1,6 @@
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from '../sim/customers'
 import { REGULAR_TEXT } from '../strings/regulars'
-import { REGULARS, REGULAR_IDS, isMember, type GuestBook, type RegularId } from '../sim/regulars'
+import { REGULARS, REGULAR_IDS, bookOpen, isMember, type GuestBook, type RegularId } from '../sim/regulars'
 import { VIP_IDS, type VipBook, type VipId } from '../sim/vips'
 
 export type RegularRow =
@@ -48,5 +48,10 @@ export function vipRows(vip: VipBook): VipRow[] {
   return VIP_IDS.map(id => ({ id, met: vip.vips[id].visits > 0, ...vip.vips[id] }))
 }
 
+export type Tab = 'regulars' | 'kinds' | 'vip'
+
 /** The book's tabs: the VIP tab once a VIP has been booked. */
-export const bookTabs = (vip: VipBook): ('regulars' | 'kinds' | 'vip')[] => (vip.everBooked ? ['regulars', 'kinds', 'vip'] : ['regulars', 'kinds'])
+export const bookTabs = (vip: VipBook): Tab[] => (vip.everBooked ? ['regulars', 'kinds', 'vip'] : ['regulars', 'kinds'])
+
+/** The tab the book opens on: the VIPs' when a VIP is all there is to see yet. */
+export const firstTab = (book: GuestBook, vip: VipBook): Tab => (!bookOpen(book) && vip.everBooked ? 'vip' : 'regulars')

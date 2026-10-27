@@ -177,7 +177,7 @@ export class Hud {
     this.rating.x = row.ratingX
     // an invisible container is not hit-tested, so the book button takes no tap until a regular has come or a VIP is booked
     this.book.setVisible(this.sim.bookShown())
-    this.bookBadge.setVisible(!this.sim.hintDone('openBook'))
+    this.bookBadge.setVisible(!this.sim.hintDone(this.sim.bookHint()))
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
       const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)

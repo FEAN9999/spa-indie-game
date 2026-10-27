@@ -4,7 +4,7 @@ import { CUSTOMER_KINDS, KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
 import { VIP_IDS, emptyVipBook } from '../../src/sim/vips'
 import { REGULAR_TEXT } from '../../src/strings/regulars'
-import { bookTabs, detailLines, kindRows, regularRows, toldLines, vipRows } from '../../src/view/guestBook'
+import { bookTabs, detailLines, firstTab, kindRows, regularRows, toldLines, vipRows } from '../../src/view/guestBook'
 
 describe('guest book rows', () => {
   it("shows a new shop's book with six soon and two by introduction", () => {
@@ -84,5 +84,15 @@ describe('guest book rows', () => {
     expect(bookTabs(vip)).toEqual(['regulars', 'kinds'])
     vip.everBooked = true
     expect(bookTabs(vip)).toEqual(['regulars', 'kinds', 'vip'])
+  })
+
+  it('opens on the VIP tab only when a VIP is all there is to see', () => {
+    const book = emptyBook()
+    const vip = emptyVipBook()
+    expect(firstTab(book, vip)).toBe('regulars')
+    vip.everBooked = true
+    expect(firstTab(book, vip)).toBe('vip')
+    book.regulars.hanh.met = true
+    expect(firstTab(book, vip)).toBe('regulars')
   })
 })

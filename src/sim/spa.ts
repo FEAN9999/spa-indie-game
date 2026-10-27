@@ -161,6 +161,11 @@ export class SpaSim {
     return bookOpen(this.book) || this.vip.everBooked
   }
 
+  /** The hint an open of the guest book uses up: the regulars' once one has been met, else the VIP-only one. */
+  bookHint(): 'openBook' | 'bookVip' {
+    return bookOpen(this.book) ? 'openBook' : 'bookVip'
+  }
+
   /** What stops `id` opening now, or null if it can: not while money is negative, not before the service ahead of it, not without the money. An open service has no problem. */
   serviceProblem(id: ServiceId): ServiceProblem | null {
     if (this.services.includes(id)) return null

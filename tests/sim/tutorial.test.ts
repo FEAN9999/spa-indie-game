@@ -117,8 +117,29 @@ describe('the VIP hints', () => {
     expect(pickHint(sim)).toBeNull()
     sim.markHint('vip')
     expect(pickHint(sim)).toEqual({ hint: 'openBook' })
+    sim.markHint('bookVip')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('keeps the regulars their book hand after a VIP-only open, and leaves an old shop alone', () => {
+    const sim = pastTutorial(9)
+    planBooking(sim.vip, sim.day, 2, sim.availableServices(), createRng(1))
+    sim.markHint('vip')
+    expect(sim.bookHint()).toBe('bookVip')
+    sim.markHint(sim.bookHint())
+    expect(pickHint(sim)).toBeNull()
+    sim.book.regulars.hanh.met = true
+    expect(sim.bookHint()).toBe('openBook')
+    expect(pickHint(sim)).toEqual({ hint: 'openBook' })
     sim.markHint('openBook')
     expect(pickHint(sim)).toBeNull()
+
+    const old = pastTutorial(9)
+    planBooking(old.vip, old.day, 2, old.availableServices(), createRng(1))
+    old.markHint('vip')
+    old.markHint('openBook')
+    old.book.regulars.hanh.met = true
+    expect(pickHint(old)).toBeNull()
   })
 })
 

@@ -10,7 +10,7 @@ import { REGULAR_TEXT } from '../strings/regulars'
 import { VIP_TEXT } from '../strings/vips'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { bookTabs, detailLines, kindRows, regularRows, vipRows, type KindRow, type RegularRow, type VipRow } from '../view/guestBook'
+import { bookTabs, detailLines, firstTab, kindRows, regularRows, vipRows, type KindRow, type RegularRow, type Tab, type VipRow } from '../view/guestBook'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -20,8 +20,6 @@ export interface GuestBookData {
   intro: boolean
   onClose: () => void
 }
-
-type Tab = ReturnType<typeof bookTabs>[number]
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -79,7 +77,7 @@ export class GuestBookScene extends Phaser.Scene {
   init(data: GuestBookData) {
     this.params = data
     this.shown = []
-    this.tab = 'regulars'
+    this.tab = firstTab(data.sim.book, data.sim.vip)
     this.detail = null
   }
 
@@ -101,7 +99,7 @@ export class GuestBookScene extends Phaser.Scene {
     this.keep(this.add.text(MID, TITLE_Y, t('bookTitle'), textStyle(60)).setOrigin(0.5))
     if (this.detail) this.showDetail(this.detail)
     else {
-      if (this.params.intro) {
+      if (this.params.intro && this.tab === 'regulars') {
         this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
       }
       const tabs = bookTabs(this.params.sim.vip)

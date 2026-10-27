@@ -350,8 +350,9 @@ export class SpaScene extends Phaser.Scene {
     const sim = this.sim
     if (!sim.bookShown() || this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
     this.modal = true
-    const intro = !sim.hintDone('openBook')
-    sim.markHint('openBook')
+    const hint = sim.bookHint()
+    const intro = hint === 'openBook' && !sim.hintDone(hint)
+    sim.markHint(hint)
     const data: GuestBookData = {
       sim,
       intro,
