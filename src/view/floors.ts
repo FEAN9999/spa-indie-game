@@ -1,8 +1,10 @@
 import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
-import type { Item } from '../sim/items'
+import { ITEMS, type Item, type ItemKind } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
+import { formatMoney } from '../strings/format'
+import { t } from '../strings/vi'
 
 /** How far, in tiles, someone mid-climb rises toward the stairs before the next floor takes them. */
 const CLIMB_LIFT_TILES = 2.5
@@ -69,4 +71,13 @@ export function retagFloors(tags: Map<number, { floor: number }>, items: Item[])
     const tag = tags.get(item.id)
     if (tag) tag.floor = floorOf(item.y)
   }
+}
+
+/** The toasts for an older shop's cleared stairs spot, in the order they show: the refund, the gifts back in the guest book, then what to buy again. */
+export function stairsToasts(e: { count: number; refund: number; gifts: number; rebuy: ItemKind | null }): string[] {
+  const texts: string[] = []
+  if (e.refund > 0) texts.push(t('stairsRefund', { count: e.count, money: formatMoney(e.refund) }))
+  if (e.gifts > 0) texts.push(t('stairsGifts'))
+  if (e.rebuy) texts.push(t('stairsRebuy', { item: t(ITEMS[e.rebuy].name).toLocaleLowerCase('vi') }))
+  return texts
 }

@@ -4,10 +4,11 @@ import { tileEq, type Grid } from './grid'
 import { ITEMS, type Item, type ItemKind } from './items'
 import type { SaveData } from './save'
 
-/** What clearing the stairs spot did: how many items went (and what they refunded), the one the shop cannot do without and has no room for, and the customers sent home. */
+/** What clearing the stairs spot did: how many items went (what they refunded, and how many were gifts back in the guest book), the one the shop cannot do without and has no room for, and the customers sent home. */
 export interface StairsNote {
   count: number
   refund: number
+  gifts: number
   rebuy: ItemKind | null
   leavers: number[]
 }
@@ -21,7 +22,7 @@ export interface StairsNote {
 export function clearStairs(d: SaveData, shell: Grid): StairsNote {
   const spot = [...shell.stairs, ...shell.feet]
   const touched = d.items.filter(i => claimed(i).some(t => spot.some(s => tileEq(s, t)))).sort((a, b) => a.id - b.id)
-  const note: StairsNote = { count: 0, refund: 0, rebuy: null, leavers: [] }
+  const note: StairsNote = { count: 0, refund: 0, gifts: 0, rebuy: null, leavers: [] }
   if (touched.length === 0) return note
 
   const touchedIds = new Set(touched.map(i => i.id))
@@ -38,8 +39,10 @@ export function clearStairs(d: SaveData, shell: Grid): StairsNote {
       continue
     }
     note.count++
-    if (item.gift) d.book.gifts.push(item.kind)
-    else note.refund += ITEMS[item.kind].price
+    if (item.gift) {
+      d.book.gifts.push(item.kind)
+      note.gifts++
+    } else note.refund += ITEMS[item.kind].price
     if (needed) note.rebuy = item.kind
   }
   d.items = kept.sort((a, b) => a.id - b.id)

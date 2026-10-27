@@ -1015,7 +1015,7 @@ describe('save version 14', () => {
     expect(sim.grid.cells[sim.owner.pos.y][sim.owner.pos.x]).toBe('floor')
     const events = sim.drainEvents()
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
-    expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, rebuy: null }])
+    expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
     expect(saved.v).toBe(14)
     expect('clearStairs' in saved).toBe(false)
@@ -1039,7 +1039,7 @@ describe('save version 14', () => {
     expect(sim.items.map(i => i.id)).toContain(100)
     expect(sim.items.map(i => i.id)).not.toContain(101)
     expect(sim.money).toBe(raw.money + 450_000)
-    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, rebuy: null }])
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, gifts: 0, rebuy: null }])
   })
 
   it('moves the last shampoo bed instead of selling it, and sends its customer home quietly', () => {
@@ -1088,7 +1088,7 @@ describe('save version 14', () => {
     expect(stored.clearStairs).toBe(true)
     const sim = open(stored)
     expect(sim.items.some(i => i.id === 100)).toBe(false)
-    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, rebuy: null }])
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, gifts: 0, rebuy: null }])
     const saved = sim.toSave()
     expect('clearStairs' in saved).toBe(false)
     expect(stairsEvents(open(saved))).toEqual([])

@@ -4,7 +4,9 @@ import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
 import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
-import { carryTo, retagFloors, followFloor, climbPose, pills, showPills } from '../../src/view/floors'
+import { formatMoney } from '../../src/strings/format'
+import { t } from '../../src/strings/vi'
+import { carryTo, retagFloors, followFloor, climbPose, pills, showPills, stairsToasts } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -109,5 +111,21 @@ describe('retagFloors', () => {
     retagFloors(tags, [at(3, 30), at(9, 30)])
     expect(tags.get(3)!.floor).toBe(2)
     expect(tags.has(9)).toBe(false)
+  })
+})
+
+describe('stairsToasts', () => {
+  const refund = (count: number, money: number) => t('stairsRefund', { count, money: formatMoney(money) })
+
+  it('tells of the refund, then of the gifts back in the guest book', () => {
+    expect(stairsToasts({ count: 2, refund: 450_000, gifts: 1, rebuy: null })).toEqual([refund(2, 450_000), t('stairsGifts')])
+  })
+
+  it('tells of the gifts alone when nothing was refunded', () => {
+    expect(stairsToasts({ count: 1, refund: 0, gifts: 1, rebuy: null })).toEqual([t('stairsGifts')])
+  })
+
+  it('ends with what to buy again', () => {
+    expect(stairsToasts({ count: 1, refund: 150_000, gifts: 0, rebuy: 'bench' })).toEqual([refund(1, 150_000), t('stairsRebuy', { item: t('itemBench').toLocaleLowerCase('vi') })])
   })
 })

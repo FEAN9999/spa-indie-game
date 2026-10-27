@@ -28,7 +28,7 @@ import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
-import { climbPose, followFloor, pills, showPills } from '../view/floors'
+import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
@@ -136,8 +136,10 @@ export class SpaScene extends Phaser.Scene {
   private pointer!: HandPointer
   /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
-  /** Delay for the next "finished a course" toast this morning, so they follow the VIP-today toast and each other. */
+  /** Delay for the next "finished a course" or stairs toast this morning, so they follow the VIP-today toast and each other. */
   private studiedToastMs = 0
+  /** What clearing an older shop's stairs spot did, held until no card, summary or mini-game covers the shop, so its toasts are seen. */
+  private stairsNote: Extract<SimEvent, { type: 'stairsCleared' }> | null = null
   private patienceHintMs = 0
   private regularHintMs = 0
   private vipHintMs = 0
@@ -158,6 +160,7 @@ export class SpaScene extends Phaser.Scene {
     this.modal = false
     this.tooNew = false
     this.bannerOnResume = false
+    this.stairsNote = null
     this.tour = []
     this.patienceHintMs = 0
     this.regularHintMs = 0
@@ -397,6 +400,16 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('GuestBookScene', data)
   }
 
+  /** The held stairs note, a toast at a time after any morning toasts. */
+  private showStairsNote(): void {
+    const texts = stairsToasts(this.stairsNote!)
+    this.stairsNote = null
+    for (const text of texts) {
+      this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
+      this.studiedToastMs += LATE_TOAST_MS
+    }
+  }
+
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
     const b = this.sim.vip.booking
@@ -528,6 +541,7 @@ ${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { wi
       // two items can run low on the same customer: one toast, or the first would be destroyed unseen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
       if (low.length > 0) this.hud.toast(stockLowText(low))
+      if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose
@@ -780,12 +794,8 @@ ${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { wi
         this.showFloor(e.floor)
         return
       case 'stairsCleared':
-        if (e.refund > 0) this.hud.toast(t('stairsRefund', { count: e.count, money: formatMoney(e.refund) }))
-        else if (e.count > 0) this.hud.toast(t('stairsGifts'))
-        if (e.rebuy) {
-          const item = t(ITEMS[e.rebuy].name).toLocaleLowerCase('vi')
-          this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('stairsRebuy', { item })))
-        }
+        // it comes as the shop loads, under the pause card, the owner card or the day's summary; update shows it once they are gone
+        this.stairsNote = e
         return
       case 'bedSlot':
         this.offerBed(e.slot)

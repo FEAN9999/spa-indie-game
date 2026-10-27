@@ -531,7 +531,7 @@ export class SpaSim {
     if (note) {
       sim.settleCharacters()
       for (const id of note.leavers) sim.startLeaving(sim.customers.find(c => c.id === id)!)
-      if (note.count > 0 || note.rebuy) sim.emit({ type: 'stairsCleared', count: note.count, refund: note.refund, rebuy: note.rebuy })
+      if (note.count > 0 || note.rebuy) sim.emit({ type: 'stairsCleared', count: note.count, refund: note.refund, gifts: note.gifts, rebuy: note.rebuy })
     }
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)

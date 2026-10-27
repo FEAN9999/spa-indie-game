@@ -153,6 +153,6 @@ export type SimEvent =
   | { type: 'roomChanged' }
   /** A floor was bought and opened. */
   | { type: 'floorOpened'; floor: number }
-  /** An older shop had furniture on the new stairs spot: `count` items went, `refund` came back, and `rebuy` is the bed or seat item there was no room left for. */
-  | { type: 'stairsCleared'; count: number; refund: number; rebuy: ItemKind | null }
+  /** An older shop had furniture on the new stairs spot: `count` items went, `refund` came back, `gifts` of them went back to the guest book, and `rebuy` is the bed or seat item there was no room left for. */
+  | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
   | { type: 'dayEnded'; stats: DayStats }
