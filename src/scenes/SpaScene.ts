@@ -433,6 +433,11 @@ export class SpaScene extends Phaser.Scene {
       this.pointer.show(t('hintStock'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
       return
     }
+    // the regular and guest-book hands have no drawing yet
+    if (pick?.hint === 'regular' || pick?.hint === 'openBook') {
+      this.pointer.hide()
+      return
+    }
     const at = pick && this.customers.get(pick.customerId)?.view.container
     if (!pick || !at) {
       this.pointer.hide()

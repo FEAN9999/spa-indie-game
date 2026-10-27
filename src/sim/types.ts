@@ -1,12 +1,12 @@
 import type { CustomerKind } from './customers'
-import type { RegularId } from './regulars'
+import type { RegularGift, RegularId } from './regulars'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
 
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'regular', 'openBook'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -105,6 +105,14 @@ export interface DayStats {
 
 export type SimEvent =
   | { type: 'customerArrived'; id: number }
+  /** Right after their customerArrived; `first` on the day they are met. */
+  | { type: 'regularArrived'; customerId: number; regular: RegularId; first: boolean }
+  /** A regular's visit brought a new heart, and with it their member card when `member`. */
+  | { type: 'heart'; customerId: number; regular: RegularId; hearts: number; member: boolean }
+  /** A regular reached five hearts and gave their gift. */
+  | { type: 'gift'; customerId: number; regular: RegularId; gift: RegularGift }
+  /** Every regular has five hearts: the book's page is full. */
+  | { type: 'bookPage' }
   | { type: 'noSeat'; id: number }
   | { type: 'customerLeft'; id: number; angry: boolean }
   | { type: 'serviceReady'; customerId: number; stationId: number }

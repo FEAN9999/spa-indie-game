@@ -1,4 +1,4 @@
-import { CANDIDATES_PER_DAY, OWNER_START, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
+import { CANDIDATES_PER_DAY, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf } from './grid'
@@ -266,7 +266,10 @@ function finishWork(h: CrewHost, s: Staff, due = false): void {
   else if (due) startRest(h, s)
 }
 
-/** Starts walking to the waiting customer who has waited longest, if a bed of their service is free and nobody else is on the way to them; false if nothing started. */
+/**
+ * Starts walking to the waiting customer who has waited longest, if a bed of their service is free and nobody else is on the way to them;
+ * false if nothing started. A regular is left to the owner until they have had REGULAR_OWNER_MS of free-bed time.
+ */
 function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const { sim } = h
   const fetched = new Set<number>()
@@ -276,8 +279,9 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const hasRoom = (service: ServiceId) => freeBeds(sim, service) > fetchesOf(service)
   const stockFetches = (item: StockItem) => sim.customers.filter(c => fetched.has(c.id) && STOCK_USES[c.service].includes(item)).length
   const hasStock = (service: ServiceId) => !sim.stockTracked() || STOCK_USES[service].every(item => sim.stock[item] > stockFetches(item))
+  const ownersTurn = (c: Customer) => c.regular !== null && c.heldMs < REGULAR_OWNER_MS
   const next = sim.customers
-    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && hasRoom(c.service) && hasStock(c.service))
+    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && !ownersTurn(c) && hasRoom(c.service) && hasStock(c.service))
     .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))

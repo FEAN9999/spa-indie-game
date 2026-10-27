@@ -76,6 +76,22 @@ const pastTutorial = (day: number) => {
   return sim
 }
 
+describe('the regulars hints', () => {
+  it('points at the first waiting regular, then at the book', () => {
+    const sim = pastTutorial(7)
+    expect(pickHint(sim)).toBeNull()
+    seatAndWait(sim)
+    expect(pickHint(sim)).toBeNull()
+    const r = seatAndWait(sim, { regular: 'hanh' })
+    seatAndWait(sim, { regular: 'vy' })
+    expect(pickHint(sim)).toEqual({ hint: 'regular', customerId: r.id })
+    sim.markHint('regular')
+    expect(pickHint(sim)).toEqual({ hint: 'openBook' })
+    sim.markHint('openBook')
+    expect(pickHint(sim)).toBeNull()
+  })
+})
+
 describe('the build button hint', () => {
   it('points at the build button on the morning it opens, once the first-day tips are done', () => {
     expect(pickHint(pastTutorial(UNLOCK_DAY.build))).toEqual({ hint: 'openBuild' })

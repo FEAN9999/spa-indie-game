@@ -5,6 +5,7 @@ import {
   FIRST_ARRIVAL_MS,
   LOW_STOCK,
   MAX_FRAME_MS,
+  MEMBER_PATIENCE,
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
@@ -26,7 +27,7 @@ import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type It
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
-import { emptyBook, type GuestBook } from './regulars'
+import { addVisit, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
@@ -174,13 +175,21 @@ export class SpaSim {
     return SERVICE_IDS.filter(id => this.services.includes(id) && this.items.some(i => i.kind === SERVICES[id].bed))
   }
 
-  /** Draws what it is not given, in this order: look, then kind, then service. */
-  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId } = {}): Customer {
+  /**
+   * Draws what it is not given, in this order: look, then kind, then service.
+   * A regular comes with their own look and kind and asks for their favourite while the shop has it, so draws at most the service.
+   */
+  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
-    const look = randomLook(this.rng)
-    const kind = opts.kind ?? drawKind(this.day, this.rng)
-    const service = opts.service ?? drawService(kind, this.availableServices(), this.rng)
-    const patience = Math.round(PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1) * KINDS[kind].patience)
+    const spec = opts.regular && REGULARS[opts.regular]
+    const state = opts.regular && this.book.regulars[opts.regular]
+    const look = spec ? { ...spec.look } : randomLook(this.rng)
+    const kind = spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
+    const available = this.availableServices()
+    const service = opts.service ?? (spec && available.includes(spec.likes) ? spec.likes : drawService(kind, available, this.rng))
+    const patience = Math.round(
+      PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1) * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1),
+    )
     const c: Customer = {
       id: this.nextId++,
       look,
@@ -197,11 +206,17 @@ export class SpaSim {
       greet: greeter ? greeter.stats.friendly : 0,
       service,
       kind,
-      regular: null,
+      regular: opts.regular ?? null,
       heldMs: 0,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
+    if (opts.regular && state) {
+      const first = !state.met
+      state.met = true
+      state.visitAt = null
+      this.emit({ type: 'regularArrived', customerId: c.id, regular: opts.regular, first })
+    }
     if (greeter) greet(this.crew, greeter, c.id)
     return c
   }
@@ -268,6 +283,19 @@ export class SpaSim {
     this.stats.served++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     this.addReview(c, reviewScore(stars, spec.grading))
+    noteServed(this.book, c.kind)
+    if (c.regular) {
+      const r = addVisit(this.book, c.regular, stars, technicianFriendly === null, this.day)
+      if (r.hearts) this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
+      if (r.gift) {
+        if (r.gift.kind === 'money') {
+          this.money += r.gift.amount
+          this.stats.gifts += r.gift.amount
+        }
+        this.emit({ type: 'gift', customerId: c.id, regular: c.regular, gift: r.gift })
+      }
+      if (r.board) this.emit({ type: 'bookPage' })
+    }
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null
     c.stationId = null
@@ -386,6 +414,7 @@ export class SpaSim {
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
     startDay(this.crew)
+    planDay(this.book, this.day, this.rng)
   }
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
@@ -553,11 +582,18 @@ export class SpaSim {
     if (this.autoSpawn && !this.clock.isClosed) {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
-        this.spawnCustomer()
+        // a regular whose hour has come takes the place of a stranger
+        const due = dueRegular(this.book, this.clock.minutes)
+        this.spawnCustomer(due ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
           arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices().length),
           this.rng(),
         )
+      }
+      // chú Sáu's gift: one customer more a day
+      if (this.book.extraAt !== null && this.clock.minutes >= this.book.extraAt) {
+        this.book.extraAt = null
+        this.spawnCustomer()
       }
     }
 
@@ -586,6 +622,8 @@ export class SpaSim {
         break
       case 'waiting':
         c.patienceMs -= dt
+        // the owner's turn with a regular runs only while a bed of their service is free
+        if (c.regular && this.stations.some(s => s.service === c.service && s.customerId === null)) c.heldMs += dt
         if (c.patienceMs <= 0) this.loseCustomer(c)
         break
       case 'toStation':
@@ -706,6 +744,7 @@ export class SpaSim {
     this.freeSeat(c)
     c.mood = 'angry'
     this.addReview(c, ANGRY_REVIEW)
+    if (c.regular) loseVisit(this.book, c.regular)
     this.stats.angry++
     this.startLeaving(c)
   }
