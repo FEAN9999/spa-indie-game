@@ -100,6 +100,47 @@ describe('when regulars come', () => {
     expect(steps.flatMap(s => s.events).filter(e => e.type === 'regularArrived')).toHaveLength(1)
   })
 
+  it('lets a due regular in only when a seat is left for her', () => {
+    /** A shop at 9:00 with cô Hạnh due and the next arrival half a second away. */
+    const dueShop = () => {
+      const data = fresh().toSave()
+      data.minutes = 540
+      data.untilArrivalMs = 500
+      data.book.regulars.hanh.visitAt = 540
+      return SpaSim.fromSave(data, { rng: createRng(1) })
+    }
+    /** The events up to and including the next arrival. */
+    const nextArrival = (sim: SpaSim): SimEvent[] => {
+      const ev: SimEvent[] = []
+      advanceUntil(sim, () => ev.some(e => e.type === 'customerArrived'), 30_000, ev)
+      return ev
+    }
+    const unmetAndDue = { met: false, visitAt: 540 }
+
+    // every seat taken: a stranger comes instead, and she stays due
+    const full = dueShop()
+    for (const s of full.seats) s.customerId = 999
+    const ev = nextArrival(full)
+    expect(ev.some(e => e.type === 'regularArrived')).toBe(false)
+    expect(full.book.regulars.hanh).toMatchObject(unmetAndDue)
+    const arrived = ev.find(e => e.type === 'customerArrived')
+    if (arrived?.type !== 'customerArrived') throw new Error('no arrival')
+    const stranger = full.customers.find(c => c.id === arrived.id)!
+    expect(stranger.regular).toBeNull()
+    advanceUntil(full, () => stranger.state !== 'arriving')
+    // a seat frees up: the next arrival is her
+    full.seats[0].customerId = null
+    expect(nextArrival(full)).toContainEqual(expect.objectContaining({ type: 'regularArrived', regular: 'hanh', first: true }))
+
+    // the only free seat is spoken for by a stranger still walking in
+    const spoken = dueShop()
+    for (const s of spoken.seats.slice(1)) s.customerId = 999
+    spoken.spawnCustomer()
+    spoken.drainEvents()
+    expect(nextArrival(spoken).some(e => e.type === 'regularArrived')).toBe(false)
+    expect(spoken.book.regulars.hanh).toMatchObject(unmetAndDue)
+  })
+
   it("adds chú Sáu's extra customer once a day", () => {
     const data = fresh().toSave()
     // no ordinary arrivals in the way

@@ -582,9 +582,11 @@ export class SpaSim {
     if (this.autoSpawn && !this.clock.isClosed) {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
-        // a regular whose hour has come takes the place of a stranger
+        // a regular whose hour has come takes the place of a stranger, but only when a seat is left for her once
+        // everyone walking in has sat down, so a full shop never uses up her visit; until then she stays due
         const due = dueRegular(this.book, this.clock.minutes)
-        this.spawnCustomer(due ? { regular: due } : {})
+        const seatLeft = this.seats.filter(s => s.customerId === null).length > this.customers.filter(c => c.state === 'arriving').length
+        this.spawnCustomer(due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
           arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices().length),
           this.rng(),
