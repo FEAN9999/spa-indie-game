@@ -58,6 +58,8 @@ export interface Item {
   x: number
   y: number
   flip: boolean
+  /** Received as a regular's gift: placed once, movable, never sold. */
+  gift?: boolean
 }
 
 export function footprint(item: Item): Tile[] {

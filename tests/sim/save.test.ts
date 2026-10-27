@@ -3,8 +3,9 @@ import { DAY_START_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../
 import { tipFor } from '../../src/sim/economy'
 import { DEFAULT_ITEMS } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
+import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
-import { parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import { TUTORIAL_HINTS, type SimEvent } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
@@ -13,6 +14,7 @@ import v3 from '../fixtures/save-v3.json'
 import v4 from '../fixtures/save-v4.json'
 import v5 from '../fixtures/save-v5.json'
 import v6 from '../fixtures/save-v6.json'
+import v7 from '../fixtures/save-v7.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -74,12 +76,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([7, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([8, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(7)
+    expect(sim.toSave().v).toBe(8)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -211,10 +213,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 7', () => {
+  it('still leaves alone only saves newer than version 8', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 7 }).v).toBe(7)
-    expect(() => parseSave({ ...good, v: 8 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 8 }).v).toBe(8)
+    expect(() => parseSave({ ...good, v: 9 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -454,7 +456,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(7)
+    expect(copy.toSave().v).toBe(8)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -498,5 +500,71 @@ describe('save version 7', () => {
     expect(sim.staff.map(s => [s.name, s.role, s.level, s.xp])).toEqual(v6.staff.map(s => [s.name, s.role, s.level, s.xp]))
     expect(sim.customers.map(c => [c.id, c.state, c.service])).toEqual(v6.customers.map(c => [c.id, c.state, c.service]))
     expect(sim.servingCustomerId).toBe(v6.servingCustomerId)
+  })
+})
+
+describe('save version 8', () => {
+  const good = () => JSON.parse(JSON.stringify(busyShop().toSave()))
+
+  it('keeps a regular customer and the book through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const c = sim.spawnCustomer()
+    c.regular = 'hanh'
+    c.heldMs = 1234
+    sim.book.regulars.hanh = { meetDay: 7, met: true, points: 9, hearts: 2, visitAt: null }
+    sim.book.gifts = ['vase']
+    sim.stats.gifts = 5000
+    expect(viaJson(sim).toSave()).toEqual(sim.toSave())
+    expect(viaJson(sim).customers[0].regular).toBe('hanh')
+  })
+
+  it('opens saves of versions 1 to 7 with an empty book', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7] as { day: number }[]) {
+      const sim = open(raw)
+      for (const id of REGULAR_IDS) expect(sim.book.regulars[id]).toEqual({ meetDay: null, met: false, points: 0, hearts: 0, visitAt: null })
+      expect(sim.book.kindsMet).toEqual(oldShopKinds(raw.day))
+      expect(sim.customers.every(c => c.regular === null && c.heldMs === 0)).toBe(true)
+      expect(sim.stats.gifts).toBe(0)
+    }
+    expect(open(v6).book.kindsMet).toEqual(['student', 'office', 'picky', 'elder'])
+    expect(open(v7).book.kindsMet).toEqual(['student', 'office', 'picky', 'elder'])
+    expect(open(v1).book.kindsMet).toEqual(['student', 'office'])
+  })
+
+  it('opens the version-7 shop as it was saved', () => {
+    const sim = open(v7)
+    expect([sim.day, sim.money, sim.stock, sim.stats.restock]).toEqual([v7.day, v7.money, v7.stock, v7.stats.restock])
+    expect(sim.staff.map(s => [s.name, s.wage])).toEqual(v7.staff.map(s => [s.name, s.wage]))
+    expect(sim.customers.map(c => [c.id, c.state, c.service])).toEqual(v7.customers.map(c => [c.id, c.state, c.service]))
+  })
+
+  it('repairs a damaged book instead of losing the shop', () => {
+    expect(parseSave({ ...good(), book: 'x' }).book).toEqual({ ...emptyBook(), kindsMet: oldShopKinds(good().day) })
+    const book = emptyBook()
+    const damaged = (over: object) => parseSave({ ...good(), book: { ...JSON.parse(JSON.stringify(book)), ...over } }).book
+    expect(damaged({ regulars: { ...book.regulars, hanh: { ...book.regulars.hanh, points: 'a' } } }).regulars.hanh.points).toBe(0)
+    expect(damaged({ regulars: { ...book.regulars, hanh: { ...book.regulars.hanh, points: 13, hearts: 1 } } }).regulars.hanh.hearts).toBe(3)
+    expect(Object.keys(damaged({ regulars: { ...book.regulars, nobody: book.regulars.hanh } }).regulars)).toEqual(REGULAR_IDS)
+    expect(damaged({ gifts: ['nope', 'vase'] }).gifts).toEqual(['vase'])
+    expect(damaged({ served: { ...book.served, student: -1 } }).served.student).toBe(0)
+    expect(damaged({ kindsMet: ['student', 'ghost'] }).kindsMet).toEqual(['student'])
+    expect(damaged({ boardGiven: 'yes', extraAt: 'x' })).toMatchObject({ boardGiven: false, extraAt: null })
+  })
+
+  it('reads an unknown regular on a customer as an ordinary customer', () => {
+    const raw = good()
+    raw.customers = raw.customers.map((c: object) => ({ ...c, regular: 'nobody', heldMs: 'x' }))
+    expect(raw.customers.length).toBeGreaterThan(0)
+    const d = parseSave(raw)
+    expect(d.customers.every(c => c.regular === null && c.heldMs === 0)).toBe(true)
+  })
+
+  it('drops a gift flag that is not a boolean and keeps old items valid', () => {
+    const raw = good()
+    raw.items[0].gift = 'yes'
+    raw.items[1].gift = true
+    const d = parseSave(raw)
+    expect('gift' in d.items[0]).toBe(false)
+    expect(d.items[1].gift).toBe(true)
   })
 })

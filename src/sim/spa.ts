@@ -26,6 +26,7 @@ import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type It
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
+import { emptyBook, type GuestBook } from './regulars'
 import { randomLook, type Rng } from './rng'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
@@ -38,7 +39,7 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
 
-const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0 })
+const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0 })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
@@ -79,6 +80,7 @@ export class SpaSim {
   clock = new DayClock()
   day = 1
   stats: DayStats = emptyStats()
+  book: GuestBook = emptyBook()
   paused = false
   servingCustomerId: number | null = null
   dayOver = false
@@ -195,6 +197,8 @@ export class SpaSim {
       greet: greeter ? greeter.stats.friendly : 0,
       service,
       kind,
+      regular: null,
+      heldMs: 0,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -316,6 +320,7 @@ export class SpaSim {
       nextStaffId: this.nextStaffId,
       services: this.services,
       stock: this.stock,
+      book: this.book,
     })
   }
 
@@ -332,6 +337,7 @@ export class SpaSim {
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
     sim.services = d.services
     sim.stock = d.stock
+    sim.book = d.book
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes

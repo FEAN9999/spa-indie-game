@@ -1,15 +1,16 @@
 import { LOOK_COUNTS, PATIENCE_MS, STOCK_START } from '../config'
 import { t } from '../strings/vi'
-import { CUSTOMER_KINDS } from './customers'
-import { DEFAULT_ITEMS, ITEM_KINDS, type Item } from './items'
+import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
+import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
+import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { SERVICE_IDS, type ServiceId } from './services'
 import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } from './staff'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 7
+export const SAVE_VERSION = 8
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -49,6 +50,8 @@ export interface SaveData {
   services: ServiceId[]
   /** What is left of each item. */
   stock: Record<StockItem, number>
+  /** The regulars, what has been served and the gifts received. */
+  book: GuestBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -148,7 +151,43 @@ export function parseSave(raw: unknown): SaveData {
   // damaged staff data is repaired, never a reason to lose the shop
   data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
   data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))
+  // shops saved before the regulars have an empty book; a customer who is not a known regular is an ordinary one
+  data.book = repairBook(data.book, data.day)
+  data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
+  data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
+  data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
   return data
+}
+
+/** Every kind but the celebrities whose day had come: the kinds an old shop has already met. */
+export const oldShopKinds = (day: number): CustomerKind[] => CUSTOMER_KINDS.filter(k => k !== 'celeb' && KINDS[k].fromDay <= day)
+
+const repairCount = (x: unknown): number => (Number.isInteger(x) && (x as number) >= 0 ? (x as number) : 0)
+const repairBool = (x: unknown): boolean => x === true
+const repairNullable = (x: unknown): number | null => (isNumber(x) ? x : null)
+
+function repairRegular(x: unknown): RegularState {
+  const r = isObject(x) ? x : {}
+  const points = isNumber(r.points) ? r.points : 0
+  const hearts = Math.min(5, Math.max(0, Math.max(isNumber(r.hearts) ? r.hearts : 0, heartsFor(points))))
+  return { meetDay: repairNullable(r.meetDay), met: repairBool(r.met), points, hearts, visitAt: repairNullable(r.visitAt) }
+}
+
+/** A well-formed guest book, field by field; a missing one is empty, with the kinds an old shop of that day has met. */
+function repairBook(x: unknown, day: number): GuestBook {
+  const book = emptyBook()
+  if (!isObject(x)) return { ...book, kindsMet: oldShopKinds(day) }
+  const regulars: Record<string, unknown> = isObject(x.regulars) ? x.regulars : {}
+  const served: Record<string, unknown> = isObject(x.served) ? x.served : {}
+  for (const id of REGULAR_IDS) book.regulars[id] = repairRegular(regulars[id])
+  for (const k of CUSTOMER_KINDS) book.served[k] = repairCount(served[k])
+  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
+  book.kindsMet = list(x.kindsMet).filter((k): k is CustomerKind => (CUSTOMER_KINDS as unknown[]).includes(k))
+  book.gifts = list(x.gifts).filter((k): k is ItemKind => (ITEM_KINDS as unknown[]).includes(k))
+  book.extraCustomer = repairBool(x.extraCustomer)
+  book.extraAt = repairNullable(x.extraAt)
+  book.boardGiven = repairBool(x.boardGiven)
+  return book
 }
 
 /** Each look field in range, or 0. */
@@ -177,7 +216,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

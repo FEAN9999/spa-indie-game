@@ -1,4 +1,5 @@
 import type { CustomerKind } from './customers'
+import type { RegularId } from './regulars'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
 
@@ -59,6 +60,10 @@ export interface Customer {
   service: ServiceId
   /** What sort of customer this is. */
   kind: CustomerKind
+  /** Which regular this is, or null for an ordinary customer. */
+  regular: RegularId | null
+  /** How long a waiting regular has been left to the owner, counted while a bed is free. */
+  heldMs: number
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }
@@ -94,6 +99,8 @@ export interface DayStats {
   wages: number
   /** Money spent restocking today. */
   restock: number
+  /** Gift money from regulars today. */
+  gifts: number
 }
 
 export type SimEvent =

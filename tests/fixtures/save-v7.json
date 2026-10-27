@@ -1,0 +1,434 @@
+{
+  "v": 7,
+  "day": 6,
+  "minutes": 515.5200000000013,
+  "money": 1540000,
+  "reviews": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0,
+    "wages": 0,
+    "restock": 60000
+  },
+  "dayOver": false,
+  "servingCustomerId": 3,
+  "owner": {
+    "pos": {
+      "x": 3,
+      "y": 3
+    },
+    "facing": "up",
+    "path": [],
+    "task": {
+      "kind": "serve",
+      "customerId": 3,
+      "stationId": 1
+    }
+  },
+  "customers": [
+    {
+      "id": 1,
+      "look": {
+        "skin": 2,
+        "hair": 3,
+        "hairStyle": 0,
+        "shirt": 3
+      },
+      "state": "inService",
+      "stateMs": 3600,
+      "pos": {
+        "x": 8,
+        "y": 3
+      },
+      "facing": "right",
+      "path": [],
+      "patienceMs": 75750,
+      "patienceMaxMs": 78000,
+      "seat": null,
+      "stationId": 15,
+      "mood": null,
+      "greet": 0,
+      "service": "massage",
+      "kind": "elder"
+    },
+    {
+      "id": 2,
+      "look": {
+        "skin": 0,
+        "hair": 2,
+        "hairStyle": 2,
+        "shirt": 2
+      },
+      "state": "inService",
+      "stateMs": 7150,
+      "pos": {
+        "x": 6,
+        "y": 3
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 46650,
+      "patienceMaxMs": 48000,
+      "seat": null,
+      "stationId": 14,
+      "mood": null,
+      "greet": 0,
+      "service": "mask",
+      "kind": "celeb"
+    },
+    {
+      "id": 3,
+      "look": {
+        "skin": 3,
+        "hair": 1,
+        "hairStyle": 3,
+        "shirt": 3
+      },
+      "state": "inService",
+      "stateMs": 0,
+      "pos": {
+        "x": 2,
+        "y": 3
+      },
+      "facing": "left",
+      "path": [],
+      "patienceMs": 71000,
+      "patienceMaxMs": 72600,
+      "seat": null,
+      "stationId": 1,
+      "mood": null,
+      "greet": 3,
+      "service": "shampoo",
+      "kind": "student"
+    },
+    {
+      "id": 4,
+      "look": {
+        "skin": 2,
+        "hair": 0,
+        "hairStyle": 1,
+        "shirt": 1
+      },
+      "state": "waiting",
+      "stateMs": 5800,
+      "pos": {
+        "x": 3,
+        "y": 13
+      },
+      "facing": "up",
+      "path": [],
+      "patienceMs": 66800,
+      "patienceMaxMs": 72600,
+      "seat": {
+        "x": 3,
+        "y": 13
+      },
+      "stationId": null,
+      "mood": null,
+      "greet": 3,
+      "service": "shampoo",
+      "kind": "picky"
+    }
+  ],
+  "items": [
+    {
+      "kind": "bed",
+      "x": 2,
+      "y": 2,
+      "flip": false,
+      "id": 1
+    },
+    {
+      "kind": "bed",
+      "x": 4,
+      "y": 2,
+      "flip": false,
+      "id": 2
+    },
+    {
+      "kind": "cabinet",
+      "x": 9,
+      "y": 2,
+      "flip": false,
+      "id": 3
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 5,
+      "flip": false,
+      "id": 4
+    },
+    {
+      "kind": "shelf",
+      "x": 2,
+      "y": 7,
+      "flip": false,
+      "id": 5
+    },
+    {
+      "kind": "lotus",
+      "x": 9,
+      "y": 7,
+      "flip": false,
+      "id": 6
+    },
+    {
+      "kind": "vase",
+      "x": 11,
+      "y": 11,
+      "flip": false,
+      "id": 7
+    },
+    {
+      "kind": "planter",
+      "x": 2,
+      "y": 12,
+      "flip": false,
+      "id": 8
+    },
+    {
+      "kind": "bench",
+      "x": 2,
+      "y": 13,
+      "flip": false,
+      "id": 9
+    },
+    {
+      "kind": "tea",
+      "x": 3,
+      "y": 15,
+      "flip": false,
+      "id": 10
+    },
+    {
+      "kind": "plant",
+      "x": 1,
+      "y": 16,
+      "flip": false,
+      "id": 11
+    },
+    {
+      "kind": "slippers",
+      "x": 4,
+      "y": 16,
+      "flip": false,
+      "id": 12
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 16,
+      "flip": false,
+      "id": 13
+    },
+    {
+      "id": 14,
+      "kind": "maskBed",
+      "x": 6,
+      "y": 2,
+      "flip": false
+    },
+    {
+      "id": 15,
+      "kind": "massageBed",
+      "x": 8,
+      "y": 2,
+      "flip": false
+    }
+  ],
+  "nextItemId": 16,
+  "nextId": 5,
+  "untilArrivalMs": 3000,
+  "shopName": "Tiệm Spa",
+  "ownerLook": {
+    "skin": 0,
+    "hair": 0,
+    "hairStyle": 0,
+    "shirt": 0
+  },
+  "profileDone": false,
+  "hints": [
+    "tapCustomer",
+    "patience",
+    "openBuild",
+    "openStaff",
+    "openServices"
+  ],
+  "staff": [
+    {
+      "name": "Test 1",
+      "role": "receptionist",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 3,
+        "friendly": 3,
+        "stamina": 3
+      },
+      "wage": 40000,
+      "rare": false,
+      "id": 1,
+      "level": 1,
+      "xp": 2,
+      "pos": {
+        "x": 10,
+        "y": 13
+      },
+      "facing": "down",
+      "path": [],
+      "task": null,
+      "sinceRest": 2,
+      "leaving": false
+    },
+    {
+      "name": "Test 2",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 3,
+        "friendly": 3,
+        "stamina": 3
+      },
+      "wage": 40000,
+      "rare": false,
+      "id": 2,
+      "level": 1,
+      "xp": 0,
+      "pos": {
+        "x": 7,
+        "y": 3
+      },
+      "facing": "up",
+      "path": [],
+      "task": {
+        "kind": "serve",
+        "customerId": 2,
+        "stationId": 14,
+        "leftMs": 10800,
+        "totalMs": 18000
+      },
+      "sinceRest": 0,
+      "leaving": false
+    },
+    {
+      "name": "Test 3",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 0,
+        "hairStyle": 0,
+        "shirt": 0
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 3,
+        "friendly": 3,
+        "stamina": 3
+      },
+      "wage": 40000,
+      "rare": false,
+      "id": 3,
+      "level": 1,
+      "xp": 0,
+      "pos": {
+        "x": 9,
+        "y": 3
+      },
+      "facing": "up",
+      "path": [],
+      "task": {
+        "kind": "serve",
+        "customerId": 1,
+        "stationId": 15,
+        "leftMs": 14350,
+        "totalMs": 18000
+      },
+      "sinceRest": 0,
+      "leaving": false
+    }
+  ],
+  "candidates": [
+    {
+      "name": "Quân",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 4,
+        "hairStyle": 3,
+        "shirt": 1
+      },
+      "stats": {
+        "skill": 5,
+        "speed": 4,
+        "friendly": 5,
+        "stamina": 4
+      },
+      "wage": 55000,
+      "rare": true
+    },
+    {
+      "name": "Yến",
+      "role": "technician",
+      "look": {
+        "skin": 1,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 4
+      },
+      "stats": {
+        "skill": 4,
+        "speed": 4,
+        "friendly": 5,
+        "stamina": 5
+      },
+      "wage": 55000,
+      "rare": true
+    },
+    {
+      "name": "Thảo",
+      "role": "receptionist",
+      "look": {
+        "skin": 3,
+        "hair": 4,
+        "hairStyle": 0,
+        "shirt": 2
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 3,
+        "friendly": 3,
+        "stamina": 3
+      },
+      "wage": 40000,
+      "rare": false
+    }
+  ],
+  "candidatesDay": 6,
+  "nextStaffId": 4,
+  "services": [
+    "shampoo",
+    "mask",
+    "massage"
+  ],
+  "stock": {
+    "shampoo": 20,
+    "towel": 40,
+    "mask": 20,
+    "oil": 20
+  }
+}

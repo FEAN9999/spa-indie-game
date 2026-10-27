@@ -16,11 +16,12 @@ export function summaryRows(stats: DayStats): SummaryRow[] {
     { label: 'income', value: stats.income, kind: 'money' },
     { label: 'tips', value: stats.tips, kind: 'money' },
   ]
+  if (stats.gifts > 0) rows.push({ label: 'giftMoney', value: stats.gifts, kind: 'money' })
   if (stats.wages > 0 || stats.restock > 0) {
     rows.push({ label: 'summaryOut', value: 0, kind: 'heading' })
     if (stats.wages > 0) rows.push({ label: 'wages', value: -stats.wages, kind: 'money' })
     if (stats.restock > 0) rows.push({ label: 'restockCost', value: -stats.restock, kind: 'money' })
   }
-  rows.push({ label: 'profit', value: stats.income + stats.tips - stats.wages - stats.restock, kind: 'money' })
+  rows.push({ label: 'profit', value: stats.income + stats.tips + stats.gifts - stats.wages - stats.restock, kind: 'money' })
   return rows
 }

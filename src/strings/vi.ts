@@ -61,6 +61,7 @@ export const vi = {
   leftUnhappy: 'Khách bỏ về',
   income: 'Tiền dịch vụ',
   tips: 'Tiền tip',
+  giftMoney: 'Quà tặng',
   summaryIn: 'Thu',
   summaryOut: 'Chi',
   restockCost: 'Nhập hàng',

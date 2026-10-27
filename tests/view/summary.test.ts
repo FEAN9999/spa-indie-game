@@ -10,6 +10,7 @@ const stats = (over: Partial<DayStats>): DayStats => ({
   tips: 0,
   wages: 0,
   restock: 0,
+  gifts: 0,
   ...over,
 })
 const labels = (s: DayStats) => summaryRows(s).map(r => r.label)
@@ -36,5 +37,12 @@ describe('end-of-day rows', () => {
     expect(labels(s)).toContain('restockCost')
     expect(labels(s)).not.toContain('wages')
     expect(row(s, 'profit')?.value).toBe(-80000)
+  })
+
+  it('shows gift money under Thu and in the profit', () => {
+    const s = stats({ income: 400000, tips: 50000, gifts: 300000 })
+    expect(labels(s)).toEqual(['served', 'leftUnhappy', 'summaryIn', 'income', 'tips', 'giftMoney', 'profit'])
+    expect(row(s, 'giftMoney')).toEqual({ label: 'giftMoney', value: 300000, kind: 'money' })
+    expect(row(s, 'profit')?.value).toBe(750000)
   })
 })
