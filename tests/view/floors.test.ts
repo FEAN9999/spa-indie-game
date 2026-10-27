@@ -63,27 +63,50 @@ describe('pills', () => {
   it('gives a viewed pill and a locked one with the price', () => {
     const sim = newSim()
     const ps = pills(sim, 1)
-    expect(ps.map(p => [p.floor, p.state])).toEqual([[1, 'viewed'], [2, 'locked']])
+    expect(ps.map(p => [p.floor, p.state])).toEqual([[1, 'viewed'], [2, 'locked'], [3, 'locked']])
     expect(ps[1].price).toBe(2_000_000)
+  })
+
+  it('shows a third, locked pill for the rooftop at 4.000.000 đ', () => {
+    const sim = newSim()
+    sim.day = 6
+    sim.floors = 1
+    const ps = pills(sim, 1)
+    expect(ps.map(p => p.floor)).toEqual([1, 2, 3])
+    expect(ps.map(p => p.state)).toEqual(['viewed', 'locked', 'locked'])
+    expect(ps.map(p => p.price)).toEqual([0, 2_000_000, 4_000_000])
+  })
+
+  it('opens the rooftop pill once the rooftop is open', () => {
+    const sim = newSim()
+    sim.floors = 3
+    expect(pills(sim, 3).map(p => p.state)).toEqual(['open', 'open', 'viewed'])
+  })
+
+  it('puts the dot on Tầng 1 only, also when viewing the rooftop', () => {
+    const sim = newSim()
+    sim.floors = 3
+    sim.customers.push({ state: 'waiting' } as Customer)
+    expect(pills(sim, 3).map(p => p.dot)).toEqual([true, false, false])
   })
 
   it('puts the owner face on the owner floor', () => {
     const ps = pills(newSim(), 1)
-    expect(ps.map(p => p.face)).toEqual([true, false])
+    expect(ps.map(p => p.face)).toEqual([true, false, false])
   })
 
   it('marks an opened floor that is not viewed as open', () => {
     const sim = newSim()
     sim.floors = 2
-    expect(pills(sim, 2).map(p => p.state)).toEqual(['open', 'viewed'])
+    expect(pills(sim, 2).map(p => p.state)).toEqual(['open', 'viewed', 'locked'])
   })
 
   it('shows the dot on floor 1 only while viewing another floor with someone waiting', () => {
     const sim = newSim()
     sim.floors = 2
     sim.customers.push({ state: 'waiting' } as Customer)
-    expect(pills(sim, 2).map(p => p.dot)).toEqual([true, false])
-    expect(pills(sim, 1).map(p => p.dot)).toEqual([false, false])
+    expect(pills(sim, 2).map(p => p.dot)).toEqual([true, false, false])
+    expect(pills(sim, 1).map(p => p.dot)).toEqual([false, false, false])
   })
 })
 

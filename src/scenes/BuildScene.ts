@@ -13,7 +13,7 @@ import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { catalogPage, type CatalogEntry } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
-import { carryTo, FLOOR_PILLS, pills, showPills } from '../view/floors'
+import { carryTo, pills, showPills } from '../view/floors'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
@@ -357,7 +357,7 @@ export class BuildScene extends Phaser.Scene {
   /** While a piece is held and the shop has another floor open, the pills carry it there. */
   private showFloorBar(): void {
     const { sim, room } = this.params
-    if (showPills(sim) && sim.floors > 1) this.floorBar.show(pills(sim, room.floor).filter(p => p.floor <= Math.min(FLOOR_PILLS, sim.floors)), sim.ownerLook)
+    if (showPills(sim) && sim.floors > 1) this.floorBar.show(pills(sim, room.floor).filter(p => p.floor <= sim.floors), sim.ownerLook)
   }
 
   /** A pill tapped: the floor comes into view and the held piece moves onto it, to the nearest free spot there when its own does not fit. */

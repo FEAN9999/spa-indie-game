@@ -185,6 +185,8 @@ export const vi = {
   floorName3: 'Sân thượng',
   floorLine2a: 'Sàn gỗ, cửa chớp xanh, ban công gạch bông.',
   floorLine2b: 'Thêm chỗ kê giường, thêm 2 thợ.',
+  floorLine3a: 'Gạch tàu, giàn hoa giấy, bồn nước, chuồng cu.',
+  floorLine3b: 'Thêm chỗ kê giường, thêm 2 thợ.',
   floorOpen: 'Mở · {money}',
   floorLater: 'Để sau',
   floorShort: 'Còn thiếu {money}',

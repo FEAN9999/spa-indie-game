@@ -478,8 +478,8 @@ export class SpaScene extends Phaser.Scene {
       this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
       addCard(this, 90, 760, 900, 640),
       this.add.text(GAME_W / 2, 810, t(`floorName${floor}` as StringKey), textStyle(60, '800')).setOrigin(0.5, 0),
-      this.add.text(GAME_W / 2, 910, `${t('floorLine2a')}
-${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
+      this.add.text(GAME_W / 2, 910, `${t(`floorLine${floor}a` as StringKey)}
+${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
     ]
     if (note) parts.push(this.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
     // the open button is wide enough for its price; "Để sau" beside it is narrower, so the pair keeps even margins inside the card
