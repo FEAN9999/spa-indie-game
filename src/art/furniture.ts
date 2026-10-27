@@ -531,12 +531,12 @@ const goldBoard =
   rect(1.56, 1.38, 0.14, 0.32, C.woodDark, ink(0.025)) +
   rect(0.06, 0.4, 1.88, 1.04, C.lanternDark, `rx="0.05" ${ink()}`) +
   rect(0.13, 0.47, 1.74, 0.9, 'none', `rx="0.03" stroke="${C.mustard}" stroke-width="0.03"`) +
-  [0, 1, 2, 3].map(i => {
+  [C.lotus, C.teal, C.cobalt, C.terracotta].map((shirt, i) => {
     const x = f(0.24 + i * 0.4)
     return (
       rect(x, 0.62, 0.32, 0.58, C.mustard, `rx="0.02" ${ink(0.025)}`) +
       rect(f(x + 0.04), 0.66, 0.24, 0.5, C.cream, ink(0.012)) +
-      `<path d="M${f(x + 0.07)},${f(1.14)} Q${f(x + 0.16)},0.98 ${f(x + 0.25)},1.14Z" fill="${C.sand}" ${ink(0.012)}/>` +
+      `<path d="M${f(x + 0.07)},${f(1.14)} Q${f(x + 0.16)},0.98 ${f(x + 0.25)},1.14Z" fill="${shirt}" ${ink(0.012)}/>` +
       `<circle cx="${f(x + 0.16)}" cy="0.88" r="0.06" fill="${C.sand}" ${ink(0.012)}/>`
     )
   }).join('') +
