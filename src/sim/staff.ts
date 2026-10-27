@@ -1,9 +1,11 @@
 import {
   GREET_PATIENCE_BASE,
   GREET_PATIENCE_PER_DOT,
+  GREET_STUDY_PRICE,
   GREET_TIP_PER_DOT,
   LEVEL_WAGE_RAISE,
   LEVEL_XP,
+  MAX_TIER,
   RARE_CHANCE,
   RARE_TIER,
   RECEPTIONIST_CHANCE,
@@ -11,6 +13,7 @@ import {
   STAFF_TIP_PER_DOT,
   STAFF_WORK_MS_SLOW,
   STAFF_WORK_MS_STEP,
+  STUDY_PRICE,
   TIER_WORK_FACTOR,
   WAGE_BASE,
   WAGE_PER_DOT,
@@ -83,6 +86,15 @@ export function drawTiers(rng: Rng, role: StaffRole, tier: number, pool: readonl
   if (role === 'technician') tiers[pool[Math.floor(rng() * pool.length)]] = tier
   return tiers
 }
+
+/** The courses `s` can take: a technician's open services below MAX_TIER, a receptionist's Tiếp khách until 5 dots. */
+export function courses(s: Staff, open: readonly ServiceId[]): Course[] {
+  if (s.role === 'receptionist') return s.stats.friendly < 5 ? ['greet'] : []
+  return SERVICE_IDS.filter(id => open.includes(id) && s.tiers[id] < MAX_TIER)
+}
+
+/** What `course` costs `s` now; the one place a price is worked out. */
+export const tuition = (s: Staff, course: Course): number => (course === 'greet' ? GREET_STUDY_PRICE[s.stats.friendly - 1] : STUDY_PRICE[s.tiers[course]])
 
 /** A random candidate whose name is not in `taken`. */
 export function makeCandidate(rng: Rng, taken: string[]): Candidate {

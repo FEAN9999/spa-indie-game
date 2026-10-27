@@ -4,8 +4,9 @@ import { DAY_END_MIN, OWNER_START, PATIENCE_MS, REGULAR_OWNER_MS, STAFF_REST_MS 
 import { dayEase, reviewScore, tipFor } from '../../src/sim/economy'
 import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
 import { footprint } from '../../src/sim/items'
+import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
-import { greetPatience, serviceMs, tipFactor, workMs } from '../../src/sim/staff'
+import { courses, greetPatience, serviceMs, tipFactor, workMs } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
 import { advanceUntil, hireStaff, seatAndWait, startService } from './helpers'
 
@@ -571,5 +572,140 @@ describe('moved furniture', () => {
     const money = sim.money
     advanceUntil(sim, () => served(c), 90_000)
     expect(sim.money).toBeGreaterThan(money)
+  })
+})
+
+describe('studying', () => {
+  const stats = { skill: 3, speed: 3, friendly: 4, stamina: 3 }
+  const reload = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(2), autoSpawn: false })
+  const maskShop = () => {
+    const sim = dayThree()
+    sim.money = 500_000
+    sim.services = ['shampoo', 'mask']
+    return sim
+  }
+
+  it('takes the tuition at once and books the course', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    const costs = { ...sim.stats }
+    expect(sim.study(tech.id, 'mask')).toBeNull()
+    expect(sim.money).toBe(300_000)
+    expect(tech.study).toEqual({ course: 'mask', paid: 200_000 })
+    expect(sim.stats).toEqual(costs)
+  })
+
+  it('refuses a second course the same night, an unoffered course and too little money', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1, shampoo: 3 })
+    expect(sim.study(tech.id, 'mask')).toBeNull()
+    expect(sim.studyProblem(tech.id, 'mask')).toBe('booked')
+    expect(sim.study(tech.id, 'mask')).toBe('booked')
+    expect(sim.study(tech.id, 'massage')).toBe('course')
+    expect(sim.study(tech.id, 'shampoo')).toBe('course')
+    expect(sim.study(99, 'mask')).toBe('course')
+
+    const poor = hireStaff(sim, 'technician', stats)
+    const money = sim.money
+    sim.money = 99_000
+    expect(sim.studyProblem(poor.id, 'mask')).toBe('money')
+    expect(sim.study(poor.id, 'mask')).toBe('money')
+    sim.money = -5000
+    expect(sim.study(poor.id, 'mask')).toBe('money')
+    expect(poor.study).toBeNull()
+    expect(sim.money).toBe(-5000)
+    sim.money = money
+
+    const leaver = hireStaff(sim, 'technician', stats)
+    leaver.leaving = true
+    expect(sim.studyProblem(leaver.id, 'mask')).toBe('course')
+    expect(sim.study(leaver.id, 'mask')).toBe('course')
+    expect(leaver.study).toBeNull()
+    expect(sim.money).toBe(money)
+  })
+
+  it('raises the tier when the next day starts, once', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    sim.study(tech.id, 'mask')
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    expect(tech.tiers.mask).toBe(1)
+    sim.drainEvents()
+    sim.startDay()
+    expect(tech.tiers.mask).toBe(2)
+    expect(tech.study).toBeNull()
+    expect(sim.drainEvents()).toContainEqual({ type: 'studied', staffId: tech.id, course: 'mask', level: 2 })
+    sim.startDay()
+    expect(tech.tiers.mask).toBe(2)
+    expect(sim.drainEvents().some(e => e.type === 'studied')).toBe(false)
+  })
+
+  it("raises a receptionist's friendliness, never past 5", () => {
+    const sim = maskShop()
+    const r = hireStaff(sim, 'receptionist', stats)
+    const wage = r.wage
+    expect(sim.study(r.id, 'greet')).toBeNull()
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.startDay()
+    expect(r.stats.friendly).toBe(5)
+    expect(r.wage).toBe(wage)
+    expect(sim.drainEvents()).toContainEqual({ type: 'studied', staffId: r.id, course: 'greet', level: 5 })
+    expect(courses(r, sim.services)).toEqual([])
+  })
+
+  it('keeps a booked course through a reload in the middle of the day', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    sim.study(tech.id, 'mask')
+    const copy = reload(sim)
+    expect(copy.staff[0].tiers.mask).toBe(1)
+    expect(copy.staff[0].study).toEqual({ course: 'mask', paid: 200_000 })
+    advanceUntil(copy, () => copy.dayOver, 400_000)
+    copy.startDay()
+    expect(copy.staff[0].tiers.mask).toBe(2)
+  })
+
+  it('applies a course booked before the summary save once', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    sim.study(tech.id, 'mask')
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    const copy = reload(sim)
+    expect(copy.staff[0].tiers.mask).toBe(1)
+    copy.startDay()
+    expect(copy.staff[0].tiers.mask).toBe(2)
+    copy.startDay()
+    expect(copy.staff[0].tiers.mask).toBe(2)
+  })
+
+  it('refunds the tuition when a booked person is let go', () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    sim.study(tech.id, 'mask')
+    sim.money = -50_000
+    sim.fire(tech.id)
+    expect(sim.money).toBe(150_000)
+    expect(tech.study).toBeNull()
+
+    const other = hireStaff(sim, 'technician', stats, { mask: 1 })
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.money = 500_000
+    sim.study(other.id, 'mask')
+    expect(sim.money).toBe(300_000)
+    sim.fire(other.id)
+    expect(sim.money).toBe(500_000)
+    expect(sim.staff.some(s => s.id === other.id)).toBe(false)
+  })
+
+  it("does not count tuition in the day's costs", () => {
+    const sim = maskShop()
+    const tech = hireStaff(sim, 'technician', stats, { mask: 1 })
+    sim.study(tech.id, 'mask')
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => sim.dayOver, 400_000, ev)
+    ev.push(...sim.drainEvents())
+    expect(sim.stats.wages).toBe(tech.wage)
+    const ended = ev.find(e => e.type === 'dayEnded')
+    expect(ended?.type === 'dayEnded' && ended.stats.wages).toBe(tech.wage)
   })
 })

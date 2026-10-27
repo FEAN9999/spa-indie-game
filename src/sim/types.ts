@@ -4,6 +4,7 @@ import type { RegularGift, RegularId } from './regulars'
 import type { VipId } from './vips'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
+import type { Course } from './staff'
 
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
@@ -128,6 +129,8 @@ export type SimEvent =
   | { type: 'review'; customerId: number; score: number }
   | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'levelUp'; staffId: number; level: number }
+  /** A night course paid off this morning: `level` is the new tier, or the new friendly dots for `greet`. */
+  | { type: 'studied'; staffId: number; course: Course; level: number }
   | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' }
   /** An item reached the low-stock count, or ran out when a customer needed it. */
   | { type: 'stockLow'; item: StockItem }

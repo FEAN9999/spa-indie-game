@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS } from '../../src/sim/services'
-import { drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, serviceMs, staffStars, starSkill, tipFactor, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
+import { courses, drawTiers, gainXp, greetPatience, levelFor, makeCandidate, noTiers, restAfter, serviceMs, staffStars, starSkill, tipFactor, tuition, walkSpeed, wageFor, workMs, type Staff } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
 
 const all = (n: number) => ({ skill: n, speed: n, friendly: n, stamina: n })
@@ -120,5 +120,26 @@ describe('staff tiers', () => {
 
   it('draws a tier from the pool it is given', () => {
     expect(drawTiers(createRng(3), 'technician', 1, ['mask'])).toEqual({ ...noTiers(), mask: 1 })
+  })
+})
+
+describe('courses', () => {
+  const tech = (tiers: Partial<Record<(typeof SERVICE_IDS)[number], number>>) => ({ role: 'technician', stats: all(3), tiers: { ...noTiers(), ...tiers } }) as Staff
+  const reception = (friendly: number) => ({ role: 'receptionist', stats: { ...all(3), friendly }, tiers: noTiers() }) as Staff
+
+  it('offers a technician every open service below tier 3', () => {
+    const s = tech({ shampoo: 3, mask: 1, massage: 0 })
+    expect(courses(s, ['shampoo', 'mask'])).toEqual(['mask'])
+    expect(courses(s, ['shampoo', 'mask', 'massage'])).toEqual(['mask', 'massage'])
+  })
+
+  it('offers a receptionist Tiếp khách until 5 dots', () => {
+    expect(courses(reception(4), ['shampoo'])).toEqual(['greet'])
+    expect(courses(reception(5), ['shampoo'])).toEqual([])
+  })
+
+  it('prices a course by the step it climbs', () => {
+    expect([0, 1, 2].map(tier => tuition(tech({ mask: tier }), 'mask'))).toEqual([100000, 200000, 400000])
+    expect([1, 2, 3, 4].map(f => tuition(reception(f), 'greet'))).toEqual([50000, 100000, 200000, 400000])
   })
 })

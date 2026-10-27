@@ -150,6 +150,10 @@ export const RARE_CHANCE = 0.1
 export const MAX_TIER = 3
 /** The tier a rare technician starts with in their specialty. */
 export const RARE_TIER = 2
+/** What a night course costs, by the tier it starts from. */
+export const STUDY_PRICE = [100000, 200000, 400000] as const
+/** What a Tiếp khách course costs, by the friendliness it starts from, less 1. */
+export const GREET_STUDY_PRICE = [50000, 100000, 200000, 400000] as const
 export const WAGE_BASE = 20000
 export const WAGE_PER_DOT = 2500
 export const LEVEL_WAGE_RAISE = 2500

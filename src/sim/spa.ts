@@ -23,7 +23,7 @@ import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { DayClock } from './clock'
-import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, updateStaff, type CrewHost } from './crew'
+import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
@@ -36,13 +36,15 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
-import { greetPatience, tipFactor, walkSpeed, type Candidate, type Staff } from './staff'
+import { greetPatience, tipFactor, walkSpeed, type Candidate, type Course, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
+/** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
+export type StudyProblem = 'money' | 'booked' | 'course'
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0 })
 
@@ -483,6 +485,16 @@ export class SpaSim {
   /** Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once. */
   fire(id: number): void {
     fire(this.crew, id)
+  }
+
+  /** What `study` would refuse with, so a button can be faded beforehand; null if the course can be booked. */
+  studyProblem(staffId: number, course: Course): StudyProblem | null {
+    return studyProblem(this.crew, staffId, course)
+  }
+
+  /** Books a night course for the person: the tuition is taken now (not counted in the day's costs), and the tier or friendliness rises when the next day starts. */
+  study(staffId: number, course: Course): StudyProblem | null {
+    return study(this.crew, staffId, course)
   }
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */

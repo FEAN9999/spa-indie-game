@@ -1,14 +1,14 @@
-import { CANDIDATES_PER_DAY, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
+import { CANDIDATES_PER_DAY, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf } from './grid'
 import { footprint } from './items'
 import { findPath } from './path'
 import type { Rng } from './rng'
-import type { HireProblem, SpaSim } from './spa'
+import type { HireProblem, SpaSim, StudyProblem } from './spa'
 import type { ServiceId } from './services'
 import { STOCK_USES, type StockItem } from './stock'
-import { gainXp, makeCandidate, restAfter, serviceMs, staffStars, starSkill, type Staff } from './staff'
+import { courses, gainXp, makeCandidate, restAfter, serviceMs, staffStars, starSkill, tuition, type Course, type Staff } from './staff'
 import type { Customer, Mover, SimEvent, Station, Tile } from './types'
 
 /** What the staff's behaviour needs from the shop; the sim hands it the private helpers it keeps for itself. */
@@ -117,14 +117,38 @@ export function hire(h: CrewHost, index: number): HireProblem | null {
   return null
 }
 
+/** What stops `course` being booked for the person now: no such working person or the course is not on offer, a course already booked, or too little money (also when it is negative); null if nothing. */
+export function studyProblem({ sim }: CrewHost, id: number, course: Course): StudyProblem | null {
+  const s = sim.staff.find(x => x.id === id)
+  if (!s || s.leaving || !courses(s, sim.services).includes(course)) return 'course'
+  if (s.study) return 'booked'
+  return sim.money < tuition(s, course) ? 'money' : null
+}
+
+/** Books the course for tonight: the tuition is taken at once, and it pays off when the next day starts. */
+export function study(h: CrewHost, id: number, course: Course): StudyProblem | null {
+  const { sim } = h
+  const problem = studyProblem(h, id, course)
+  if (problem) return problem
+  const s = sim.staff.find(x => x.id === id)!
+  const paid = tuition(s, course)
+  sim.money -= paid
+  s.study = { course, paid }
+  return null
+}
+
 /**
  * Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once.
- * After the day has ended the wages are already paid, so they just leave.
+ * After the day has ended the wages are already paid, so they just leave. A course they had booked is refunded.
  */
 export function fire(h: CrewHost, id: number): void {
   const { sim } = h
   const s = sim.staff.find(x => x.id === id)
   if (!s || s.leaving) return
+  if (s.study) {
+    sim.money += s.study.paid
+    s.study = null
+  }
   if (sim.dayOver) {
     sim.staff = sim.staff.filter(x => x !== s)
     return
@@ -336,10 +360,17 @@ export function makeWayForOwner({ sim }: CrewHost, customerId: number): void {
   }
 }
 
-/** The day starts with everyone on their home tile, and new candidates once staff is open. */
+/** The day starts with everyone on their home tile, last night's courses done, and new candidates once staff is open. */
 export function startDay(h: CrewHost): void {
   const { sim } = h
   for (const s of sim.staff) Object.assign(s, { pos: { ...homeOf(h, s) }, path: [], task: null, sinceRest: 0, facing: 'down' })
+  for (const s of sim.staff) {
+    if (!s.study) continue
+    const { course } = s.study
+    s.study = null
+    const level = course === 'greet' ? (s.stats.friendly = Math.min(5, s.stats.friendly + 1)) : (s.tiers[course] = Math.min(MAX_TIER, s.tiers[course] + 1))
+    h.emit({ type: 'studied', staffId: s.id, course, level })
+  }
   if (sim.day >= UNLOCK_DAY.staff) refreshCandidates(h)
 }
 

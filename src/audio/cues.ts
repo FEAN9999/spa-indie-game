@@ -23,7 +23,8 @@ export function cueFor(e: SimEvent): OneShot | null {
     case 'customerArrived': return 'chime'
     case 'paid': return 'coin'
     case 'customerLeft': return e.angry ? 'huff' : null
-    case 'levelUp': return 'levelUp'
+    case 'levelUp':
+    case 'studied': return 'levelUp'
     case 'vipArrived': return 'vip'
     case 'heart': return 'star'
     default: return null
