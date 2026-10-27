@@ -94,6 +94,9 @@ export class CharacterView {
   private readonly bodyWorn: Phaser.GameObjects.Image[]
   private readonly mask: Phaser.GameObjects.Image
   private masked = false
+  /** Round the head in place of the hair, in the mud tub. */
+  private readonly towel: Phaser.GameObjects.Image
+  private towelled = false
   /** Each tinted part's untinted brown outline, drawn on top and kept in step by syncLines. */
   private readonly lines = new Map<Phaser.GameObjects.Image, Phaser.GameObjects.Image>()
   private facing: Facing | null = null
@@ -133,10 +136,11 @@ export class CharacterView {
     const onFace = wear('face')
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
     const onHair = wear('hair')
+    this.towel = part('towel-wrap', 0, HEAD_Y).setVisible(false)
     this.upper = scene.add.container(
       0,
       0,
-      withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.bodyWorn, ...this.arms, this.head, this.face, this.mask, ...onFace, this.hair, ...onHair]),
+      withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.bodyWorn, ...this.arms, this.head, this.face, this.mask, ...onFace, this.hair, ...onHair, this.towel]),
     )
     this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
     this.container = scene.add.container(0, 0, [this.shadow, ...withLines(this.legs), this.blanket, this.upper])
@@ -186,13 +190,29 @@ export class CharacterView {
     this.mask.setVisible(on && this.pose === 'lie' && this.facing !== 'up')
   }
 
+  /** In the mud tub, while lying, only the face and the towel round the head show: the blanket and the hair go. */
+  setTowel(on: boolean): void {
+    if (on === this.towelled) return
+    this.towelled = on
+    this.wrapTowel()
+    this.syncLines()
+  }
+
+  /** Swaps the hair and the blanket for the towel while towelled and lying; what is worn on the hair is already off while lying. */
+  private wrapTowel(): void {
+    const lying = this.pose === 'lie'
+    this.towel.setVisible(this.towelled && lying)
+    this.hair.setVisible(!(this.towelled && lying))
+    this.blanket.setVisible(lying && !this.towelled)
+  }
+
   setPose(p: Pose): void {
     if (p === this.pose) return
     this.pose = p
     this.timeMs = 0
     const lying = p === 'lie'
     this.shadow.setVisible(!lying)
-    this.blanket.setVisible(lying)
+    this.wrapTowel()
     for (const leg of this.legs) leg.setVisible(p !== 'sit' && !lying).setRotation(0)
     for (const arm of this.arms) arm.setVisible(!lying).setRotation(0)
     this.body.setVisible(!lying).setScale(1)

@@ -726,6 +726,9 @@ export class SpaScene extends Phaser.Scene {
     const sitting = c.state === 'waiting' && !this.sim.isStanding(c)
     const street = this.streetPlacement(c)
     const p: Placement = street ?? { ...this.room.tileToWorld(c.pos), facing: c.facing, alpha: 1 }
+    // lying in a mud tub, the customer is drawn half a tile towards its other column, the side the tent's steam takes, so the head sits in its middle
+    const tub = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'mud') : undefined
+    if (tub) p.x += tub.work.x > tub.bed.x ? -TILE / 2 : TILE / 2
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
@@ -733,6 +736,8 @@ export class SpaScene extends Phaser.Scene {
     s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
+    // only the towel-wrapped head shows over the mud
+    s.view.setTowel(tub !== undefined)
     // lying in a steam tent, the customer is out of sight and the tent steams
     const tent = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'steam') : undefined
     s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha).setVisible(!tent)
