@@ -40,6 +40,10 @@ const TAB_X = { working: 300, hiring: 780 } as const
 const ROW_TOP = 590
 const ROW_H = 290
 const MAX_ROWS = 4
+// the page arrows sit either side of "Xong"
+const ARROW_X = 150
+const ARROW_W = 100
+const ARROW_H = 130
 const ROW_LEFT = 90
 const ROW_RIGHT = 990
 const FEET_X = 150
@@ -108,6 +112,7 @@ interface Row {
 export class StaffScene extends Phaser.Scene {
   private params!: StaffData
   private tab: Tab = 'working'
+  private page = 0
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
@@ -119,6 +124,7 @@ export class StaffScene extends Phaser.Scene {
   init(data: StaffData) {
     this.params = data
     this.tab = data.sim.staff.length === 0 ? 'hiring' : 'working'
+    this.page = 0
     this.shown = []
     this.toastBox = null
   }
@@ -185,21 +191,34 @@ export class StaffScene extends Phaser.Scene {
 
   private openTab(tab: Tab): void {
     this.tab = tab
+    this.page = 0
     this.show()
   }
 
-  /** Up to four rows from ROW_TOP with a thin line between them, or `empty` when there are none. */
+  private turnPage(by: number, pages: number): void {
+    this.page = (this.page + by + pages) % pages
+    this.show()
+  }
+
+  /** One page of up to four rows from ROW_TOP with a thin line between them and arrows when there are more, or `empty` when there are none. */
   private rows(rows: Row[], empty: string): void {
     if (rows.length === 0) {
       this.keep(this.add.text(MID, EMPTY_Y, empty, { ...textStyle(36, '600'), align: 'center', wordWrap: { width: 860 } }).setOrigin(0.5))
       return
     }
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
-    rows.slice(0, MAX_ROWS).forEach((row, i) => {
+    const pages = Math.ceil(rows.length / MAX_ROWS)
+    // a firing can leave fewer pages than the one on show
+    this.page = Math.min(this.page, pages - 1)
+    rows.slice(this.page * MAX_ROWS, (this.page + 1) * MAX_ROWS).forEach((row, i) => {
       const y0 = ROW_TOP + i * ROW_H
       if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
       this.row(row, y0)
     })
+    if (pages > 1) {
+      this.keep(addButton(this, ARROW_X, DONE_Y, ARROW_W, ARROW_H, t('prevPage'), 'plain', () => this.turnPage(-1, pages), 64))
+      this.keep(addButton(this, GAME_W - ARROW_X, DONE_Y, ARROW_W, ARROW_H, t('nextPage'), 'plain', () => this.turnPage(1, pages), 64))
+    }
   }
 
   private row(row: Row, y0: number): void {
