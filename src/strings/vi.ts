@@ -115,6 +115,7 @@ export const vi = {
   itemVyPainting: 'Tranh của Vy',
   itemSilkScreen: 'Bình phong lụa',
   itemRegularsBoard: 'Bảng ảnh khách quen',
+  itemPhotoSinger: 'Ảnh ký: Mây Chiều', itemPhotoMiss: 'Ảnh ký: Ngân Sa', itemPhotoStar: 'Ảnh ký: Bích Câu', itemPhotoChef: 'Ảnh ký: Tám Lửa', itemGoldBoard: 'Bảng vàng',
   itemTeaChest: 'Tủ chè',
   itemJar: 'Chum sứ xanh trắng',
   itemBambooBench: 'Ghế chờ tre',

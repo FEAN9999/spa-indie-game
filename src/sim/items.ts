@@ -7,6 +7,7 @@ export type ItemKind =
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
+  | 'photoSinger' | 'photoMiss' | 'photoStar' | 'photoChef' | 'goldBoard'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor'
 export type SetId = 'saigon' | 'bamboo'
@@ -47,6 +48,11 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   vyPainting: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' },
   silkScreen: { w: 2, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemSilkScreen' },
   regularsBoard: { w: 2, h: 1, price: 0, beauty: 6, group: 'decor', giftOnly: true, name: 'itemRegularsBoard' },
+  photoSinger: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoSinger' },
+  photoMiss: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoMiss' },
+  photoStar: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoStar' },
+  photoChef: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoChef' },
+  goldBoard: { w: 2, h: 1, price: 0, beauty: 7, group: 'decor', giftOnly: true, name: 'itemGoldBoard' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]

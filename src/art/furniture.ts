@@ -470,6 +470,78 @@ const regularsBoard =
   `<path d="M1,0.3 Q0.78,0.12 0.8,0.34 Q0.9,0.4 1,0.3Z M1,0.3 Q1.22,0.12 1.2,0.34 Q1.1,0.4 1,0.3Z" fill="${C.lantern}"/>` +
   `<circle cx="1" cy="0.32" r="0.05" fill="${C.lanternDark}"/></g>`
 
+// Gifts from the VIPs
+
+/** A head and shoulders in a `shirt`, centred at x 0.5 in a photo's cream ground. */
+const bust = (shirt: string) =>
+  `<path d="M0.22,1.12 Q0.24,0.84 0.5,0.8 Q0.76,0.84 0.78,1.12Z" fill="${shirt}" ${ink(0.02)}/>` +
+  rect(0.46, 0.72, 0.08, 0.1, C.sand, ink(0.015)) +
+  `<circle cx="0.5" cy="0.6" r="0.15" fill="${C.sand}" ${ink(0.02)}/>`
+
+/** A signed photo: a gold frame on a small easel, `portrait` on its cream ground and an ink signature across the lower corner. */
+const photo = (portrait: string) =>
+  stick('M0.5,0.12 L0.58,1.68', C.woodDark) +
+  stick('M0.46,0.12 L0.18,1.7', C.wood) +
+  stick('M0.54,0.12 L0.82,1.7', C.wood) +
+  rect(0.1, 0.14, 0.8, 1.08, C.mustard, `rx="0.03" ${ink()}`) +
+  rect(0.17, 0.21, 0.66, 0.94, C.cream, `${ink(FINE)}`) +
+  rect(0.1, 0.14, 0.8, 1.08, 'none', `rx="0.03" stroke="${C.mustardDark}" stroke-width="0.02"`) +
+  portrait +
+  `<path d="M0.55,1.07 Q0.6,0.97 0.63,1.06 Q0.67,1.12 0.7,1.02 Q0.74,0.98 0.78,1.06" stroke="${C.ink}" stroke-width="0.02" fill="none" stroke-linecap="round"/>`
+
+// Mây Chiều: pink shirt, hair in a wave, a fluffy pink feather boa round her neck and a mic in her hand
+const photoSinger =
+  `<path d="M0.34,0.6 Q0.32,0.4 0.5,0.4 Q0.68,0.4 0.66,0.6 Q0.58,0.5 0.5,0.5 Q0.42,0.5 0.34,0.6Z" fill="${C.woodDark}" ${ink(0.02)}/>` +
+  bust(C.lotus) +
+  `<path d="M0.38,0.5 Q0.46,0.44 0.62,0.48 Q0.66,0.54 0.64,0.58 Q0.56,0.5 0.4,0.56Z" fill="${C.woodDark}" ${ink(0.015)}/>` +
+  `<path d="M0.27,0.9 Q0.36,0.8 0.5,0.84 Q0.64,0.8 0.73,0.9" stroke="${C.ink}" stroke-width="0.12" stroke-linecap="round" fill="none"/>` +
+  `<path d="M0.27,0.9 Q0.36,0.8 0.5,0.84 Q0.64,0.8 0.73,0.9" stroke="${C.lotusDark}" stroke-width="0.08" stroke-linecap="round" stroke-dasharray="0.05 0.03" fill="none"/>` +
+  stick('M0.28,1.1 L0.4,0.78', C.ink, 0.03) +
+  `<circle cx="0.41" cy="0.75" r="0.045" fill="${C.woodLight}" ${ink(0.02)}/>`
+
+// Ngân Sa: a gold tiara on dark hair and a cream sash with red edges across her teal dress
+const photoMiss =
+  `<path d="M0.33,0.62 Q0.3,0.4 0.5,0.4 Q0.7,0.4 0.67,0.62 Q0.6,0.48 0.5,0.48 Q0.4,0.48 0.33,0.62Z" fill="${C.woodDark}" ${ink(0.02)}/>` +
+  bust(C.teal) +
+  `<path d="M0.27,0.9 L0.36,0.83 L0.78,1.12 H0.6Z" fill="${C.cream}" stroke="${C.lantern}" stroke-width="0.03" stroke-linejoin="round"/>` +
+  `<path d="M0.38,0.47 L0.4,0.38 L0.45,0.44 L0.5,0.34 L0.55,0.44 L0.6,0.38 L0.62,0.47Z" fill="${C.mustard}" ${ink(0.02)}/>` +
+  `<circle cx="0.5" cy="0.36" r="0.015" fill="${C.lantern}"/>`
+
+// Bích Câu: big dark round glasses and a mustard headscarf knotted at the side, in a cobalt blouse
+const photoStar =
+  bust(C.cobalt) +
+  `<path d="M0.34,0.58 Q0.34,0.4 0.5,0.4 Q0.66,0.4 0.66,0.58 Q0.5,0.5 0.34,0.58Z" fill="${C.mustard}" ${ink(0.02)}/>` +
+  `<path d="M0.64,0.5 L0.74,0.44 L0.72,0.56 L0.62,0.54Z" fill="${C.mustard}" ${ink(0.02)}/>` +
+  `<circle cx="0.43" cy="0.62" r="0.07" fill="${C.ink}"/>` +
+  `<circle cx="0.57" cy="0.62" r="0.07" fill="${C.ink}"/>` +
+  `<path d="M0.46,0.62 H0.54" stroke="${C.ink}" stroke-width="0.02"/>` +
+  `<path d="M0.4,0.6 L0.42,0.59" stroke="${C.cream}" stroke-width="0.015" stroke-linecap="round"/>` +
+  `<path d="M0.54,0.6 L0.56,0.59" stroke="${C.cream}" stroke-width="0.015" stroke-linecap="round"/>`
+
+// Tám Lửa: a tall white chef's hat over a round face, in a terracotta jacket
+const photoChef =
+  bust(C.terracotta) +
+  rect(0.4, 0.42, 0.2, 0.1, '#fff', `rx="0.01" ${ink(0.02)}`) +
+  `<path d="M0.4,0.44 Q0.3,0.3 0.38,0.26 Q0.4,0.18 0.5,0.22 Q0.6,0.18 0.62,0.26 Q0.7,0.3 0.6,0.44Z" fill="#fff" ${ink(0.02)}/>` +
+  `<path d="M0.46,0.3 V0.42 M0.54,0.3 V0.42" stroke="${C.sand}" stroke-width="0.015"/>`
+
+// bảng vàng: a red-lacquer board with a gold border on two feet, four small gold frames in a row and a gold star on top
+const goldBoard =
+  rect(0.3, 1.38, 0.14, 0.32, C.woodDark, ink(0.025)) +
+  rect(1.56, 1.38, 0.14, 0.32, C.woodDark, ink(0.025)) +
+  rect(0.06, 0.4, 1.88, 1.04, C.lanternDark, `rx="0.05" ${ink()}`) +
+  rect(0.13, 0.47, 1.74, 0.9, 'none', `rx="0.03" stroke="${C.mustard}" stroke-width="0.03"`) +
+  [0, 1, 2, 3].map(i => {
+    const x = f(0.24 + i * 0.4)
+    return (
+      rect(x, 0.62, 0.32, 0.58, C.mustard, `rx="0.02" ${ink(0.025)}`) +
+      rect(f(x + 0.04), 0.66, 0.24, 0.5, C.cream, ink(0.012)) +
+      `<path d="M${f(x + 0.07)},${f(1.14)} Q${f(x + 0.16)},0.98 ${f(x + 0.25)},1.14Z" fill="${C.sand}" ${ink(0.012)}/>` +
+      `<circle cx="${f(x + 0.16)}" cy="0.88" r="0.06" fill="${C.sand}" ${ink(0.012)}/>`
+    )
+  }).join('') +
+  `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
+
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
@@ -486,6 +558,11 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-vyPainting': { w: 1, h: 1.9, body: vyPainting },
   'decor-silkScreen': { w: 2, h: 1.75, body: silkScreen },
   'decor-regularsBoard': { w: 2, h: 1.7, body: regularsBoard },
+  'decor-photoSinger': { w: 1, h: 1.7, body: photo(photoSinger) },
+  'decor-photoMiss': { w: 1, h: 1.7, body: photo(photoMiss) },
+  'decor-photoStar': { w: 1, h: 1.7, body: photo(photoStar) },
+  'decor-photoChef': { w: 1, h: 1.7, body: photo(photoChef) },
+  'decor-goldBoard': { w: 2, h: 1.75, body: goldBoard },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

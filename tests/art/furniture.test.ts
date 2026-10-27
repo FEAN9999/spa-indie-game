@@ -35,6 +35,10 @@ describe('furniture art', () => {
     }
   })
 
+  it('draws the gold board as wide as its footprint', () => {
+    expect(FURNITURE[itemTexture('goldBoard')]?.w).toBe(ITEMS.goldBoard.w)
+  })
+
   it('draws the mask chair and the massage bed as their own pictures, as wide as the shampoo bed', () => {
     const tex = furnitureTextures()
     for (const kind of ['maskBed', 'massageBed'] as const) {

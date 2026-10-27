@@ -63,10 +63,17 @@ describe('items', () => {
   })
 
   it('keeps three free gift-only decor pieces out of the sets', () => {
-    expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual(['vyPainting', 'silkScreen', 'regularsBoard'])
+    expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual(['vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard'])
     expect(ITEMS.vyPainting).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' })
     expect(ITEMS.silkScreen).toEqual({ w: 2, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemSilkScreen' })
     expect(ITEMS.regularsBoard).toEqual({ w: 2, h: 1, price: 0, beauty: 6, group: 'decor', giftOnly: true, name: 'itemRegularsBoard' })
+  })
+
+  it('the photos are one tile and the gold board two', () => {
+    for (const k of ['photoSinger', 'photoMiss', 'photoStar', 'photoChef'] as const) {
+      expect(ITEMS[k], k).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: `item${k[0].toUpperCase()}${k.slice(1)}` })
+    }
+    expect(ITEMS.goldBoard).toEqual({ w: 2, h: 1, price: 0, beauty: 7, group: 'decor', giftOnly: true, name: 'itemGoldBoard' })
   })
 
   it('scores the default shop 21 with Sài Gòn xưa at 4 of 6', () => {
