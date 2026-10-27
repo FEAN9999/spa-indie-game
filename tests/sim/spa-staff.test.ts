@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
-import { DAY_END_MIN, OWNER_START, PATIENCE_MS, REGULAR_OWNER_MS, STAFF_REST_MS } from '../../src/config'
+import { DAY_END_MIN, DAY_START_MIN, LATE_MIN, OWNER_START, PATIENCE_MS, REGULAR_OWNER_MS, STAFF_REST_MS } from '../../src/config'
 import { dayEase, reviewScore, tipFor } from '../../src/sim/economy'
 import { isWalkable, manhattan, tileEq } from '../../src/sim/grid'
 import { footprint } from '../../src/sim/items'
@@ -778,5 +778,139 @@ describe('personality in the shop', () => {
     const tech = hireStaff(sim, 'technician', { skill: 3, speed: 3, friendly: 4, stamina: 3 }, {}, 'studious')
     expect(sim.study(tech.id, 'mask')).toBeNull()
     expect(sim.money).toBe(430_000)
+  })
+})
+
+describe('flaws', () => {
+  const stats = { skill: 3, speed: 5, friendly: 3, stamina: 5 }
+
+  it('keeps a deft technician out until 8:30, then walks her in', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    sim.startDay()
+    expect(tileOf(tech)).toEqual(sim.grid.door)
+    expect(tech.task).toEqual({ kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN })
+    const c = seatAndWait(sim)
+    sim.advance(1000)
+    expect(tech.task?.kind).toBe('late')
+    expect(c.state).toBe('waiting')
+    advanceUntil(sim, () => sim.clock.minutes >= DAY_START_MIN + LATE_MIN)
+    advanceUntil(sim, () => tech.task === null || tech.task.kind !== 'late')
+    expect(['fetch', 'serve', null]).toContain(tech.task?.kind ?? null)
+  })
+
+  it('walks home and clears the task when nobody is waiting', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    sim.startDay()
+    sim.clock.minutes = DAY_START_MIN + LATE_MIN
+    advanceUntil(sim, () => tech.task === null)
+    expect(tech.path).toEqual([])
+    expect(tileEq(tileOf(tech), sim.grid.door)).toBe(false)
+  })
+
+  it('is not late on the day she is hired', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    expect(tech.task?.kind).not.toBe('late')
+  })
+
+  it('stays away across a reload and arrives at the same minute', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    sim.startDay()
+    sim.clock.minutes = DAY_START_MIN + 10
+    const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(2), autoSpawn: false })
+    expect(copy.staff[0].task).toEqual({ kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN })
+    expect(copy.staff[0].id).toBe(tech.id)
+  })
+
+  it('leaves at once when let go before arriving', () => {
+    const sim = dayThree()
+    const tech = hireStaff(sim, 'technician', stats, {}, 'deft')
+    sim.startDay()
+    const wages = sim.stats.wages
+    sim.fire(tech.id)
+    sim.advance(200)
+    sim.advance(200)
+    expect(sim.staff).not.toContain(tech)
+    expect(sim.stats.wages).toBe(wages + tech.wage)
+  })
+
+  it('a chatting receptionist greets nobody', () => {
+    const sim = dayThree()
+    const rec = hireStaff(sim, 'receptionist', stats, {}, 'jolly')
+    const atSpot = () => rec.task === null && rec.path.length === 0 && tileEq(rec.pos, sim.receptionSpot())
+    advanceUntil(sim, atSpot)
+    rec.task = { kind: 'chat', leftMs: 2000 }
+    expect(sim.spawnCustomer().greet).toBe(0)
+    advanceUntil(sim, () => rec.task === null, 5_000)
+    expect(sim.spawnCustomer().greet).toBeGreaterThan(0)
+  })
+
+  const chatsOver = (trait: 'jolly' | 'studious') => {
+    const sim = new SpaSim({ rng: createRng(7), autoSpawn: false })
+    sim.day = 3
+    const tech = hireStaff(sim, 'technician', { skill: 3, speed: 5, friendly: 3, stamina: 5 }, {}, trait)
+    const lengths: number[] = []
+    let last: unknown = null
+    for (let i = 0; i < 40; i++) {
+      const c = seatAndWait(sim)
+      for (let t = 0; t < 120_000 && !served(c); t += 100) {
+        sim.advance(100)
+        if (tech.task?.kind === 'chat' && tech.task !== last) {
+          last = tech.task
+          lengths.push(tech.task.leftMs)
+        }
+      }
+      sim.money = 1_000_000
+    }
+    return lengths
+  }
+
+  it('chats now and then after work, only when jolly', () => {
+    const jolly = chatsOver('jolly')
+    expect(jolly.length).toBeGreaterThan(0)
+    // read up to one 100 ms step after the chat began
+    for (const ms of jolly) {
+      expect(ms).toBeGreaterThanOrEqual(2900)
+      expect(ms).toBeLessThanOrEqual(5000)
+    }
+    expect(chatsOver('studious')).toEqual([])
+  })
+
+  it("drops a quick technician's star now and then, never below 1", () => {
+    const sim = new SpaSim({ rng: createRng(3), autoSpawn: false })
+    sim.day = 3
+    hireStaff(sim, 'technician', { skill: 1, speed: 5, friendly: 3, stamina: 5 }, {}, 'quick')
+    const ev: SimEvent[] = []
+    for (let i = 0; i < 70; i++) {
+      const c = seatAndWait(sim)
+      for (let t = 0; t < 120_000 && !served(c); t += 100) {
+        sim.advance(100)
+        ev.push(...sim.drainEvents())
+      }
+    }
+    expect(ev.some(e => e.type === 'sloppy')).toBe(true)
+    expect(Math.min(...sim.reviews)).toBeGreaterThanOrEqual(reviewScore(1, 'harsh'))
+  })
+
+  it('flaws never empty the shop', () => {
+    const day = (seed: number, flawed: boolean) => {
+      const sim = new SpaSim({ rng: createRng(seed), autoSpawn: true })
+      sim.day = 3
+      sim.money = 2_000_000
+      const t = flawed ? (['deft', 'quick', 'jolly'] as const) : (['studious', 'studious', 'studious'] as const)
+      hireStaff(sim, 'receptionist', stats, {}, flawed ? 'jolly' : 'studious')
+      for (const trait of t) hireStaff(sim, 'technician', stats, {}, trait)
+      sim.startDay()
+      advanceUntil(sim, () => sim.dayOver, 3_000_000)
+      return sim.stats.walkedAway + sim.stats.angry
+    }
+    for (const seed of [1, 2, 3]) {
+      const flawed = day(seed, true)
+      const steady = day(seed, false)
+      expect(flawed, `seed ${seed}: flawed ${flawed}, steady ${steady}`).toBeLessThanOrEqual(steady + 3)
+    }
   })
 })

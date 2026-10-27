@@ -792,3 +792,21 @@ describe('save version 11', () => {
     expect(TRAIT_IDS).toContain(sim.candidates[0].trait)
   })
 })
+
+describe('late and chatting tasks', () => {
+  const withTask = (task: unknown) => {
+    const raw = structuredClone(v10) as any
+    raw.staff.find((s: any) => s.role === 'technician').task = task
+    return open(raw).staff.find(s => s.role === 'technician')!.task
+  }
+
+  it('keeps a late or chatting task through a round trip', () => {
+    expect(withTask({ kind: 'late', untilMinute: 510 })).toEqual({ kind: 'late', untilMinute: 510 })
+    expect(withTask({ kind: 'chat', leftMs: 1234 })).toEqual({ kind: 'chat', leftMs: 1234 })
+  })
+
+  it('drops a damaged late or chat task', () => {
+    expect(withTask({ kind: 'late', untilMinute: 'soon' })).toBeNull()
+    expect(withTask({ kind: 'chat' })).toBeNull()
+  })
+})

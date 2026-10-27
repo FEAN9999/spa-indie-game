@@ -72,6 +72,10 @@ export type StaffTask =
   | { kind: 'serve'; customerId: number; stationId: number; leftMs: number; totalMs: number }
   | { kind: 'rest'; leftMs: number }
   | { kind: 'exit' }
+  /** Not in yet: waits on the door tile until the game clock reaches `untilMinute`, then walks home. */
+  | { kind: 'late'; untilMinute: number }
+  /** Stopped for a word after a customer, where they stand. */
+  | { kind: 'chat'; leftMs: number }
 
 export interface Staff extends Candidate {
   id: number

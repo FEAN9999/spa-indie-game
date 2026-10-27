@@ -1,4 +1,4 @@
-import { CANDIDATES_PER_DAY, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
+import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_REST_MS, UNLOCK_DAY } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf } from './grid'
@@ -64,6 +64,7 @@ export function greeterAtDesk(h: CrewHost): Staff | undefined {
 export function greet(h: CrewHost, greeter: Staff, customerId: number): void {
   h.emit({ type: 'greeted', staffId: greeter.id, customerId })
   if (earnXp(h, greeter)) startRest(h, greeter)
+  else maybeChat(h, greeter)
 }
 
 /** Three new people to hire, with names that differ from each other and from the staff's. */
@@ -181,6 +182,10 @@ export function staffGoal(h: CrewHost, s: Staff): ((t: Tile) => boolean) | null 
     return x => tileEq(x, spot)
   }
   if (task?.kind === 'exit') return x => tileEq(x, sim.grid.door)
+  if (task?.kind === 'late') {
+    const home = homeOf(h, s)
+    return x => tileEq(x, home)
+  }
   const end = s.path[s.path.length - 1]
   return end && isWalkable(sim.grid, end) ? x => tileEq(x, end) : null
 }
@@ -206,6 +211,22 @@ export function updateStaff(h: CrewHost, s: Staff, dt: number): void {
     }
     return
   }
+  if (s.task?.kind === 'late') {
+    if (s.path.length > 0 || sim.clock.minutes < s.task.untilMinute) return
+    const home = homeOf(h, s)
+    if (tileEq(tileOf(s.pos), home)) s.task = null
+    else {
+      const path = h.walkTo(s, t => tileEq(t, home))
+      if (path && path.length > 0) s.path = path
+      else s.task = null
+    }
+    return
+  }
+  if (s.task?.kind === 'chat') {
+    s.task.leftMs -= dt
+    if (s.task.leftMs <= 0) s.task = null
+    return
+  }
   if (s.role === 'technician') updateTechnician(h, s, dt)
   else if (s.task === null) walkHome(h, s)
 }
@@ -216,6 +237,12 @@ function earnXp(h: CrewHost, s: Staff): boolean {
   const due = s.sinceRest >= restAfter(s)
   if (gainXp(s, h.rng)) h.emit({ type: 'levelUp', staffId: s.id, level: s.level })
   return due
+}
+
+/** A jolly person who is neither tired nor leaving may stop for a chat where they stand; only they make the draws. */
+function maybeChat(h: CrewHost, s: Staff): void {
+  if (s.trait !== 'jolly' || s.leaving || h.rng() >= CHAT_CHANCE) return
+  s.task = { kind: 'chat', leftMs: CHAT_MS_MIN + h.rng() * (CHAT_MS_MAX - CHAT_MS_MIN) }
 }
 
 /** Walks to the nearest floor beside a towel cabinet, or rests where they stand if there is none. */
@@ -282,15 +309,21 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
   if (c.state !== 'inService') return
   task.leftMs -= dt
   if (task.leftMs > 0) return
-  h.payFor(c, station, staffStars(starSkill(s, c.service), h.rng()), s)
-  finishWork(h, s, earnXp(h, s))
+  let stars = staffStars(starSkill(s, c.service), h.rng())
+  if (s.trait === 'quick' && h.rng() < SLOPPY_CHANCE && stars > 1) {
+    stars = (stars - 1) as Stars
+    h.emit({ type: 'sloppy', staffId: s.id })
+  }
+  h.payFor(c, station, stars, s)
+  finishWork(h, s, earnXp(h, s), true)
 }
 
 /** A service is over: walk out if being let go, rest if tired, else wait for the next customer. */
-function finishWork(h: CrewHost, s: Staff, due = false): void {
+function finishWork(h: CrewHost, s: Staff, due = false, paid = false): void {
   s.task = null
   if (s.leaving) startExit(h, s)
   else if (due) startRest(h, s)
+  else if (paid) maybeChat(h, s)
 }
 
 /**
@@ -380,6 +413,12 @@ export function startDay(h: CrewHost): void {
     if (course === 'greet') s.stats.friendly = level
     else s.tiers[course] = level
     h.emit({ type: 'studied', staffId: s.id, course, level })
+  }
+  // a deft person comes in late: she waits on the door tile until the half hour
+  for (const s of sim.staff) {
+    if (s.trait !== 'deft') continue
+    s.pos = { ...sim.grid.door }
+    s.task = { kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN }
   }
   if (sim.day >= UNLOCK_DAY.staff) refreshCandidates(h)
 }

@@ -166,6 +166,14 @@ export const TIER_WORK_FACTOR = 0.85
 export const WORK_FLOOR_MS = (STAFF_WORK_MS_SLOW - 4 * STAFF_WORK_MS_STEP) / 2
 /** A tea break lasts one game hour. */
 export const STAFF_REST_MS = 60 * REAL_MS_PER_GAME_MIN
+/** A deft technician arrives this many game minutes after opening. */
+export const LATE_MIN = 30
+/** A quick technician drops a star this often. */
+export const SLOPPY_CHANCE = 1 / 7
+/** A jolly person stops to chat after a customer this often, for CHAT_MS_MIN to CHAT_MS_MAX milliseconds. */
+export const CHAT_CHANCE = 0.25
+export const CHAT_MS_MIN = 3000
+export const CHAT_MS_MAX = 5000
 /** Chance of three stars and of one star, by skill 1 to 5. */
 export const STAFF_STAR_ODDS = { three: [0, 0.1, 0.25, 0.45, 0.65], one: [0.4, 0.25, 0.1, 0.05, 0] } as const
 export const GREET_PATIENCE_BASE = 1.15
