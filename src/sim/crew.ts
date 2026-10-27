@@ -269,6 +269,7 @@ function finishWork(h: CrewHost, s: Staff, due = false): void {
 /**
  * Starts walking to the waiting customer who has waited longest, if a bed of their service is free and nobody else is on the way to them;
  * false if nothing started. A regular is left to the owner until they have had REGULAR_OWNER_MS of free-bed time.
+ * A VIP is always left to the owner, and while one is in the shop and not yet sent to a bed, nobody of her service is fetched.
  */
 function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const { sim } = h
@@ -280,11 +281,13 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const stockFetches = (item: StockItem) => sim.customers.filter(c => fetched.has(c.id) && STOCK_USES[c.service].includes(item)).length
   const hasStock = (service: ServiceId) => !sim.stockTracked() || STOCK_USES[service].every(item => sim.stock[item] > stockFetches(item))
   const ownersTurn = (c: Customer) => c.regular !== null && c.heldMs < REGULAR_OWNER_MS
-  const queue = sim.customers.filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id))
+  const queue = sim.customers.filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && c.vip === null)
   // a regular in her owner window keeps her place: nobody who came after her takes her service's bed meanwhile
   const heldFor = (c: Customer) => queue.some(r => ownersTurn(r) && r.service === c.service && r.stateMs >= c.stateMs)
+  // a VIP's service waits for her: its beds stay free until the owner sends her to one
+  const vipHeld = sim.customers.filter(c => c.vip !== null && c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state)).map(c => c.service)
   const next = queue
-    .filter(c => !heldFor(c) && hasRoom(c.service) && hasStock(c.service))
+    .filter(c => !vipHeld.includes(c.service) && !heldFor(c) && hasRoom(c.service) && hasStock(c.service))
     .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))

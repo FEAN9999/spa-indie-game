@@ -1,8 +1,7 @@
 import { UNLOCK_DAY } from '../config'
-import { bookOpen } from './regulars'
 import type { SpaSim } from './spa'
 
-export type Pointer = { hint: 'tapCustomer' | 'patience' | 'regular'; customerId: number } | { hint: 'openBuild' } | { hint: 'openStaff' } | { hint: 'openServices' } | { hint: 'openStock' } | { hint: 'openBook' }
+export type Pointer = { hint: 'tapCustomer' | 'patience' | 'regular' | 'vip'; customerId: number } | { hint: 'openBuild' } | { hint: 'openStaff' } | { hint: 'openServices' } | { hint: 'openStock' } | { hint: 'openBook' }
 
 /** The one hint to show right now, or null. Never blocks input. */
 export function pickHint(sim: SpaSim): Pointer | null {
@@ -20,7 +19,11 @@ export function pickHint(sim: SpaSim): Pointer | null {
     const c = waiting.find(x => x.regular !== null)
     if (c) return { hint: 'regular', customerId: c.id }
   }
-  if (bookOpen(sim.book) && sim.hintDone('regular') && !sim.hintDone('openBook')) return { hint: 'openBook' }
+  if (!sim.hintDone('vip')) {
+    const c = waiting.find(x => x.vip !== null)
+    if (c) return { hint: 'vip', customerId: c.id }
+  }
+  if (sim.bookShown() && (sim.hintDone('regular') || sim.hintDone('vip')) && !sim.hintDone('openBook')) return { hint: 'openBook' }
   // only on the day each button opens: a shop already past it gets the badge but no hand
   if (sim.day === UNLOCK_DAY.build && !sim.hintDone('openBuild')) return { hint: 'openBuild' }
   if (sim.day === UNLOCK_DAY.staff && !sim.hintDone('openStaff')) return { hint: 'openStaff' }

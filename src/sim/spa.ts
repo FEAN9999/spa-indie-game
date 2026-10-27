@@ -15,6 +15,9 @@ import {
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
+  VIP_PATIENCE,
+  VIP_PRICE_FACTOR,
+  VIP_REVIEWS,
 } from '../config'
 import { t } from '../strings/vi'
 import { doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
@@ -22,14 +25,14 @@ import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
-import { bedSlotAt, besideSeat, buildGrid, isWalkable, parseLayout, tileEq, tileOf, type Grid } from './grid'
+import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
-import { addVisit, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
-import { randomLook, type Rng } from './rng'
-import { emptyVipBook, type VipBook } from './vips'
+import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
+import { createRng, randomLook, type Rng } from './rng'
+import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
@@ -153,6 +156,11 @@ export class SpaSim {
     if (!this.hints.includes(id)) this.hints.push(id)
   }
 
+  /** Whether the guest book is there to open: once a regular has been met or a VIP booked. */
+  bookShown(): boolean {
+    return bookOpen(this.book) || this.vip.everBooked
+  }
+
   /** What stops `id` opening now, or null if it can: not while money is negative, not before the service ahead of it, not without the money. An open service has no problem. */
   serviceProblem(id: ServiceId): ServiceProblem | null {
     if (this.services.includes(id)) return null
@@ -180,17 +188,23 @@ export class SpaSim {
   /**
    * Draws what it is not given, in this order: look, then kind, then service.
    * A regular comes with their own look and kind and asks for their favourite while the shop has it, so draws at most the service.
+   * A VIP comes the same way and asks for her own service; her patience is VIP_PATIENCE of the plain one, with nothing for the early days or her kind.
    */
-  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId } = {}): Customer {
+  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId; vip?: VipId } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
+    const greetFactor = greeter ? greetPatience(greeter.stats.friendly) : 1
+    const vip = opts.vip && VIPS[opts.vip]
     const spec = opts.regular && REGULARS[opts.regular]
     const state = opts.regular && this.book.regulars[opts.regular]
-    const look = spec ? { ...spec.look } : randomLook(this.rng)
-    const kind = spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
+    const look = vip ? { ...vip.look } : spec ? { ...spec.look } : randomLook(this.rng)
+    const kind = vip ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
     const available = this.availableServices()
-    const service = opts.service ?? (spec && available.includes(spec.likes) ? spec.likes : drawService(kind, available, this.rng))
+    const likes = vip ? vip.service : spec ? spec.likes : null
+    const service = opts.service ?? (likes && available.includes(likes) ? likes : drawService(kind, available, this.rng))
     const patience = Math.round(
-      PATIENCE_MS * dayEase(this.day).patience * (greeter ? greetPatience(greeter.stats.friendly) : 1) * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1),
+      vip
+        ? PATIENCE_MS * VIP_PATIENCE * greetFactor
+        : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1),
     )
     const c: Customer = {
       id: this.nextId++,
@@ -210,7 +224,7 @@ export class SpaSim {
       kind,
       regular: opts.regular ?? null,
       heldMs: 0,
-      vip: null,
+      vip: opts.vip ?? null,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -219,6 +233,13 @@ export class SpaSim {
       state.met = true
       state.visitAt = null
       this.emit({ type: 'regularArrived', customerId: c.id, regular: opts.regular, first })
+    }
+    if (opts.vip) {
+      const v = this.vip.vips[opts.vip]
+      const first = v.visits === 0
+      v.visits++
+      if (this.vip.booking?.vip === opts.vip) this.vip.booking = null
+      this.emit({ type: 'vipArrived', customerId: c.id, vip: opts.vip, first })
     }
     if (greeter) greet(this.crew, greeter, c.id)
     return c
@@ -275,18 +296,23 @@ export class SpaSim {
     this.owner.task = null
   }
 
-  /** The customer pays, reviews and leaves; `technicianFriendly` is null when the owner did the work. */
+  /** The customer pays, reviews and leaves; `technicianFriendly` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one. */
   private payFor(c: Customer, station: Station, stars: Stars, technicianFriendly: number | null): void {
-    const price = SERVICES[c.service].price
+    const base = SERVICES[c.service].price
+    const price = c.vip ? base * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
-    const tip = Math.round(tipFor(price, stars) * spec.tip[stars - 1] * tipFactor(c.greet, technicianFriendly))
+    const tip = Math.round(tipFor(base, stars) * spec.tip[stars - 1] * tipFactor(c.greet, technicianFriendly))
     this.money += price + tip
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     this.addReview(c, reviewScore(stars, spec.grading))
-    noteServed(this.book, c.kind)
+    // a VIP has her own page in the book, not a place among the kinds served
+    if (c.vip) {
+      const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
+      this.emit({ type: 'vipServed', customerId: c.id, vip: c.vip, stars, photo: r.photo, board: r.board })
+    } else noteServed(this.book, c.kind)
     if (c.regular) {
       const r = addVisit(this.book, c.regular, stars, technicianFriendly === null, this.day)
       if (r.hearts) this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
@@ -308,6 +334,22 @@ export class SpaSim {
   /** Where the receptionist stands: the first floor tile beside the desk, nearest the owner's start; the start itself if there is none. */
   receptionSpot(): Tile {
     return receptionSpot(this.crew)
+  }
+
+  /** True for a VIP who found every seat taken and waits on her feet by the desk. */
+  isStanding(c: Customer): boolean {
+    return c.vip !== null && c.seat !== null && !this.seats.some(s => s.customerId === c.id)
+  }
+
+  /**
+   * Where a VIP stands when every seat is taken: in walking order from the door, the first floor beside the desk
+   * that is not the receptionist's spot, the owner's start or the door; with none, the first floor in from the door.
+   */
+  private standSpot(): Tile {
+    const floor = flood(this.grid, this.grid.door, t => isWalkable(this.grid, t)).filter(t => !tileEq(t, this.grid.door))
+    const desk = this.receptionSpot()
+    const byDesk = floor.find(t => !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
+    return byDesk ?? floor[0]
   }
 
   beauty(): number {
@@ -420,6 +462,7 @@ export class SpaSim {
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
     startDay(this.crew)
     planDay(this.book, this.day, this.rng)
+    clearStale(this.vip, this.day)
   }
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
@@ -508,8 +551,22 @@ export class SpaSim {
   private changeRoom(): void {
     this.rebuildRoom()
     this.repickLostServices()
+    this.restandVips()
     this.settleCharacters()
     this.emit({ type: 'roomChanged' })
+  }
+
+  /** A standing VIP whose spot is now under furniture, or out of the door's reach, walks to a new one. */
+  private restandVips(): void {
+    const reached = doorReach(this.grid, this.grid.door)
+    for (const c of this.customers) {
+      if (!['toSeat', 'waiting'].includes(c.state) || !this.isStanding(c)) continue
+      if (isWalkable(this.grid, c.seat!) && reached(c.seat!)) continue
+      const spot = this.standSpot()
+      c.seat = spot
+      c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, spot)) ?? []
+      this.setState(c, 'toSeat')
+    }
   }
 
   /** Whoever is still to be served and wants a service that is no longer available picks again among those that are. */
@@ -615,6 +672,9 @@ export class SpaSim {
         this.book.extraAt = null
         this.spawnCustomer()
       }
+      // a booked VIP comes at her minute, on top of the usual arrivals
+      const b = dueVip(this.vip, this.day, this.clock.minutes)
+      if (b) this.spawnCustomer({ vip: b.vip })
     }
 
     moveAlong(this.owner, OWNER_SPEED, dt)
@@ -626,6 +686,9 @@ export class SpaSim {
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
       payWages(this.crew)
+      // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
+      const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
+      planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }
@@ -746,17 +809,19 @@ export class SpaSim {
     return tileEq(from, m.pos) ? route : [from, ...route]
   }
 
+  /** Sends the customer to the first free seat; with every seat taken a VIP stands by the desk, and anyone else walks out. */
   private seatCustomer(c: Customer): void {
     const seat = this.seats.find(s => s.customerId === null)
-    if (!seat) {
+    if (!seat && c.vip === null) {
       this.emit({ type: 'noSeat', id: c.id })
       this.stats.walkedAway++
       this.startLeaving(c)
       return
     }
-    seat.customerId = c.id
-    c.seat = seat.tile
-    c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, seat.tile)) ?? []
+    if (seat) seat.customerId = c.id
+    const spot = seat ? seat.tile : this.standSpot()
+    c.seat = spot
+    c.path = findPath(this.grid, tileOf(c.pos), t => tileEq(t, spot)) ?? []
     this.setState(c, 'toSeat')
   }
 
@@ -779,9 +844,9 @@ export class SpaSim {
     this.setState(c, 'leaving')
   }
 
-  /** The customer's review, once or twice by their kind. */
+  /** The customer's review, once or twice by their kind; VIP_REVIEWS times from a VIP. */
   private addReview(c: Customer, score: number): void {
-    for (let i = 0; i < KINDS[c.kind].reviews; i++) {
+    for (let i = 0; i < (c.vip ? VIP_REVIEWS : KINDS[c.kind].reviews); i++) {
       this.reviews.push(score)
       this.emit({ type: 'review', customerId: c.id, score })
     }

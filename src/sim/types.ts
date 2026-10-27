@@ -1,4 +1,5 @@
 import type { CustomerKind } from './customers'
+import type { Stars } from './economy'
 import type { RegularGift, RegularId } from './regulars'
 import type { VipId } from './vips'
 import type { ServiceId } from './services'
@@ -7,7 +8,7 @@ import type { StockItem } from './stock'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'regular', 'openBook'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'regular', 'openBook', 'vip'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -116,6 +117,10 @@ export type SimEvent =
   | { type: 'gift'; customerId: number; regular: RegularId; gift: RegularGift }
   /** Every regular has five hearts: the book's page is full. */
   | { type: 'bookPage' }
+  /** Right after her customerArrived; `first` on her first visit. */
+  | { type: 'vipArrived'; customerId: number; vip: VipId; first: boolean }
+  /** A VIP paid; `photo` when this visit brought her signed photo, `board` when it brought the gold board. */
+  | { type: 'vipServed'; customerId: number; vip: VipId; stars: Stars; photo: boolean; board: boolean }
   | { type: 'noSeat'; id: number }
   | { type: 'customerLeft'; id: number; angry: boolean }
   | { type: 'serviceReady'; customerId: number; stationId: number }

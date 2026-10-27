@@ -6,6 +6,7 @@ import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import { pickHint } from '../../src/sim/tutorial'
 import { TUTORIAL_HINTS } from '../../src/sim/types'
+import { planBooking } from '../../src/sim/vips'
 import v1 from '../fixtures/save-v1.json'
 import { advanceUntil, seatAndWait, startService } from './helpers'
 
@@ -91,6 +92,30 @@ describe('the regulars hints', () => {
     seatAndWait(sim, { regular: 'vy' })
     expect(pickHint(sim)).toEqual({ hint: 'regular', customerId: r.id })
     sim.markHint('regular')
+    expect(pickHint(sim)).toEqual({ hint: 'openBook' })
+    sim.markHint('openBook')
+    expect(pickHint(sim)).toBeNull()
+  })
+})
+
+describe('the VIP hints', () => {
+  it('points at a waiting VIP once', () => {
+    const sim = pastTutorial(9)
+    const c = sim.spawnCustomer({ vip: 'chef' })
+    expect(pickHint(sim)).toBeNull()
+    advanceUntil(sim, () => c.state === 'waiting')
+    expect(pickHint(sim)).toEqual({ hint: 'vip', customerId: c.id })
+    sim.markHint('vip')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('points at the book once a VIP has been booked and her hint is done', () => {
+    const sim = pastTutorial(9)
+    expect(sim.bookShown()).toBe(false)
+    expect(planBooking(sim.vip, sim.day, 2, sim.availableServices(), createRng(1))).not.toBeNull()
+    expect(sim.bookShown()).toBe(true)
+    expect(pickHint(sim)).toBeNull()
+    sim.markHint('vip')
     expect(pickHint(sim)).toEqual({ hint: 'openBook' })
     sim.markHint('openBook')
     expect(pickHint(sim)).toBeNull()
