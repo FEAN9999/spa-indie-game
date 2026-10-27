@@ -873,6 +873,7 @@ describe('the recipe book', () => {
     expect(saved.recipes.stone).toEqual(emptyRecipes().stone)
     expect(saved.recipes.mud).toEqual(emptyRecipes().mud)
     expect(saved.stock).toEqual({ ...raw.stock, mud: 20 })
+    expect(saved.staff).toEqual(raw.staff.map((s: any) => ({ ...s, tiers: { ...s.tiers, stone: 0, mud: 0 } })))
     const parsed = parseSave(structuredClone(raw))
     expect(parsed.staff.length).toBe(raw.staff.length)
     for (const p of [...parsed.staff, ...parsed.candidates]) expect([p.tiers.stone, p.tiers.mud]).toEqual([0, 0])

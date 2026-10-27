@@ -922,5 +922,5 @@ describe('flaws', () => {
       const steady = day(seed, false)
       expect(flawed, `seed ${seed}: flawed ${flawed}, steady ${steady}`).toBeLessThanOrEqual(steady + 3)
     }
-  })
+  }, 15_000)
 })

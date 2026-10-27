@@ -103,10 +103,10 @@ export const STEAM_NEED = 6
 export const STEAM_SPAWN_MS = { min: 550, max: 800 }
 export const STEAM_FALL_MS = { min: 4000, max: 6000 }
 export const STEAM_FALL_MS_HARD = { min: 3000, max: 4500 }
-/** The share of falling things that are decoys. */
 /** Leaves fall in this many lanes, each at its centre give or take the jitter (as a share of the width). */
 export const STEAM_LANES = 4
 export const STEAM_LANE_JITTER = 0.04
+/** The share of falling things that are decoys. */
 export const STEAM_DECOY_SHARE = 0.5
 export const STEAM_DECOY_SHARE_HARD = 0.6
 /** Caught and misses for 2 stars; 3 stars is all caught with no misses. */
