@@ -21,7 +21,7 @@ const stone =
 // a cream shine that stays light whatever the tint
 const shine = `<path d="M-52,-20 Q-42,-40 -16,-45" stroke="${C.cream}" stroke-width="8" fill="none" stroke-linecap="round" opacity=".75"/>`
 
-const curl = (x: number) => `<path d="M${x},-64 q16,-18 0,-36 q-16,-18 0,-36" stroke="#9FB8BF" stroke-width="9" fill="none" stroke-linecap="round"/>`
+const curl = (x: number) => `<path d="M${x},-64 q16,-18 0,-36 q-16,-18 0,-36" stroke="${C.steamBlue}" stroke-width="9" fill="none" stroke-linecap="round"/>`
 
 /** The Đá nóng pictures: a stone to tint, an empty spot on the back, and the pot of hot water the stones sit across. */
 export function stoneTextures(): Record<string, string> {

@@ -62,7 +62,7 @@ const massageBed =
   rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
 
 // stone bed: the massage bed with a column of four dark stones down the sheet, the second and fourth glowing warm round the rim
-const STONE = '#5B5450'
+const STONE = C.stone
 const STONE_YS = [1.12, 1.4, 1.68, 1.96]
 const stoneBed =
   massageBed +

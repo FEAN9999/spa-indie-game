@@ -51,6 +51,12 @@ export const C = {
   mint: '#BFE8D2',
   mintTeal: '#7CC4AE',
   cucumber: '#DCEFB4',
+  stone: '#5B5450',
+  stoneLight: '#8C8580',
+  stoneWarm: '#C08A63',
+  stoneHot: '#EE8A2E',
+  steamBlue: '#9FB8BF',
+  deepBrown: '#2B201C',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]

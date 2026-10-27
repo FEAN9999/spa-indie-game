@@ -21,7 +21,7 @@ export const MUD_ORIGIN = { tub: centre(TUB_BOX), head: centre(HEAD_BOX), steam:
 
 const OUTLINE = `stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"`
 const INNER = `stroke="${C.ink}" stroke-width="3" stroke-linejoin="round"`
-const EYE = '#2B201C'
+const EYE = C.deepBrown
 const FEATURE = `stroke="${EYE}" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"`
 const MOUTH = `stroke="${C.ink}" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"`
 
@@ -36,7 +36,7 @@ const stave = (x: number, bottom: number) => `<path d="M${x},126 V${bottom}" str
 const HOLE = 'M-78.1,60 A98.5,98.5 0 1 1 78.1,60 A78.1,18 0 0 1 -78.1,60Z'
 const NECK = 'M-74.9,60 A74.9,16 0 0 0 74.9,60'
 const bubble = (x: number, y: number, r: number) => `<circle cx="${x}" cy="${y}" r="${r}" fill="${C.clayLight}" stroke="${C.ink}" stroke-width="2.5"/>`
-const STEAM = 'stroke="#9FB8BF" stroke-width="10" fill="none" stroke-linecap="round"'
+const STEAM = `stroke="${C.steamBlue}" stroke-width="10" fill="none" stroke-linecap="round"`
 
 /** The Tắm bùn pictures: a towel-wrapped head in a wooden tub of mud, its three faces, and the steam off the mud. */
 export function mudTextures(): Record<string, string> {

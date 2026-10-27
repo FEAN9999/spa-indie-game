@@ -38,9 +38,9 @@ const FLINCH = { px: 16, ms: 350, swings: 2 }
 const DEMO = { alpha: 0.6, hoverPx: 50, dipMs: 160, holdMs: 120, pauseMs: 500, pressScale: 0.92 }
 const DEPTH = { flying: 6, say: 10, hand: 20 }
 /** The stone's tints, from the sketch: grey warming to brown while cold, then orange, then the lantern red. */
-const COLD = { from: 0x8c8580, to: 0xc08a63 }
-const ORANGE = 0xee8a2e
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+const COLD = { from: hex(C.stoneLight), to: hex(C.stoneWarm) }
+const ORANGE = hex(C.stoneHot)
 /** Blends two 0xRRGGBB colours, `k` from 0 to 1. */
 const mix = (a: number, b: number, k: number) =>
   [16, 8, 0].reduce((out, shift) => out | (Math.round(Phaser.Math.Linear((a >> shift) & 255, (b >> shift) & 255, k)) << shift), 0)

@@ -20,8 +20,8 @@ const hotStones = (stones: [number, number, number, number][], w = 2.5) =>
   stones
     .map(
       ([cx, cy, rx, ry]) =>
-        `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#5B5450" stroke="${C.ink}" stroke-width="${w}"/>` +
-        `<path d="M${cx - rx * 0.55},${cy - ry * 0.15} Q${cx - rx * 0.4},${cy - ry * 0.6} ${cx},${cy - ry * 0.6}" fill="none" stroke="#8C8580" stroke-width="${w * 0.7}" stroke-linecap="round"/>`,
+        `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${C.stone}" stroke="${C.ink}" stroke-width="${w}"/>` +
+        `<path d="M${cx - rx * 0.55},${cy - ry * 0.15} Q${cx - rx * 0.4},${cy - ry * 0.6} ${cx},${cy - ry * 0.6}" fill="none" stroke="${C.stoneLight}" stroke-width="${w * 0.7}" stroke-linecap="round"/>`,
     )
     .join('')
 /** A customer's skin on a badge. */
@@ -233,7 +233,7 @@ export function fxTextures(): Record<string, string> {
     'fx-steam': svgDoc(
       [0, 0, 56, 64],
       1,
-      `<g stroke="#9FB8BF" stroke-width="6" fill="none" stroke-linecap="round"><path d="M18,60 q10,-12 0,-24 q-10,-12 0,-24"/><path d="M38,56 q10,-12 0,-24 q-10,-12 0,-24"/></g>`,
+      `<g stroke="${C.steamBlue}" stroke-width="6" fill="none" stroke-linecap="round"><path d="M18,60 q10,-12 0,-24 q-10,-12 0,-24"/><path d="M38,56 q10,-12 0,-24 q-10,-12 0,-24"/></g>`,
     ),
     // a row of three hot stones, laid across a face-down customer's back
     'fx-stones': svgDoc(
