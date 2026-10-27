@@ -114,6 +114,8 @@ export class SpaScene extends Phaser.Scene {
   private room!: RoomView
   /** The floor on view, from 1; only showFloor changes it. */
   private viewFloor = 1
+  /** The owner's floor on the last frame, so the view follows them only on the frame they come off the stairs. */
+  private lastOwnerFloor = 1
   private floorBar!: FloorBar
   private hud!: Hud
   private owner!: CharacterView
@@ -175,7 +177,8 @@ export class SpaScene extends Phaser.Scene {
     }
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
-    this.showFloor(floorOf(this.sim.owner.pos.y))
+    this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
+    this.showFloor(this.lastOwnerFloor)
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
@@ -526,8 +529,12 @@ ${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { wi
       if (low.length > 0) this.hud.toast(stockLowText(low))
     }
 
-    const follow = followFloor(this.sim, this.viewFloor)
-    if (follow !== this.viewFloor) this.showFloor(follow)
+    // never under build mode or a card, where the player may be looking at another floor on purpose
+    if (!this.modal) {
+      const follow = followFloor(this.sim, this.viewFloor, this.lastOwnerFloor)
+      if (follow !== this.viewFloor) this.showFloor(follow)
+    }
+    this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
 
     const dt = this.sim.paused || this.modal ? 0 : delta
     const o = this.sim.owner

@@ -7,10 +7,13 @@ import type { Vec } from '../sim/types'
 /** How far, in tiles, someone mid-climb rises toward the stairs before the next floor takes them. */
 const CLIMB_LIFT_TILES = 2.5
 
-/** The floor to draw: the owner's while serving and not mid-climb, so the screen follows them to a bed; otherwise the one already viewed. */
-export function followFloor(sim: SpaSim, viewed: number): number {
-  const o = sim.owner
-  return o.task?.kind === 'serve' && !(o.climbMs !== undefined && o.climbMs > 0) ? floorOf(o.pos.y) : viewed
+/**
+ * The floor to draw: the owner's, on the frame a walk to a bed takes them off the stairs onto it (`lastOwnerFloor` is where they were the frame before);
+ * otherwise the one already viewed, so a floor picked with a pill meanwhile stays.
+ */
+export function followFloor(sim: SpaSim, viewed: number, lastOwnerFloor: number): number {
+  const floor = floorOf(sim.owner.pos.y)
+  return sim.owner.task?.kind === 'serve' && floor !== lastOwnerFloor ? floor : viewed
 }
 
 /** How a person on the stairs is drawn on the floor they are leaving: lifted toward the stairs and fading; null when not climbing. */

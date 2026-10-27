@@ -10,20 +10,21 @@ const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
 
 describe('followFloor', () => {
-  it('stays on the viewed floor while the owner has no task', () => {
-    expect(followFloor(simWith({ y: 20 }), 1)).toBe(1)
+  it('goes to the owner floor on the frame a walk to a bed reaches it', () => {
+    expect(followFloor(simWith({ y: 20, task: { kind: 'serve' } }), 1, 1)).toBe(2)
   })
 
-  it('goes to the owner floor while serving', () => {
-    expect(followFloor(simWith({ y: 20, task: { kind: 'serve' } }), 1)).toBe(2)
+  it('stays put while the owner is mid-climb, still on the floor below', () => {
+    expect(followFloor(simWith({ y: 10, task: { kind: 'serve' }, climbMs: 400 }), 1, 1)).toBe(1)
   })
 
-  it('stays put while the owner is mid-climb', () => {
-    expect(followFloor(simWith({ y: 20, task: { kind: 'serve' }, climbMs: 400 }), 1)).toBe(1)
+  it('keeps a floor picked with a pill on the frames after', () => {
+    expect(followFloor(simWith({ y: 20, task: { kind: 'serve' } }), 1, 2)).toBe(1)
   })
 
-  it('ignores a fetch task', () => {
-    expect(followFloor(simWith({ y: 20, task: { kind: 'fetch' } }), 1)).toBe(1)
+  it('does not follow outside a walk to a bed', () => {
+    expect(followFloor(simWith({ y: 20 }), 1, 1)).toBe(1)
+    expect(followFloor(simWith({ y: 20, task: { kind: 'fetch' } }), 1, 1)).toBe(1)
   })
 })
 
