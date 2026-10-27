@@ -109,6 +109,21 @@ export const STEAM_DECOY_SHARE_HARD = 0.6
 /** Caught and misses for 2 stars; 3 stars is all caught with no misses. */
 export const STEAM_STAR2 = { got: 4, misses: 2 }
 
+// Đá nóng hot-stone game: lay six stones on the spots, each when its heat is in the good band, within the limit.
+export const STONE_LIMIT_MS = 25000
+export const STONE_SPOTS = 6
+/** How many stones sit in the pot to pick from. */
+export const STONE_POT = 4
+/** Heat that is just right to lay; below is cold, above is hot. */
+export const STONE_GOOD = { min: 0.55, max: 0.85 }
+export const STONE_MAX_HEAT = 1.4
+export const STONE_START_HEAT = { min: 0, max: 0.2 }
+/** Heat gained per second; a picky customer gets faster stones. */
+export const STONE_RATE = { min: 0.2, max: 0.3 }
+export const STONE_RATE_HARD = { min: 0.26, max: 0.39 }
+/** Score (good minus hot) for 3 and 2 stars. */
+export const STONE_STARS = { three: 5, two: 3 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000 } as const
 export const RESTOCK_AMOUNT = 20
