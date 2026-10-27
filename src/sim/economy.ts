@@ -1,6 +1,7 @@
-import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, REVIEW_BY_GRADING, SERVICE_ARRIVAL_STEP, TIP_RATE } from '../config'
+import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BEAUTY_TOP, DAY_EASE, RATING_WINDOW, RECIPE_ARRIVAL_STEP, REVIEW_BY_GRADING, SERVICE_ARRIVAL_STEP, TIP_RATE } from '../config'
 
 import type { Grading } from './customers'
+import { isRecipeService, type ServiceId } from './services'
 
 export type Stars = 1 | 2 | 3
 
@@ -36,8 +37,11 @@ export function beautyArrivalFactor(beauty: number): number {
   return 1 - BEAUTY_MAX_SPEEDUP * t
 }
 
-/** Multiplies the arrival gap: each available service beyond the first brings customers more often. */
-export const serviceArrivalFactor = (available: number): number => 1 - SERVICE_ARRIVAL_STEP * (available - 1)
+/** Multiplies the arrival gap: each available basic service beyond the first brings customers more often, and each recipe service half as much. */
+export const serviceArrivalFactor = (available: readonly ServiceId[]): number => {
+  const recipe = available.filter(isRecipeService).length
+  return 1 - SERVICE_ARRIVAL_STEP * (available.length - recipe - 1) - RECIPE_ARRIVAL_STEP * recipe
+}
 
 export interface DayEase {
   patience: number

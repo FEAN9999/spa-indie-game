@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { serviceArrivalFactor, tipFor } from '../../src/sim/economy'
+import { bedTile } from '../../src/sim/items'
+import { emptyRecipes } from '../../src/sim/recipes'
 import { createRng } from '../../src/sim/rng'
+import { BASIC_SERVICES, isRecipeService, RECIPE_SERVICES, SERVICE_IDS, SERVICES } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil, hireStaff } from './helpers'
+import { t } from '../../src/strings/vi'
+import { advanceUntil, hireStaff, startService } from './helpers'
 
 const fresh = () => {
   const sim = new SpaSim({ rng: createRng(3), autoSpawn: false })
@@ -44,6 +48,69 @@ describe('opening services', () => {
     sim.money = 500_000
     expect(sim.openService('massage')).toBeNull()
     expect([sim.services, sim.money]).toEqual([['shampoo', 'mask', 'massage'], 100_000])
+  })
+})
+
+describe('opening Xông lá', () => {
+  /** A shop with massage open and money to spare. */
+  const afterMassage = () => {
+    const sim = fresh()
+    sim.services = ['shampoo', 'mask', 'massage']
+    return sim
+  }
+
+  it('lists the basic services, then the recipe ones', () => {
+    expect(BASIC_SERVICES).toEqual(['shampoo', 'mask', 'massage'])
+    expect(RECIPE_SERVICES).toEqual(['steam'])
+    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam'])
+    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true])
+    expect(SERVICES.steam).toEqual({ price: 110_000, openCost: 500_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
+    expect([t('serviceSteam'), t('itemSteamTent'), t('stockHerbs'), t('busySteam')]).toEqual(['Xông lá', 'Lều xông lá', 'Gói lá xông', 'Lều xông đang bận'])
+  })
+
+  it('waits for massage, then for the recipe, then opens for its price', () => {
+    const sim = fresh()
+    expect(sim.recipes).toEqual(emptyRecipes())
+    expect(sim.benchOpen()).toBe(false)
+    expect(sim.openService('steam')).toBe('order')
+    sim.services = ['shampoo', 'mask', 'massage']
+    expect(sim.benchOpen()).toBe(true)
+    expect(sim.serviceProblem('steam')).toBe('recipe')
+    expect(sim.openService('steam')).toBe('recipe')
+    sim.recipes.steam.solved = true
+    sim.money = 600_000
+    expect(sim.openService('steam')).toBeNull()
+    expect([sim.services, sim.money]).toEqual([['shampoo', 'mask', 'massage', 'steam'], 100_000])
+    expect(sim.serviceProblem('steam')).toBeNull()
+  })
+
+  it('never opens in debt or short of money', () => {
+    const sim = afterMassage()
+    sim.money = -1
+    expect(sim.serviceProblem('steam')).toBe('debt')
+    sim.services = ['shampoo']
+    expect(sim.serviceProblem('steam')).toBe('debt')
+    sim.services = ['shampoo', 'mask', 'massage']
+    sim.recipes.steam.solved = true
+    expect(sim.openService('steam')).toBe('debt')
+    sim.money = 499_999
+    expect(sim.openService('steam')).toBe('money')
+    expect([sim.services, sim.money]).toEqual([['shampoo', 'mask', 'massage'], 499_999])
+  })
+
+  it('serves a Xông lá customer in the tent, with the owner beside it, using one herbs and one towel', () => {
+    const sim = afterMassage()
+    sim.day = 5
+    sim.recipes.steam.solved = true
+    expect(sim.openService('steam')).toBeNull()
+    expect(sim.buy('steamTent', 8, 8, false)).toBeNull()
+    const tent = sim.items.find(i => i.kind === 'steamTent')!
+    expect(sim.availableServices()).toEqual(['shampoo', 'steam'])
+    const c = startService(sim, { kind: 'elder', service: 'steam' })
+    expect(c.pos).toEqual(bedTile(tent))
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'steam', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
+    expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
+    expect(sim.stock).toMatchObject({ herbs: 19, towel: 19, shampoo: 20 })
   })
 })
 
@@ -104,8 +171,8 @@ describe('customers and services', () => {
 
 describe('more services, more customers', () => {
   it('brings customers more often for each extra service the shop offers', () => {
-    expect(serviceArrivalFactor(1)).toBe(1)
-    expect(serviceArrivalFactor(3)).toBeCloseTo(0.8)
+    expect(serviceArrivalFactor(['shampoo'])).toBe(1)
+    expect(serviceArrivalFactor(['shampoo', 'mask', 'massage'])).toBeCloseTo(0.8)
   })
 })
 

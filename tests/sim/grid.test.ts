@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { bedSlotAt, besideSeat, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { offFloor } from '../../src/sim/build'
+import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { shellOf } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { createRng } from '../../src/sim/rng'
+import { SpaSim } from '../../src/sim/spa'
 
 describe('grid', () => {
   it('parses the shop layout', () => {
@@ -44,6 +48,24 @@ describe('grid', () => {
     const on = (x: number, y: number) => onBed(g, { x, y })
     expect([on(2, 3), on(2.5, 3), on(1.5, 3), on(4, 3)]).toEqual([true, true, true, true]) // on bed 1, stepping to its work tile, from its left, on bed 2
     expect([on(1, 3), on(3, 3), on(2, 5), on(6, 3)]).toEqual([false, false, false, false]) // beside bed 1, its work tile, below it, a bed slot
+  })
+
+  it("lays out a steam tent: the customer's tile is the bed, the other three bed ends, and the work tile beside it", () => {
+    const tent = { id: 20, kind: 'steamTent' as const, x: 8, y: 8, flip: false }
+    const g = buildGrid(shellOf(SPA_LAYOUT_1A), [tent])
+    expect([g.cells[9][9], g.cells[8][8], g.cells[8][9], g.cells[9][8], g.cells[9][10]]).toEqual(['bed', 'bedEnd', 'bedEnd', 'bedEnd', 'work'])
+    expect([g.beds, g.works]).toEqual([[{ x: 9, y: 9 }], [{ x: 10, y: 9 }]])
+    const f = buildGrid(shellOf(SPA_LAYOUT_1A), [{ ...tent, flip: true }])
+    expect([f.cells[9][8], f.cells[8][8], f.cells[8][9], f.cells[9][9], f.cells[9][7]]).toEqual(['bed', 'bedEnd', 'bedEnd', 'bedEnd', 'work'])
+    expect([f.beds, f.works]).toEqual([[{ x: 8, y: 9 }], [{ x: 7, y: 9 }]])
+  })
+
+  it('refuses a steam tent whose work tile would be on the wall', () => {
+    const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
+    expect(offFloor(shell, { id: 20, kind: 'steamTent', x: 10, y: 8, flip: false })).toBe(true)
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    expect(sim.canPlace('steamTent', 10, 8, false)).toBe('overlap')
+    expect(sim.canPlace('steamTent', 8, 8, false)).toBeNull()
   })
 
   it('rejects ragged layouts', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PATIENCE_MS } from '../../src/config'
-import { CUSTOMER_KINDS, drawKind, drawService, type CustomerKind } from '../../src/sim/customers'
+import { CUSTOMER_KINDS, drawKind, drawService, KINDS, type CustomerKind } from '../../src/sim/customers'
 import { reviewScore, tipFor, type Stars } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -38,6 +38,11 @@ describe('kinds of customer', () => {
     expect(massage / 1000).toBeGreaterThan(0.8)
     expect(massage / 1000).toBeLessThan(0.9)
     expect(Array.from({ length: 50 }, () => drawService('elder', ['shampoo'], rng)).every(s => s === 'shampoo')).toBe(true)
+  })
+
+  it('has elders like Xông lá as well as massage, and picky customers like every service', () => {
+    expect(KINDS.elder.prefers).toEqual(['massage', 'steam'])
+    expect(KINDS.picky.prefers).toContain('steam')
   })
 
   it('draws no number when the shop has one service', () => {

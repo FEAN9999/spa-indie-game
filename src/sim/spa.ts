@@ -27,15 +27,16 @@ import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
-import { ITEMS, beautyOf, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
+import { emptyRecipes, type RecipeBook } from './recipes'
 import { createRng, randomLook, type Rng } from './rng'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
-import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
+import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
@@ -104,6 +105,8 @@ export class SpaSim {
   services: ServiceId[] = ['shampoo']
   /** What is left of each item; only used up from day 5. */
   stock: Record<StockItem, number> = fullStock()
+  /** What has been tried and heard for each recipe, and whether it is solved. */
+  recipes: RecipeBook = emptyRecipes()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -169,13 +172,26 @@ export class SpaSim {
     return bookOpen(this.book) ? 'openBook' : 'bookVip'
   }
 
-  /** What stops `id` opening now, or null if it can: not while money is negative, not before the service ahead of it, not without the money. An open service has no problem. */
+  /**
+   * What stops `id` opening now, or null if it can: not while money is negative, not before the service ahead of it
+   * (for a recipe service, massage; then not before its recipe is solved), not without the money. An open service has no problem.
+   */
   serviceProblem(id: ServiceId): ServiceProblem | null {
     if (this.services.includes(id)) return null
     if (this.money < 0) return 'debt'
-    const ahead = SERVICE_IDS.slice(0, SERVICE_IDS.indexOf(id))
-    if (ahead.some(a => !this.services.includes(a))) return 'order'
+    if (isRecipeService(id)) {
+      if (!this.benchOpen()) return 'order'
+      if (!this.recipes[id].solved) return 'recipe'
+    } else {
+      const ahead = BASIC_SERVICES.slice(0, BASIC_SERVICES.indexOf(id))
+      if (ahead.some(a => !this.services.includes(a))) return 'order'
+    }
     return this.money < SERVICES[id].openCost ? 'money' : null
+  }
+
+  /** Whether the recipe bench is there: once massage is open. */
+  benchOpen(): boolean {
+    return this.services.includes('massage')
   }
 
   /** Opens the service for its price; opening an open one does nothing. */
@@ -601,7 +617,7 @@ export class SpaSim {
       .map(item => ({
         id: item.id,
         service: serviceOfBed(item.kind)!,
-        bed: { x: item.x, y: item.y + 1 },
+        bed: bedTile(item),
         work: workTile(item)!,
         customerId: this.stations.find(s => s.id === item.id)?.customerId ?? null,
       }))
@@ -679,7 +695,7 @@ export class SpaSim {
         const seatLeft = this.seats.filter(s => s.customerId === null).length > this.customers.filter(c => c.state === 'arriving').length
         this.spawnCustomer(due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
-          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices().length),
+          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()),
           this.rng(),
         )
       }

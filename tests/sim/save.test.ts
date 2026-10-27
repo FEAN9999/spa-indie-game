@@ -6,7 +6,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
-import { SERVICE_IDS } from '../../src/sim/services'
+import { BASIC_SERVICES } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import { noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS } from '../../src/sim/staff'
 import { emptyVipBook } from '../../src/sim/vips'
@@ -457,10 +457,10 @@ describe('save version 6', () => {
   it('keeps the stock and the money spent restocking through a round trip', () => {
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
     sim.day = 5
-    sim.stock = { shampoo: 3, towel: 7, mask: 40, oil: 0 }
+    sim.stock = { shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11 }
     sim.stats.restock = 123_000
     const copy = viaJson(sim)
-    expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
+    expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11 })
     expect(copy.stats.restock).toBe(123_000)
     expect(copy.toSave().v).toBe(11)
   })
@@ -468,7 +468,7 @@ describe('save version 6', () => {
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
     for (const raw of [v1, v2, v3, v4, v5]) {
       const sim = open(raw)
-      expect(sim.stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20 })
+      expect(sim.stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20 })
       expect(sim.stats.restock).toBe(0)
     }
   })
@@ -486,10 +486,10 @@ describe('save version 6', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     for (const bad of [undefined, -1, 2.5, 'x', null, NaN]) {
       const d = parseSave({ ...good, stock: { shampoo: bad, towel: 4, mask: bad, oil: 0 } })
-      expect(d.stock).toEqual({ shampoo: 20, towel: 4, mask: 20, oil: 0 })
+      expect(d.stock).toEqual({ shampoo: 20, towel: 4, mask: 20, oil: 0, herbs: 20 })
     }
     for (const bad of [undefined, 'x', null, NaN]) expect(parseSave({ ...good, stats: { ...good.stats, restock: bad } }).stats.restock).toBe(0)
-    expect(parseSave({ ...good, stock: 'lots' }).stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20 })
+    expect(parseSave({ ...good, stock: 'lots' }).stock).toEqual({ shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20 })
   })
 })
 
@@ -502,7 +502,7 @@ describe('save version 7', () => {
 
   it('opens the batch-6 shop as it was saved, apart from the wages', () => {
     const sim = open(v6)
-    expect([sim.day, sim.money, sim.stock, sim.stats.restock]).toEqual([v6.day, v6.money, v6.stock, v6.stats.restock])
+    expect([sim.day, sim.money, sim.stock, sim.stats.restock]).toEqual([v6.day, v6.money, { ...v6.stock, herbs: 20 }, v6.stats.restock])
     expect(sim.staff.map(s => [s.name, s.role, s.level, s.xp])).toEqual(v6.staff.map(s => [s.name, s.role, s.level, s.xp]))
     expect(sim.customers.map(c => [c.id, c.state, c.service])).toEqual(v6.customers.map(c => [c.id, c.state, c.service]))
     expect(sim.servingCustomerId).toBe(v6.servingCustomerId)
@@ -539,7 +539,7 @@ describe('save version 8', () => {
 
   it('opens the version-7 shop as it was saved', () => {
     const sim = open(v7)
-    expect([sim.day, sim.money, sim.stock, sim.stats.restock]).toEqual([v7.day, v7.money, v7.stock, v7.stats.restock])
+    expect([sim.day, sim.money, sim.stock, sim.stats.restock]).toEqual([v7.day, v7.money, { ...v7.stock, herbs: 20 }, v7.stats.restock])
     expect(sim.staff.map(s => [s.name, s.wage])).toEqual(v7.staff.map(s => [s.name, s.wage]))
     expect(sim.customers.map(c => [c.id, c.state, c.service])).toEqual(v7.customers.map(c => [c.id, c.state, c.service]))
   })
@@ -680,7 +680,7 @@ describe('save version 10', () => {
         const set = nonZero(c.tiers)
         expect(set.length).toBe(1)
         expect(set[0][1]).toBe(c.rare ? 2 : 1)
-        expect(SERVICE_IDS).toContain(set[0][0])
+        expect(BASIC_SERVICES).toContain(set[0][0])
       } else expect(c.tiers).toEqual(noTiers())
     }
   })
@@ -714,7 +714,7 @@ describe('save version 10', () => {
     const rec = hireStaff(sim, 'receptionist')
     rec.study = { course: 'greet', paid: 50000 }
     expect(viaJson(sim).toSave()).toEqual(sim.toSave())
-    expect(sim.toSave().staff[0].tiers).toEqual({ shampoo: 2, mask: 1, massage: 0 })
+    expect(sim.toSave().staff[0].tiers).toEqual({ shampoo: 2, mask: 1, massage: 0, steam: 0 })
   })
 
   it('repairs damaged tiers and courses field by field', () => {
@@ -730,7 +730,7 @@ describe('save version 10', () => {
     r1.tiers = { shampoo: 2 }
     r1.study = { course: 'greet', paid: 50000 }
     const out = parseSave(raw).staff
-    expect(out[0].tiers).toEqual({ shampoo: 3, mask: 0, massage: 0 })
+    expect(out[0].tiers).toEqual({ shampoo: 3, mask: 0, massage: 0, steam: 0 })
     expect(out[3].tiers).toEqual(noTiers())
     expect(out.slice(0, 3).map(s => s.study)).toEqual([null, null, null])
     expect(out[3].study).toEqual({ course: 'greet', paid: 50000 })
@@ -745,12 +745,12 @@ describe('save version 11', () => {
     expect(sim.staff.length).toBe(v10.staff.length)
     sim.staff.forEach((s, i) => {
       const old = v10.staff[i]
-      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.tiers, s.study]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, old.tiers, old.study])
+      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.tiers, s.study]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, { ...old.tiers, steam: 0 }, old.study])
       expect(fits(s)).toBe(true)
     })
     expect(sim.candidates.length).toBe(v10.candidates.length)
     sim.candidates.forEach((c, i) => {
-      expect([c.stats, c.tiers]).toEqual([v10.candidates[i].stats, v10.candidates[i].tiers])
+      expect([c.stats, c.tiers]).toEqual([v10.candidates[i].stats, { ...v10.candidates[i].tiers, steam: 0 }])
       expect(fits(c)).toBe(true)
     })
   })

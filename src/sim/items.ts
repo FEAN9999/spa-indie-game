@@ -3,7 +3,7 @@ import { SPA_LAYOUT_1A } from './layout'
 import type { Tile } from './types'
 
 export type ItemKind =
-  | 'bed' | 'maskBed' | 'massageBed' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
+  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
@@ -28,6 +28,7 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   bed: { w: 1, h: 3, price: 300000, beauty: 0, group: 'bed', name: 'itemBed' },
   maskBed: { w: 1, h: 3, price: 350000, beauty: 0, group: 'bed', name: 'itemMaskBed' },
   massageBed: { w: 1, h: 3, price: 450000, beauty: 0, group: 'bed', name: 'itemMassageBed' },
+  steamTent: { w: 2, h: 2, price: 500000, beauty: 0, group: 'bed', name: 'itemSteamTent' },
   bench: { w: 3, h: 1, price: 150000, beauty: 1, group: 'seat', name: 'itemBench' },
   plant: { w: 1, h: 1, price: 40000, beauty: 1, group: 'decor', name: 'itemPlant' },
   tea: { w: 2, h: 1, price: 60000, beauty: 2, group: 'decor', name: 'itemTea' },
@@ -75,10 +76,15 @@ export function footprint(item: Item): Tile[] {
   return tiles
 }
 
-/** Where the owner stands to serve a bed; only beds of any service have one. */
+/** Where the owner stands to serve a bed, beside its second row; only beds of any service have one. */
 export function workTile(item: Item): Tile | null {
   if (ITEMS[item.kind].group !== 'bed') return null
-  return { x: item.flip ? item.x - 1 : item.x + 1, y: item.y + 1 }
+  return { x: item.flip ? item.x - 1 : item.x + ITEMS[item.kind].w, y: item.y + 1 }
+}
+
+/** Where a bed's customer lies: on its second row, on the side next to the work tile. Beds only. */
+export function bedTile(item: Item): Tile {
+  return { x: item.flip ? item.x : item.x + ITEMS[item.kind].w - 1, y: item.y + 1 }
 }
 
 export function seatTiles(item: Item): Tile[] {

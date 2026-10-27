@@ -24,6 +24,11 @@ describe('build mode catalogue', () => {
     expect(kinds(catalogPage('bed', 0, ['shampoo', 'mask'], []))).toEqual(['bed', 'maskBed'])
   })
 
+  it('lists the steam tent only once Xông lá is open', () => {
+    expect(kinds(catalogPage('bed', 0, ['shampoo', 'mask', 'massage'], []))).toEqual(['bed', 'maskBed', 'massageBed'])
+    expect(kinds(catalogPage('bed', 0, ['shampoo', 'mask', 'massage', 'steam'], []))).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent'])
+  })
+
   it('shows the decor four at a time, the tea chest and the jar on the third page', () => {
     expect(catalogPage('decor', 0, ['shampoo'], []).pages).toBe(4)
     expect(kinds(catalogPage('decor', 2, ['shampoo'], []))).toEqual(['teaChest', 'jar', 'bambooTea', 'bambooShelf'])
@@ -37,7 +42,7 @@ describe('build mode catalogue', () => {
 
   it('offers every kind but the gifts exactly once', () => {
     const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
-      const all = ['shampoo', 'mask', 'massage'] as const
+      const all = ['shampoo', 'mask', 'massage', 'steam'] as const
       const { pages } = catalogPage(g, 0, [...all], [])
       return Array.from({ length: pages }, (_, p) => kinds(catalogPage(g, p, [...all], []))).flat()
     })

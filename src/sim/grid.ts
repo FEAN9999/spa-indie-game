@@ -1,4 +1,4 @@
-import { BED_SLOTS, footprint, ITEMS, seatTiles, workTile } from './items'
+import { BED_SLOTS, bedTile, footprint, ITEMS, seatTiles, workTile } from './items'
 import type { Item } from './items'
 import type { Tile, Vec } from './types'
 
@@ -13,7 +13,7 @@ export interface Grid {
   cells: Cell[][]
   door: Tile
   seats: Tile[]
-  /** The middle tile of each bed, where the customer lies. */
+  /** The tile of each bed where the customer lies. */
   beds: Tile[]
   works: Tile[]
   desks: Tile[]
@@ -106,10 +106,11 @@ export function buildGrid(shell: string[] | Grid, items: Item[]): Grid {
     const tiles = footprint(item)
     const set = (cell: Cell) => tiles.forEach(t => (grid.cells[t.y][t.x] = cell))
     if (ITEMS[item.kind].group === 'bed') {
-      tiles.forEach((t, i) => (grid.cells[t.y][t.x] = i === 1 ? 'bed' : 'bedEnd'))
+      const bed = bedTile(item)
+      tiles.forEach(t => (grid.cells[t.y][t.x] = tileEq(t, bed) ? 'bed' : 'bedEnd'))
       const work = workTile(item)!
       grid.cells[work.y][work.x] = 'work'
-      grid.beds.push(tiles[1])
+      grid.beds.push(bed)
       grid.works.push(work)
     } else if (ITEMS[item.kind].group === 'seat') {
       set('seat')

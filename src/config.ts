@@ -17,10 +17,12 @@ export const REAL_MS_PER_GAME_MIN = 12500 / 60
 
 // Money and reviews
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000 } as const
-/** Each service open beyond the first shortens the arrival gap by this share. */
+export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000 } as const
+/** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
+/** Each open recipe service shortens it by this share. */
+export const RECIPE_ARRIVAL_STEP = 0.05
 export const TIP_RATE = { 1: 0, 2: 0.1, 3: 0.25 } as const
 export const REVIEW_FOR_STARS = { 1: 3, 2: 4, 3: 5 } as const
 /** The review a customer leaves for 1, 2 and 3 stars, by how kindly they grade; `normal` is the plain one. */
@@ -108,7 +110,7 @@ export const STEAM_DECOY_SHARE_HARD = 0.6
 export const STEAM_STAR2 = { got: 4, misses: 2 }
 
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 export const LOW_STOCK = 5

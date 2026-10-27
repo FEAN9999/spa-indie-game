@@ -6,7 +6,7 @@ import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
-import { SERVICE_IDS, type ServiceId } from './services'
+import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
@@ -162,7 +162,7 @@ export function parseSave(raw: unknown): SaveData {
     tiers: repairTiers(s.tiers, s.role, () => drawTiers(tierRng, s.role, 1, data.services)),
     study: repairStudy(s.study, s.role),
   }))
-  data.candidates = data.candidates.map(c => ({ ...c, tiers: repairTiers(c.tiers, c.role, () => drawTiers(tierRng, c.role, c.rare ? RARE_TIER : 1, SERVICE_IDS)) }))
+  data.candidates = data.candidates.map(c => ({ ...c, tiers: repairTiers(c.tiers, c.role, () => drawTiers(tierRng, c.role, c.rare ? RARE_TIER : 1, BASIC_SERVICES)) }))
   // a trait that does not fit the role (or none, saved before version 11) is drawn from its own stream, staff then candidates
   const traitRng = createRng(data.day * 2003 + data.nextStaffId)
   data.staff = data.staff.map(s => ({ ...s, trait: traitFits(s.trait, s.role) ? s.trait : drawTrait(traitRng, s.role) }))

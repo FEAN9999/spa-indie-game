@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { LEVEL_WAGE_RAISE, STAFF_STAR_ODDS, WORK_FLOOR_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
-import { SERVICE_IDS } from '../../src/sim/services'
+import { BASIC_SERVICES, SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import { courses, drawTiers, gainXp, greeterPatience, greetPatience, levelFor, makeCandidate, noTiers, RECEPTIONIST_TRAITS, restAfter, serviceMs, staffStars, starSkill, staffWalkSpeed, tipFactor, TRAIT_IDS, tuition, walkSpeed, wageFor, workMs, type Staff, type TraitId } from '../../src/sim/staff'
 import { STAFF_NAMES } from '../../src/strings/vi'
@@ -105,14 +105,14 @@ describe('staff tiers', () => {
     return Array.from({ length: 300 }, () => makeCandidate(rng, []))
   }
 
-  it('gives a new technician tier 1 in exactly one service, drawn from every service', () => {
+  it('gives a new technician tier 1 in exactly one service, drawn from every basic service', () => {
     const techs = draw().filter(c => c.role === 'technician')
     for (const c of techs) {
       const set = Object.values(c.tiers).filter(v => v !== 0)
       expect(set).toEqual([c.rare ? 2 : 1])
     }
     const seen = new Set(techs.map(c => SERVICE_IDS.find(id => c.tiers[id] !== 0)))
-    expect([...seen].sort()).toEqual([...SERVICE_IDS].sort())
+    expect([...seen].sort()).toEqual([...BASIC_SERVICES].sort())
   })
 
   it('gives a receptionist candidate no tiers', () => {

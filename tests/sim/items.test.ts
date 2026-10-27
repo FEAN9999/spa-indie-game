@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, setProgress, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, bedTile, footprint, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 describe('items', () => {
@@ -51,6 +51,24 @@ describe('items', () => {
     expect(ITEM_KINDS.slice(0, 3)).toEqual(['bed', 'maskBed', 'massageBed'])
     expect(ITEMS.maskBed).toMatchObject({ w: 1, h: 3, price: 350000, beauty: 0, group: 'bed' })
     expect(ITEMS.massageBed).toMatchObject({ price: 450000, name: 'itemMassageBed' })
+  })
+
+  it('gives the 2×2 steam tent its bed and work tiles by its width, either way round', () => {
+    expect(ITEMS.steamTent).toEqual({ w: 2, h: 2, price: 500000, beauty: 0, group: 'bed', name: 'itemSteamTent' })
+    expect(ITEM_KINDS.slice(0, 4)).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent'])
+    const tent = { id: 9, kind: 'steamTent' as const, x: 8, y: 8, flip: false }
+    expect(footprint(tent)).toEqual([{ x: 8, y: 8 }, { x: 9, y: 8 }, { x: 8, y: 9 }, { x: 9, y: 9 }])
+    expect([workTile(tent), bedTile(tent)]).toEqual([{ x: 10, y: 9 }, { x: 9, y: 9 }])
+    const flipped = { ...tent, flip: true }
+    expect([workTile(flipped), bedTile(flipped)]).toEqual([{ x: 7, y: 9 }, { x: 8, y: 9 }])
+  })
+
+  it("keeps the 1×3 beds' tiles: the customer on the second row, the work tile beside it", () => {
+    for (const kind of ['bed', 'maskBed', 'massageBed'] as const) {
+      const item = { id: 9, kind, x: 6, y: 2, flip: false }
+      expect([workTile(item), bedTile(item)], kind).toEqual([{ x: 7, y: 3 }, { x: 6, y: 3 }])
+      expect([workTile({ ...item, flip: true }), bedTile({ ...item, flip: true })], kind).toEqual([{ x: 5, y: 3 }, { x: 6, y: 3 }])
+    }
   })
 
   it("knows every kind's price, beauty and set", () => {

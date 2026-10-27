@@ -28,7 +28,7 @@ import {
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
 import { randomLook, type Rng } from './rng'
-import { SERVICE_IDS, type ServiceId } from './services'
+import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import type { Facing, Look, Tile, Vec } from './types'
 
 export type StaffRole = 'receptionist' | 'technician'
@@ -130,7 +130,7 @@ export function makeCandidate(rng: Rng, taken: string[]): Candidate {
   const look = randomLook(rng)
   const free = STAFF_NAMES.filter(n => !taken.includes(n))
   const name = free[Math.floor(rng() * free.length)]
-  const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, SERVICE_IDS)
+  const tiers = drawTiers(rng, role, rare ? RARE_TIER : 1, BASIC_SERVICES)
   const trait = drawTrait(rng, role)
   return { name, role, look, stats, wage: wageFor(stats), rare, tiers, trait }
 }
