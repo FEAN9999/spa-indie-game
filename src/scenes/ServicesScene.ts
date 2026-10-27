@@ -4,7 +4,7 @@ import { GAME_H, GAME_W, LOW_STOCK, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../con
 import { ITEMS } from '../sim/items'
 import { isRecipeService, SERVICE_IDS, SERVICES, type RecipeService, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
-import { STOCK_ITEMS, STOCK_NAME, STOCK_USES, type StockItem } from '../sim/stock'
+import { STOCK_ITEMS, STOCK_NAME, STOCK_USES, stockUsers, type StockItem } from '../sim/stock'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
@@ -143,8 +143,8 @@ export class ServicesScene extends Phaser.Scene {
   private stockRow(item: StockItem, y0: number): void {
     const { sim } = this.params
     const cy = y0 + STOCK_ROW_H / 2
-    const user = SERVICE_IDS.find(id => sim.services.includes(id) && STOCK_USES[id][0] === item)
-    const usedBy = user ? t('stockUsedBy', { name: t(SERVICES[user].name) }) : t('stockUsedByAll')
+    const users = stockUsers(item, SERVICE_IDS.filter(id => sim.services.includes(id)))
+    const usedBy = users.length ? t('stockUsedBy', { name: users.map(id => t(SERVICES[id].name)).join(', ') }) : t('stockUsedByAll')
     const left = sim.stock[item]
     this.keep(this.add.image(ICON_X, cy, `stock-${item}`).setScale(1.5))
     this.keep(this.add.text(TEXT_X, cy - 58, t(STOCK_NAME[item]), textStyle(40)).setOrigin(0, 0.5))

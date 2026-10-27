@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { DAY_END_MIN, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
-import { fullStock, STOCK_ITEMS, STOCK_NAME, STOCK_USES } from '../../src/sim/stock'
+import { fullStock, STOCK_ITEMS, STOCK_NAME, STOCK_USES, stockUsers } from '../../src/sim/stock'
 import type { SimEvent } from '../../src/sim/types'
 import { advanceUntil, hireStaff, seatAndWait, startService } from './helpers'
 
@@ -270,5 +270,14 @@ describe('running out', () => {
     expect(copy.stock).toMatchObject({ shampoo: 19, towel: 19 })
     copy.completeService(c.id, 3)
     expect(copy.stock).toMatchObject({ shampoo: 19, towel: 19 })
+  })
+})
+
+describe('stockUsers', () => {
+  it('names every open service whose own item this is, and none for the towel', () => {
+    expect(stockUsers('oil', ['shampoo', 'massage'])).toEqual(['massage'])
+    expect(stockUsers('oil', ['shampoo', 'massage', 'stone'])).toEqual(['massage', 'stone'])
+    expect(stockUsers('oil', ['shampoo'])).toEqual([])
+    expect(stockUsers('towel', ['shampoo', 'massage', 'stone'])).toEqual([])
   })
 })

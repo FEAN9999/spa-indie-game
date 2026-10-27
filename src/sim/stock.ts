@@ -17,6 +17,9 @@ export const STOCK_USES: Record<ServiceId, StockItem[]> = {
   mud: ['mud', 'towel'],
 }
 
+/** The open services whose own item this is; none for the towel, which every service uses. */
+export const stockUsers = (item: StockItem, open: readonly ServiceId[]): ServiceId[] => open.filter(id => STOCK_USES[id][0] === item)
+
 export const STOCK_NAME: Record<StockItem, StringKey> = {
   shampoo: 'stockShampoo',
   towel: 'stockTowel',
