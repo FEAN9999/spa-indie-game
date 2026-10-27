@@ -23,6 +23,8 @@ interface ItemSprite {
   part: Phaser.GameObjects.Image | null
   /** The floor the item stands on. */
   floor: number
+  /** The part is a bed's lantern, which hangs on floor 1's wall only. */
+  lantern: boolean
 }
 
 /** Draws one floor of the room at a time: its fixed screen and desk (floor 1), the stairs, and one sprite per item on it; converts between tiles and world pixels. */
@@ -32,6 +34,8 @@ export class RoomView {
   private readonly room: Phaser.GameObjects.Image
   private readonly stairs: Phaser.GameObjects.Image
   private readonly rope: Phaser.GameObjects.Image
+  /** The pigeon coop over the rooftop's stairs cells. */
+  private readonly coop: Phaser.GameObjects.Image
   /** The desk and screen, which stand on floor 1 only. */
   private readonly fixtures: Phaser.GameObjects.Image[] = []
   private readonly items = new Map<number, ItemSprite>()
@@ -47,6 +51,8 @@ export class RoomView {
     this.stairs = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y), 'stairs').setOrigin(0, 0).setDepth(PART_DEPTH).setVisible(false)
     // under whoever stands on the foot below it, over whoever is on the stairs
     this.rope = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y + 2), 'stairsRope').setOrigin(0, 0).setDepth(this.rowY(STAIRS_TILE.y + 3) + ITEM_DEPTH_BIAS).setVisible(false)
+    // Over whoever is on the stairs cells or lifted by a climb (they go behind it), one pixel under whoever stands on the foot, whose depth is the foot's bottom edge.
+    this.coop = scene.add.image(MAP_X + 10.75 * TILE, this.rowY(6), 'coop').setOrigin(0, 0).setDisplaySize(1.5 * TILE, 4 * TILE).setDepth(this.rowY(STAIRS_TILE.y + 4) - 1).setVisible(false)
     for (const [key, tiles] of [['desk', grid.desks], ['decor-screen', grid.decor.screen]] as const) {
       for (const r of tileRuns(tiles)) {
         const bottom = this.rowY(r.row + 1)
@@ -55,13 +61,15 @@ export class RoomView {
     }
   }
 
-  /** Shows `floor`: its room, the desk and screen on floor 1, the stairs, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
+  /** Shows `floor`: its room, the desk and screen on floor 1, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
-    this.room.setTexture(floor === 1 ? 'room' : 'room-2')
+    this.room.setTexture(floor === 1 ? 'room' : floor === 2 ? 'room-2' : 'room-3')
     for (const f of this.fixtures) f.setVisible(floor === 1)
-    this.stairs.setVisible(maxFloors > 1)
-    this.rope.setVisible(floors === floor && floor < maxFloors)
+    // the rooftop has the coop where the stairs are, and no rope
+    this.coop.setVisible(floor === 3)
+    this.stairs.setVisible(maxFloors > 1 && floor < 3)
+    this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
   }
 
   /** Whether grid row `y` is on the floor in view. */
@@ -112,7 +120,7 @@ export class RoomView {
     for (const [key, s] of this.items) {
       const shown = key !== id && s.floor === this.floor
       s.body.setVisible(shown)
-      s.part?.setVisible(shown)
+      s.part?.setVisible(shown && (!s.lantern || s.floor === 1))
     }
   }
 
@@ -130,7 +138,7 @@ export class RoomView {
     const body = add.image(0, 0, itemTexture(item.kind)).setOrigin(0.5, 1)
     const partKey = item.kind === 'bed' ? 'lantern' : item.kind === 'bench' ? 'benchMat' : null
     const part = partKey ? add.image(0, 0, partKey).setOrigin(0, 0).setDepth(PART_DEPTH) : null
-    const s = { body, part, floor: floorOf(item.y) }
+    const s = { body, part, floor: floorOf(item.y), lantern: partKey === 'lantern' }
     this.items.set(item.id, s)
     return s
   }
