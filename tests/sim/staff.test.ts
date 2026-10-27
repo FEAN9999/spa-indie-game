@@ -127,11 +127,25 @@ describe('staff tiers', () => {
   it('pools the basic services and the recipe services the shop has open', () => {
     expect(candidatePool(['shampoo'])).toEqual(['shampoo', 'mask', 'massage'])
     expect(candidatePool(['shampoo', 'mask', 'massage', 'steam'])).toEqual(['shampoo', 'mask', 'massage', 'steam'])
+    expect(candidatePool(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
   })
 
   it('draws a steam specialty only once steam is open', () => {
     expect(draw(['shampoo', 'mask', 'massage']).filter(c => c.tiers.steam > 0)).toEqual([])
     expect(draw(['shampoo', 'mask', 'massage', 'steam']).some(c => c.tiers.steam > 0)).toBe(true)
+  })
+})
+
+describe('stone and mud specialties', () => {
+  it('draws them only once Đá nóng and Tắm bùn are open', () => {
+    const closed: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam']
+    const open: ServiceId[] = [...closed, 'stone', 'mud']
+    const rng = createRng(11)
+    const pool = Array.from({ length: 300 }, () => makeCandidate(rng, [], closed))
+    expect(pool.filter(c => c.tiers.stone > 0 || c.tiers.mud > 0)).toEqual([])
+    const opened = Array.from({ length: 300 }, () => makeCandidate(rng, [], open))
+    expect(opened.some(c => c.tiers.stone > 0)).toBe(true)
+    expect(opened.some(c => c.tiers.mud > 0)).toBe(true)
   })
 })
 

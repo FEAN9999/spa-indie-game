@@ -37,6 +37,7 @@ describe('economy', () => {
   it('brings customers more often for each service with a bed: 0.1 for a basic one past the first, 0.05 for a recipe one', () => {
     expect(serviceArrivalFactor(['shampoo', 'mask', 'massage'])).toBe(0.8)
     expect(serviceArrivalFactor(['shampoo', 'mask', 'massage', 'steam'])).toBeCloseTo(0.75, 10)
+    expect(serviceArrivalFactor(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])).toBeCloseTo(0.65, 10)
   })
 
   it('draws customers faster as the shop gets prettier, up to a quarter more', () => {

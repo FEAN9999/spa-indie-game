@@ -30,10 +30,10 @@ export interface KindSpec {
 
 export const KINDS: Record<CustomerKind, KindSpec> = {
   student: { fromDay: 1, weight: 3, patience: 1, tip: [0.5, 0.5, 0.5], prefers: ['shampoo'], grading: 'easy', reviews: 1, speed: 5, hard: false },
-  office: { fromDay: 1, weight: 3, patience: 0.8, tip: [1, 1, 1], prefers: ['shampoo', 'mask'], grading: 'normal', reviews: 1, speed: 5, hard: false },
+  office: { fromDay: 1, weight: 3, patience: 0.8, tip: [1, 1, 1], prefers: ['shampoo', 'mask', 'stone'], grading: 'normal', reviews: 1, speed: 5, hard: false },
   picky: { fromDay: 3, weight: 2, patience: 1, tip: [0, 0, 2], prefers: SERVICE_IDS, grading: 'harsh', reviews: 1, speed: 5, hard: true },
   elder: { fromDay: 4, weight: 2, patience: 1.3, tip: [0.8, 0.8, 0.8], prefers: ['massage', 'steam'], grading: 'easy', reviews: 1, speed: 3.5, hard: false },
-  celeb: { fromDay: CELEB_FROM_DAY, weight: 0, patience: 0.8, tip: [3, 3, 3], prefers: ['massage', 'mask'], grading: 'harsh', reviews: 2, speed: 5, hard: false },
+  celeb: { fromDay: CELEB_FROM_DAY, weight: 0, patience: 0.8, tip: [3, 3, 3], prefers: ['massage', 'mask', 'mud'], grading: 'harsh', reviews: 2, speed: 5, hard: false },
 }
 
 /** The kind of the next customer: from day 6 a few celebrities, otherwise weighted among the kinds whose day has come. */

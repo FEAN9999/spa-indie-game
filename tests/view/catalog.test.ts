@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS, ITEM_KINDS, type ItemGroup, type ItemKind } from '../../src/sim/items'
+import type { ServiceId } from '../../src/sim/services'
 import { catalogPage } from '../../src/view/catalog'
 
 const kinds = (p: ReturnType<typeof catalogPage>) => p.entries.map(e => e.kind)
@@ -40,9 +41,21 @@ describe('build mode catalogue', () => {
     expect(catalogPage('decor', 4, ['shampoo'], [])).toEqual(catalogPage('decor', 0, ['shampoo'], []))
   })
 
+  it('lists the stone bed only once Đá nóng is open, and the mud tub only once Tắm bùn is', () => {
+    const base = ['shampoo', 'mask', 'massage', 'steam'] as const
+    const beds = (open: ServiceId[]) => {
+      const { pages } = catalogPage('bed', 0, open, [])
+      return Array.from({ length: pages }, (_, p) => kinds(catalogPage('bed', p, open, []))).flat()
+    }
+    expect(beds([...base])).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent'])
+    expect(beds([...base, 'stone'])).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent', 'stoneBed'])
+    expect(beds([...base, 'mud'])).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent', 'mudTub'])
+    expect(beds([...base, 'stone', 'mud'])).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent', 'stoneBed', 'mudTub'])
+  })
+
   it('offers every kind but the gifts exactly once', () => {
     const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
-      const all = ['shampoo', 'mask', 'massage', 'steam'] as const
+      const all = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
       const { pages } = catalogPage(g, 0, [...all], [])
       return Array.from({ length: pages }, (_, p) => kinds(catalogPage(g, p, [...all], []))).flat()
     })

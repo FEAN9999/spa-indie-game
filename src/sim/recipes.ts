@@ -5,8 +5,8 @@ export type Ingredient = 'pomelo' | 'lemongrass' | 'ginger' | 'salt' | 'mineralM
 /** Shelf order. */
 export const INGREDIENTS: readonly Ingredient[] = ['pomelo', 'lemongrass', 'ginger', 'salt', 'mineralMud', 'honey', 'coconut', 'cajeput']
 
-export type RecipeId = 'steam'
-export const RECIPE_IDS: readonly RecipeId[] = ['steam']
+export type RecipeId = 'steam' | 'stone' | 'mud'
+export const RECIPE_IDS: readonly RecipeId[] = ['steam', 'stone', 'mud']
 
 export interface RecipeSpec {
   ingredients: readonly [Ingredient, Ingredient, Ingredient]
@@ -15,6 +15,8 @@ export interface RecipeSpec {
 
 export const RECIPES: Record<RecipeId, RecipeSpec> = {
   steam: { ingredients: ['pomelo', 'lemongrass', 'ginger'], hints: ['pomelo', 'lemongrass'] },
+  stone: { ingredients: ['coconut', 'cajeput', 'ginger'], hints: ['coconut', 'cajeput'] },
+  mud: { ingredients: ['mineralMud', 'salt', 'honey'], hints: ['mineralMud', 'salt'] },
 }
 
 export interface RecipeTry { mix: Ingredient[]; right: number }
@@ -22,7 +24,11 @@ export interface RecipeTry { mix: Ingredient[]; right: number }
 export interface RecipeState { solved: boolean; tries: RecipeTry[]; heard: Ingredient[] }
 export type RecipeBook = Record<RecipeId, RecipeState>
 
-export const emptyRecipes = (): RecipeBook => ({ steam: { solved: false, tries: [], heard: [] } })
+export const emptyRecipes = (): RecipeBook => ({
+  steam: { solved: false, tries: [], heard: [] },
+  stone: { solved: false, tries: [], heard: [] },
+  mud: { solved: false, tries: [], heard: [] },
+})
 
 /** Exactly 3 distinct known ingredients. */
 export const isMix = (x: unknown): x is Ingredient[] =>

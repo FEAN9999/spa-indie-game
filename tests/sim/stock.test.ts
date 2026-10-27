@@ -13,16 +13,44 @@ const fresh = (day = 5) => {
   return sim
 }
 
-const FULL = { shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20 }
+const FULL = { shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20, mud: 20 }
 const OFFICE = { kind: 'office', service: 'shampoo' } as const
 
 describe('herbs for Xông lá', () => {
   it('starts with 20 herbs, sells 20 more for 440 000, and gives a Xông lá customer one herbs and one towel', () => {
     expect(fullStock().herbs).toBe(20)
-    expect(STOCK_ITEMS).toEqual(['shampoo', 'towel', 'mask', 'oil', 'herbs'])
+    expect(STOCK_ITEMS).toEqual(['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud'])
     expect(STOCK_NAME.herbs).toBe('stockHerbs')
     expect(STOCK_USES.steam).toEqual(['herbs', 'towel'])
     expect(RESTOCK_PRICE.herbs).toBe(440_000)
+  })
+})
+
+describe('mineral mud and the stone bed', () => {
+  it('starts with 20 mud, sells 20 more for 640 000, and shares the oil between massage and Đá nóng', () => {
+    expect(fullStock().mud).toBe(20)
+    expect(STOCK_ITEMS[STOCK_ITEMS.length - 1]).toBe('mud')
+    expect(STOCK_NAME.mud).toBe('stockMud')
+    expect(STOCK_USES.stone).toEqual(['oil', 'towel'])
+    expect(STOCK_USES.mud).toEqual(['mud', 'towel'])
+    expect(STOCK_USES.massage).toEqual(['oil', 'towel'])
+    expect(RESTOCK_PRICE.mud).toBe(640_000)
+  })
+
+  it('lets technicians serve steam and mud from stock, but neither massage nor stone with the oil gone', () => {
+    const sim = fresh()
+    sim.services = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud']
+    sim.money = 5_000_000
+    for (const id of ['steam', 'stone', 'mud'] as const) sim.recipes[id].solved = true
+    for (const [kind, x, y] of [['massageBed', 1, 8], ['stoneBed', 4, 8], ['mudTub', 8, 8], ['steamTent', 5, 12]] as const) expect(sim.buy(kind, x, y, false), kind).toBeNull()
+    hireStaff(sim, 'technician', undefined, { massage: 1, stone: 1, steam: 1, mud: 1 })
+    hireStaff(sim, 'technician', undefined, { massage: 1, stone: 1, steam: 1, mud: 1 })
+    sim.stock.oil = 0
+    const waiting = (['massage', 'stone', 'steam', 'mud'] as const).map(service => seatAndWait(sim, { kind: 'office', service }))
+    const [massage, stone, steam, mud] = waiting
+    advanceUntil(sim, () => steam.state !== 'waiting' && mud.state !== 'waiting')
+    expect([massage.state, stone.state]).toEqual(['waiting', 'waiting'])
+    expect(sim.stock).toMatchObject({ oil: 0, herbs: 19, mud: 19, towel: 18 })
   })
 })
 
@@ -35,13 +63,13 @@ describe('using up stock', () => {
 
     const owner = fresh()
     startService(owner)
-    expect(owner.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20 })
+    expect(owner.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20 })
 
     const crew = fresh()
     hireStaff(crew, 'technician')
     const c = seatAndWait(crew)
     advanceUntil(crew, () => c.state === 'toStation' || c.state === 'inService')
-    expect(crew.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20 })
+    expect(crew.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20 })
   })
 
   it('restocks 20 for its price at any money, and counts it as today\'s spending', () => {

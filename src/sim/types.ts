@@ -10,7 +10,7 @@ import type { Course } from './staff'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -138,7 +138,7 @@ export type SimEvent =
   | { type: 'studied'; staffId: number; course: Course; level: number }
   /** A booked course taught nothing (already at the top), so the tuition went back to the till. */
   | { type: 'studyRefunded'; staffId: number; amount: number }
-  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' }
+  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' | 'busyStone' | 'busyMud' }
   /** An item reached the low-stock count, or ran out when a customer needed it. */
   | { type: 'stockLow'; item: StockItem }
   | { type: 'stockOut'; item: StockItem }

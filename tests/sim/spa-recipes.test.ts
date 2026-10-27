@@ -122,12 +122,16 @@ describe('hints from regulars', () => {
     const solved = scripted()
     const d = shop(solved.rng)
     d.mixRecipe('steam', [...RIGHT])
+    d.recipes.stone.solved = true
+    d.recipes.mud.solved = true
     expect(hints(visit(d, solved, 3).ev)).toEqual([])
     expect(d.recipes.steam.heard).toEqual([])
 
     const heard = scripted()
     const e = shop(heard.rng)
     e.recipes.steam.heard = ['pomelo', 'lemongrass']
+    e.recipes.stone.heard = ['coconut', 'cajeput']
+    e.recipes.mud.heard = ['mineralMud', 'salt']
     expect(hints(visit(e, heard, 3).ev)).toEqual([])
     expect(e.recipes.steam.heard).toEqual(['pomelo', 'lemongrass'])
 

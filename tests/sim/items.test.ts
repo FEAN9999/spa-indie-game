@@ -63,6 +63,21 @@ describe('items', () => {
     expect([workTile(flipped), bedTile(flipped)]).toEqual([{ x: 7, y: 9 }, { x: 8, y: 9 }])
   })
 
+  it('gives the 1×3 stone bed the massage bed tiles and the 2×3 mud tub a work tile beside its second row, either way round', () => {
+    expect(ITEMS.stoneBed).toEqual({ w: 1, h: 3, price: 550000, beauty: 0, group: 'bed', name: 'itemStoneBed' })
+    expect(ITEMS.mudTub).toEqual({ w: 2, h: 3, price: 700000, beauty: 0, group: 'bed', name: 'itemMudTub' })
+    expect(ITEM_KINDS.slice(0, 6)).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent', 'stoneBed', 'mudTub'])
+    const stone = { id: 9, kind: 'stoneBed' as const, x: 6, y: 2, flip: false }
+    const massage = { ...stone, kind: 'massageBed' as const }
+    expect(footprint(stone)).toEqual(footprint(massage))
+    expect([workTile(stone), bedTile(stone)]).toEqual([workTile(massage), bedTile(massage)])
+    const tub = { id: 9, kind: 'mudTub' as const, x: 8, y: 8, flip: false }
+    expect(footprint(tub)).toEqual([{ x: 8, y: 8 }, { x: 9, y: 8 }, { x: 8, y: 9 }, { x: 9, y: 9 }, { x: 8, y: 10 }, { x: 9, y: 10 }])
+    expect([workTile(tub), bedTile(tub)]).toEqual([{ x: 10, y: 9 }, { x: 9, y: 9 }])
+    const flipped = { ...tub, flip: true }
+    expect([workTile(flipped), bedTile(flipped)]).toEqual([{ x: 7, y: 9 }, { x: 8, y: 9 }])
+  })
+
   it("keeps the 1×3 beds' tiles: the customer on the second row, the work tile beside it", () => {
     for (const kind of ['bed', 'maskBed', 'massageBed'] as const) {
       const item = { id: 9, kind, x: 6, y: 2, flip: false }

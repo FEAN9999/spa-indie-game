@@ -12,7 +12,7 @@ export type ServiceId = BasicService | RecipeService
 /** The basic services in the order they open. */
 export const BASIC_SERVICES: readonly BasicService[] = ['shampoo', 'mask', 'massage']
 /** The recipe services, which open in any order once massage is open. */
-export const RECIPE_SERVICES: readonly RecipeService[] = ['steam']
+export const RECIPE_SERVICES: readonly RecipeService[] = ['steam', 'stone', 'mud']
 
 /** Every service: the basic ones, then the recipe ones. */
 export const SERVICE_IDS: ServiceId[] = [...BASIC_SERVICES, ...RECIPE_SERVICES]
@@ -36,6 +36,8 @@ export const SERVICES: Record<ServiceId, ServiceSpec> = {
   mask: { price: SERVICE_PRICE.mask, openCost: SERVICE_OPEN_COST.mask, bed: 'maskBed', name: 'serviceMask', busy: 'busyMask' },
   massage: { price: SERVICE_PRICE.massage, openCost: SERVICE_OPEN_COST.massage, bed: 'massageBed', name: 'serviceMassage', busy: 'busyMassage' },
   steam: { price: SERVICE_PRICE.steam, openCost: SERVICE_OPEN_COST.steam, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' },
+  stone: { price: SERVICE_PRICE.stone, openCost: SERVICE_OPEN_COST.stone, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' },
+  mud: { price: SERVICE_PRICE.mud, openCost: SERVICE_OPEN_COST.mud, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' },
 }
 
 /** The service a kind of bed gives, or null for other furniture. */

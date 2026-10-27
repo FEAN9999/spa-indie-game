@@ -45,6 +45,12 @@ describe('kinds of customer', () => {
     expect(KINDS.picky.prefers).toContain('steam')
   })
 
+  it('has office workers like Đá nóng, celebrities like Tắm bùn, and picky customers like all six', () => {
+    expect(KINDS.office.prefers).toContain('stone')
+    expect(KINDS.celeb.prefers).toContain('mud')
+    expect([...KINDS.picky.prefers]).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
+  })
+
   it('draws no number when the shop has one service', () => {
     const rng = () => {
       throw new Error('drew')

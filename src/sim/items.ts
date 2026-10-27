@@ -3,7 +3,7 @@ import { SPA_LAYOUT_1A } from './layout'
 import type { Tile } from './types'
 
 export type ItemKind =
-  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
+  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
@@ -29,6 +29,8 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   maskBed: { w: 1, h: 3, price: 350000, beauty: 0, group: 'bed', name: 'itemMaskBed' },
   massageBed: { w: 1, h: 3, price: 450000, beauty: 0, group: 'bed', name: 'itemMassageBed' },
   steamTent: { w: 2, h: 2, price: 500000, beauty: 0, group: 'bed', name: 'itemSteamTent' },
+  stoneBed: { w: 1, h: 3, price: 550000, beauty: 0, group: 'bed', name: 'itemStoneBed' },
+  mudTub: { w: 2, h: 3, price: 700000, beauty: 0, group: 'bed', name: 'itemMudTub' },
   bench: { w: 3, h: 1, price: 150000, beauty: 1, group: 'seat', name: 'itemBench' },
   plant: { w: 1, h: 1, price: 40000, beauty: 1, group: 'decor', name: 'itemPlant' },
   tea: { w: 2, h: 1, price: 60000, beauty: 2, group: 'decor', name: 'itemTea' },

@@ -62,9 +62,9 @@ describe('opening Xông lá', () => {
 
   it('lists the basic services, then the recipe ones', () => {
     expect(BASIC_SERVICES).toEqual(['shampoo', 'mask', 'massage'])
-    expect(RECIPE_SERVICES).toEqual(['steam'])
-    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam'])
-    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true])
+    expect(RECIPE_SERVICES).toEqual(['steam', 'stone', 'mud'])
+    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
+    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true])
     expect(SERVICES.steam).toEqual({ price: 110_000, openCost: 500_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
     expect([t('serviceSteam'), t('itemSteamTent'), t('stockHerbs'), t('busySteam')]).toEqual(['Xông lá', 'Lều xông lá', 'Gói lá xông', 'Lều xông đang bận'])
   })
@@ -112,6 +112,67 @@ describe('opening Xông lá', () => {
     expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'steam', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
     expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
     expect(sim.stock).toMatchObject({ herbs: 19, towel: 19, shampoo: 20 })
+  })
+})
+
+describe('opening Đá nóng and Tắm bùn', () => {
+  const afterMassage = () => {
+    const sim = fresh()
+    sim.services = ['shampoo', 'mask', 'massage']
+    return sim
+  }
+
+  it('has the specs, strings and prices', () => {
+    expect(SERVICES.stone).toEqual({ price: 130_000, openCost: 650_000, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' })
+    expect(SERVICES.mud).toEqual({ price: 160_000, openCost: 800_000, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' })
+    expect([t('serviceStone'), t('itemStoneBed'), t('busyStone')]).toEqual(['Đá nóng', 'Giường đá nóng', 'Giường đá đang bận'])
+    expect([t('serviceMud'), t('itemMudTub'), t('stockMud'), t('busyMud')]).toEqual(['Tắm bùn', 'Bồn tắm bùn', 'Túi bùn khoáng', 'Bồn bùn đang bận'])
+  })
+
+  it.each(['stone', 'mud'] as const)('%s waits for massage, then for its recipe', id => {
+    const sim = fresh()
+    expect(sim.openService(id)).toBe('order')
+    sim.services = ['shampoo', 'mask', 'massage']
+    expect(sim.openService(id)).toBe('recipe')
+    sim.recipes[id].solved = true
+    expect(sim.openService(id)).toBeNull()
+    expect(sim.services).toContain(id)
+  })
+
+  it('opens the three recipe services in any order', () => {
+    const sim = afterMassage()
+    sim.money = 5_000_000
+    for (const id of ['steam', 'stone', 'mud'] as const) sim.recipes[id].solved = true
+    for (const id of ['mud', 'steam', 'stone'] as const) expect(sim.openService(id), id).toBeNull()
+    expect(sim.services).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
+    expect(sim.money).toBe(5_000_000 - 800_000 - 500_000 - 650_000)
+  })
+
+  it('serves a Tắm bùn customer in the tub, with the owner beside it, using one mud and one towel', () => {
+    const sim = afterMassage()
+    sim.day = 5
+    sim.recipes.mud.solved = true
+    expect(sim.openService('mud')).toBeNull()
+    sim.money = 2_000_000
+    expect(sim.buy('mudTub', 8, 8, false)).toBeNull()
+    const tub = sim.items.find(i => i.kind === 'mudTub')!
+    const c = startService(sim, { kind: 'picky', service: 'mud' })
+    expect(c.pos).toEqual(bedTile(tub))
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'mud', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
+    expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
+    expect(sim.stock).toMatchObject({ mud: 19, towel: 19, oil: 20 })
+  })
+
+  it('serves a Đá nóng customer on the stone bed using one oil and one towel', () => {
+    const sim = afterMassage()
+    sim.day = 5
+    sim.recipes.stone.solved = true
+    expect(sim.openService('stone')).toBeNull()
+    sim.money = 2_000_000
+    expect(sim.buy('stoneBed', 8, 8, false)).toBeNull()
+    const c = startService(sim, { kind: 'office', service: 'stone' })
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'stone', work: { x: 9, y: 9 } })
+    expect(sim.stock).toMatchObject({ oil: 19, towel: 19, mud: 20 })
   })
 })
 

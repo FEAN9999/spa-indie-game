@@ -76,9 +76,9 @@ const TENT_KNOB_TILES = 1.94
 const STEAM_BOB = { px: 8, ms: 1600 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
-const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene' }
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
-const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam' }
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud' }
 
 interface CustomerSprite {
   view: CharacterView

@@ -60,6 +60,29 @@ describe('grid', () => {
     expect([f.beds, f.works]).toEqual([[{ x: 8, y: 9 }], [{ x: 7, y: 9 }]])
   })
 
+  it("lays out a mud tub: the customer's tile is the bed, the other five bed ends, and the work tile beside it", () => {
+    const tub = { id: 20, kind: 'mudTub' as const, x: 8, y: 8, flip: false }
+    const g = buildGrid(shellOf(SPA_LAYOUT_1A), [tub])
+    expect([g.cells[9][9], g.cells[8][8], g.cells[8][9], g.cells[9][8], g.cells[10][8], g.cells[10][9], g.cells[9][10]]).toEqual(['bed', 'bedEnd', 'bedEnd', 'bedEnd', 'bedEnd', 'bedEnd', 'work'])
+    expect([g.beds, g.works]).toEqual([[{ x: 9, y: 9 }], [{ x: 10, y: 9 }]])
+    const f = buildGrid(shellOf(SPA_LAYOUT_1A), [{ ...tub, flip: true }])
+    expect([f.cells[9][8], f.cells[9][9], f.cells[9][7]]).toEqual(['bed', 'bedEnd', 'work'])
+    expect([f.beds, f.works]).toEqual([[{ x: 8, y: 9 }], [{ x: 7, y: 9 }]])
+  })
+
+  it('lays out a stone bed like a massage bed', () => {
+    const at = (kind: 'stoneBed' | 'massageBed') => buildGrid(shellOf(SPA_LAYOUT_1A), [{ id: 20, kind, x: 8, y: 8, flip: false }])
+    expect(at('stoneBed')).toEqual(at('massageBed'))
+  })
+
+  it('refuses a mud tub whose work tile would be on the wall', () => {
+    const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
+    expect(offFloor(shell, { id: 20, kind: 'mudTub', x: 10, y: 8, flip: false })).toBe(true)
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    expect(sim.canPlace('mudTub', 10, 8, false)).toBe('overlap')
+    expect(sim.canPlace('mudTub', 8, 8, false)).toBeNull()
+  })
+
   it('refuses a steam tent whose work tile would be on the wall', () => {
     const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
     expect(offFloor(shell, { id: 20, kind: 'steamTent', x: 10, y: 8, flip: false })).toBe(true)
