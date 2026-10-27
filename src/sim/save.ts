@@ -158,7 +158,7 @@ export function parseSave(raw: unknown): SaveData {
   data.book = repairBook(data.book, data.day)
   data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
   // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
-  data.vip = repairVipBook(data.vip)
+  data.vip = repairVipBook(data.vip, data.day)
   data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
   data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
@@ -196,8 +196,8 @@ function repairBook(x: unknown, day: number): GuestBook {
   return book
 }
 
-/** A well-formed VIP book, field by field; a missing one is empty. */
-function repairVipBook(x: unknown): VipBook {
+/** A well-formed VIP book, field by field; a missing one is empty. A booking more than a day ahead is dropped, or it would block every later one. */
+function repairVipBook(x: unknown, day: number): VipBook {
   const book = emptyVipBook()
   if (!isObject(x)) return book
   const vips: Record<string, unknown> = isObject(x.vips) ? x.vips : {}
@@ -206,9 +206,9 @@ function repairVipBook(x: unknown): VipBook {
     book.vips[id] = { visits: repairCount(v.visits), best: Math.min(3, repairCount(v.best)), photo: repairBool(v.photo) }
   }
   const b = x.booking
-  book.booking = isObject(b) && VIP_IDS.includes(b.vip as VipId) && Number.isInteger(b.day) && isNumber(b.minute) ? { vip: b.vip as VipId, day: b.day as number, minute: b.minute } : null
+  book.booking = isObject(b) && VIP_IDS.includes(b.vip as VipId) && Number.isInteger(b.day) && (b.day as number) <= day + 1 && isNumber(b.minute) ? { vip: b.vip as VipId, day: b.day as number, minute: b.minute } : null
   book.nextDay = repairCount(x.nextDay)
-  book.everBooked = repairBool(x.everBooked) || book.booking !== null
+  book.everBooked = repairBool(x.everBooked) || book.booking !== null || VIP_IDS.some(id => book.vips[id].visits > 0)
   book.boardGiven = repairBool(x.boardGiven)
   return book
 }

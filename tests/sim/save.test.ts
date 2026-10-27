@@ -598,7 +598,7 @@ describe('save version 9', () => {
     c.vip = 'chef'
     sim.vip.vips.chef = { visits: 2, best: 3, photo: true }
     sim.vip.vips.miss = { visits: 1, best: 2, photo: false }
-    sim.vip.booking = { vip: 'star', day: 4, minute: 600 }
+    sim.vip.booking = { vip: 'star', day: 2, minute: 600 }
     sim.vip.nextDay = 7
     sim.vip.everBooked = true
     expect(viaJson(sim).toSave()).toEqual(sim.toSave())
@@ -608,6 +608,7 @@ describe('save version 9', () => {
 
   it('repairs a damaged VIP book field by field', () => {
     const raw = JSON.parse(JSON.stringify(new SpaSim({ rng: createRng(1), autoSpawn: false }).toSave()))
+    raw.day = 2
     raw.vip = {
       vips: { singer: { visits: -1, best: 9, photo: 'yes' }, miss: { visits: 2, best: 2, photo: true }, nobody: { visits: 5, best: 1, photo: true } },
       booking: { vip: 'miss', day: 3, minute: 540 },
@@ -626,6 +627,16 @@ describe('save version 9', () => {
     for (const booking of [{ vip: 'nobody' }, { vip: 'miss', day: 1.5, minute: 600 }, { vip: 'miss', day: 1, minute: 'x' }, 'x'])
       expect(parseSave({ ...raw, vip: { ...raw.vip, booking } }).vip.booking).toBeNull()
     expect(parseSave({ ...raw, vip: 'junk' }).vip).toEqual(emptyVipBook())
+  })
+
+  it('keeps a VIP booking for tomorrow, drops one further ahead, and shows the tab of a VIP who visited', () => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim({ rng: createRng(1), autoSpawn: false }).toSave()))
+    raw.day = 4
+    const vip = (booking: object | null, visits = 0, everBooked = true) => ({ ...emptyVipBook(), booking, everBooked, vips: { ...emptyVipBook().vips, miss: { visits, best: 1, photo: false } } })
+    expect(parseSave({ ...raw, vip: vip({ vip: 'miss', day: 9, minute: 600 }) }).vip.booking).toBeNull()
+    expect(parseSave({ ...raw, vip: vip({ vip: 'miss', day: 5, minute: 600 }) }).vip.booking).toEqual({ vip: 'miss', day: 5, minute: 600 })
+    expect(parseSave({ ...raw, vip: vip(null, 2, false) }).vip.everBooked).toBe(true)
+    expect(parseSave({ ...raw, vip: vip(null, 0, false) }).vip.everBooked).toBe(false)
   })
 
   it('drops an unknown VIP id from a customer', () => {
