@@ -292,4 +292,36 @@ describe('the owner window', () => {
     advanceUntil(own, () => mine.state === 'inService')
     expect(own.servingCustomerId).toBe(mine.id)
   })
+
+  it("keeps a regular's place: nobody who came after her takes her service's bed in her window", () => {
+    const setup = () => {
+      const sim = oneBed()
+      const tech = hireStaff(sim, 'technician')
+      const first = seatAndWait(sim)
+      advanceUntil(sim, () => first.state === 'inService')
+      return { sim, tech, first }
+    }
+    const { sim, tech, first } = setup()
+    const reg = seatAndWait(sim, { regular: 'hanh' })
+    const stranger = seatAndWait(sim)
+    expect(stranger.stateMs).toBeLessThanOrEqual(reg.stateMs)
+    advanceUntil(sim, () => sim.stations[0].customerId === null)
+    // the bed is free and the regular is in her window: the stranger who came later does not take it
+    for (let ms = 0; ms < 9_000 && reg.heldMs < REGULAR_OWNER_MS - 200; ms += 100) {
+      sim.advance(100)
+      expect(stranger.state).toBe('waiting')
+      expect(tech.task?.kind === 'fetch' && tech.task.customerId === stranger.id).toBe(false)
+    }
+    advanceUntil(sim, () => tech.task?.kind === 'fetch')
+    expect(tech.task).toEqual({ kind: 'fetch', customerId: reg.id })
+
+    // a stranger who wants another service is fetched at once
+    const other = withMassage()
+    const t2 = hireStaff(other, 'technician')
+    const r2 = seatAndWait(other, { regular: 'hanh', service: 'shampoo' })
+    const m = seatAndWait(other, { kind: 'office', service: 'massage' })
+    advanceUntil(other, () => t2.task !== null)
+    expect(t2.task).toEqual({ kind: 'fetch', customerId: m.id })
+    expect(r2.state).toBe('waiting')
+  })
 })

@@ -1,4 +1,5 @@
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from '../sim/customers'
+import { REGULAR_TEXT } from '../strings/regulars'
 import { REGULARS, REGULAR_IDS, isMember, type GuestBook, type RegularId } from '../sim/regulars'
 
 export type RegularRow =
@@ -26,6 +27,9 @@ export interface KindRow {
 export function kindRows(book: GuestBook): KindRow[] {
   return CUSTOMER_KINDS.map(kind => ({ kind, met: book.kindsMet.includes(kind), served: book.served[kind], fromDay: KINDS[kind].fromDay }))
 }
+
+/** What the detail shows: the first words, then the story lines told so far. */
+export const detailLines = (book: GuestBook, id: RegularId): string[] => [REGULAR_TEXT[id].intro, ...REGULAR_TEXT[id].story.slice(0, toldLines(book, id))]
 
 /** Story lines told so far: one per heart. */
 export const toldLines = (book: GuestBook, id: RegularId): number => book.regulars[id].hearts

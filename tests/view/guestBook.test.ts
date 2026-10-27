@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { CELEB_FROM_DAY } from '../../src/config'
 import { CUSTOMER_KINDS, KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
-import { kindRows, regularRows, toldLines } from '../../src/view/guestBook'
+import { REGULAR_TEXT } from '../../src/strings/regulars'
+import { detailLines, kindRows, regularRows, toldLines } from '../../src/view/guestBook'
 
 describe('guest book rows', () => {
   it("shows a new shop's book with six soon and two by introduction", () => {
@@ -38,6 +39,13 @@ describe('guest book rows', () => {
     expect(toldLines(book, 'hanh')).toBe(0)
     book.regulars.hanh.hearts = 3
     expect(toldLines(book, 'hanh')).toBe(3)
+  })
+
+  it('shows the first words, then the story told so far', () => {
+    const book = emptyBook()
+    expect(detailLines(book, 'hanh')).toEqual([REGULAR_TEXT.hanh.intro])
+    book.regulars.hanh.hearts = 2
+    expect(detailLines(book, 'hanh')).toEqual([REGULAR_TEXT.hanh.intro, ...REGULAR_TEXT.hanh.story.slice(0, 2)])
   })
 
   it('marks kinds met and their counts', () => {

@@ -1,4 +1,4 @@
-import { LOOK_COUNTS, PATIENCE_MS, STOCK_START } from '../config'
+import { HEART_AT, LOOK_COUNTS, PATIENCE_MS, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
@@ -169,8 +169,8 @@ const repairNullable = (x: unknown): number | null => (isNumber(x) ? x : null)
 function repairRegular(x: unknown): RegularState {
   const r = isObject(x) ? x : {}
   const points = isNumber(r.points) ? r.points : 0
-  const hearts = Math.min(5, Math.max(0, Math.max(isNumber(r.hearts) ? r.hearts : 0, heartsFor(points))))
-  return { meetDay: repairNullable(r.meetDay), met: repairBool(r.met), points, hearts, visitAt: repairNullable(r.visitAt) }
+  const hearts = Math.floor(Math.min(5, Math.max(0, Math.max(isNumber(r.hearts) ? r.hearts : 0, heartsFor(points)))))
+  return { meetDay: repairNullable(r.meetDay), met: repairBool(r.met), points: hearts > 0 ? Math.max(points, HEART_AT[hearts - 1]) : points, hearts, visitAt: repairNullable(r.visitAt) }
 }
 
 /** A well-formed guest book, field by field; a missing one is empty, with the kinds an old shop of that day has met. */

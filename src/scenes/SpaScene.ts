@@ -567,7 +567,8 @@ export class SpaScene extends Phaser.Scene {
         const g = e.gift
         if (g.kind === 'money') {
           const tile = this.sim.customers.find(x => x.id === e.customerId)?.pos
-          if (tile) this.floatMoney(tile, g.amount)
+          // a beat after the pay coin of the same moment, so the two do not stack
+          if (tile) this.time.delayedCall(600, () => this.floatMoney({ ...tile }, g.amount))
           this.hud.toast(t('giftMoneyToast', { name, money: formatMoney(g.amount) }))
         } else if (g.kind === 'item') this.hud.toast(t('giftItemToast', { name }))
         else if (g.kind === 'regular') this.hud.toast(t('giftFriendToast', { friend: REGULAR_TEXT[g.who].name }))
@@ -662,7 +663,7 @@ export class SpaScene extends Phaser.Scene {
 
     const heart = c.state === 'waiting' && c.regular !== null
     s.heart.setVisible(heart)
-    if (heart) s.heart.setPosition(p.x + HEART_DX, p.y + BADGE_BOTTOM - s.badge.height / 2)
+    if (heart) s.heart.setPosition(p.x + (badge ? HEART_DX : 0), p.y + BADGE_BOTTOM - s.badge.height / 2)
 
     const pulsing = c.state === 'waiting' && this.sim.owner.task === null
     s.ripple.setVisible(pulsing)

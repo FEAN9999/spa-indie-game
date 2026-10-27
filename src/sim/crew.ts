@@ -280,8 +280,11 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const stockFetches = (item: StockItem) => sim.customers.filter(c => fetched.has(c.id) && STOCK_USES[c.service].includes(item)).length
   const hasStock = (service: ServiceId) => !sim.stockTracked() || STOCK_USES[service].every(item => sim.stock[item] > stockFetches(item))
   const ownersTurn = (c: Customer) => c.regular !== null && c.heldMs < REGULAR_OWNER_MS
-  const next = sim.customers
-    .filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && !ownersTurn(c) && hasRoom(c.service) && hasStock(c.service))
+  const queue = sim.customers.filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id))
+  // a regular in her owner window keeps her place: nobody who came after her takes her service's bed meanwhile
+  const heldFor = (c: Customer) => queue.some(r => ownersTurn(r) && r.service === c.service && r.stateMs >= c.stateMs)
+  const next = queue
+    .filter(c => !heldFor(c) && hasRoom(c.service) && hasStock(c.service))
     .sort((a, b) => b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))

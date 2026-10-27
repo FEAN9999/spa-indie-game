@@ -544,6 +544,9 @@ describe('save version 8', () => {
     const damaged = (over: object) => parseSave({ ...good(), book: { ...JSON.parse(JSON.stringify(book)), ...over } }).book
     expect(damaged({ regulars: { ...book.regulars, hanh: { ...book.regulars.hanh, points: 'a' } } }).regulars.hanh.points).toBe(0)
     expect(damaged({ regulars: { ...book.regulars, hanh: { ...book.regulars.hanh, points: 13, hearts: 1 } } }).regulars.hanh.hearts).toBe(3)
+    const hanh = (over: object) => damaged({ regulars: { ...book.regulars, hanh: { ...book.regulars.hanh, ...over } } }).regulars.hanh
+    expect(hanh({ hearts: 2.5, points: 0 })).toMatchObject({ hearts: 2, points: 8 })
+    expect(hanh({ hearts: 3, points: 0 })).toMatchObject({ hearts: 3, points: 12 })
     expect(Object.keys(damaged({ regulars: { ...book.regulars, nobody: book.regulars.hanh } }).regulars)).toEqual(REGULAR_IDS)
     expect(damaged({ gifts: ['nope', 'vase'] }).gifts).toEqual(['vase'])
     expect(damaged({ served: { ...book.served, student: -1 } }).served.student).toBe(0)

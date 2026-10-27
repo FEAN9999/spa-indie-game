@@ -2,13 +2,13 @@ import * as Phaser from 'phaser'
 import { C, customerColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
 import type { CustomerKind } from '../sim/customers'
-import { REGULARS, type RegularId } from '../sim/regulars'
+import { REGULARS, isMember, type RegularId } from '../sim/regulars'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { REGULAR_TEXT } from '../strings/regulars'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { kindRows, regularRows, toldLines, type KindRow, type RegularRow } from '../view/guestBook'
+import { detailLines, kindRows, regularRows, type KindRow, type RegularRow } from '../view/guestBook'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -163,7 +163,7 @@ export class GuestBookScene extends Phaser.Scene {
     }
   }
 
-  /** One regular's story: lines 1 to their hearts, and a hint that more follow. */
+  /** One regular's story: her first words, then lines 1 to her hearts, and a hint that more follow. */
   private showDetail(id: RegularId): void {
     const { sim } = this.params
     const spec = REGULARS[id]
@@ -175,17 +175,17 @@ export class GuestBookScene extends Phaser.Scene {
     this.keep(this.add.text(tx, 515, text.job, { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
     this.keep(this.add.text(tx, 575, t('regularLikes', { service: t(SERVICES[spec.likes].name) }), textStyle(32, '600')).setOrigin(0, 0.5))
     this.heartRow(tx, 635, hearts)
-    if (sim.book.regulars[id].hearts >= 3) {
+    if (isMember(sim.book.regulars[id])) {
       this.keep(this.add.image(tx + 240, 635, 'icon-card').setScale(0.8).setOrigin(0, 0.5))
       this.keep(this.add.text(tx, 700, t('memberCard'), textStyle(32, '800', C.teal)).setOrigin(0, 0.5))
     }
     let y = 790
-    const told = toldLines(sim.book, id)
-    for (let i = 0; i < told; i++) {
-      const line = this.keep(this.add.text(90, y, text.story[i], { ...textStyle(32, '600'), wordWrap: { width: STORY_WRAP } }).setOrigin(0, 0))
+    const lines = detailLines(sim.book, id)
+    for (const words of lines) {
+      const line = this.keep(this.add.text(90, y, words, { ...textStyle(32, '600'), wordWrap: { width: STORY_WRAP } }).setOrigin(0, 0))
       y += line.height + 28
     }
-    if (told < 5) this.keep(this.add.text(MID, y + 20, t('storyLocked'), { ...textStyle(32, '800', C.lantern), align: 'center' }).setOrigin(0.5, 0))
+    if (hearts < 5) this.keep(this.add.text(MID, y + 20, t('storyLocked'), { ...textStyle(32, '800', C.lantern), align: 'center' }).setOrigin(0.5, 0))
   }
 
   private kindRow(row: KindRow, i: number): void {
