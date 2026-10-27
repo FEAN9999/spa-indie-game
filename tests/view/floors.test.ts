@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { SpaSim } from '../../src/sim/spa'
-import { followFloor, climbPose } from '../../src/view/floors'
+import { createRng } from '../../src/sim/rng'
+import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { SpaSim } from '../../src/sim/spa'
+import type { Customer } from '../../src/sim/types'
+import { followFloor, climbPose, pills, showPills } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -31,5 +34,51 @@ describe('climbPose', () => {
   it('is null when not climbing', () => {
     expect(climbPose({ pos: { x: 11, y: 10 } })).toBeNull()
     expect(climbPose({ pos: { x: 11, y: 10 }, climbMs: 0 })).toBeNull()
+  })
+})
+
+const newSim = (layout = SPA_LAYOUT_1A) => new SpaSim({ rng: createRng(5), autoSpawn: false, layout })
+
+describe('showPills', () => {
+  it('waits for the floors day', () => {
+    const sim = newSim()
+    sim.day = 5
+    expect(showPills(sim)).toBe(false)
+    sim.day = 6
+    expect(showPills(sim)).toBe(true)
+  })
+
+  it('is false for a layout without stairs', () => {
+    const sim = newSim(SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.')))
+    sim.day = 6
+    expect(showPills(sim)).toBe(false)
+  })
+})
+
+describe('pills', () => {
+  it('gives a viewed pill and a locked one with the price', () => {
+    const sim = newSim()
+    const ps = pills(sim, 1)
+    expect(ps.map(p => [p.floor, p.state])).toEqual([[1, 'viewed'], [2, 'locked']])
+    expect(ps[1].price).toBe(2_000_000)
+  })
+
+  it('puts the owner face on the owner floor', () => {
+    const ps = pills(newSim(), 1)
+    expect(ps.map(p => p.face)).toEqual([true, false])
+  })
+
+  it('marks an opened floor that is not viewed as open', () => {
+    const sim = newSim()
+    sim.floors = 2
+    expect(pills(sim, 2).map(p => p.state)).toEqual(['open', 'viewed'])
+  })
+
+  it('shows the dot on floor 1 only while viewing another floor with someone waiting', () => {
+    const sim = newSim()
+    sim.floors = 2
+    sim.customers.push({ state: 'waiting' } as Customer)
+    expect(pills(sim, 2).map(p => p.dot)).toEqual([true, false])
+    expect(pills(sim, 1).map(p => p.dot)).toEqual([false, false])
   })
 })

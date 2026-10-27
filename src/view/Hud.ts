@@ -230,6 +230,6 @@ export class Hud {
   /** Replaces the toast on screen, if any; destroying one that already faded does nothing. */
   toast(text: string): void {
     this.toastBox?.destroy()
-    this.toastBox = addToast(this.scene, GAME_W / 2, 1790, text).setDepth(DEPTH + 50)
+    this.toastBox = addToast(this.scene, GAME_W / 2, 1690, text).setDepth(DEPTH + 50)
   }
 }

@@ -1,4 +1,4 @@
-import { STAIRS_MS } from '../config'
+import { FLOOR_PRICE, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
@@ -17,4 +17,39 @@ export function climbPose(m: { pos: Vec; climbMs?: number }): { lift: number; al
   if (m.climbMs === undefined || !(m.climbMs > 0)) return null
   const k = m.climbMs / STAIRS_MS
   return { lift: CLIMB_LIFT_TILES * k, alpha: 1 - k }
+}
+
+/** How many floors have a pill; the roof joins in the next batch. */
+export const FLOOR_PILLS = 2
+
+/** The floor buttons show once floors have opened for the day and the layout has stairs. */
+export function showPills(sim: SpaSim): boolean {
+  return sim.day >= UNLOCK_DAY.floors && sim.maxFloors() > 1
+}
+
+export interface Pill {
+  floor: number
+  state: 'viewed' | 'open' | 'locked'
+  price: number
+  /** The owner is on this floor. */
+  face: boolean
+  /** Someone waits downstairs while another floor is on view. */
+  dot: boolean
+}
+
+/** One pill per floor the shop can have: viewed, open to tap, or locked with its price. */
+export function pills(sim: SpaSim, viewed: number): Pill[] {
+  const ownerFloor = floorOf(sim.owner.pos.y)
+  const waiting = sim.customers.some(c => c.state === 'waiting')
+  const out: Pill[] = []
+  for (let floor = 1; floor <= Math.min(FLOOR_PILLS, sim.maxFloors()); floor++) {
+    out.push({
+      floor,
+      state: floor === viewed ? 'viewed' : floor <= sim.floors ? 'open' : 'locked',
+      price: FLOOR_PRICE[floor] ?? 0,
+      face: floor === ownerFloor,
+      dot: floor === 1 && viewed !== 1 && waiting,
+    })
+  }
+  return out
 }

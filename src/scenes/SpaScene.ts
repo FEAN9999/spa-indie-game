@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
@@ -24,10 +24,11 @@ import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
-import { RECIPE_HINT_TEXT, t } from '../strings/vi'
+import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
-import { climbPose, followFloor } from '../view/floors'
+import { FloorBar } from '../view/FloorBar'
+import { climbPose, followFloor, pills, showPills } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
@@ -113,6 +114,7 @@ export class SpaScene extends Phaser.Scene {
   private room!: RoomView
   /** The floor on view, from 1; only showFloor changes it. */
   private viewFloor = 1
+  private floorBar!: FloorBar
   private hud!: Hud
   private owner!: CharacterView
   private customers = new Map<number, CustomerSprite>()
@@ -178,6 +180,7 @@ export class SpaScene extends Phaser.Scene {
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook())
+    this.floorBar = new FloorBar(this, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
 
@@ -304,6 +307,7 @@ export class SpaScene extends Phaser.Scene {
     this.modal = true
     const intro = !sim.hintDone('openBuild')
     sim.markHint('openBuild')
+    if (sim.floors > 1) sim.markHint('openFloor')
     const data: BuildData = {
       sim,
       room: this.room,
@@ -415,6 +419,63 @@ export class SpaScene extends Phaser.Scene {
     this.room.sync(sim.items, sim.grid.bedSlots.map(tile => ({ tile, open: sim.canPlace('bed', tile.x, tile.y, false) === null })))
   }
 
+  /** The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game. */
+  private updateFloorBar(): void {
+    const sim = this.sim
+    if (!showPills(sim) || this.modal || sim.paused || sim.dayOver || sim.servingCustomerId !== null) {
+      this.floorBar.hide()
+      return
+    }
+    this.floorBar.show(pills(sim, this.viewFloor), sim.ownerLook)
+  }
+
+  /** A viewed or open pill brings its floor into view; a locked one offers to open it. */
+  private tapFloor(floor: number): void {
+    if (floor <= this.sim.floors) this.showFloor(floor)
+    else this.offerFloor(floor)
+  }
+
+  /** A card over the frozen shop to open a floor, or why it cannot be opened yet. */
+  private offerFloor(floor: number): void {
+    const sim = this.sim
+    const problem = sim.floorProblem(floor)
+    if (problem === 'max') return
+    const price = FLOOR_PRICE[floor]
+    const note = problem === 'order' ? t('floorOrder') : problem === 'blocked' ? t('floorBlocked') : null
+    const canOpen = problem === null
+    this.modal = true
+    const close = () => {
+      for (const p of parts) p.destroy()
+      this.modal = false
+    }
+    const open = () => {
+      close()
+      if (sim.openFloor(floor)) return
+      sound.play('thud')
+      this.showFloor(floor)
+      this.syncRoom()
+      this.session.saveNow()
+    }
+    const parts: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [
+      this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
+      addCard(this, 90, 760, 900, 640),
+      this.add.text(GAME_W / 2, 810, t(`floorName${floor}` as StringKey), textStyle(60, '800')).setOrigin(0.5, 0),
+      this.add.text(GAME_W / 2, 910, `${t('floorLine2a')}
+${t('floorLine2b')}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
+    ]
+    if (note) parts.push(this.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
+    parts.push(addButton(this, note ? GAME_W / 2 : GAME_W / 2 - 190, 1290, 340, 120, t('floorLater'), 'plain', close))
+    if (!note) {
+      const openBtn = addButton(this, GAME_W / 2 + 190, 1290, 340, 120, t('floorOpen', { money: formatMoney(price) }), 'primary', canOpen ? open : () => {}, 44)
+      parts.push(openBtn)
+      if (problem === 'money') {
+        openBtn.setAlpha(0.45)
+        parts.push(this.add.text(GAME_W / 2 + 190, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
+      }
+    }
+    for (const p of parts) p.setDepth(CARD_DEPTH)
+  }
+
   /** A tap on an open bed slot: once building is open and the money is there, a card over the frozen shop asks before buying. */
   private offerBed(slot: Tile): void {
     const price = ITEMS.bed.price
@@ -491,6 +552,7 @@ export class SpaScene extends Phaser.Scene {
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
     this.hud.update()
+    this.updateFloorBar()
     this.updatePointer(delta)
   }
 
@@ -707,6 +769,14 @@ export class SpaScene extends Phaser.Scene {
         return
       case 'floorOpened':
         this.showFloor(e.floor)
+        return
+      case 'stairsCleared':
+        if (e.refund > 0) this.hud.toast(t('stairsRefund', { count: e.count, money: formatMoney(e.refund) }))
+        else if (e.count > 0) this.hud.toast(t('stairsGifts'))
+        if (e.rebuy) {
+          const item = t(ITEMS[e.rebuy].name).toLocaleLowerCase('vi')
+          this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('stairsRebuy', { item })))
+        }
         return
       case 'bedSlot':
         this.offerBed(e.slot)
