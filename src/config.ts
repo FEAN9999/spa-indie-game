@@ -124,6 +124,26 @@ export const STONE_RATE_HARD = { min: 0.26, max: 0.39 }
 /** Score (good minus hot) for 3 and 2 stars. */
 export const STONE_STARS = { three: 5, two: 3 }
 
+// Tắm bùn mud-bath game: hold to heat the mark, keep it in the drifting green band for as much of the limit as you can.
+export const MUD_LIMIT_MS = 20000
+/** The longest sub-step the rules simulate, so a long tick plays out the same as many short ones. */
+export const MUD_STEP_MS = 50
+export const MUD_START = { mark: 0.25, band: 0.5 }
+/** Mark acceleration per second squared, while held and while released. */
+export const MUD_ACCEL = { up: 1.5, down: 1.1 }
+/** The mark's top speed per second, either way. */
+export const MUD_MAX_SPEED = 0.55
+/** How fast the band centre drifts to its target, per second. */
+export const MUD_BAND_SPEED = 0.16
+export const MUD_BAND_RANGE = { min: 0.18, max: 0.82 }
+/** When the band picks its first new target, then the wait between later ones. */
+export const MUD_RETARGET_MS = { first: 1000, min: 1400, max: 3000 }
+/** Half the band's height; a picky customer gets a narrower one. */
+export const MUD_HALF = 0.11
+export const MUD_HALF_HARD = 0.08
+/** Share of the time inside the band for 3 and 2 stars. */
+export const MUD_STARS = { three: 0.7, two: 0.45 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000 } as const
 export const RESTOCK_AMOUNT = 20
