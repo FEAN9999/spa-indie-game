@@ -7,6 +7,7 @@ import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { oldShopKinds, parseSave, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
+import { emptyVipBook } from '../../src/sim/vips'
 import { TUTORIAL_HINTS, type SimEvent } from '../../src/sim/types'
 import v1 from '../fixtures/save-v1.json'
 import v2 from '../fixtures/save-v2.json'
@@ -15,6 +16,7 @@ import v4 from '../fixtures/save-v4.json'
 import v5 from '../fixtures/save-v5.json'
 import v6 from '../fixtures/save-v6.json'
 import v7 from '../fixtures/save-v7.json'
+import v8 from '../fixtures/save-v8.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -76,12 +78,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([8, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([9, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(8)
+    expect(sim.toSave().v).toBe(9)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -213,10 +215,10 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 8', () => {
+  it('still leaves alone only saves newer than version 9', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 8 }).v).toBe(8)
-    expect(() => parseSave({ ...good, v: 9 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 9 }).v).toBe(9)
+    expect(() => parseSave({ ...good, v: 10 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -456,7 +458,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(8)
+    expect(copy.toSave().v).toBe(9)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -569,5 +571,66 @@ describe('save version 8', () => {
     const d = parseSave(raw)
     expect('gift' in d.items[0]).toBe(false)
     expect(d.items[1].gift).toBe(true)
+  })
+})
+
+describe('save version 9', () => {
+  it('opens a v8 shop with an empty VIP book', () => {
+    const sim = open(v8)
+    expect([sim.day, sim.money, sim.book, sim.items]).toEqual([v8.day, v8.money, parseSave(structuredClone(v8)).book, v8.items])
+    expect(sim.vip).toEqual(emptyVipBook())
+    expect(sim.customers.length).toBeGreaterThan(0)
+    expect(sim.customers.every(c => c.vip === null)).toBe(true)
+  })
+
+  it('opens every older save with an empty VIP book', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8]) {
+      const sim = open(raw)
+      expect(sim.vip).toEqual(emptyVipBook())
+      expect(sim.vip.booking).toBeNull()
+      expect(sim.customers.every(c => c.vip === null)).toBe(true)
+    }
+  })
+
+  it('keeps the VIP book and a VIP customer through a round trip', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const c = sim.spawnCustomer()
+    c.vip = 'chef'
+    sim.vip.vips.chef = { visits: 2, best: 3, photo: true }
+    sim.vip.vips.miss = { visits: 1, best: 2, photo: false }
+    sim.vip.booking = { vip: 'star', day: 4, minute: 600 }
+    sim.vip.nextDay = 7
+    sim.vip.everBooked = true
+    expect(viaJson(sim).toSave()).toEqual(sim.toSave())
+    expect(viaJson(sim).customers[0].vip).toBe('chef')
+    expect(viaJson(sim).vip).toEqual(sim.vip)
+  })
+
+  it('repairs a damaged VIP book field by field', () => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim({ rng: createRng(1), autoSpawn: false }).toSave()))
+    raw.vip = {
+      vips: { singer: { visits: -1, best: 9, photo: 'yes' }, miss: { visits: 2, best: 2, photo: true }, nobody: { visits: 5, best: 1, photo: true } },
+      booking: { vip: 'miss', day: 3, minute: 540 },
+      nextDay: 'x',
+      boardGiven: 1,
+    }
+    const v = parseSave(raw).vip
+    expect(v.vips.singer).toEqual({ visits: 0, best: 3, photo: false })
+    expect(v.vips.miss).toEqual({ visits: 2, best: 2, photo: true })
+    expect(v.vips.star).toEqual({ visits: 0, best: 0, photo: false })
+    expect(Object.keys(v.vips)).toEqual(Object.keys(emptyVipBook().vips))
+    expect(v.booking).toEqual({ vip: 'miss', day: 3, minute: 540 })
+    expect(v.everBooked).toBe(true)
+    expect(v.nextDay).toBe(0)
+    expect(v.boardGiven).toBe(false)
+    for (const booking of [{ vip: 'nobody' }, { vip: 'miss', day: 1.5, minute: 600 }, { vip: 'miss', day: 1, minute: 'x' }, 'x'])
+      expect(parseSave({ ...raw, vip: { ...raw.vip, booking } }).vip.booking).toBeNull()
+    expect(parseSave({ ...raw, vip: 'junk' }).vip).toEqual(emptyVipBook())
+  })
+
+  it('drops an unknown VIP id from a customer', () => {
+    const raw = JSON.parse(JSON.stringify(busyShop().toSave()))
+    raw.customers = raw.customers.map((c: object) => ({ ...c, vip: 'nobody' }))
+    expect(parseSave(raw).customers.every(c => c.vip === null)).toBe(true)
   })
 })

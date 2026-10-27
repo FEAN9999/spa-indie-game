@@ -1,5 +1,6 @@
 import type { CustomerKind } from './customers'
 import type { RegularGift, RegularId } from './regulars'
+import type { VipId } from './vips'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
 
@@ -64,6 +65,8 @@ export interface Customer {
   regular: RegularId | null
   /** How long a waiting regular has been left to the owner, counted while a bed is free. */
   heldMs: number
+  /** Which VIP this is, or null. */
+  vip: VipId | null
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }

@@ -7,10 +7,11 @@ import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } 
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { SERVICE_IDS, type ServiceId } from './services'
 import { STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffTask } from './staff'
+import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 8
+export const SAVE_VERSION = 9
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -52,6 +53,8 @@ export interface SaveData {
   stock: Record<StockItem, number>
   /** The regulars, what has been served and the gifts received. */
   book: GuestBook
+  /** The VIPs, the booking and the gold board. */
+  vip: VipBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -154,6 +157,9 @@ export function parseSave(raw: unknown): SaveData {
   // shops saved before the regulars have an empty book; a customer who is not a known regular is an ordinary one
   data.book = repairBook(data.book, data.day)
   data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
+  // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
+  data.vip = repairVipBook(data.vip)
+  data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
   data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
   return data
@@ -190,6 +196,23 @@ function repairBook(x: unknown, day: number): GuestBook {
   return book
 }
 
+/** A well-formed VIP book, field by field; a missing one is empty. */
+function repairVipBook(x: unknown): VipBook {
+  const book = emptyVipBook()
+  if (!isObject(x)) return book
+  const vips: Record<string, unknown> = isObject(x.vips) ? x.vips : {}
+  for (const id of VIP_IDS) {
+    const v = isObject(vips[id]) ? vips[id] : {}
+    book.vips[id] = { visits: repairCount(v.visits), best: Math.min(3, repairCount(v.best)), photo: repairBool(v.photo) }
+  }
+  const b = x.booking
+  book.booking = isObject(b) && VIP_IDS.includes(b.vip as VipId) && Number.isInteger(b.day) && isNumber(b.minute) ? { vip: b.vip as VipId, day: b.day as number, minute: b.minute } : null
+  book.nextDay = repairCount(x.nextDay)
+  book.everBooked = repairBool(x.everBooked) || book.booking !== null
+  book.boardGiven = repairBool(x.boardGiven)
+  return book
+}
+
 /** Each look field in range, or 0. */
 function repairLook(x: unknown): Look {
   const look = isObject(x) ? x : {}
@@ -216,7 +239,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

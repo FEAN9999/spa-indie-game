@@ -29,6 +29,7 @@ import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
 import { randomLook, type Rng } from './rng'
+import { emptyVipBook, type VipBook } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
@@ -82,6 +83,7 @@ export class SpaSim {
   day = 1
   stats: DayStats = emptyStats()
   book: GuestBook = emptyBook()
+  vip: VipBook = emptyVipBook()
   paused = false
   servingCustomerId: number | null = null
   dayOver = false
@@ -208,6 +210,7 @@ export class SpaSim {
       kind,
       regular: opts.regular ?? null,
       heldMs: 0,
+      vip: null,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -349,6 +352,7 @@ export class SpaSim {
       services: this.services,
       stock: this.stock,
       book: this.book,
+      vip: this.vip,
     })
   }
 
@@ -366,6 +370,7 @@ export class SpaSim {
     sim.services = d.services
     sim.stock = d.stock
     sim.book = d.book
+    sim.vip = d.vip
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
