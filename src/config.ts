@@ -405,6 +405,10 @@ export const RIVAL_SCORE_MAX = 86
 /** What the year's first to fifth place is paid. */
 export const YEAR_REWARD = [3_000_000, 1_000_000, 500_000, 0, 0]
 
+/** The starter chain, in order: what each goal asks for (a count, or 1 for a yes) and what it pays; serveMore pays with the mask gift instead. */
+export const STARTER_NEED = { firstGuest: 1, threeStars: 1, serveFew: 4, buyDecor: 1, serveMore: 10, placeMaskBed: 1, maskTwice: 2, serveMany: 16, hireTech: 1, openMassage: 1, massageTwice: 2 } as const
+export const STARTER_REWARD = { firstGuest: 20_000, threeStars: 30_000, serveFew: 30_000, buyDecor: 40_000, serveMore: 0, placeMaskBed: 30_000, maskTwice: 50_000, serveMany: 50_000, hireTech: 50_000, openMassage: 100_000, massageTwice: 100_000 } as const
+
 /** A shop closed for less than this earns nothing. */
 export const AWAY_MIN_MS = 10 * 60_000
 /** Time away counts for at most this many hours. */
