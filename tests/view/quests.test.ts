@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest'
 import { zeroCounts, type Quest, type QuestKind } from '../../src/sim/quests'
 import { questCount, questTitle, shortMoney } from '../../src/view/quests'
 
-const quest = (kind: QuestKind, target: number, over: Partial<Quest> = {}): Quest => ({ kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', ...over })
+const quest = (kind: QuestKind, target: number, over: Partial<Quest> = {}): Quest => ({ kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', festival: null, ...over })
 
 describe('quest titles', () => {
   it('names each quest as the panel and the toast show it', () => {
     expect(questTitle(quest('serve', 10))).toBe('Phục vụ 10 khách')
     expect(questTitle(quest('earn', 12_000_000, { period: 'month' }))).toBe('Kiếm 12.000.000 đ trong tháng')
     expect(questTitle(quest('service', 3, { service: 'massage' }))).toBe('Làm 3 lượt massage')
+    expect(questTitle(quest('service', 12, { period: 'month', service: 'shampoo', festival: 'tet' }))).toBe('Nhiệm vụ lễ: làm 12 lượt Gội đầu')
     expect(questTitle(quest('owner3', 15, { period: 'month' }))).toBe('Tự tay làm 15 khách 3 sao trong tháng')
     expect(questTitle(quest('noWalk', 1))).toBe('Không để khách nào bỏ về')
   })

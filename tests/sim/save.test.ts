@@ -1125,14 +1125,14 @@ describe('save version 15', () => {
     p.life = { dailies: 5, bestServed: 14, bestProfit: 420_000, cleanDay: false }
     p.questDay = 1
     p.daily = [
-      { kind: 'serve', period: 'day', service: null, target: 8, reward: 30_000, base: 4, state: 'done' },
-      { kind: 'noWalk', period: 'day', service: null, target: 1, reward: 50_000, base: 1, state: 'failed' },
-      { kind: 'service', period: 'day', service: 'mask', target: 3, reward: 30_000, base: 1, state: 'open' },
+      { kind: 'serve', period: 'day', service: null, target: 8, reward: 30_000, base: 4, state: 'done', festival: null },
+      { kind: 'noWalk', period: 'day', service: null, target: 1, reward: 50_000, base: 1, state: 'failed', festival: null },
+      { kind: 'service', period: 'day', service: 'mask', target: 3, reward: 30_000, base: 1, state: 'open', festival: null },
     ]
     p.yesterday = ['tips', 'earn', 'owner3']
     p.swaps = 1
     p.monthFrom = 1
-    p.monthly = { kind: 'earn', period: 'month', service: null, target: 1_200_000, reward: 150_000, base: 300_000, state: 'open' }
+    p.monthly = { kind: 'earn', period: 'month', service: null, target: 1_200_000, reward: 150_000, base: 300_000, state: 'open', festival: null }
     p.lastMonthKind = 'serve'
     p.seenDay = 1
     expect(viaJson(sim).progress).toEqual(p)
@@ -1145,7 +1145,8 @@ describe('save version 15', () => {
     raw.progress.swaps = 7
     raw.progress.total.served = -3
     const parsed = parseSave(raw)
-    expect(parsed.progress.daily).toEqual([quest])
+    // a quest saved before festivals has none
+    expect(parsed.progress.daily).toEqual([{ ...quest, festival: null }])
     expect(parsed.progress.swaps).toBe(1)
     expect(parsed.progress.total.served).toBe(0)
     const empty = parseSave({ ...raw, progress: 'x' }).progress
@@ -1177,5 +1178,15 @@ describe('save version 16', () => {
     sim.badges = { served100: 9, vipPhoto: 0 }
     expect(viaJson(sim).badges).toEqual({ served100: 9, vipPhoto: 0 })
     expect(sim.toSave().badges).toEqual({ served100: 9, vipPhoto: 0 })
+  })
+})
+
+describe('save version 17', () => {
+  it('keeps a festival quest through a round trip', () => {
+    const sim = new SpaSim(opts())
+    sim.day = 36
+    sim.startDay()
+    expect(sim.progress.monthly?.festival).toBe('tet')
+    expect(viaJson(sim).progress.monthly).toEqual(sim.progress.monthly)
   })
 })

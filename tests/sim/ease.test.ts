@@ -11,7 +11,8 @@ describe('easier first days', () => {
       const c = sim.spawnCustomer({ kind: 'office', service: 'shampoo' })
       return [c.patienceMaxMs, c.patienceMs]
     }
-    expect([1, 2, 3, 4, 9].map(on)).toEqual([[76_800, 76_800], [67_200, 67_200], [57_600, 57_600], [48_000, 48_000], [48_000, 48_000]])
+    // day 10, as day 9 is in the 8/3 festival, when everyone waits longer
+    expect([1, 2, 3, 4, 10].map(on)).toEqual([[76_800, 76_800], [67_200, 67_200], [57_600, 57_600], [48_000, 48_000], [48_000, 48_000]])
   })
 
   it('gives the mini-game 10 extra seconds on days 1 and 2 and 5 on day 3', () =>

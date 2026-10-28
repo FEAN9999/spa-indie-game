@@ -26,7 +26,9 @@ export function questTitle(q: Quest): string {
     case 'owner3': return t(month ? 'questOwner3Month' : 'questOwner3', { n })
     case 'earn': return t(month ? 'questEarnMonth' : 'questEarn', { money: formatMoney(n) })
     case 'tips': return t('questTips', { money: formatMoney(n) })
-    case 'service': return t('questService', { n, service: t(SERVICES[q.service!].name).toLocaleLowerCase('vi') })
+    case 'service':
+      if (q.festival) return t('questFestival', { n, service: t(SERVICES[q.service!].name) })
+      return t('questService', { n, service: t(SERVICES[q.service!].name).toLocaleLowerCase('vi') })
     case 'staff': return t('questStaff', { n })
     case 'noWalk': return t('questNoWalk')
     case 'heart': return t('questHeart')

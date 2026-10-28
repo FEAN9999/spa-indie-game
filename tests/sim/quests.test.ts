@@ -7,11 +7,14 @@ import {
   dailyPool,
   dailyQuest,
   emptyProgress,
+  festivalQuest,
   fullTarget,
   monthlyPool,
   monthlyQuest,
   progressOf,
+  recordDay,
   rollDay,
+  rollMonth,
   roundMoney,
   settle,
   swap,
@@ -25,7 +28,7 @@ import { createRng } from '../../src/sim/rng'
 const shop = (over: Partial<QuestShop> = {}): QuestShop => ({ available: ['shampoo'], technicians: 0, heartable: false, heartDue: false, canStudy: false, ...over })
 const DEFAULTS = averageDay([])
 const ONE_DAY = averageDay([{ served: 20, earned: 1_000_000, tips: 100_000, owner3: 5, staff: 12 }])
-const quest = (kind: QuestKind, target: number, over: Partial<Quest> = {}): Quest => ({ kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', ...over })
+const quest = (kind: QuestKind, target: number, over: Partial<Quest> = {}): Quest => ({ kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', festival: null, ...over })
 
 describe('what the shop can be asked to do', () => {
   it('asks a shampoo-only shop with no technicians for the five plain kinds', () => {
@@ -173,5 +176,43 @@ describe('settling', () => {
     t.services.mask = 3
     expect(countOf(quest('service', 2, { service: 'mask' }), t)).toBe(3)
     expect(countOf(quest('service', 2, { service: 'massage' }), t)).toBe(0)
+  })
+})
+
+describe('festival quests', () => {
+  const t = zeroCounts()
+
+  it('asks for half the month serve target in the festival service, for the same reward', () => {
+    const q = festivalQuest('tet', ONE_DAY, shop(), 3, t)
+    const serve = monthlyQuest('serve', ONE_DAY, shop(), 3, t)
+    expect(q).toMatchObject({ kind: 'service', period: 'month', service: 'shampoo', festival: 'tet', state: 'open' })
+    expect(q.target).toBe(Math.max(1, Math.round(0.5 * serve.target)))
+    expect(q.reward).toBe(serve.reward)
+  })
+
+  it('asks for the nearest cheaper service the shop has', () => {
+    expect(festivalQuest('noel', ONE_DAY, shop({ available: ['shampoo', 'mask'] }), 3, t).service).toBe('mask')
+  })
+
+  it('rolls a festival quest in a festival month and a plain one otherwise', () => {
+    const p = emptyProgress()
+    rollMonth(p, 37, shop(), 3, createRng(1))
+    expect(p.monthly).toMatchObject({ kind: 'service', festival: 'tet' })
+    rollMonth(p, 46, shop(), 3, createRng(1))
+    expect(p.monthly?.festival).toBeNull()
+    expect(p.monthly?.kind).not.toBe('service')
+  })
+})
+
+describe('recording a day', () => {
+  it('leaves a busy day out of the recent days, but not out of the bests', () => {
+    const p = emptyProgress()
+    p.total.served = 30
+    const stats = { served: 30, angry: 0, walkedAway: 0, income: 900_000, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0 }
+    recordDay(p, stats, true)
+    expect(p.recent).toEqual([])
+    expect(p.life.bestServed).toBe(30)
+    recordDay(p, stats, false)
+    expect(p.recent).toHaveLength(1)
   })
 })

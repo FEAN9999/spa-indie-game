@@ -373,6 +373,7 @@ export const vi = {
   questEarn: 'Kiếm {money} trong ngày',
   questTips: 'Nhận {money} tiền tip',
   questService: 'Làm {n} lượt {service}',
+  questFestival: 'Nhiệm vụ lễ: làm {n} lượt {service}',
   questStaff: 'Thợ làm {n} khách',
   questNoWalk: 'Không để khách nào bỏ về',
   questServeMonth: 'Phục vụ {n} khách trong tháng',

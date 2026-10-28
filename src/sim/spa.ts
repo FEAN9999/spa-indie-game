@@ -5,6 +5,10 @@ import {
   DAY_END_MIN,
   DAY_MINUTES,
   EXIT_MS,
+  FESTIVAL_ARRIVAL,
+  FESTIVAL_PATIENCE,
+  FESTIVAL_PRICE,
+  FESTIVAL_SERVICE_CHANCE,
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
   HEART_AT,
@@ -32,6 +36,7 @@ import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
+import { festivalOf, festivalService } from './festivals'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
@@ -264,6 +269,25 @@ export class SpaSim {
     return SERVICE_IDS.filter(id => this.services.includes(id) && this.items.some(i => i.kind === SERVICES[id].bed))
   }
 
+  /** Today's festival service: the one on this month's festival quest, else the nearest the shop has; null outside a festival. */
+  festivalServiceToday(): ServiceId | null {
+    const f = festivalOf(this.day)
+    if (!f) return null
+    const m = this.progress.monthly
+    if (m?.festival === f && m.service && this.progress.monthFrom === monthStart(this.day)) return m.service
+    return festivalService(f, this.availableServices())
+  }
+
+  /** What the gap between two customers is multiplied by today: shorter in a festival. */
+  eventArrivalFactor(): number {
+    return festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1
+  }
+
+  /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival, to go with the crowd. */
+  private eventPatienceFactor(): number {
+    return festivalOf(this.day) ? FESTIVAL_PATIENCE : 1
+  }
+
   /**
    * Draws what it is not given, in this order: look, then kind, then service.
    * A regular comes with their own look and kind and asks for their favourite while the shop has it, so draws at most the service.
@@ -279,11 +303,19 @@ export class SpaSim {
     const kind = vipSpec ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
     const available = this.availableServices()
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
-    const service = opts.service ?? (likes && available.includes(likes) ? likes : drawService(kind, available, this.rng))
+    // in a festival half the plain customers ask for its service, if it has a bed
+    const festive = vipSpec || spec ? null : this.festivalServiceToday()
+    const service =
+      opts.service ??
+      (likes && available.includes(likes)
+        ? likes
+        : festive && available.includes(festive) && this.rng() < FESTIVAL_SERVICE_CHANCE
+          ? festive
+          : drawService(kind, available, this.rng))
     const patience = Math.round(
       vipSpec
         ? PATIENCE_MS * VIP_PATIENCE * greetFactor
-        : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1),
+        : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1) * this.eventPatienceFactor(),
     )
     const c: Customer = {
       id: this.nextId++,
@@ -375,10 +407,14 @@ export class SpaSim {
     this.owner.task = null
   }
 
-  /** The customer pays, reviews and leaves; `technician` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one. */
+  /**
+   * The customer pays, reviews and leaves; `technician` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one.
+   * Anyone else pays FESTIVAL_PRICE times the price for the festival service, and tips on that.
+   */
   private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
-    const base = SERVICES[c.service].price
-    const price = c.vip ? base * VIP_PRICE_FACTOR : base
+    const plain = SERVICES[c.service].price
+    const base = !c.vip && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
+    const price = c.vip ? plain * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
     const tip = Math.round(tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)))
     this.money += price + tip
@@ -939,7 +975,7 @@ export class SpaSim {
         const seatLeft = this.seats.filter(s => s.customerId === null).length > this.customers.filter(c => c.state === 'arriving').length
         this.spawnCustomer(due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
-          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()),
+          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.eventArrivalFactor(),
           this.rng(),
         )
       }
@@ -964,7 +1000,7 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats)
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null)
       // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))

@@ -24,7 +24,7 @@ function day8(): SpaSim {
 
 /** A quest of `kind` given now in `sim`. */
 function give(sim: SpaSim, kind: QuestKind, target: number, over: Partial<Quest> = {}): Quest {
-  const q: Quest = { kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', ...over }
+  const q: Quest = { kind, period: 'day', service: null, target, reward: 30_000, base: 0, state: 'open', festival: null, ...over }
   q.base = countOf(q, sim.progress.total)
   return q
 }
@@ -74,7 +74,8 @@ describe('giving quests', () => {
       const seen = new Set<QuestKind>()
       for (let n = 1; n <= 100; n++) {
         const sim = fresh()
-        sim.day = 9
+        // the last day of month 4, which has no festival
+        sim.day = 12
         for (const id of REGULAR_IDS) sim.book.regulars[id].visitAt = null
         sim.book.regulars.hanh = { meetDay: 7, met: true, points: 8, hearts: 2, visitAt: due ? 600 : null }
         sim.progress.monthFrom = 0
@@ -265,5 +266,22 @@ describe('the red dot', () => {
     expect(sim.questsDot()).toBe(false)
     sim.startDay()
     expect(sim.questsDot()).toBe(true)
+  })
+})
+
+describe('festival days and quest sizing', () => {
+  /** Closes `day` with nobody served. */
+  const close = (day: number): SpaSim => {
+    const sim = fresh()
+    sim.day = day - 1
+    sim.startDay()
+    sim.clock.minutes = 1190
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    return sim
+  }
+
+  it('leaves a festival day out of the recent days', () => {
+    expect(close(37).progress.recent).toEqual([])
+    expect(close(46).progress.recent).toHaveLength(1)
   })
 })

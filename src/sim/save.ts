@@ -1,6 +1,7 @@
 import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
+import { FESTIVAL_IDS, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
@@ -264,7 +265,9 @@ function repairQuest(x: unknown, period: Quest['period']): Quest | null {
   if (x.kind === 'service' && !SERVICE_IDS.includes(service as ServiceId)) return null
   if (!Number.isInteger(x.target) || (x.target as number) < 1 || !isNumber(x.base) || x.base < 0) return null
   if (x.state !== 'open' && x.state !== 'done' && x.state !== 'failed') return null
-  return { kind: x.kind, period, service: service as ServiceId | null, target: x.target as number, reward: repairCount(x.reward), base: x.base, state: x.state }
+  // only a month's service quest can be a festival's; a quest saved before festivals is none
+  const festival = period === 'month' && x.kind === 'service' && FESTIVAL_IDS.includes(x.festival as FestivalId) ? (x.festival as FestivalId) : null
+  return { kind: x.kind, period, service: service as ServiceId | null, target: x.target as number, reward: repairCount(x.reward), base: x.base, state: x.state, festival }
 }
 
 /** A well-formed progress block, field by field; a missing one is empty, with today left unrecorded. */

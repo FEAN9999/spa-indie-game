@@ -1,6 +1,7 @@
 import {
   CLEAN_DAY_MIN_SERVED,
   DAYS_PER_MONTH,
+  FESTIVAL_QUEST_SHARE,
   MONTH_QUEST_REWARD_FACTOR,
   QUEST_DEFAULT_DAY,
   QUEST_FLOOR,
@@ -14,6 +15,7 @@ import {
 } from '../config'
 import { monthStart } from './calendar'
 import { dayProfit } from './economy'
+import { festivalOf, festivalService, type FestivalId } from './festivals'
 import type { Rng } from './rng'
 import { SERVICE_IDS, type ServiceId } from './services'
 import type { DayStats } from './types'
@@ -81,6 +83,8 @@ export interface Quest {
   /** The count this quest measures, when it was given. */
   base: number
   state: 'open' | 'done' | 'failed'
+  /** The festival whose quest this is; null for every other quest. */
+  festival: FestivalId | null
 }
 
 export interface Progress {
@@ -121,9 +125,10 @@ export const emptyProgress = (): Progress => ({
 })
 
 /** Closes the day's books: records what it brought when it was counted from the start, and keeps the best day. */
-export function recordDay(p: Progress, stats: DayStats): void {
+export function recordDay(p: Progress, stats: DayStats, busy: boolean): void {
   const { total, dayStart } = p
-  if (dayStart) {
+  // a busy day (a festival) would push next month's targets up, so only the bests remember it
+  if (dayStart && !busy) {
     p.recent.push({
       served: total.served - dayStart.served,
       earned: total.earned - dayStart.earned,
@@ -235,7 +240,7 @@ export function fullTarget(kind: QuestKind, avg: DayRecord, services: number): n
 export const baseReward = (avg: DayRecord): number => Math.max(QUEST_REWARD_MIN, roundMoney(QUEST_REWARD_SHARE * avg.earned))
 
 function given(kind: QuestKind, period: Quest['period'], service: ServiceId | null, target: number, reward: number, t: Counts): Quest {
-  const q: Quest = { kind, period, service, target, reward, base: 0, state: 'open' }
+  const q: Quest = { kind, period, service, target, reward, base: 0, state: 'open', festival: null }
   q.base = countOf(q, t)
   return q
 }
@@ -270,11 +275,23 @@ export function rollDay(p: Progress, day: number, shop: QuestShop, share: number
   p.questDay = day
 }
 
-/** The month's quest for `daysLeft` days, avoiding last month's kind while there are others. */
+/** A festival's quest for `daysLeft` days: its service, at FESTIVAL_QUEST_SHARE of the month's serve target, for a month quest's reward. */
+export function festivalQuest(id: FestivalId, avg: DayRecord, shop: QuestShop, daysLeft: number, t: Counts): Quest {
+  const serve = monthlyQuest('serve', avg, shop, daysLeft, t)
+  const q = given('service', 'month', festivalService(id, shop.available), Math.max(1, Math.round(FESTIVAL_QUEST_SHARE * serve.target)), serve.reward, t)
+  q.festival = id
+  return q
+}
+
+/** The month's quest for `daysLeft` days: the festival's in a festival month, else one avoiding last month's kind while there are others. */
 export function rollMonth(p: Progress, day: number, shop: QuestShop, daysLeft: number, rng: Rng): void {
   p.lastMonthKind = p.monthly?.kind ?? p.lastMonthKind
-  const [kind] = pickKinds(monthlyPool(shop, Math.ceil(daysLeft)), [p.lastMonthKind], 1, rng)
-  p.monthly = monthlyQuest(kind, averageDay(p.recent), shop, daysLeft, p.total)
+  const festival = festivalOf(day)
+  if (festival) p.monthly = festivalQuest(festival, averageDay(p.recent), shop, daysLeft, p.total)
+  else {
+    const [kind] = pickKinds(monthlyPool(shop, Math.ceil(daysLeft)), [p.lastMonthKind], 1, rng)
+    p.monthly = monthlyQuest(kind, averageDay(p.recent), shop, daysLeft, p.total)
+  }
   p.monthFrom = monthStart(day)
 }
 
