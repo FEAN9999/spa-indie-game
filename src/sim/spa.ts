@@ -685,6 +685,7 @@ export class SpaSim {
       ownerOutfit: this.ownerOutfit,
       outfitsSeen: this.outfitsSeen,
       away: this.away,
+      starter: this.starter,
       savedAt: null,
     })
   }
@@ -718,6 +719,7 @@ export class SpaSim {
     sim.ownerOutfit = d.ownerOutfit
     sim.outfitsSeen = d.outfitsSeen
     sim.away = d.away
+    sim.starter = d.starter
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -1294,7 +1296,7 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday(), this.day)
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (isJudgeDay(this.day)) {
         this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward

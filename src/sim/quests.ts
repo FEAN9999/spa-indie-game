@@ -68,6 +68,8 @@ export interface Life {
   bestProfit: number
   /** A day with at least CLEAN_DAY_MIN_SERVED served and nobody walking out has happened. */
   cleanDay: boolean
+  /** The last day that beat an earlier best: in customers served, else in profit; null before any. */
+  record: { day: number; kind: 'served' | 'profit' } | null
 }
 
 export const QUEST_KINDS = ['serve', 'owner3', 'earn', 'tips', 'service', 'staff', 'noWalk', 'heart', 'study'] as const
@@ -113,7 +115,7 @@ export const emptyProgress = (): Progress => ({
   total: zeroCounts(),
   dayStart: zeroCounts(),
   recent: [],
-  life: { dailies: 0, bestServed: 0, bestProfit: 0, cleanDay: false },
+  life: { dailies: 0, bestServed: 0, bestProfit: 0, cleanDay: false, record: null },
   questDay: 0,
   daily: [],
   yesterday: [],
@@ -124,8 +126,8 @@ export const emptyProgress = (): Progress => ({
   seenDay: 0,
 })
 
-/** Closes the day's books: records what it brought when it was counted from the start, and keeps the best day. */
-export function recordDay(p: Progress, stats: DayStats, busy: boolean): void {
+/** Closes the day's books: records what it brought when it was counted from the start, and keeps the best day, marking `day` a record when it beat an earlier one. */
+export function recordDay(p: Progress, stats: DayStats, busy: boolean, day: number): void {
   const { total, dayStart } = p
   // a busy day (a festival) would push next month's targets up, so only the bests remember it
   if (dayStart && !busy) {
@@ -138,6 +140,10 @@ export function recordDay(p: Progress, stats: DayStats, busy: boolean): void {
     })
     p.recent = p.recent.slice(-QUEST_RECENT_DAYS)
   }
+  // the first day sets the bests but beats nothing
+  const { bestServed, bestProfit } = p.life
+  if (bestServed > 0 && stats.served > bestServed) p.life.record = { day, kind: 'served' }
+  else if (bestProfit > 0 && dayProfit(stats) > bestProfit) p.life.record = { day, kind: 'profit' }
   p.life.bestServed = Math.max(p.life.bestServed, stats.served)
   p.life.bestProfit = Math.max(p.life.bestProfit, dayProfit(stats))
   if (stats.served >= CLEAN_DAY_MIN_SERVED && stats.angry + stats.walkedAway === 0) p.life.cleanDay = true

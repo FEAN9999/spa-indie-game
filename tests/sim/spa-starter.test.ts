@@ -235,3 +235,45 @@ describe('a new shop runs the starter chain', () => {
     expect(early.comeBack(AWAY_MIN_MS).tip).toBe(true)
   })
 })
+
+describe('the daily quests after the starter chain', () => {
+  /** A chain shop at its last goal, with massage open and a massage bed down. */
+  function lastGoal(): SpaSim {
+    const sim = chainShop()
+    sim.money = 5_000_000
+    sim.openService('mask')
+    sim.openService('massage')
+    const at = spot(sim, 'massageBed')
+    sim.buy('massageBed', at.x, at.y, false)
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('massageTwice')
+    sim.drainEvents()
+    return sim
+  }
+
+  it('gives no badge banner, outfit or daily quest while the chain runs', () => {
+    const sim = lastGoal()
+    const events: SimEvent[] = []
+    for (let i = 0; i < 3; i++) events.push(...ownerServes(sim, 3).events)
+    sim.advance(1000)
+    events.push(...sim.drainEvents())
+    expect(Object.keys(sim.badges).length).toBeGreaterThan(0)
+    expect(events.some(e => e.type === 'badge')).toBe(false)
+    expect(sim.newOutfits()).toEqual([])
+    expect(sim.progress.daily).toEqual([])
+  })
+
+  it('opens the daily quests the morning after the last goal, not on its day, with no banner for badges earned before', () => {
+    const sim = lastGoal()
+    expect(serve(sim, 2, 'massage')).toEqual(['massageTwice'])
+    expect(sim.starter.doneDay).toBe(1)
+    expect(sim.questsOpen()).toBe(false)
+    expect(sim.openDay('quests')).toBe(2)
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.drainEvents()
+    sim.startDay()
+    const events = sim.drainEvents()
+    expect(sim.questsOpen()).toBe(true)
+    expect(sim.progress.daily.length).toBeGreaterThan(0)
+    expect(events.some(e => e.type === 'badge')).toBe(false)
+  })
+})
