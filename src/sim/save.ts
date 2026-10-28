@@ -1,6 +1,7 @@
-import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
+import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
@@ -16,7 +17,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 17
+export const SAVE_VERSION = 18
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -74,6 +75,8 @@ export interface SaveData {
   badges: Badges | null
   /** The festivals whose keepsake the shop has been given. */
   festival: FestivalBook
+  /** Tomorrow's or today's event, the hot days and the day's event counts. */
+  events: EventBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -204,6 +207,8 @@ export function parseSave(raw: unknown): SaveData {
   // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
   data.vip = repairVipBook(data.vip, data.day)
   data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
+  // only Mi Mi is the KOL; everyone saved before version 18 is not
+  data.customers = data.customers.map(c => ({ ...c, kol: c.kol === true }))
   // shops saved before version 12 have an empty recipe book; a recipe whose service is open is solved
   data.recipes = repairRecipes(data.recipes, data.services)
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
@@ -217,6 +222,8 @@ export function parseSave(raw: unknown): SaveData {
   data.badges = repairBadges(data.badges)
   // shops saved before version 17 have been given no keepsake
   data.festival = repairFestival(data.festival)
+  // shops saved before version 18 have had no event, and the first may come tomorrow
+  data.events = repairEvents(data.events, data.day)
   return data
 }
 
@@ -308,6 +315,28 @@ export function repairFestival(x: unknown): FestivalBook {
   return { keepsakes: FESTIVAL_IDS.filter(id => list.includes(id)).sort((a, b) => list.indexOf(a) - list.indexOf(b)) }
 }
 
+/**
+ * A well-formed event book, field by field; a missing one is empty, its first event tomorrow at the earliest.
+ * A plan of an unknown kind or more than a day ahead is dropped, as a VIP booking is.
+ */
+export function repairEvents(x: unknown, day: number): EventBook {
+  if (!isObject(x)) return emptyEventBook(Math.max(day + 1, EVENT_FROM_DAY))
+  const p = x.plan
+  const plan =
+    isObject(p) && EVENT_KINDS.includes(p.kind as EventKind) && Number.isInteger(p.day) && (p.day as number) <= day + 1 && isNumber(p.minute)
+      ? { kind: p.kind as EventKind, day: p.day as number, minute: p.minute }
+      : null
+  return {
+    nextDay: repairCount(x.nextDay),
+    last: EVENT_KINDS.includes(x.last as EventKind) ? (x.last as EventKind) : null,
+    plan,
+    hotUntil: repairCount(x.hotUntil),
+    count: repairCount(x.count),
+    inspected: repairBool(x.inspected),
+    certGiven: repairBool(x.certGiven),
+  }
+}
+
 /** A well-formed VIP book, field by field; a missing one is empty. A booking more than a day ahead is dropped, or it would block every later one. */
 function repairVipBook(x: unknown, day: number): VipBook {
   const book = emptyVipBook()
@@ -390,7 +419,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

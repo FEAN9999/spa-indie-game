@@ -9,7 +9,8 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairFestival, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { emptyEventBook } from '../../src/sim/events'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
@@ -34,6 +35,7 @@ import v13 from '../fixtures/save-v13.json'
 import v14 from '../fixtures/save-v14.json'
 import v15 from '../fixtures/save-v15.json'
 import v16 from '../fixtures/save-v16.json'
+import v17 from '../fixtures/save-v17.json'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -95,12 +97,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([17, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([18, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(17)
+    expect(sim.toSave().v).toBe(18)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -232,12 +234,13 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 17', () => {
+  it('still leaves alone only saves newer than version 18', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 15 }).v).toBe(15)
     expect(parseSave({ ...good, v: 16 }).v).toBe(16)
     expect(parseSave({ ...good, v: 17 }).v).toBe(17)
-    expect(() => parseSave({ ...good, v: 18 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 18 }).v).toBe(18)
+    expect(() => parseSave({ ...good, v: 19 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -477,7 +480,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(17)
+    expect(copy.toSave().v).toBe(18)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -860,7 +863,9 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      expect([key, saved[key]]).toEqual([key, key === 'stats' ? { ...raw.stats, quests: 0 } : raw[key]])
+      // a customer saved before version 18 is not Mi Mi
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
     expect(sim.recipes).toEqual(emptyRecipes())
@@ -878,7 +883,9 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      expect([key, saved[key]]).toEqual([key, key === 'stats' ? { ...raw.stats, quests: 0 } : raw[key]])
+      // a customer saved before version 18 is not Mi Mi
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
     expect(saved.recipes.steam).toEqual(raw.recipes.steam)
@@ -1021,7 +1028,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(17)
+    expect(saved.v).toBe(18)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1107,7 +1114,7 @@ describe('save version 15', () => {
     expect(parsed.progress).toMatchObject({ dayStart: null, daily: [], questDay: 0, monthly: null })
     const sim = open(v14)
     expect(sim.floors).toBe(2)
-    expect(sim.toSave().v).toBe(17)
+    expect(sim.toSave().v).toBe(18)
   })
 
   it('still opens every older save, and still clears the stairs spot of a v13 one', () => {
@@ -1161,7 +1168,7 @@ describe('save version 16', () => {
   it('opens the v15 shop with no badge list, so its first load judges it as an old shop', () => {
     expect(parseSave(structuredClone(v15)).badges).toBeNull()
     expect(parseSave(structuredClone(v14)).badges).toBeNull()
-    expect(open(v15).toSave().v).toBe(17)
+    expect(open(v15).toSave().v).toBe(18)
   })
 
   it('still opens every older save', () => {
@@ -1188,7 +1195,7 @@ describe('save version 17', () => {
     const sim = open(v16)
     expect(sim.festival).toEqual({ keepsakes: [] })
     for (const q of [...sim.progress.daily, sim.progress.monthly!]) expect(q.festival).toBeNull()
-    expect(sim.toSave().v).toBe(17)
+    expect(sim.toSave().v).toBe(18)
   })
 
   it('keeps an old month quest through a festival month', () => {
@@ -1225,5 +1232,66 @@ describe('save version 17', () => {
     sim.startDay()
     expect(sim.progress.monthly?.festival).toBe('tet')
     expect(viaJson(sim).progress.monthly).toEqual(sim.progress.monthly)
+  })
+})
+
+describe('save version 18', () => {
+  it('gives the v17 shop an empty event book from tomorrow, and nobody in it is Mi Mi', () => {
+    const sim = open(v17)
+    expect(sim.day).toBe(13)
+    expect(sim.eventBook).toEqual(emptyEventBook(14))
+    expect(sim.customers).toHaveLength(1)
+    expect(sim.customers.every(c => c.kol === false)).toBe(true)
+    expect(sim.toSave().v).toBe(18)
+  })
+
+  it('still opens every older save', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17]) expect(() => open(raw)).not.toThrow()
+  })
+
+  it('lets an early old shop wait for day 10', () => {
+    expect(repairEvents(undefined, 3)).toEqual(emptyEventBook(10))
+  })
+
+  it('repairs a damaged event book field by field', () => {
+    const good = { nextDay: 16, last: 'kol', plan: { kind: 'inspect', day: 14, minute: 900 }, hotUntil: 15, count: 2, inspected: true, certGiven: true }
+    expect(repairEvents(structuredClone(good), 13)).toEqual(good)
+    expect(repairEvents({ ...good, last: 'party', nextDay: -2, hotUntil: 1.5, count: 'x', inspected: 1, certGiven: 'yes' }, 13)).toEqual({
+      ...good,
+      last: null,
+      nextDay: 0,
+      hotUntil: 0,
+      count: 0,
+      inspected: false,
+      certGiven: false,
+    })
+    for (const plan of [{ kind: 'party', day: 14, minute: 900 }, { kind: 'kol', day: 14.5, minute: 900 }, { kind: 'kol', day: 15, minute: 900 }, { kind: 'kol', day: 14, minute: 'x' }, 'kol']) {
+      expect(repairEvents({ ...good, plan }, 13).plan).toBeNull()
+    }
+  })
+
+  it('keeps Mi Mi through a reload', () => {
+    const sim = new SpaSim(opts())
+    sim.day = 12
+    seatAndWait(sim, { kol: true, service: 'shampoo' })
+    const copy = viaJson(sim)
+    const mimi = copy.customers.find(c => c.kol)!
+    expect(mimi).toBeDefined()
+    copy.tapTile(mimi.seat!)
+    advanceUntil(copy, () => mimi.state === 'inService')
+    copy.completeService(mimi.id, 3)
+    expect(copy.reviews).toEqual(sim.reviews)
+    expect(copy.eventBook.hotUntil).toBe(12 + 2)
+  })
+
+  it("keeps tomorrow's plan through a reload on the summary and plans nothing again", () => {
+    const sim = new SpaSim(opts())
+    sim.day = 12
+    sim.clock.minutes = 1190
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    expect(sim.eventBook.plan?.day).toBe(13)
+    const copy = viaJson(sim)
+    expect(copy.dayOver).toBe(true)
+    expect(copy.eventBook).toEqual(sim.eventBook)
   })
 })
