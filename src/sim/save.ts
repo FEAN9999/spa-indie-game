@@ -342,6 +342,29 @@ export function repairEvents(x: unknown, day: number): EventBook {
   }
 }
 
+const RIVAL_IDS: unknown[] = ['coBa', 'ngocLan', 'hoaSen', 'spaMoi']
+const isStar = (x: unknown): boolean => Number.isInteger(x) && (x as number) >= 1 && (x as number) <= 5
+
+/** A saved month result when it is whole enough for the views to read; null otherwise. */
+function repairMonthResult(r: unknown): MonthResult | null {
+  if (!isObject(r) || !Number.isInteger(r.day) || !isObject(r.input)) return null
+  const i = r.input
+  const nullable = (k: string): boolean => i[k] === null || isNumber(i[k])
+  if (!nullable('rating') || !nullable('lostShare') || !isNumber(i.beauty) || !isNumber(i.services) || !isNumber(i.servedPerDay)) return null
+  if (!Array.isArray(r.parts) || r.parts.length !== 5 || !r.parts.every(isNumber)) return null
+  if (!isNumber(r.total) || !isNumber(r.reward) || !isStar(r.before) || !isStar(r.after)) return null
+  return r as unknown as MonthResult
+}
+
+/** A saved year result when it is whole enough for the views to read, its gifts filtered to the known two; null otherwise. */
+function repairYearResult(r: unknown): YearResult | null {
+  if (!isObject(r) || !Number.isInteger(r.day) || !isNumber(r.year) || !isNumber(r.score) || !isNumber(r.place) || !isNumber(r.reward)) return null
+  if (!Array.isArray(r.table) || !Array.isArray(r.gifts)) return null
+  const rows = r.table.every(row => isObject(row) && (row.rival === null || RIVAL_IDS.includes(row.rival)) && isNumber(row.pts))
+  if (!rows) return null
+  return { ...(r as unknown as YearResult), gifts: r.gifts.filter((g): g is 'trophy' | 'merit' => g === 'trophy' || g === 'merit') }
+}
+
 /**
  * A well-formed rank book, field by field; a missing one is one star with the month counted from `start` today.
  * A saved month or year result is kept as is when it has a whole day.
@@ -355,9 +378,8 @@ export function repairRank(x: unknown, day: number, start: { served: number; los
     book.month = { from: m.from as number, served: m.served as number, lost: m.lost as number }
   }
   book.scores = (Array.isArray(x.scores) ? x.scores : []).filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 100)
-  const result = <T extends { day: number }>(r: unknown): T | null => (isObject(r) && Number.isInteger(r.day) ? (r as unknown as T) : null)
-  book.last = result<MonthResult>(x.last)
-  book.lastYear = result<YearResult>(x.lastYear)
+  book.last = repairMonthResult(x.last)
+  book.lastYear = repairYearResult(x.lastYear)
   book.wins = repairCount(x.wins)
   book.meritGiven = repairBool(x.meritGiven)
   return book

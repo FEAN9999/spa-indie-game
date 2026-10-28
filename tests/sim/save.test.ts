@@ -1342,8 +1342,8 @@ describe('save version 19', () => {
   })
 
   it('repairs a damaged rank book field by field', () => {
-    const last = { day: 30, input: {}, parts: [1, 2, 3, 4, 5], total: 15, before: 1, after: 1, reward: 0 }
-    const lastYear = { day: 36, year: 1, score: 15, table: [], place: 3, reward: 0, gifts: [] }
+    const last = { day: 30, input: { rating: null, beauty: 4, services: 2, servedPerDay: 3.5, lostShare: 0.1 }, parts: [1, 2, 3, 4, 5], total: 15, before: 1, after: 1, reward: 0 }
+    const lastYear = { day: 36, year: 1, score: 15, table: [{ rival: 'coBa', pts: 40 }, { rival: null, pts: 15 }], place: 3, reward: 0, gifts: [] }
     const good = { stars: 3, month: { from: 31, served: 7, lost: 2 }, scores: [10, 20, 100, 0], last, lastYear, wins: 2, meritGiven: true }
     const start = { served: 190, lost: 11 }
     expect(repairRank(structuredClone(good), 33, start)).toEqual(good)
@@ -1353,11 +1353,15 @@ describe('save version 19', () => {
     }
     expect(repairRank({ ...good, scores: [5, -1, 101, 2.5, 'x', 50] }, 33, start).scores).toEqual([5, 50])
     expect(repairRank({ ...good, scores: 'x' }, 33, start).scores).toEqual([])
-    for (const bad of [null, 'x', 4, [], { day: 1.5 }]) {
+    for (const bad of [null, 'x', 4, [], { day: 1.5 }, { day: 30 }, { day: 36 }]) {
       const r = repairRank({ ...good, last: bad, lastYear: bad }, 33, start)
       expect(r.last).toBeNull()
       expect(r.lastYear).toBeNull()
     }
+    expect(repairRank({ ...good, last: { ...last, parts: [1, 2] } }, 33, start).last).toBeNull()
+    expect(repairRank({ ...good, last: { ...last, after: 6 } }, 33, start).last).toBeNull()
+    expect(repairRank({ ...good, lastYear: { ...lastYear, table: [{ rival: 'x', pts: 1 }] } }, 33, start).lastYear).toBeNull()
+    expect(repairRank({ ...good, lastYear: { ...lastYear, gifts: ['merit', 'x'] } }, 33, start).lastYear?.gifts).toEqual(['merit'])
     const r = repairRank({ ...good, wins: -1, meritGiven: 1 }, 33, start)
     expect(r.wins).toBe(0)
     expect(r.meritGiven).toBe(false)
