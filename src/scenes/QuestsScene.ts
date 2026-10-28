@@ -1,11 +1,14 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
+import { BADGE_IDS, badgeProgress, type BadgeId } from '../sim/badges'
 import { daysLeftInMonth, monthOf, yearOf } from '../sim/calendar'
 import { progressOf, type Quest } from '../sim/quests'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
+import { BADGE_TEXT, badgeStatus } from '../view/badges'
+import { addMedal } from '../view/medal'
 import { questCount, questIcon, questTitle } from '../view/quests'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
@@ -20,8 +23,11 @@ export interface QuestsData {
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
 const TITLE_Y = 290
-const INTRO_Y = 400
 const INTRO_WRAP = 860
+const TAB_Y = 418
+const TAB_W = 440
+const TAB_H = 110
+const TAB_X = { quests: 300, badges: 780 } as const
 const LEFT = 90
 const RIGHT = 990
 const DAY_HEAD_Y = 545
@@ -54,15 +60,38 @@ const SIDE_H = 64
 const FOOTER_Y = 1620
 const DONE_Y = 1895
 const FAILED_ALPHA = 0.6
+const GRID_X = 175
+const GRID_DX = 243
+const GRID_Y = 655
+const GRID_DY = 200
+const GRID_COLS = 4
+/** From a medal's centre down to its name. */
+const NAME_DY = 96
+const PICK_W = 220
+const PICK_H = 200
+/** From a medal's centre down to the middle of its tap area. */
+const PICK_DY = 20
+const PICKED_R = 78
+const DETAIL_TOP = 1600
+const DETAIL_H = 190
+const DETAIL_TEXT_X = 120
+const DETAIL_NAME_Y = 1650
+const DETAIL_COND_Y = 1702
+const DETAIL_STATUS_Y = 1752
+
+type Tab = keyof typeof TAB_X
 
 /**
- * The quest panel over the frozen shop: today's three quests with the swap, and the month's quest.
+ * The quest panel over the frozen shop, in two tabs: today's three quests with the swap and the month's quest, and the badges.
  * Every tap stays in this scene, so the shop waits underneath.
  */
 export class QuestsScene extends Phaser.Scene {
   private params!: QuestsData
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
+  private tab: Tab = 'quests'
+  /** The badge whose detail shows; kept while the panel stays open. */
+  private picked: BadgeId = 'served100'
 
   constructor() {
     super('QuestsScene')
@@ -71,6 +100,8 @@ export class QuestsScene extends Phaser.Scene {
   init(data: QuestsData) {
     this.params = data
     this.shown = []
+    this.tab = 'quests'
+    this.picked = 'served100'
   }
 
   create() {
@@ -91,14 +122,29 @@ export class QuestsScene extends Phaser.Scene {
   private show(): void {
     for (const obj of this.shown) obj.destroy()
     this.shown = []
+    this.keep(addCard(this, 40, 230, 1000, 1760))
+    // the first open's intro sits where the title is, as the tabs took its old spot
+    if (this.params.intro && this.tab === 'quests') {
+      this.keep(this.add.text(MID, TITLE_Y, t('questsIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
+    } else this.keep(this.add.text(MID, TITLE_Y, t('navQuests'), textStyle(60)).setOrigin(0.5))
+    for (const tab of ['quests', 'badges'] as const) {
+      const label = tab === 'quests' ? t('navQuests') : t('tabBadges')
+      this.keep(addButton(this, TAB_X[tab], TAB_Y, TAB_W, TAB_H, label, tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
+    }
+    if (this.tab === 'quests') this.questsTab()
+    else this.badgesTab()
+    this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
+  }
+
+  private openTab(tab: Tab): void {
+    this.tab = tab
+    this.show()
+  }
+
+  /** Today's quests and the month's. */
+  private questsTab(): void {
     const { sim } = this.params
     const p = sim.progress
-    this.keep(addCard(this, 40, 230, 1000, 1760))
-    this.keep(this.add.text(MID, TITLE_Y, t('navQuests'), textStyle(60)).setOrigin(0.5))
-    if (this.params.intro) {
-      this.keep(this.add.text(MID, INTRO_Y, t('questsIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
-    }
-
     this.keep(this.label(LEFT, DAY_HEAD_Y, t('questsToday', { day: sim.day }), 40))
     if (p.daily.length > 0) {
       const swaps = this.canSwap() ? t('questSwapsLeft', { n: p.swaps }) : t('questNoSwaps')
@@ -114,7 +160,38 @@ export class QuestsScene extends Phaser.Scene {
     else this.keep(this.add.text(MID, MONTH_ROW_TOP + MONTH_ROW_H / 2, t('questsNoneToday'), textStyle(34, '600', C.soft)).setOrigin(0.5))
 
     this.keep(this.add.text(MID, FOOTER_Y, t('questFooter'), textStyle(30, '600', C.soft)).setOrigin(0.5))
-    this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
+  }
+
+  /** The twenty medals, four to a row, and the picked one's name, condition and status. */
+  private badgesTab(): void {
+    const { sim } = this.params
+    const shop = sim.badgeShop()
+    const has = (id: BadgeId) => sim.badges[id] !== undefined
+    this.keep(this.label(LEFT, DAY_HEAD_Y, t('badgesCount', { n: BADGE_IDS.filter(has).length, total: BADGE_IDS.length }), 40))
+    BADGE_IDS.forEach((id, i) => {
+      const cx = GRID_X + (i % GRID_COLS) * GRID_DX
+      const cy = GRID_Y + Math.floor(i / GRID_COLS) * GRID_DY
+      if (id === this.picked) this.keep(this.add.graphics().lineStyle(7, hex(C.teal)).strokeCircle(cx, cy, PICKED_R))
+      this.keep(addMedal(this, id, cx, cy, { got: has(id), ring: badgeProgress(id, shop) }))
+      this.keep(this.add.text(cx, cy + NAME_DY, t(BADGE_TEXT[id].name), textStyle(27, '800', has(id) ? C.ink : C.soft)).setOrigin(0.5))
+      this.keep(this.add.zone(cx, cy + PICK_DY, PICK_W, PICK_H).setInteractive()).on('pointerup', () => {
+        this.picked = id
+        this.show()
+      })
+    })
+
+    this.keep(
+      this.add
+        .graphics()
+        .fillStyle(hex(C.cream), 1)
+        .fillRoundedRect(ROW_X, DETAIL_TOP, ROW_W, DETAIL_H, ROW_R)
+        .lineStyle(4, hex(C.ink))
+        .strokeRoundedRect(ROW_X, DETAIL_TOP, ROW_W, DETAIL_H, ROW_R),
+    )
+    const status = badgeStatus(this.picked, sim.badges, shop)
+    this.keep(this.label(DETAIL_TEXT_X, DETAIL_NAME_Y, t(BADGE_TEXT[this.picked].name), 40))
+    this.keep(this.label(DETAIL_TEXT_X, DETAIL_COND_Y, t(BADGE_TEXT[this.picked].cond), 30, '600'))
+    this.keep(this.label(DETAIL_TEXT_X, DETAIL_STATUS_Y, status.text, 30, '800', status.done ? C.teal : C.soft))
   }
 
   /** One quest's row from `top`: disc, title, progress or the closing-time line, reward, and the stamp or the swap. `i` is a daily quest's place, null for the month's. */
