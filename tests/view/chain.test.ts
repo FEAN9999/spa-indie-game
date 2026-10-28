@@ -19,12 +19,13 @@ describe('signed money', () => {
 })
 
 describe('the closing card', () => {
-  it('sends the owner home, and says the staff finish the customers left', () => {
+  it('sends the owner home, pictured, and says the staff finish the customers left', () => {
     expect(closingCard('beach', true)).toEqual({
       kicker: '20:00 · Bãi biển',
       title: 'Đóng cửa rồi',
       lines: ['Chủ tiệm về tiệm gốc kiểm sổ.', 'Nhân viên chi nhánh làm nốt khách còn lại.'],
       buttons: ['Về tiệm gốc'],
+      figure: { kind: 'owner' },
     })
   })
 
@@ -34,13 +35,15 @@ describe('the closing card', () => {
 })
 
 describe('the VIP call', () => {
-  it('names the VIP who came to the main shop, going back first', () => {
+  it('names and pictures the VIP who came to the main shop, going back first', () => {
     expect(vipCallCard('singer')).toEqual({
       kicker: 'Tiệm gốc · khách VIP',
       title: `${VIP_TEXT.singer.name} đã đến tiệm gốc`,
       lines: ['Chỉ chủ tiệm mới làm được. Chị chờ được một lúc, quá lâu thì chị về.'],
       buttons: ['Về ngay', 'Ở lại'],
+      figure: { kind: 'vip', vip: 'singer' },
     })
+    expect(vipCallCard('chef').figure).toEqual({ kind: 'vip', vip: 'chef' })
   })
 })
 

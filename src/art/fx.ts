@@ -25,6 +25,9 @@ const hotStones = (stones: [number, number, number, number][], w = 2.5) =>
         `<path d="M${cx - rx * 0.55},${cy - ry * 0.15} Q${cx - rx * 0.4},${cy - ry * 0.6} ${cx},${cy - ry * 0.6}" fill="none" stroke="${C.stoneLight}" stroke-width="${w * 0.7}" stroke-linecap="round"/>`,
     )
     .join('')
+/** The closing card's scooter, in its own units: it stands on the origin. */
+export const SCOOTER_BOX: [number, number, number, number] = [-120, -164, 236, 166]
+
 /** A customer's skin on a badge. */
 const SKIN_TONE = `#${SKIN[1].toString(16)}`
 
@@ -164,6 +167,18 @@ export function fxTextures(): Record<string, string> {
       1,
       `<g ${ICON}><ellipse cx="32" cy="57" rx="12" ry="4" fill="${C.sand}"/>` +
         `<path d="M32,57 C22,44 15,36 15,25 A17,17 0 1 1 49,25 C49,36 42,44 32,57Z" fill="${C.terracotta}"/><circle cx="32" cy="25" r="7" fill="${C.cream}"/></g>`,
+    ),
+    // the owner's scooter on the closing card, from the sketch: standing on the origin, facing right
+    'fx-scooter': svgDoc(
+      SCOOTER_BOX,
+      1,
+      `<path d="M-112,-34 Q-116,-100 -44,-102 L4,-102 L4,-34Z" fill="${C.teal}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
+        `<rect x="-100" y="-122" width="92" height="24" rx="12" fill="${C.woodDark}" stroke="${C.ink}" stroke-width="4"/>` +
+        `<rect x="-6" y="-52" width="70" height="18" rx="6" fill="${C.cream}" stroke="${C.ink}" stroke-width="4"/>` +
+        `<path d="M50,-34 Q40,-90 74,-150 L92,-146 Q76,-92 86,-34Z" fill="${C.teal}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
+        `<path d="M54,-158 H110" stroke="${C.ink}" stroke-width="8" stroke-linecap="round"/><circle cx="92" cy="-128" r="9" fill="${C.goldPale}" stroke="${C.ink}" stroke-width="3"/>` +
+        `<circle cx="-78" cy="-24" r="24" fill="${C.ink}"/><circle cx="68" cy="-24" r="24" fill="${C.ink}"/>` +
+        `<circle cx="-78" cy="-24" r="9" fill="${C.silver}"/><circle cx="68" cy="-24" r="9" fill="${C.silver}"/>`,
     ),
     // Safari's share button, for the install steps: an open box with an arrow out of the top
     'icon-share': svgDoc(

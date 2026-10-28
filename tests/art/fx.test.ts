@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fxTextures } from '../../src/art/fx'
+import { C } from '../../src/art/palette'
 import { STOCK_ITEMS } from '../../src/sim/stock'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
@@ -18,6 +19,15 @@ describe('fx art', () => {
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['event-shop', 'event-bolt', 'fx-candle', 'fx-glow', 'power-off'])))
 
   it('has the Chuỗi map pin', () => expect(Object.keys(fxTextures())).toContain('icon-chain'))
+
+  it("has the closing card's scooter, standing on its viewBox's origin, in the game colours", () => {
+    const scooter = fxTextures()['fx-scooter']
+    expect(scooter).toBeDefined()
+    const [x, y, w, h] = /viewBox="([^"]+)"/.exec(scooter)![1].split(' ').map(Number)
+    expect([x < 0 && x + w > 0, y < 0 && y + h >= 0]).toEqual([true, true])
+    const palette = Object.values(C).map(c => c.toLowerCase())
+    for (const colour of scooter.match(/#[0-9a-fA-F]{6}/g) ?? []) expect(palette).toContain(colour.toLowerCase())
+  })
 
   it('has the heart, card and book icons', () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['heart-full', 'heart-empty', 'icon-card', 'icon-book'])))

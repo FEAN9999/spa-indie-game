@@ -16,12 +16,16 @@ export const placeName = (place: PlaceId | null): string => t(place === null ? '
 /** Money with a "+" in front when above 0. */
 export const signedMoney = (n: number): string => (n > 0 ? '+' : '') + formatMoney(n)
 
+/** Who stands between the title and the lines: a VIP under five stars, or the owner by her scooter. */
+export type ChoiceFigure = { kind: 'vip'; vip: VipId } | { kind: 'owner' }
+
 /** A card over the frozen shop that waits for one of its buttons, the first the main one. */
 export interface ChoiceText {
   kicker: string
   title: string
   lines: string[]
   buttons: string[]
+  figure?: ChoiceFigure
 }
 
 /** 20:00 at a branch: the owner goes back to the main shop; the staff line only when a technician is there to finish. */
@@ -31,6 +35,7 @@ export function closingCard(place: PlaceId, hasTech: boolean): ChoiceText {
     title: t('closingTitle'),
     lines: [t('closingLine'), ...(hasTech ? [t('closingStaffLine')] : [])],
     buttons: [t('closingGo')],
+    figure: { kind: 'owner' },
   }
 }
 
@@ -41,6 +46,7 @@ export function vipCallCard(vip: VipId): ChoiceText {
     title: t('vipCallTitle', { name: VIP_TEXT[vip].name }),
     lines: [t('vipCallLine')],
     buttons: [t('vipCallGo'), t('vipCallStay')],
+    figure: { kind: 'vip', vip },
   }
 }
 

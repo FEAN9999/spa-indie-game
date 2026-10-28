@@ -136,10 +136,11 @@ interface Placement {
   alpha: number
 }
 
-/** What a switch of shops hands the restarted scene: the chain itself, and the main shop's cards waiting for the owner. */
+/** What a switch of shops hands the restarted scene: the chain itself, the main shop's cards waiting for the owner, and time away paid while the shutter was down. */
 export interface SpaSceneData {
   chain: Chain
   mainCards: { badgeQueue: (BadgeId | GoldCard)[]; inspectNote: Extract<SimEvent, { type: 'inspected' }> | null }
+  heldAway: AwayResult[]
   arrived: boolean
 }
 
@@ -179,8 +180,10 @@ export class SpaScene extends Phaser.Scene {
   private toastQueueAt = 0
   /** The "Chủ tiệm về rồi" card is open. */
   private awayOpen = false
-  /** Earnings from returns to the page, paid and saved already, whose cards wait for a mini-game or an update check. */
+  /** Earnings from returns to the page, paid and saved already, whose cards wait for a mini-game, an update check or a switch of shops. */
   private heldAway: AwayResult[] = []
+  /** From the start of a switch of shops until the next shop's shutter has rolled up. The welcome-back card waits meanwhile: it puts `modal` back as it found it, and would put back the shutter's freeze for good. */
+  private switching = false
   /** The wear toast, held while a panel covers the shop; a later wear replaces it. */
   private heldWearToast: string | null = null
   /** Gold cards waiting to show, in the order they came: new badges and festival cards. */
@@ -222,7 +225,8 @@ export class SpaScene extends Phaser.Scene {
     this.toastQueueAt = 0
     this.heldWearToast = null
     this.awayOpen = false
-    this.heldAway = []
+    this.heldAway = switched ? [...switched.heldAway] : []
+    this.switching = false
     this.badgeQueue = []
     this.badgeUntil = 0
     this.foundToast = null
@@ -349,8 +353,10 @@ export class SpaScene extends Phaser.Scene {
   /** On arriving by a switch of shops: the shutter rolls up, then the owner is greeted, or told the branch has no technician yet. */
   private arrive(): void {
     this.modal = true
+    this.switching = true
     this.shutter(this.sim.place, false, () => {
       this.modal = false
+      this.switching = false
       const place = this.sim.place
       if (place === null) this.hud.toast(t('backMainToast'))
       else if (this.sim.hasTechnician()) this.hud.toast(t('arrivedToast', { place: placeName(place) }))
@@ -362,12 +368,13 @@ export class SpaScene extends Phaser.Scene {
   private switchShop(place: PlaceId | null): void {
     // nothing is tapped or played while it closes: a mini-game opened now would be left behind
     this.modal = true
+    this.switching = true
     sound.play('chime')
     this.shutter(place, true, () => {
       const mainCards = this.sim.place === null ? { badgeQueue: this.badgeQueue, inspectNote: this.inspectNote } : this.mainCards
       this.chain.goTo(place)
       this.session.saveNow()
-      const data: SpaSceneData = { chain: this.chain, mainCards, arrived: true }
+      const data: SpaSceneData = { chain: this.chain, mainCards, heldAway: this.heldAway, arrived: true }
       this.scene.restart(data)
     })
   }
@@ -402,6 +409,7 @@ export class SpaScene extends Phaser.Scene {
     this.modal = true
     const data: ChoiceData = {
       card,
+      owner: ownerColors(this.chain.main.ownerLook, this.chain.main.ownerOutfit),
       onChoose: i => {
         this.modal = false
         onChoose(i)
@@ -963,7 +971,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   update(time: number, delta: number) {
     if (this.tooNew) return
     // over a panel too, so it does not wait for the panel to close
-    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.holding && !this.awayOpen) this.showAway(this.heldAway.shift()!)
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)
