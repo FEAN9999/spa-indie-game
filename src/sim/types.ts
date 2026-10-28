@@ -1,3 +1,4 @@
+import type { BadgeId } from './badges'
 import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
 import type { ItemKind } from './items'
@@ -162,4 +163,8 @@ export type SimEvent =
   | { type: 'questDone'; quest: Quest }
   /** A new month began with a new monthly quest. */
   | { type: 'monthStarted'; month: number }
+  /** A badge was earned once the quest button is open. */
+  | { type: 'badge'; id: BadgeId }
+  /** An old shop's first load gave it `n` badges it already had. */
+  | { type: 'badgesFound'; n: number }
   | { type: 'dayEnded'; stats: DayStats }

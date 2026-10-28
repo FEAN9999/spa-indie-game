@@ -7,6 +7,7 @@ import {
   EXIT_MS,
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
+  HEART_AT,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -27,6 +28,7 @@ import {
   VIP_REVIEWS,
 } from '../config'
 import { t } from '../strings/vi'
+import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
@@ -43,7 +45,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
+import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
@@ -135,6 +137,8 @@ export class SpaSim {
   recipes: RecipeBook = emptyRecipes()
   /** What the shop has counted, and its quests. */
   progress: Progress = emptyProgress()
+  /** The badges the shop has earned. */
+  badges: Badges = {}
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -575,12 +579,47 @@ export class SpaSim {
     planDay(this.book, this.day, this.rng)
     clearStale(this.vip, this.day)
     this.progress.dayStart = structuredClone(this.progress.total)
+    this.checkBadges()
     if (!this.questsOpen()) return
     const rng = this.questRng()
     rollDay(this.progress, this.day, this.questShop(), 1, rng)
     if (this.progress.monthFrom === monthStart(this.day)) return
     rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
     if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day) })
+  }
+
+  /** The shop as the badges read it. */
+  badgeShop(): BadgeShop {
+    const regulars = REGULAR_IDS.map(id => this.book.regulars[id])
+    const technicians = this.staff.filter(s => s.role === 'technician')
+    return {
+      served: Object.values(this.book.served).reduce((a, b) => a + b, 0) + VIP_IDS.reduce((n, id) => n + this.vip.vips[id].visits, 0),
+      owner3: this.progress.total.owner3,
+      bestServed: Math.max(this.progress.life.bestServed, this.stats.served),
+      cleanDay: this.progress.life.cleanDay,
+      members: regulars.filter(isMember).length,
+      fullHearts: regulars.filter(r => r.hearts >= HEART_AT.length).length,
+      photos: VIP_IDS.filter(id => this.vip.vips[id].photo).length,
+      boardHung: this.items.some(i => i.kind === 'goldBoard'),
+      services: this.services.length,
+      recipes: Object.values(this.recipes).filter(r => r.solved).length,
+      floors: this.floors,
+      beauty: this.beauty(),
+      technicians: technicians.filter(s => !s.leaving).length,
+      masterTier: Math.max(0, ...technicians.flatMap(s => Object.values(s.tiers))),
+      money: this.money,
+      bestProfit: this.progress.life.bestProfit,
+      dailies: this.progress.life.dailies,
+      day: this.day,
+    }
+  }
+
+  /** Gives the badges the shop has just reached; they are announced only once the quest button is open. */
+  private checkBadges(): void {
+    for (const id of newBadges(this.badges, this.badgeShop())) {
+      this.badges[id] = this.day
+      if (this.questsOpen()) this.emit({ type: 'badge', id })
+    }
   }
 
   /** Whether the quest button is open today. */
@@ -907,12 +946,14 @@ export class SpaSim {
     for (const c of [...this.customers]) this.updateCustomer(c, dt)
     this.updateOwnerTask()
     for (const s of this.staff) updateStaff(this.crew, s, dt)
+    this.checkBadges()
 
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats)
+      this.checkBadges()
       // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
