@@ -1,6 +1,6 @@
 import { TILE } from '../config'
 import type { ItemKind } from '../sim/items'
-import { silkLantern } from './oldTown'
+import { silkLantern } from './lantern'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
@@ -662,11 +662,10 @@ const surfboard =
 
 // dây đèn lồng Hội An: the old town's dark wood post with an arm at the top, a cord hanging three silk lanterns one under another
 const lanternString =
-  `<ellipse cx="0.3" cy="2.64" rx="0.26" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
-  `<path d="M0.3,2.64 V0.22 H0.8" fill="none" stroke="${C.ink}" stroke-width="0.17" stroke-linecap="round" stroke-linejoin="round"/>` +
-  `<path d="M0.3,2.64 V0.22 H0.8" fill="none" stroke="${C.phoWood}" stroke-width="0.1" stroke-linecap="round" stroke-linejoin="round"/>` +
-  `<path d="M0.8,0.22 V0.3" stroke="${C.ink}" stroke-width="0.03"/>` +
-  [C.lantern, C.mustard, C.tealLight].map((col, i) => silkLantern(0.8, 0.3 + i * 0.8, col, 13)).join('')
+  `<ellipse cx="0.25" cy="2.64" rx="0.22" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
+  `<path d="M0.25,2.64 V0.22 H0.62" fill="none" stroke="${C.ink}" stroke-width="0.17" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<path d="M0.25,2.64 V0.22 H0.62" fill="none" stroke="${C.phoWood}" stroke-width="0.1" stroke-linecap="round" stroke-linejoin="round"/>` +
+  [C.lantern, C.mustard, C.tealLight].map((col, i) => silkLantern(0.62, 0.3 + i * 0.8, col, 13)).join('')
 
 // chậu lan hồ điệp: the uptown's cream pot with a mustard band, an arching stem with five flowers and two leaves, drawn in the
 // sketch's pixels (origin at the pot's foot) and scaled to fit its tile
@@ -677,13 +676,13 @@ const orchidFlower = ([x, y]: number[]) =>
     return `<ellipse cx="${px}" cy="${py}" rx="8" ry="6" transform="rotate(${i * 72} ${px} ${py})" fill="${C.orchid}" stroke="${C.ink}" stroke-width="2.5"/>`
   }).join('') + `<circle cx="${x}" cy="${y}" r="4.5" fill="${C.lotus}" stroke="${C.ink}" stroke-width="2"/>`
 const orchid =
-  `<ellipse cx="0.3" cy="2.4" rx="0.3" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
-  `<g transform="translate(0.3,2.4) scale(0.0098)">` +
+  `<ellipse cx="0.47" cy="2.4" rx="0.3" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
+  `<g transform="translate(0.47,2.4) scale(0.0095)">` +
   `<path d="M-30,0 L-24,-58 H24 L30,0Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
   `<path d="M-27,-30 H27" stroke="${C.mustard}" stroke-width="7"/>` +
-  `<path d="M-6,-58 Q-14,-120 6,-170 Q26,-196 50,-180" stroke="${C.leaf}" stroke-width="6" fill="none"/>` +
-  `<path d="M-18,-60 q-30,-10 -36,-34 q30,4 36,34 M10,-60 q30,-16 42,-6 q-26,18 -42,6" fill="${C.leaf}" stroke="${C.ink}" stroke-width="3"/>` +
-  [[2, -150], [20, -176], [40, -184], [56, -170], [-6, -122]].map(orchidFlower).join('') + `</g>`
+  `<path d="M-2,-58 Q-10,-120 8,-160 Q22,-190 30,-196" stroke="${C.leaf}" stroke-width="6" fill="none"/>` +
+  `<path d="M-14,-60 q-24,-8 -30,-28 q24,2 30,28 M8,-60 q24,-12 34,-4 q-20,14 -34,4" fill="${C.leaf}" stroke="${C.ink}" stroke-width="3"/>` +
+  [[-4, -112], [12, -140], [26, -166], [34, -192], [10, -176]].map(orchidFlower).join('') + `</g>`
 
 // lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]

@@ -1,10 +1,10 @@
 import { TILE } from '../config'
 import type { Grid } from '../sim/grid'
+import { silkLantern } from './lantern'
 import { C } from './palette'
+import { f } from './round'
 import { FINE, outline, rect, shopFront, STREET_TILES, street } from './room'
 import { svgDoc } from './svg'
-
-const f = (v: number) => +v.toFixed(3)
 
 /** Dark wood planks a quarter tile tall, with staggered joints and a little grain. */
 const PHO_PLANKS =
@@ -21,34 +21,17 @@ const PHO_TILES =
   `<path d="M0,0 H1.333 M0,0.667 H1.333 M0,0 V1.333 M0.667,0 V1.333" stroke="${C.phoTileSeam}" stroke-width="${FINE}"/>` +
   `<circle cx="0.256" cy="0.385" r="0.026" fill="${C.phoTileSpeck}"/><circle cx="1.026" cy="0.949" r="0.026" fill="${C.phoTileSpeck}"/></pattern>`
 
-/**
- * One silk lantern hanging from (cx, y): its hook, a wooden cap, the silk in `col` with two ribs, a wooden foot and a tassel.
- * The sketch's lantern, drawn in its pixels (78 to a tile) and scaled down; `r` is the silk's radius in those pixels.
- */
-export function silkLantern(cx: number, y: number, col: string, r = 17): string {
-  const ink = (w: number) => `stroke="${C.ink}" stroke-width="${w}"`
-  return (
-    `<g transform="translate(${f(cx)} ${f(y)}) scale(${f(1 / 78)})">` +
-    `<path d="M0,-14 V0" ${ink(3)}/>` +
-    `<rect x="${-r * 0.5}" y="-3" width="${r}" height="7" rx="2" fill="${C.woodDark}" ${ink(3)}/>` +
-    `<ellipse cx="0" cy="${r * 1.25}" rx="${r}" ry="${r * 1.15}" fill="${col}" ${ink(3.5)}/>` +
-    `<path d="M${-r * 0.5},${r * 0.3} Q${-r * 0.75},${r * 1.25} ${-r * 0.5},${r * 2.2} M${r * 0.5},${r * 0.3} Q${r * 0.75},${r * 1.25} ${r * 0.5},${r * 2.2}" ${ink(2)} fill="none" opacity="0.45"/>` +
-    `<rect x="${-r * 0.5}" y="${r * 2.3}" width="${r}" height="6" rx="2" fill="${C.woodDark}" ${ink(3)}/>` +
-    `<path d="M0,${r * 2.3 + 6} v14" stroke="${col}" stroke-width="5" stroke-linecap="round"/></g>`
-  )
-}
+/** The seven lanterns' silk, in turn along the string; no mustard, which would vanish on the yellow wall. */
+const STRING_SILK = [C.lantern, C.tealLight, C.lotus, C.lantern, C.tealLight, C.lotus, C.lantern]
 
-/** The seven lanterns' silk, in turn along the string. */
-const STRING_SILK = [C.lantern, C.mustard, C.tealLight, C.lotus, C.lantern, C.mustard, C.tealLight]
-
-/** A cord sagging across the wall, with a silk lantern hung from it at every seventh. */
+/** A cord sagging across the wall, with seven silk lanterns hung along it. */
 function lanternString(cols: number): string {
-  const [x0, x1, yEnd, yCtl] = [0.45, cols - 0.45, 0.5, 1.95]
+  const [x0, x1, yEnd, yCtl] = [0.45, cols - 0.45, 0.45, 1.1]
   const out = [`<path d="M${x0},${yEnd} Q${f(cols / 2)},${yCtl} ${x1},${yEnd}" fill="none" stroke="${C.ink}" stroke-width="0.04"/>`]
   STRING_SILK.forEach((col, i) => {
     const t = (i + 0.5) / STRING_SILK.length
     const y = (1 - t) * (1 - t) * yEnd + 2 * t * (1 - t) * yCtl + t * t * yEnd
-    out.push(silkLantern(x0 + (x1 - x0) * t, y + 0.1, col, 13))
+    out.push(silkLantern(x0 + (x1 - x0) * t, y + 0.1, col, 20))
   })
   return out.join('')
 }

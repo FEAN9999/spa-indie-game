@@ -1,10 +1,9 @@
 import { TILE } from '../config'
 import type { Grid } from '../sim/grid'
 import { C } from './palette'
+import { f } from './round'
 import { outline, rect, shopFront, STREET_TILES, street } from './room'
 import { svgDoc } from './svg'
-
-const f = (v: number) => +v.toFixed(3)
 
 /** Light wood planks a quarter tile tall, with staggered joints. */
 const CAO_PLANKS =
