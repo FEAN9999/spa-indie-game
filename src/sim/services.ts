@@ -46,4 +46,4 @@ export function serviceOfBed(kind: ItemKind): ServiceId | null {
 }
 
 /** What stops a service opening now: money is negative, there is not enough, an earlier service is still closed, or its recipe is not solved yet. */
-export type ServiceProblem = 'debt' | 'money' | 'order' | 'recipe'
+export type ServiceProblem = 'debt' | 'money' | 'order' | 'recipe' | 'main'

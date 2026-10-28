@@ -33,6 +33,8 @@ import {
   RESTOCK_PRICE,
   RIVAL_PICKY_FACTOR,
   STAIRS_MS,
+  PLACE_KINDS,
+  PLACES,
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
@@ -45,11 +47,12 @@ import {
 import { t } from '../strings/vi'
 import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
-import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
+import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
+import { BRANCH_LAYOUT, placePrice, type PlaceId } from './places'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
 import { emptyFestivalBook, festivalOf, festivalService, FESTIVALS, type FestivalBook } from './festivals'
 import { DayClock } from './clock'
-import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
+import { fire, greet, refreshCandidates, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
@@ -132,7 +135,10 @@ export class SpaSim {
   customers: Customer[] = []
   stations: Station[] = []
   seats: Seat[] = []
-  money = STARTING_MONEY
+  /** The till: a branch shares the main shop's. */
+  purse = { money: STARTING_MONEY }
+  /** Where this shop is: null for the main shop. */
+  place: PlaceId | null = null
   reviews: number[] = []
   clock = new DayClock()
   day = 1
@@ -204,6 +210,30 @@ export class SpaSim {
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
   }
 
+  get money(): number {
+    return this.purse.money
+  }
+
+  set money(v: number) {
+    this.purse.money = v
+  }
+
+  /** A branch of the main shop at `place`: its own staff, stock and customers, drawing from its own stream, on the same day and minute, paid from the main shop's purse. */
+  static newBranch(place: PlaceId, main: SpaSim, rng: Rng): SpaSim {
+    const branch = new SpaSim({ rng, layout: BRANCH_LAYOUT, autoSpawn: main.autoSpawn })
+    branch.place = place
+    branch.day = main.day
+    branch.clock.minutes = main.clock.minutes
+    branch.services = [...main.services]
+    branch.shopName = main.shopName
+    branch.ownerLook = { ...main.ownerLook }
+    branch.ownerOutfit = main.ownerOutfit
+    branch.profileDone = main.profileDone
+    branch.purse = main.purse
+    refreshCandidates(branch.crew)
+    return branch
+  }
+
   advance(ms: number): void {
     for (let left = ms; left > 0; left -= STEP_MS) this.step(Math.min(STEP_MS, left))
   }
@@ -221,7 +251,7 @@ export class SpaSim {
   }
 
   hintDone(id: HintId): boolean {
-    return this.hints.includes(id)
+    return this.place !== null || this.hints.includes(id)
   }
 
   markHint(id: HintId): void {
@@ -244,6 +274,7 @@ export class SpaSim {
    */
   serviceProblem(id: ServiceId): ServiceProblem | null {
     if (this.services.includes(id)) return null
+    if (this.place !== null) return 'main'
     if (this.money < 0) return 'debt'
     if (isRecipeService(id)) {
       if (!this.benchOpen()) return 'order'
@@ -257,7 +288,7 @@ export class SpaSim {
 
   /** Whether the recipe bench is there: once massage is open. */
   benchOpen(): boolean {
-    return this.services.includes('massage')
+    return this.place === null && this.services.includes('massage')
   }
 
   /**
@@ -298,7 +329,7 @@ export class SpaSim {
 
   /** Today's festival service: the one on this month's festival quest, else the nearest the shop has; null outside a festival. */
   festivalServiceToday(): ServiceId | null {
-    const f = festivalOf(this.day)
+    const f = this.place === null ? festivalOf(this.day) : null
     if (!f) return null
     const m = this.progress.monthly
     if (m?.festival === f && m.service && this.progress.monthFrom === monthStart(this.day)) return m.service
@@ -327,11 +358,18 @@ export class SpaSim {
 
   /** What the gap between two customers is multiplied by today: shorter in a festival or a hot day, once when both. */
   eventArrivalFactor(): number {
+    if (this.place !== null) return 1
     return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1)
+  }
+
+  /** What the gap between two customers is multiplied by: a branch's place sets its own, the main shop has the events'. */
+  arrivalFactor(): number {
+    return this.place === null ? this.eventArrivalFactor() : 1 / PLACES[this.place].arrival
   }
 
   /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival or a hot day, to go with the crowd. */
   private eventPatienceFactor(): number {
+    if (this.place !== null) return 1
     return festivalOf(this.day) || this.hotToday() ? FESTIVAL_PATIENCE : 1
   }
 
@@ -349,7 +387,7 @@ export class SpaSim {
     const state = opts.regular && this.book.regulars[opts.regular]
     const kol = opts.kol === true
     const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : kol ? { ...KOL_LOOK } : randomLook(this.rng)
-    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng, rivalToday(this.eventBook, this.day) ? RIVAL_PICKY_FACTOR : 1))
+    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng, rivalToday(this.eventBook, this.day) ? RIVAL_PICKY_FACTOR : 1, this.place ? PLACE_KINDS[this.place] : undefined))
     const available = this.availableServices().filter(id => !this.machineDown(id))
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
     // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
@@ -471,7 +509,7 @@ export class SpaSim {
    * Anyone else pays FESTIVAL_PRICE times the graded price for the festival service, and tips on that.
    */
   private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
-    const plain = rankPrice(SERVICES[c.service].price, this.rank.stars)
+    const plain = this.place ? placePrice(SERVICES[c.service].price, this.place) : rankPrice(SERVICES[c.service].price, this.rank.stars)
     const base = !c.vip && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
     const price = c.vip ? plain * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
@@ -493,7 +531,7 @@ export class SpaSim {
     if (c.vip) {
       const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
       this.emit({ type: 'vipServed', customerId: c.id, vip: c.vip, stars, photo: r.photo, board: r.board })
-    } else noteServed(this.book, c.kind)
+    } else if (isMainKind(c.kind)) noteServed(this.book, c.kind)
     // Mi Mi posts her video after 3 stars, and the shop is hot from the next morning
     if (c.kol) {
       if (stars === 3) {
@@ -762,6 +800,8 @@ export class SpaSim {
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
     startDay(this.crew)
+    // a branch has no regulars, quests, rank or events of its own
+    if (this.place !== null) return
     planDay(this.book, this.day, this.rng)
     clearStale(this.vip, this.day)
     const book = this.eventBook
@@ -816,6 +856,7 @@ export class SpaSim {
 
   /** Gives the badges the shop has just reached; they are announced only once the quest button is open. */
   private checkBadges(): void {
+    if (this.place !== null) return
     for (const id of newBadges(this.badges, this.badgeShop())) {
       this.badges[id] = this.day
       if (this.questsOpen()) this.emit({ type: 'badge', id })
@@ -824,6 +865,7 @@ export class SpaSim {
 
   /** Gives an old shop, on its first load since badges came, every badge it already has as Có từ trước (day 0), with no banner. */
   private findBadges(): void {
+    if (this.place !== null) return
     const found = newBadges(this.badges, this.badgeShop())
     for (const id of found) this.badges[id] = 0
     if (found.length > 0 && this.questsOpen()) this.emit({ type: 'badgesFound', n: found.length })
@@ -866,7 +908,7 @@ export class SpaSim {
 
   /** Whether the quest button is open today. */
   questsOpen(): boolean {
-    return isUnlocked('quests', this.day)
+    return this.place === null && isUnlocked('quests', this.day)
   }
 
   /** What the shop has right now that decides which quests it can be given. */
@@ -1177,7 +1219,7 @@ export class SpaSim {
         const seatLeft = this.seats.filter(s => s.customerId === null).length > this.customers.filter(c => c.state === 'arriving').length
         this.spawnCustomer(due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
-          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.eventArrivalFactor(),
+          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.arrivalFactor(),
           this.rng(),
         )
       }
@@ -1218,7 +1260,7 @@ export class SpaSim {
       this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
-      if (isJudgeDay(this.day)) {
+      if (this.place === null && isJudgeDay(this.day)) {
         this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
         if (isYearEnd(this.day)) {
           const year = judgeYear(this.rank, this.day)
@@ -1229,9 +1271,11 @@ export class SpaSim {
         }
       }
       // tomorrow's VIP, then tomorrow's event on any other day, each drawn from a stream of its own so the shop's draws stay as they were
-      const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
-      planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
-      planEvent(this.eventBook, this.day, this.vip.booking?.day ?? null, this.hasMachines(), createRng(this.day * 6151 + this.nextId))
+      if (this.place === null) {
+        const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
+        planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
+        planEvent(this.eventBook, this.day, this.vip.booking?.day ?? null, this.hasMachines(), createRng(this.day * 6151 + this.nextId))
+      }
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }

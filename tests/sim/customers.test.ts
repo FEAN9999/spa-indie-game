@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PATIENCE_MS } from '../../src/config'
-import { CUSTOMER_KINDS, drawKind, drawService, KINDS, type CustomerKind } from '../../src/sim/customers'
+import { drawKind, drawService, KINDS, MAIN_KINDS, type CustomerKind } from '../../src/sim/customers'
 import { reviewScore, tipFor, type Stars } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -24,7 +24,7 @@ describe('kinds of customer', () => {
     expect([...kindsOnDay(2)].sort()).toEqual(['office', 'student'])
     expect([...kindsOnDay(3)].sort()).toEqual(['office', 'picky', 'student'])
     expect([...kindsOnDay(5)].sort()).toEqual(['elder', 'office', 'picky', 'student'])
-    expect([...kindsOnDay(6)].sort()).toEqual([...CUSTOMER_KINDS].sort())
+    expect([...kindsOnDay(6)].sort()).toEqual([...MAIN_KINDS].sort())
     const rng = createRng(6)
     const celebs = Array.from({ length: 2000 }, () => drawKind(6, rng)).filter(k => k === 'celeb').length
     expect(celebs / 2000).toBeGreaterThan(0.03)

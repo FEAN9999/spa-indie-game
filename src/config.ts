@@ -153,6 +153,23 @@ export const MUD_STARS = { three: 0.7, two: 0.45 }
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
+
+/** The stars the main shop needs before it can open a branch. */
+export const CHAIN_FROM_STARS = 3
+/** Where a branch can open: the main shop's stars and the price, how much faster customers come, and what its services cost against the plain price. */
+export const PLACES = {
+  beach: { stars: 3, price: 5_000_000, arrival: 1.2, priceFactor: 1.0 },
+  oldTown: { stars: 4, price: 8_000_000, arrival: 1.0, priceFactor: 1.2 },
+  uptown: { stars: 5, price: 12_000_000, arrival: 0.8, priceFactor: 1.6 },
+}
+/** The weights of the kinds each place draws; the kinds of the later places are named here before they exist. */
+export const PLACE_KINDS: Record<keyof typeof PLACES, Record<string, number>> = {
+  beach: { tourist: 5, student: 2, office: 1, picky: 1 },
+  oldTown: { backpacker: 4, elder: 3, student: 1, picky: 1 },
+  uptown: { lady: 4, office: 3, picky: 2 },
+}
+/** The game ms a branch may be fast-run at the end of the main shop's day. */
+export const CHAIN_FINISH_MS = 300_000
 export const LOW_STOCK = 5
 
 // Shop simulation

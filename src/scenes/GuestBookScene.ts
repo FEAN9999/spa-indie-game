@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { C, customerColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
-import type { CustomerKind } from '../sim/customers'
+import type { MainKind } from '../sim/customers'
 import { REGULARS, isMember, type RegularId } from '../sim/regulars'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
@@ -52,7 +52,7 @@ const KIND_ROW_H = 230
 const VIP_CELL_H = 520
 const STAR_SCALE = 0.5
 
-const KIND_NAME: Record<CustomerKind, StringKey> = {
+const KIND_NAME: Record<MainKind, StringKey> = {
   student: 'kindStudent',
   office: 'kindOffice',
   picky: 'kindPicky',

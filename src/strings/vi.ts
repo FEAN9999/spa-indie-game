@@ -356,6 +356,7 @@ export const vi = {
   kindOffice: 'Dân văn phòng',
   kindPicky: 'Khách khó tính',
   kindElder: 'Cô chú lớn tuổi',
+  kindTourist: 'Khách du lịch',
   kindCeleb: 'Người nổi tiếng',
   hintQuests: 'Mỗi ngày có việc nhỏ, xong là có thưởng',
   questsIntro: 'Mỗi sáng có 3 việc nhỏ. Xong là tiền tự vào két, không xong thì thôi.',

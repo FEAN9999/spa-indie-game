@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CELEB_FROM_DAY } from '../../src/config'
-import { CUSTOMER_KINDS, KINDS } from '../../src/sim/customers'
+import { KINDS, MAIN_KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
 import { VIP_IDS, emptyVipBook } from '../../src/sim/vips'
 import { REGULAR_TEXT } from '../../src/strings/regulars'
@@ -55,7 +55,7 @@ describe('guest book rows', () => {
     book.kindsMet = ['student', 'office']
     book.served.student = 4
     const rows = kindRows(book)
-    expect(rows.map(r => r.kind)).toEqual(CUSTOMER_KINDS)
+    expect(rows.map(r => r.kind)).toEqual(MAIN_KINDS)
     expect(rows[0]).toMatchObject({ kind: 'student', met: true, served: 4 })
     expect(rows[2]).toMatchObject({ kind: 'picky', met: false, served: 0 })
   })

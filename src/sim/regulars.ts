@@ -2,7 +2,7 @@ import {
   HEART_AT, HEART_POINTS, HEART_POINTS_ANGRY, MEMBER_HEARTS, REGULARS_FROM_DAY, REGULARS_PER_DAY, REGULAR_MEET_GAP_DAYS,
   REGULAR_VISIT_CHANCE, REGULAR_VISIT_FROM_MIN, REGULAR_VISIT_TO_MIN,
 } from '../config'
-import { CUSTOMER_KINDS, type CustomerKind } from './customers'
+import { MAIN_KINDS, type CustomerKind, type MainKind } from './customers'
 import type { Stars } from './economy'
 import type { ItemKind } from './items'
 import type { Rng } from './rng'
@@ -50,8 +50,8 @@ export interface RegularState {
 
 export interface GuestBook {
   regulars: Record<RegularId, RegularState>
-  served: Record<CustomerKind, number>
-  kindsMet: CustomerKind[]
+  served: Record<MainKind, number>
+  kindsMet: MainKind[]
   /** Gift furniture received and not yet placed, oldest first. */
   gifts: ItemKind[]
   extraCustomer: boolean
@@ -71,8 +71,8 @@ export interface VisitResult {
 export function emptyBook(): GuestBook {
   const regulars = {} as Record<RegularId, RegularState>
   for (const id of REGULAR_IDS) regulars[id] = { meetDay: null, met: false, points: 0, hearts: 0, visitAt: null }
-  const served = {} as Record<CustomerKind, number>
-  for (const kind of CUSTOMER_KINDS) served[kind] = 0
+  const served = {} as Record<MainKind, number>
+  for (const kind of MAIN_KINDS) served[kind] = 0
   return { regulars, served, kindsMet: [], gifts: [], extraCustomer: false, extraAt: null, boardGiven: false }
 }
 
@@ -149,7 +149,7 @@ export function loseVisit(book: GuestBook, id: RegularId): void {
   s.points = Math.max(s.hearts ? HEART_AT[s.hearts - 1] : 0, s.points + HEART_POINTS_ANGRY)
 }
 
-export function noteServed(book: GuestBook, kind: CustomerKind): void {
+export function noteServed(book: GuestBook, kind: MainKind): void {
   book.served[kind]++
   if (!book.kindsMet.includes(kind)) book.kindsMet.push(kind)
 }

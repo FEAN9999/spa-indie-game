@@ -3,7 +3,7 @@ import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
 import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
-import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
+import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
@@ -249,7 +249,7 @@ export function parseSave(raw: unknown): SaveData {
 }
 
 /** Every kind but the celebrities whose day had come: the kinds an old shop has already met. */
-export const oldShopKinds = (day: number): CustomerKind[] => CUSTOMER_KINDS.filter(k => k !== 'celeb' && KINDS[k].fromDay <= day)
+export const oldShopKinds = (day: number): MainKind[] => MAIN_KINDS.filter(k => k !== 'celeb' && KINDS[k].fromDay <= day)
 
 const repairCount = (x: unknown): number => (Number.isInteger(x) && (x as number) >= 0 ? (x as number) : 0)
 const repairBool = (x: unknown): boolean => x === true
@@ -269,9 +269,9 @@ function repairBook(x: unknown, day: number): GuestBook {
   const regulars: Record<string, unknown> = isObject(x.regulars) ? x.regulars : {}
   const served: Record<string, unknown> = isObject(x.served) ? x.served : {}
   for (const id of REGULAR_IDS) book.regulars[id] = repairRegular(regulars[id])
-  for (const k of CUSTOMER_KINDS) book.served[k] = repairCount(served[k])
+  for (const k of MAIN_KINDS) book.served[k] = repairCount(served[k])
   const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
-  book.kindsMet = list(x.kindsMet).filter((k): k is CustomerKind => (CUSTOMER_KINDS as unknown[]).includes(k))
+  book.kindsMet = list(x.kindsMet).filter((k): k is MainKind => (MAIN_KINDS as readonly unknown[]).includes(k))
   book.gifts = list(x.gifts).filter((k): k is ItemKind => (ITEM_KINDS as unknown[]).includes(k))
   book.extraCustomer = repairBool(x.extraCustomer)
   book.extraAt = repairNullable(x.extraAt)

@@ -1,4 +1,4 @@
-import { CUSTOMER_KINDS, KINDS, type CustomerKind } from '../sim/customers'
+import { KINDS, MAIN_KINDS, type MainKind } from '../sim/customers'
 import { REGULAR_TEXT } from '../strings/regulars'
 import { VIP_TEXT } from '../strings/vips'
 import { REGULARS, REGULAR_IDS, bookOpen, isMember, type GuestBook, type RegularId } from '../sim/regulars'
@@ -20,14 +20,14 @@ export function regularRows(book: GuestBook): RegularRow[] {
 }
 
 export interface KindRow {
-  kind: CustomerKind
+  kind: MainKind
   met: boolean
   served: number
   fromDay: number
 }
 
 export function kindRows(book: GuestBook): KindRow[] {
-  return CUSTOMER_KINDS.map(kind => ({ kind, met: book.kindsMet.includes(kind), served: book.served[kind], fromDay: KINDS[kind].fromDay }))
+  return MAIN_KINDS.map(kind => ({ kind, met: book.kindsMet.includes(kind), served: book.served[kind], fromDay: KINDS[kind].fromDay }))
 }
 
 /** What the detail shows: the first words, then the story lines told so far. */

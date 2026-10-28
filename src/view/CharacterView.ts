@@ -33,6 +33,7 @@ const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]
   office: [{ key: 'tie', on: 'body' }],
   picky: [{ key: 'glasses', on: 'face' }],
   elder: [],
+  tourist: [{ key: 'sunglasses', on: 'face' }],
   celeb: [
     { key: 'sunglasses', on: 'face' },
     { key: 'hat', on: 'hair' },

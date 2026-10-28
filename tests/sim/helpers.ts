@@ -4,6 +4,17 @@ import { SpaSim } from '../../src/sim/spa'
 import { noTiers, wageFor, type Staff, type StaffRole, type StaffStats, type Tiers, type TraitId } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
 
+/** A day-40 main shop with mask and massage open and `stars`, ready to open a branch; nobody walks in unless `autoSpawn`. */
+export function starShop(stars: 1 | 2 | 3 | 4 | 5 = 3, money = 20_000_000, seed = 1, autoSpawn = false): SpaSim {
+  const sim = new SpaSim({ rng: createRng(seed), autoSpawn })
+  sim.day = 40
+  sim.services = ['shampoo', 'mask', 'massage']
+  sim.rank.stars = stars
+  sim.profileDone = true
+  sim.money = money
+  return sim
+}
+
 export function advanceUntil(sim: SpaSim, pred: () => boolean, maxMs = 120_000, sink?: SimEvent[]) {
   for (let t = 0; t <= maxMs; t += 100) {
     if (sink) sink.push(...sim.drainEvents())
