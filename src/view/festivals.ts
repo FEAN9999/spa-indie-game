@@ -42,8 +42,8 @@ export const goldCardMs = (lines: number): number => BADGE_BANNER_MS + GOLD_CARD
 
 /** A gold card under the top bar: a picture in a disc, a small heading, a name and a line that may wrap. */
 export interface GoldCard {
-  /** The texture in the disc and the disc's colour. */
-  icon: { texture: string; disc: string }
+  /** The texture in the disc and the disc's colour; `tint` colours a white line icon. */
+  icon: { texture: string; disc: string; tint?: string }
   head: string
   name: string
   line: string

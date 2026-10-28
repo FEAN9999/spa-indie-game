@@ -534,6 +534,7 @@ export class SpaScene extends Phaser.Scene {
       const disc = this.add.circle(BADGE_CARD.medalX, iconY, BADGE_CARD.discR, hex(next.icon.disc)).setStrokeStyle(5, hex(C.ink))
       const picture = this.add.image(BADGE_CARD.medalX, iconY, next.icon.texture)
       picture.setScale(BADGE_CARD.icon / Math.max(picture.width, picture.height))
+      if (next.icon.tint) picture.setTint(hex(next.icon.tint))
       icon.push(disc, picture)
     }
     const box = this.add
