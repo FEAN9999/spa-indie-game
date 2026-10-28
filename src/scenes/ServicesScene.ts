@@ -57,7 +57,7 @@ const ACTION_X = 825
 const ACTION_W = 310
 const ACTION_H = 110
 const DONE_Y = 1895
-/** The festival service's tag after its price. */
+/** The festival service's tag after its name. */
 const TAG_GAP = 14
 const TAG_PAD = 14
 const TAG_H = 38
@@ -166,7 +166,7 @@ export class ServicesScene extends Phaser.Scene {
     this.show()
   }
 
-  /** A small pill after the price: this is the festival service, dearer this month. */
+  /** A small pill after the name: this is the festival service, dearer this month. */
   private festivalTag(x: number, y: number): void {
     const label = this.add.text(0, 0, t('serviceFestivalTag'), textStyle(24, '800', C.paper)).setOrigin(0.5)
     const w = label.width + 2 * TAG_PAD
@@ -181,9 +181,10 @@ export class ServicesScene extends Phaser.Scene {
     const cy = y0 + ROW_H / 2
     const first = this.shown.length
     this.keep(this.add.image(ICON_X, cy, `svc-${id}`).setScale(1.5))
-    this.keep(this.add.text(TEXT_X, cy - 58, t(spec.name), textStyle(40)).setOrigin(0, 0.5))
-    const price = this.keep(this.add.text(TEXT_X, cy - 14, t('servicePrice', { money: formatMoney(spec.price) }), textStyle(28, '600')).setOrigin(0, 0.5))
-    if (id === sim.festivalServiceToday()) this.festivalTag(price.x + price.width + TAG_GAP, cy - 14)
+    const name = this.keep(this.add.text(TEXT_X, cy - 58, t(spec.name), textStyle(40)).setOrigin(0, 0.5))
+    // after the name, where it clears the "Đang có" pill whatever the price
+    if (id === sim.festivalServiceToday()) this.festivalTag(name.x + name.width + TAG_GAP, cy - 58)
+    this.keep(this.add.text(TEXT_X, cy - 14, t('servicePrice', { money: formatMoney(spec.price) }), textStyle(28, '600')).setOrigin(0, 0.5))
     this.keep(
       this.add
         .text(TEXT_X, cy + 16, t('serviceNeeds', { bed, money: formatMoney(ITEMS[spec.bed].price) }), { ...textStyle(26, '600'), wordWrap: { width: TEXT_WRAP } })

@@ -16,8 +16,8 @@ import { textStyle } from './text'
 const PART_DEPTH = 1
 /** A festival's bunting and sign hang on the back wall, over the bed slots and under everything standing in the room. */
 const FESTIVAL_DEPTH = 1.5
-/** The sign's centre and top in tiles: on floor 1's wall, over the third and fourth bed spots. */
-const SIGN = { x: 7.8, top: 0.33, h: 0.72, pad: 0.36 }
+/** The sign's centre and top in tiles: on floor 1's wall over the third and fourth bed spots, hung low enough to cover the clock. */
+const SIGN = { x: 7.8, top: 0.5, h: 0.72, pad: 0.36 }
 /** Where the bunting starts and ends on a wall, in tiles. */
 const WALL = { left: 0.3, right: 12.7, top: 0.1 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
