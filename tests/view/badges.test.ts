@@ -38,5 +38,7 @@ describe('badge names and icons', () => {
   it('words the goals as the sketch does', () => {
     expect([t(BADGE_TEXT.served1000.name), t(BADGE_TEXT.served1000.cond)]).toEqual(['Nghìn khách', 'Phục vụ 1.000 khách.'])
     expect(t(BADGE_TEXT.fullYear.cond)).toBe('Tiệm mở tròn một năm, 36 ngày.')
+    // all the daily quests ever finished, not twenty in one day
+    expect(t(BADGE_TEXT.diligent.cond)).toBe('Xong 20 nhiệm vụ hằng ngày.')
   })
 })

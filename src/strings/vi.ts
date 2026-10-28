@@ -428,7 +428,7 @@ export const vi = {
   badgeBigProfit: 'Ngày lãi lớn',
   badgeBigProfitCond: 'Lãi 1.000.000 đ trong một ngày.',
   badgeDiligent: 'Chăm chỉ',
-  badgeDiligentCond: 'Xong 20 nhiệm vụ trong ngày.',
+  badgeDiligentCond: 'Xong 20 nhiệm vụ hằng ngày.',
   badgeFullYear: 'Tròn năm',
   badgeFullYearCond: 'Tiệm mở tròn một năm, 36 ngày.',
 } as const

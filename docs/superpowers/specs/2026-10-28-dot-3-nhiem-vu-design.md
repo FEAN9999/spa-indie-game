@@ -213,7 +213,7 @@ Giống bản phác:
   | 16 | Thợ cả | Một thợ lên bậc 3 ở một dịch vụ | bậc của thợ |
   | 17 | Triệu đầu | Có 1.000.000 đ trong két | tiền lúc này |
   | 18 | Ngày lãi lớn | Lãi 1.000.000 đ trong một ngày | lãi cao nhất một ngày, lô A bắt đầu ghi |
-  | 19 | Chăm chỉ | Xong 20 nhiệm vụ trong ngày | số đếm mới, lô A bắt đầu đếm |
+  | 19 | Chăm chỉ | Xong 20 nhiệm vụ hằng ngày | số đếm mới, lô A bắt đầu đếm |
   | 20 | Tròn năm | Tiệm mở tròn một năm, 36 ngày | ngày |
 
 - **Có huy hiệu mới:**
