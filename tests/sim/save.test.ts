@@ -1568,6 +1568,21 @@ describe('save version 22', () => {
     expect(parseSave(full).chain!.branches.map(b => b.place)).toEqual(['beach'])
   })
 
+  it('drops a second branch at a taken place, never moving it to another place', () => {
+    const raw = chainJson()
+    // a branch with no place comes first and takes the free ready place; the duplicate beach is the first to keep it
+    const lost = structuredClone(raw.chain.branches[0])
+    lost.place = null
+    lost.shopName = 'lost'
+    const dup = structuredClone(raw.chain.branches[0])
+    dup.shopName = 'dup'
+    raw.chain.branches = [lost, raw.chain.branches[0], dup]
+    const out = parseSave(raw).chain!.branches
+    expect(out.map(b => b.place)).toEqual(['beach'])
+    expect(out[0].shopName).not.toBe('dup')
+    expect(out[0].shopName).not.toBe('lost')
+  })
+
   it('drops a branch whose data is damaged', () => {
     const raw = chainJson()
     raw.chain.branches[0].customers = 'x'

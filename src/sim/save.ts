@@ -203,14 +203,17 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
       if (!(e instanceof SaveError)) throw e
     }
   }
-  // the first branch at a place keeps it; one with no place, an unknown one or one already taken gets the first free ready place, else it is dropped
+  // the first branch at a place keeps it and a second one there is dropped; one with no place or an unknown one gets the first free ready place, else it is dropped
   const taken = new Set<PlaceId>()
+  const lost = new Set<(typeof shops)[number]>()
   for (const s of shops) {
-    if (s.place && !taken.has(s.place)) taken.add(s.place)
-    else s.place = null
+    if (!s.place) continue
+    if (taken.has(s.place)) lost.add(s)
+    else taken.add(s.place)
   }
   const kept: SaveData[] = []
   for (const s of shops) {
+    if (lost.has(s)) continue
     if (!s.place) {
       s.place = PLACES_READY.find(id => !taken.has(id)) ?? null
       if (s.place) taken.add(s.place)

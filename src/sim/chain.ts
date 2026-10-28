@@ -4,7 +4,7 @@ import { PLACE_IDS, PLACES_READY, type PlaceId } from './places'
 import { createRng } from './rng'
 import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
-import type { SimEvent } from './types'
+import type { CustomerState, SimEvent } from './types'
 import type { VipId } from './vips'
 
 /** `open`: a branch is there already; `stars`: the main shop's stars are short; `soon`: the place is not open yet; `money`: the purse is short. */
@@ -18,6 +18,8 @@ export interface ChainDayRow {
 
 /** The main shop's events with a card or a reward: kept in order while the owner is away, for when she is back. */
 const HELD: readonly SimEvent['type'][] = ['badge', 'questDone', 'festivalQuestDone', 'inspected', 'kolPosted', 'rivalBeaten', 'heart', 'gift', 'bookPage', 'recipeHint', 'dayEnded']
+
+const WAITING: readonly CustomerState[] = ['arriving', 'toSeat', 'waiting']
 
 /** The main shop and its branches: one clock, one purse, and the owner in one of them. */
 export class Chain {
@@ -94,6 +96,8 @@ export class Chain {
     chain.told = saved?.told === true
     chain.at = saved && chain.shop(saved.at) ? saved.at : null
     chain.main.ownerHere = chain.at === null
+    // a VIP already waiting at the main shop calls the owner, as one who arrives while she is away does
+    if (chain.at !== null) for (const c of chain.main.customers) if (c.vip !== null && WAITING.includes(c.state)) chain.vipCalls.push(c.vip)
     for (const b of chain.branches) b.ownerHere = b.place === chain.at
     // the events a shop queued while loading are routed like those of a shop the owner is away from; the owner's own shop keeps hers
     for (const s of [chain.main, ...chain.branches]) if (s !== chain.active()) chain.route(s, s.drainEvents())

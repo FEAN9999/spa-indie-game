@@ -3,6 +3,7 @@ import { DAY_END_MIN, MAX_FRAME_MS, REAL_MS_PER_GAME_MIN, STEP_MS } from '../../
 import { Chain } from '../../src/sim/chain'
 import { parseSave, SaveError } from '../../src/sim/save'
 import { dayProfit } from '../../src/sim/economy'
+import { VIP_IDS } from '../../src/sim/vips'
 import type { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
 import { hireStaff, starShop } from './helpers'
@@ -391,6 +392,18 @@ describe('saving the chain', () => {
     expect(main.dayOver).toBe(true)
     const copy = viaJson(chain)
     expect(copy.takeHeld().some(e => e.type === 'dayEnded')).toBe(true)
+  })
+
+  it('calls the owner at a branch to a VIP already waiting at the main shop when the game is loaded', () => {
+    const { chain, main } = atBeach()
+    main.spawnCustomer({ kind: 'office', service: 'shampoo', vip: VIP_IDS[0] })
+    const copy = viaJson(chain)
+    expect(copy.takeVipCall()).toBe(VIP_IDS[0])
+    expect(copy.takeVipCall()).toBeNull()
+    // at the main shop nobody is called
+    const home = withBeach()
+    home.main.spawnCustomer({ kind: 'office', service: 'shampoo', vip: VIP_IDS[0] })
+    expect(viaJson(home.chain).takeVipCall()).toBeNull()
   })
 
   it('drops a branch that cannot be loaded and still loads the main shop', () => {
