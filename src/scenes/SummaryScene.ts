@@ -52,16 +52,18 @@ export class SummaryScene extends Phaser.Scene {
     ]
     const kinds = rows.map(row => row.kind)
     const notes = [...starterNotes(sim), ...summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())]
-    // each note is its own text, stacked under the rows; they are measured first, since the card and the button follow their height (depth 1 keeps them above the card)
-    const flat = summaryLayout(kinds, chain.length, 0)
-    const notesTop = flat.buttonY - 95 + 20
-    let noteBottom = notesTop
-    for (const note of notes) {
+    // each note is its own text, stacked under the rows; they are measured first, since the card and the button follow their height, then put in place (depth 1 keeps them above the card)
+    const texts = notes.map(note => {
       const style = note.booking ? textStyle(36, '800', C.teal) : textStyle(34, '600')
-      const text = this.add.text(GAME_W / 2, noteBottom, note.text, { ...style, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0).setDepth(1)
-      noteBottom += text.height + NOTE_GAP
+      return this.add.text(GAME_W / 2, 0, note.text, { ...style, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0).setDepth(1)
+    })
+    const notesH = texts.reduce((sum, text) => sum + text.height, 0) + NOTE_GAP * Math.max(0, texts.length - 1)
+    const L = summaryLayout(kinds, chain.length, notesH)
+    let noteY = L.notesTop
+    for (const text of texts) {
+      text.setY(noteY)
+      noteY += text.height + NOTE_GAP
     }
-    const L = summaryLayout(kinds, chain.length, notes.length ? noteBottom - NOTE_GAP - notesTop : 0)
     const heights = kinds.map(k => (k === 'heading' ? L.headingH : L.rowH))
     const { top: cardTop, buttonY, cardH } = L
 

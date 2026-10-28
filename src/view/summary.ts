@@ -1,3 +1,4 @@
+import { GAME_H } from '../config'
 import { dayProfit } from '../sim/economy'
 import type { ChainDayRow } from '../sim/chain'
 import type { DayStats } from '../sim/types'
@@ -47,14 +48,21 @@ export interface SummaryLayout {
   headingH: number
   chainTop: number
   chainRowH: number
+  /** Where the first note under the rows (and the chain block) goes. */
+  notesTop: number
   buttonY: number
   cardH: number
 }
 
 const CHAIN_GAP = 24
 const CHAIN_PAD = 20
+/** The lowest the compact card may reach. */
+const CARD_BOTTOM = GAME_H - 40
 
-/** Where the end-of-day card's parts sit. With no chain shops it is the card as it always was; with some, a compact card that leaves room for the chain block. */
+/**
+ * Where the end-of-day card's parts sit. With no chain shops it is the card as it always was; with some, a compact card that leaves room for the chain block,
+ * moved up over the top bar when its notes would take it past CARD_BOTTOM.
+ */
 export function summaryLayout(kinds: SummaryRow['kind'][], chainShops: number, notesH: number): SummaryLayout {
   const chain = chainShops > 0
   const l = chain
@@ -65,5 +73,17 @@ export function summaryLayout(kinds: SummaryRow['kind'][], chainShops: number, n
   // the block: a heading, a row per shop, the total, and some air
   const chainEnd = chain ? chainTop + (chainShops + 2) * l.chainRowH + CHAIN_PAD : rowsEnd
   const buttonY = chainEnd + (notesH ? 20 + notesH : 0) + 95
-  return { ...l, chainTop, buttonY, cardH: buttonY + 75 + 60 - l.top }
+  const cardH = buttonY + 75 + 60 - l.top
+  const lift = chain ? Math.max(0, l.top + cardH - CARD_BOTTOM) : 0
+  return {
+    ...l,
+    top: l.top - lift,
+    nameY: l.nameY - lift,
+    titleY: l.titleY - lift,
+    rowsTop: l.rowsTop - lift,
+    chainTop: chainTop - lift,
+    notesTop: chainEnd + 20 - lift,
+    buttonY: buttonY - lift,
+    cardH,
+  }
 }

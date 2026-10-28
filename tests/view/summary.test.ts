@@ -85,9 +85,25 @@ describe('the chain on the summary', () => {
     expect(l.buttonY).toBeGreaterThan(l.chainTop + 4 * 58)
   })
 
-  it('fits the worst case on the screen', () => {
+  it('fits the worst case on the screen, moving up over the top bar', () => {
     const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money', 'money', 'heading', 'money', 'money', 'money', 'money', 'money']
-    const l = summaryLayout(kinds, 2, 330)
+    // the VIP and event notes (330), then the starter chain's goal and a record day: one line of 34 px text (about 50 px) and a 14 px gap each
+    const notesH = 330 + 2 * (50 + 14)
+    const l = summaryLayout(kinds, 2, notesH)
     expect(l.top + l.cardH).toBeLessThanOrEqual(GAME_H - 40)
+    expect(l.top).toBe(100)
+    // everything moves up together, the notes and the button too
+    const low = summaryLayout(kinds, 2, 0)
+    expect(low.top).toBe(200)
+    for (const k of ['nameY', 'titleY', 'rowsTop', 'chainTop', 'notesTop'] as const) expect(low[k] - l[k]).toBe(100)
+    expect(l.buttonY).toBe(l.notesTop + notesH + 95)
+  })
+
+  it('puts the notes under the rows, or under the chain block', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'heading', 'money']
+    expect(summaryLayout(kinds, 0, 120).notesTop).toBe(650 + 90 + 64 + 90 + 20)
+    const l = summaryLayout(kinds, 2, 120)
+    expect(l.notesTop).toBe(l.chainTop + 4 * 58 + 20 + 20)
+    expect(l.buttonY).toBe(l.notesTop + 120 + 95)
   })
 })
