@@ -21,6 +21,15 @@ function onDay(day: number): SpaSim {
 
 const badgeEvents = (events: SimEvent[]) => events.filter(e => e.type === 'badge' || e.type === 'badgesFound')
 
+/** A shop that has just closed `day` with 15 served and nobody walking out. */
+function closeCleanDay(day: number): SpaSim {
+  const sim = onDay(day)
+  sim.stats.served = 15
+  sim.clock.minutes = DAY_END_MIN
+  advanceUntil(sim, () => sim.dayOver, 10_000)
+  return sim
+}
+
 /** One step of play, and what came out of it. */
 function step(sim: SpaSim): SimEvent[] {
   sim.advance(STEP_MS)
@@ -64,17 +73,29 @@ describe('judging badges as the shop plays', () => {
     expect(sim.badges.million).toBe(8)
   })
 
-  it('judges a day-end badge before the day ends, so it comes ahead of dayEnded', () => {
-    const sim = onDay(8)
-    sim.stats.served = 15
-    sim.clock.minutes = DAY_END_MIN
-    const events: SimEvent[] = []
-    advanceUntil(sim, () => sim.dayOver, 10_000, events)
-    events.push(...sim.drainEvents())
-    const badge = events.findIndex(e => e.type === 'badge' && e.id === 'cleanDay')
-    expect(badge).toBeGreaterThanOrEqual(0)
-    expect(badge).toBeLessThan(events.findIndex(e => e.type === 'dayEnded'))
+  it('judges a day-end badge on the next morning, dated the day that closed, and never under the summary', () => {
+    const sim = closeCleanDay(8)
+    expect(badgeEvents(sim.drainEvents())).toEqual([])
+    expect(sim.badges.cleanDay).toBeUndefined()
+    sim.startDay()
+    expect(badgeEvents(sim.drainEvents())).toEqual([{ type: 'badge', id: 'cleanDay' }])
     expect(sim.badges.cleanDay).toBe(8)
+  })
+
+  it('still announces a day-end badge when the shop is reopened on the summary', () => {
+    const again = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(closeCleanDay(8).toSave()))), opts())
+    expect(badgeEvents(again.drainEvents())).toEqual([])
+    again.startDay()
+    expect(badgeEvents(again.drainEvents())).toEqual([{ type: 'badge', id: 'cleanDay' }])
+    expect(again.badges.cleanDay).toBe(8)
+  })
+
+  it('gives a clean day 7 silently on the morning of day 8', () => {
+    const sim = closeCleanDay(7)
+    sim.drainEvents()
+    sim.startDay()
+    expect(badgeEvents(sim.drainEvents())).toEqual([])
+    expect(sim.badges.cleanDay).toBe(7)
   })
 
   it('announces several badges of one moment in the table order', () => {

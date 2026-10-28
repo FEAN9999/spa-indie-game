@@ -571,6 +571,8 @@ export class SpaSim {
   }
 
   startDay(): void {
+    // the day that closed is judged now, not at its end, so a shop reopened on the summary still announces its badges
+    this.checkBadges()
     this.day++
     this.clock.reset()
     this.stats = emptyStats()
@@ -963,7 +965,6 @@ export class SpaSim {
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats)
-      this.checkBadges()
       // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
