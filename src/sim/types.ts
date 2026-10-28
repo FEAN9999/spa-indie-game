@@ -1,6 +1,7 @@
 import type { BadgeId } from './badges'
 import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
+import type { FestivalId } from './festivals'
 import type { ItemKind } from './items'
 import type { Quest } from './quests'
 import type { Ingredient, RecipeId } from './recipes'
@@ -161,8 +162,13 @@ export type SimEvent =
   | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
   /** A quest was finished and its reward paid; `quest` is a copy as it stood then. */
   | { type: 'questDone'; quest: Quest }
+  /** A festival quest is finished: told with a gold card, not the quest toast; `gift` when its keepsake was given now. */
+  | { type: 'festivalQuestDone'; quest: Quest; festival: FestivalId; gift: boolean }
+  /** The first day of a festival month, with the festival service the month settled on. */
+  | { type: 'festivalStarted'; festival: FestivalId; service: ServiceId }
   /** A new month began with a new monthly quest. */
-  | { type: 'monthStarted'; month: number }
+  /** `ended`: the festival whose quest the month just over left unfinished. */
+  | { type: 'monthStarted'; month: number; ended: FestivalId | null }
   /** A badge was earned once the quest button is open. */
   | { type: 'badge'; id: BadgeId }
   /** An old shop's first load gave it `n` badges it already had. */

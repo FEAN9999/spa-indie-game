@@ -16,7 +16,10 @@ describe('sound cues', () => {
     expect(cueFor({ type: 'customerLeft', id: 1, angry: false })).toBeNull()
     expect(cueFor({ type: 'roomChanged' })).toBeNull()
     expect(cueFor({ type: 'stockLow', item: 'towel' })).toBeNull()
-    expect(cueFor({ type: 'monthStarted', month: 4 })).toBeNull()
+    expect(cueFor({ type: 'monthStarted', month: 4, ended: null })).toBeNull()
+    // a festival's gold cards play their own sound when they show
+    expect(cueFor({ type: 'festivalStarted', festival: 'tet', service: 'shampoo' })).toBeNull()
+    expect(cueFor({ type: 'festivalQuestDone', quest: { kind: 'service', period: 'month', service: 'shampoo', target: 6, reward: 90000, base: 0, state: 'done', festival: 'tet' }, festival: 'tet', gift: true })).toBeNull()
     // the badge banner plays its own sound when it shows, so a queued banner is not heard early
     expect(cueFor({ type: 'badge', id: 'million' })).toBeNull()
     expect(cueFor({ type: 'badgesFound', n: 3 })).toBeNull()

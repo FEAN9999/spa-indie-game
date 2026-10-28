@@ -3,8 +3,10 @@ import { FESTIVAL_PATIENCE, FESTIVAL_PRICE, SERVICE_PRICE, VIP_PRICE_FACTOR } fr
 import { KINDS } from '../../src/sim/customers'
 import { tipFor } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
+import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
-import { ownerServes } from './helpers'
+import type { SimEvent } from '../../src/sim/types'
+import { advanceUntil, ownerServes } from './helpers'
 
 const opts = () => ({ rng: createRng(1), autoSpawn: false })
 
@@ -78,5 +80,82 @@ describe('a festival month', () => {
     expect(sim.festivalServiceToday()).toBe('shampoo')
     withMask(sim)
     expect(sim.festivalServiceToday()).toBe('shampoo')
+  })
+})
+
+/** Serves one shampoo with the month's festival quest cut to one, so it finishes; returns the events. */
+function finishFestivalQuest(sim: SpaSim): SimEvent[] {
+  sim.progress.monthly!.target = 1
+  return ownerServes(sim, 3, { kind: 'office', service: 'shampoo' }).events
+}
+
+const ofType = <T extends SimEvent['type']>(events: SimEvent[], type: T) => events.filter((e): e is Extract<SimEvent, { type: T }> => e.type === type)
+
+describe('the festival quest and its keepsake', () => {
+  it('pays the festival quest and gives its keepsake the first time', () => {
+    const sim = on(37)
+    const events = finishFestivalQuest(sim)
+    const done = ofType(events, 'festivalQuestDone')
+    expect(done).toHaveLength(1)
+    expect(done[0]).toMatchObject({ festival: 'tet', gift: true, quest: { festival: 'tet', state: 'done' } })
+    expect(ofType(events, 'questDone').filter(e => e.quest.period === 'month')).toEqual([])
+    expect(sim.book.gifts).toContain('maiBranch')
+    expect(sim.festival.keepsakes).toEqual(['tet'])
+    expect(sim.stats.quests).toBeGreaterThanOrEqual(done[0].quest.reward)
+  })
+
+  it('pays only money when the keepsake was given before', () => {
+    const sim = on(37, s => (s.festival.keepsakes = ['tet']))
+    const before = sim.money
+    const events = finishFestivalQuest(sim)
+    const done = ofType(events, 'festivalQuestDone')
+    expect(done[0].gift).toBe(false)
+    expect(sim.book.gifts).toEqual([])
+    expect(sim.festival.keepsakes).toEqual(['tet'])
+    expect(sim.money - before).toBeGreaterThanOrEqual(done[0].quest.reward)
+  })
+
+  it('reloading after the festival quest pays nothing again', () => {
+    const sim = on(37)
+    finishFestivalQuest(sim)
+    sim.clock.minutes = 1190
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.drainEvents()
+    const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
+    const events = copy.drainEvents()
+    expect(ofType(events, 'festivalQuestDone')).toEqual([])
+    expect(ofType(events, 'festivalStarted')).toEqual([])
+    expect(copy.money).toBe(sim.money)
+    expect(copy.book.gifts).toEqual(['maiBranch'])
+  })
+})
+
+describe('festival announcements', () => {
+  const startOf = (day: number) => {
+    const sim = new SpaSim(opts())
+    sim.day = day - 1
+    sim.startDay()
+    return ofType(sim.drainEvents(), 'festivalStarted')
+  }
+
+  it('announces a festival on its first day only', () => {
+    expect(startOf(37)).toEqual([{ type: 'festivalStarted', festival: 'tet', service: 'shampoo' }])
+    expect(startOf(38)).toEqual([])
+    expect(startOf(8)).toEqual([{ type: 'festivalStarted', festival: 'march8', service: 'shampoo' }])
+    expect(startOf(46)).toEqual([])
+  })
+
+  it('tells the next month which festival quest ended unfinished', () => {
+    const monthAfter = (day: number, prep: (sim: SpaSim) => void = () => {}) => {
+      const sim = on(day)
+      prep(sim)
+      sim.day = day + 2
+      sim.startDay()
+      return ofType(sim.drainEvents(), 'monthStarted')[0].ended
+    }
+    expect(monthAfter(37)).toBe('tet')
+    expect(monthAfter(37, sim => (sim.progress.monthly!.state = 'done'))).toBeNull()
+    expect(monthAfter(40)).toBe('valentine')
+    expect(monthAfter(46)).toBeNull()
   })
 })

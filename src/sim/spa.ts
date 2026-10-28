@@ -36,7 +36,7 @@ import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
-import { festivalOf, festivalService } from './festivals'
+import { emptyFestivalBook, festivalOf, festivalService, FESTIVALS, type FestivalBook } from './festivals'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
@@ -144,6 +144,8 @@ export class SpaSim {
   progress: Progress = emptyProgress()
   /** The badges the shop has earned. */
   badges: Badges = {}
+  /** The festivals whose keepsake the shop has been given. */
+  festival: FestivalBook = emptyFestivalBook()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -621,12 +623,19 @@ export class SpaSim {
     clearStale(this.vip, this.day)
     this.progress.dayStart = structuredClone(this.progress.total)
     this.checkBadges()
-    if (!this.questsOpen()) return
-    const rng = this.questRng()
-    rollDay(this.progress, this.day, this.questShop(), 1, rng)
-    if (this.progress.monthFrom === monthStart(this.day)) return
-    rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
-    if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day) })
+    if (this.questsOpen()) {
+      const rng = this.questRng()
+      rollDay(this.progress, this.day, this.questShop(), 1, rng)
+      if (this.progress.monthFrom !== monthStart(this.day)) {
+        const last = this.progress.monthly
+        rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
+        const ended = last && last.state !== 'done' ? last.festival : null
+        if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day), ended })
+      }
+    }
+    // told after the quests are rolled, so the service is the one the month settled on
+    const festival = festivalOf(this.day)
+    if (festival && festival !== festivalOf(this.day - 1)) this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
   }
 
   /** The shop as the badges read it. */
@@ -725,13 +734,20 @@ export class SpaSim {
     if (p.monthFrom !== monthStart(this.day) && daysLeft >= QUEST_MIN_LEFT_MIN / DAY_MINUTES) rollMonth(p, this.day, this.questShop(), daysLeft, rng)
   }
 
-  /** Pays each finished quest into the till and the day, and tells the view. */
+  /** Pays each finished quest into the till and the day, and tells the view; a festival quest also gives its keepsake, the first time only. */
   private payQuests(done: Quest[]): void {
     for (const q of done) {
       this.money += q.reward
       this.stats.quests += q.reward
       if (q.period === 'day') this.progress.life.dailies++
-      this.emit({ type: 'questDone', quest: { ...q } })
+      if (q.festival) {
+        const gift = !this.festival.keepsakes.includes(q.festival)
+        if (gift) {
+          this.festival.keepsakes.push(q.festival)
+          this.book.gifts.push(FESTIVALS[q.festival].keepsake)
+        }
+        this.emit({ type: 'festivalQuestDone', quest: { ...q }, festival: q.festival, gift })
+      } else this.emit({ type: 'questDone', quest: { ...q } })
     }
   }
 

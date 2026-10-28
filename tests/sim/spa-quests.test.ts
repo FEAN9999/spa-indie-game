@@ -56,7 +56,8 @@ describe('giving quests', () => {
     sim.drainEvents()
     sim.startDay()
     expect(sim.day).toBe(10)
-    expect(sim.drainEvents()).toContainEqual({ type: 'monthStarted', month: 4 })
+    // the month before was 8/3, whose festival quest was left unfinished
+    expect(sim.drainEvents()).toContainEqual({ type: 'monthStarted', month: 4, ended: 'march8' })
     expect(sim.progress.monthFrom).toBe(10)
     expect(sim.progress.monthly!.kind).not.toBe(before)
   })
