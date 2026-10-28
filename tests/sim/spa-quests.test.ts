@@ -185,6 +185,16 @@ describe('swapping', () => {
     sim.progress.swaps = 1
     expect(sim.swapQuest(1)).toBe('closed')
   })
+
+  it('refuses a swap from 20:00, while the last guests are still leaving', () => {
+    const sim = day8()
+    sim.clock.minutes = 1200
+    const before = structuredClone(sim.progress.daily)
+    expect(sim.dayOver).toBe(false)
+    expect(sim.swapQuest(0)).toBe('closed')
+    expect(sim.progress.daily).toEqual(before)
+    expect(sim.progress.swaps).toBe(1)
+  })
 })
 
 describe('saving and loading', () => {

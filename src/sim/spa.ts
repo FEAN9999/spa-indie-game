@@ -600,9 +600,9 @@ export class SpaSim {
     }
   }
 
-  /** Swaps daily quest `i` for another, sized to what is left of the day; once a day, never a finished one, never after closing. */
+  /** Swaps daily quest `i` for another, sized to what is left of the day; once a day, never a finished one, never from 20:00. */
   swapQuest(i: number): 'swaps' | 'done' | 'closed' | null {
-    if (this.dayOver) return 'closed'
+    if (this.dayOver || this.clock.isClosed) return 'closed'
     return swap(this.progress, i, this.questShop(), (DAY_END_MIN - this.clock.minutes) / DAY_MINUTES, this.questRng(101))
   }
 

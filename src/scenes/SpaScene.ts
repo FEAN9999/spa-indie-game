@@ -574,7 +574,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       for (const e of events) this.handle(e)
       // two items can run low on the same customer: one toast, or the first would be destroyed unseen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
-      if (low.length > 0) this.hud.toast(stockLowText(low))
+      if (low.length > 0) this.queueToast(stockLowText(low))
       if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
     }
 
@@ -758,8 +758,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         const name = VIP_TEXT[e.vip].name
         if (e.stars === 3) this.say(e.customerId, VIP_TEXT[e.vip].thanks, BUBBLE_MS.story)
         if (e.photo) this.hud.toast(t('vipPhotoToast', { name }))
-        // later than the photo toast, which a toast right now would overwrite
-        if (e.board) this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('vipBoardToast')))
+        // queued after the photo toast, which a toast right now would overwrite, and ahead of a quest it finished
+        if (e.board) this.queueToast(t('vipBoardToast'))
         return
       }
       case 'heart': {
@@ -788,8 +788,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       }
       case 'bookPage':
-        // later than the gift toast, which a toast right now would overwrite
-        this.time.delayedCall(LATE_TOAST_MS, () => this.hud.toast(t('bookPageToast')))
+        // queued after the gift toast, which a toast right now would overwrite, and ahead of a quest it finished
+        this.queueToast(t('bookPageToast'))
         return
       case 'greeted':
       case 'levelUp':

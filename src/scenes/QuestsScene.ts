@@ -101,7 +101,7 @@ export class QuestsScene extends Phaser.Scene {
 
     this.keep(this.label(LEFT, DAY_HEAD_Y, t('questsToday', { day: sim.day }), 40))
     if (p.daily.length > 0) {
-      const swaps = p.swaps > 0 ? t('questSwapsLeft', { n: p.swaps }) : t('questNoSwaps')
+      const swaps = this.canSwap() ? t('questSwapsLeft', { n: p.swaps }) : t('questNoSwaps')
       this.keep(this.label(RIGHT, DAY_HEAD_Y, swaps, 30, '600', C.soft).setOrigin(1, 0.5))
     } else this.keep(this.add.text(MID, DAY_ROW_TOP + DAY_ROW_H / 2, t('questsNoneToday'), textStyle(34, '600', C.soft)).setOrigin(0.5))
     p.daily.forEach((q, i) => this.row(q, i, DAY_ROW_TOP + i * DAY_ROW_STEP, DAY_ROW_H))
@@ -161,7 +161,7 @@ export class QuestsScene extends Phaser.Scene {
     }
 
     if (q.state === 'done') row.add(this.stamp(lineY))
-    else if (i !== null && sim.progress.swaps > 0) row.add(addButton(this, SIDE_X, lineY, SIDE_W, SIDE_H, t('questSwap'), 'plain', () => this.swap(i), 30))
+    else if (i !== null && this.canSwap()) row.add(addButton(this, SIDE_X, lineY, SIDE_W, SIDE_H, t('questSwap'), 'plain', () => this.swap(i), 30))
   }
 
   /** A teal "Xong" pill with a tick, where the swap button would be. */
@@ -180,6 +180,12 @@ export class QuestsScene extends Phaser.Scene {
       .strokePath()
     const text = this.add.text(19, 0, t('questStamp'), textStyle(30, '800', C.paper)).setOrigin(0.5)
     return this.add.container(SIDE_X, y, [g, text])
+  }
+
+  /** A swap is left today and the shop has not reached closing time. */
+  private canSwap(): boolean {
+    const { sim } = this.params
+    return sim.progress.swaps > 0 && !sim.clock.isClosed
   }
 
   private swap(i: number): void {
