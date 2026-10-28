@@ -371,3 +371,30 @@ export const POWER_TO_MIN = 960
 export const POWER_WARN_MIN = 60
 /** Tips on a service finished while the power is out are this many times the usual. */
 export const POWER_TIP_FACTOR = 1.5
+
+/** The shop is graded on the last day of each month from this day. */
+export const RANK_FROM_DAY = 9
+/** The rating that earns 0 points and the rating that earns all 20. */
+export const RANK_RATING: [number, number] = [3, 4.8]
+/** The beauty that earns all 20 points. */
+export const RANK_BEAUTY_FULL = 60
+/** The number of services on the menu that earns all 20 points. */
+export const RANK_SERVICES_FULL = 6
+/** The customers served a day that earn all 20 points. */
+export const RANK_SERVED_FULL = 25
+/** The share of customers walking out that earns 0 points. */
+export const RANK_LOST_ZERO = 0.2
+/** The total (out of 100) that earns 2, 3, 4 and 5 stars. */
+export const RANK_STAR_AT: [number, number, number, number] = [30, 50, 70, 85]
+/** What a rise to this many stars pays. */
+export const RANK_REWARD: Record<number, number> = { 2: 200_000, 3: 400_000, 4: 700_000, 5: 1_000_000 }
+/** Prices go up this much for each star after the first. */
+export const RANK_PRICE_STEP = 0.05
+/** The street's rivals and the score each starts with in year 1. */
+export const RIVAL_BASE = { coBa: 48, ngocLan: 58, hoaSen: 66, spaMoi: 74 }
+/** Each rival gains this many points a year... */
+export const RIVAL_YEAR_STEP = 4
+/** ...up to this score. */
+export const RIVAL_SCORE_MAX = 86
+/** What the year's first to fifth place is paid. */
+export const YEAR_REWARD = [3_000_000, 1_000_000, 500_000, 0, 0]
