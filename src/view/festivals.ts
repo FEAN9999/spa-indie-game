@@ -10,6 +10,7 @@ import type { SimEvent } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { questCount } from './quests'
+import type { TodayLine } from './today'
 
 /** Each festival's two colours: the bunting alternates them, and the first is its sign and its discs. */
 export const FESTIVAL_COLORS: Record<FestivalId, [string, string]> = {
@@ -22,22 +23,18 @@ export const FESTIVAL_COLORS: Record<FestivalId, [string, string]> = {
 }
 
 /** The line over the floor buttons in a festival: how far its quest has got, or just its service when the month has no festival quest. */
-export function todayLine(sim: SpaSim): { festival: FestivalId; text: string } | null {
+export function festivalLine(sim: SpaSim): TodayLine | null {
   const festival = festivalOf(sim.day)
   if (!festival) return null
+  const icon = festivalIcon(festival)
   const name = t(FESTIVALS[festival].name)
   const p = sim.progress
   const q = p.monthly
   if (q?.festival === festival && p.monthFrom === monthStart(sim.day)) {
-    if (q.state === 'done') return { festival, text: t('todayFestivalDone', { festival: name }) }
-    return { festival, text: t('todayFestival', { festival: name, service: t(SERVICES[q.service!].name), count: questCount(q, p.total) }) }
+    if (q.state === 'done') return { icon, text: t('todayFestivalDone', { festival: name }) }
+    return { icon, text: t('todayFestival', { festival: name, service: t(SERVICES[q.service!].name), count: questCount(q, p.total) }) }
   }
-  return { festival, text: t('todayFestivalPlain', { festival: name, service: t(SERVICES[sim.festivalServiceToday()!].name) }) }
-}
-
-/** Today's line while the shop is in view: none once the day is over or while a panel covers the shop. */
-export function todayShown(sim: SpaSim, covered: boolean): ReturnType<typeof todayLine> {
-  return covered || sim.dayOver ? null : todayLine(sim)
+  return { icon, text: t('todayFestivalPlain', { festival: name, service: t(SERVICES[sim.festivalServiceToday()!].name) }) }
 }
 
 /** How long a gold card stays: a badge's time for one line, more for each wrapped line so the longest can be read. */
@@ -50,6 +47,8 @@ export interface GoldCard {
   head: string
   name: string
   line: string
+  /** A morning's notice comes without the level-up sound. */
+  quiet?: boolean
 }
 
 const festivalName = (f: FestivalId) => t(FESTIVALS[f].name)

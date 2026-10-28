@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { VIP_WARN_MIN } from '../../src/config'
+import { emptyEventBook } from '../../src/sim/events'
 import { emptyVipBook, type VipBook } from '../../src/sim/vips'
 import { t } from '../../src/strings/vi'
 import { bookingText, clockStar, summaryNotes } from '../../src/view/vip'
@@ -14,28 +15,28 @@ describe('VIP notes and clock star', () => {
 
   it('adds the VIP reminder until the VIP hint is done', () => {
     const vip = booked(4, 900)
-    expect(summaryNotes(false, vip, 3, false)).toEqual([
+    expect(summaryNotes(false, vip, emptyEventBook(), 3, false)).toEqual([
       { text: bookingText('vipBookingNote', vip.booking!), booking: true },
       { text: t('vipFirstNote'), booking: false },
     ])
-    expect(summaryNotes(false, vip, 3, true)).toEqual([{ text: bookingText('vipBookingNote', vip.booking!), booking: true }])
+    expect(summaryNotes(false, vip, emptyEventBook(), 3, true)).toEqual([{ text: bookingText('vipBookingNote', vip.booking!), booking: true }])
   })
 
   it("puts the first day's note first and adds nothing without a booking for tomorrow", () => {
-    expect(summaryNotes(true, emptyVipBook(), 1, false)).toEqual([{ text: t('summaryFirstDay'), booking: false }])
-    expect(summaryNotes(false, emptyVipBook(), 1, false)).toEqual([])
-    expect(summaryNotes(false, booked(6, 900), 3, false)).toEqual([])
+    expect(summaryNotes(true, emptyVipBook(), emptyEventBook(), 1, false)).toEqual([{ text: t('summaryFirstDay'), booking: false }])
+    expect(summaryNotes(false, emptyVipBook(), emptyEventBook(), 1, false)).toEqual([])
+    expect(summaryNotes(false, booked(6, 900), emptyEventBook(), 3, false)).toEqual([])
     const vip = booked(4, 900)
-    expect(summaryNotes(true, vip, 3, true)[0]).toEqual({ text: t('summaryFirstDay'), booking: false })
-    expect(summaryNotes(true, vip, 3, true)).toHaveLength(2)
+    expect(summaryNotes(true, vip, emptyEventBook(), 3, true)[0]).toEqual({ text: t('summaryFirstDay'), booking: false })
+    expect(summaryNotes(true, vip, emptyEventBook(), 3, true)).toHaveLength(2)
   })
 
   it('shows the clock star from an hour before her time, only on her day', () => {
     const vip = booked(4, 900)
-    expect(clockStar(vip, 4, 900 - VIP_WARN_MIN - 1)).toBe(false)
-    expect(clockStar(vip, 4, 900 - VIP_WARN_MIN)).toBe(true)
-    expect(clockStar(vip, 4, 899)).toBe(true)
-    expect(clockStar(vip, 3, 900)).toBe(false)
-    expect(clockStar(emptyVipBook(), 4, 900)).toBe(false)
+    expect(clockStar(vip, emptyEventBook(), 4, 900 - VIP_WARN_MIN - 1)).toBe(false)
+    expect(clockStar(vip, emptyEventBook(), 4, 900 - VIP_WARN_MIN)).toBe(true)
+    expect(clockStar(vip, emptyEventBook(), 4, 899)).toBe(true)
+    expect(clockStar(vip, emptyEventBook(), 3, 900)).toBe(false)
+    expect(clockStar(emptyVipBook(), emptyEventBook(), 4, 900)).toBe(false)
   })
 })

@@ -3,7 +3,8 @@ import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { Quest } from '../../src/sim/quests'
 import { BADGE_BANNER_MS, GOLD_CARD_LINE_MS } from '../../src/config'
-import { festivalDoneCard, festivalStartCard, goldCardMs, keepsakeLine, monthToast, todayLine, todayShown } from '../../src/view/festivals'
+import { itemTexture } from '../../src/art/furniture'
+import { FESTIVAL_COLORS, festivalDoneCard, festivalLine, festivalStartCard, goldCardMs, keepsakeLine, monthToast } from '../../src/view/festivals'
 
 // the cards name their keepsake's texture, and svg.ts imports Phaser for loading textures, which needs a browser
 vi.mock('phaser', () => ({}))
@@ -16,42 +17,32 @@ function on(day: number): SpaSim {
   return sim
 }
 
-describe("today's line", () => {
+describe("the festival's line for today", () => {
   it('shows how far the festival quest has got', () => {
     const sim = on(37)
     const q = sim.progress.monthly!
     sim.progress.total.services.shampoo += 3
-    expect(todayLine(sim)).toEqual({ festival: 'tet', text: `Dịp Tết · Gội đầu 3/${q.target}` })
+    expect(festivalLine(sim)).toEqual({ icon: { texture: itemTexture('maiBranch'), disc: FESTIVAL_COLORS.tet[0] }, text: `Dịp Tết · Gội đầu 3/${q.target}` })
   })
 
   it('says when the festival quest is done', () => {
     const sim = on(37)
     sim.progress.monthly!.state = 'done'
-    expect(todayLine(sim)?.text).toBe('Dịp Tết · đã xong nhiệm vụ lễ')
+    expect(festivalLine(sim)?.text).toBe('Dịp Tết · đã xong nhiệm vụ lễ')
   })
 
   it('names only the festival service when the month has no festival quest', () => {
     const sim = on(37)
     sim.progress.monthly = { ...sim.progress.monthly!, kind: 'earn', service: null, festival: null }
-    expect(todayLine(sim)?.text).toBe('Dịp Tết · món lễ Gội đầu')
+    expect(festivalLine(sim)?.text).toBe('Dịp Tết · món lễ Gội đầu')
   })
 
   it('has nothing to say outside a festival', () => {
-    expect(todayLine(on(46))).toBeNull()
+    expect(festivalLine(on(46))).toBeNull()
   })
 })
 
 const tetQuest: Quest = { kind: 'service', period: 'month', service: 'shampoo', target: 6, reward: 300_000, base: 0, state: 'done', festival: 'tet' }
-
-describe("today's line on screen", () => {
-  it('hides while a panel covers the shop and once the day is over', () => {
-    const sim = on(37)
-    expect(todayShown(sim, false)).toEqual(todayLine(sim))
-    expect(todayShown(sim, true)).toBeNull()
-    sim.dayOver = true
-    expect(todayShown(sim, false)).toBeNull()
-  })
-})
 
 describe('how long a gold card stays', () => {
   it('stays the badge time for one line and longer for each wrapped line', () => {

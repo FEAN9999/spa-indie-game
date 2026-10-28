@@ -1,16 +1,14 @@
 import * as Phaser from 'phaser'
-import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
-import { FESTIVALS } from '../sim/festivals'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
-import { FESTIVAL_COLORS, todayShown } from './festivals'
+import { todayShown } from './today'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { addToast } from './ui'
 import { clockStar } from './vip'
@@ -190,7 +188,7 @@ export class Hud {
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(dayTimeText(this.sim.day, this.sim.clock.label()))
     this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
-    this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.day, this.sim.clock.minutes))
+    this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.eventBook, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX
@@ -252,7 +250,7 @@ export class Hud {
   /** Redraws today's line when its words change; it hides under a toast, under a panel and on the summary. */
   private updateToday(covered: boolean): void {
     const line = todayShown(this.sim, covered)
-    const key = line ? `${line.festival}|${line.text}` : ''
+    const key = line ? `${line.icon.texture}|${line.text}` : ''
     if (key !== this.todayKey) {
       this.todayKey = key
       this.today.removeAll(true)
@@ -269,11 +267,11 @@ export class Hud {
           .fillRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
           .lineStyle(4, hex(C.ink))
           .strokeRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
-          .fillStyle(hex(FESTIVAL_COLORS[line.festival][0]), 1)
+          .fillStyle(hex(line.icon.disc), 1)
           .fillCircle(discX, 0, TODAY.discR)
           .lineStyle(3, hex(C.ink))
           .strokeCircle(discX, 0, TODAY.discR)
-        const icon = add.image(discX, 0, itemTexture(FESTIVALS[line.festival].keepsake))
+        const icon = add.image(discX, 0, line.icon.texture)
         icon.setScale(TODAY.icon / Math.max(icon.width, icon.height))
         this.today.add([bg, icon, text])
       }

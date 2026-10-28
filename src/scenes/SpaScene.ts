@@ -35,6 +35,7 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { eventCard, hotCard } from '../view/events'
 import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
@@ -474,7 +475,7 @@ export class SpaScene extends Phaser.Scene {
   /**
    * A gold card under the top bar: a new badge's medal, "Huy hiệu mới", its name and what it asked, or a festival card's picture and words.
    * A long heading or name is drawn smaller to fit; a long line wraps and the card grows under it, and stays longer to be read.
-   * It plays the level-up sound and returns how long it stays.
+   * It plays the level-up sound, unless the card is a quiet morning notice, and returns how long it stays.
    */
   private showCard(next: BadgeId | GoldCard): number {
     const card: Omit<GoldCard, 'icon'> =
@@ -505,7 +506,7 @@ export class SpaScene extends Phaser.Scene {
       .container(0, 0, [bg, ...icon, head, name, line])
       .setDepth(HUD_DEPTH + 60)
       .setAlpha(0)
-    sound.play('levelUp')
+    if (typeof next === 'string' || !next.quiet) sound.play('levelUp')
     const ms = goldCardMs(line.getWrappedText().length)
     this.tweens.chain({
       targets: box,
@@ -939,6 +940,21 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'festivalQuestDone':
         this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
         this.badgeQueue.push(festivalDoneCard(e))
+        return
+      case 'eventToday':
+        this.badgeQueue.push(eventCard(e.plan))
+        return
+      case 'hotStarted':
+        this.badgeQueue.push(hotCard())
+        return
+      case 'kolArrived':
+        this.queueToast(t('kolArrivedToast'))
+        return
+      case 'kolPosted':
+        this.queueToast(t('kolPostedToast'))
+        return
+      case 'kolLeft':
+        this.queueToast(t('kolLeftToast'))
         return
       case 'badgesFound':
         this.foundToast = t('badgesFoundToast', { n: e.n })
