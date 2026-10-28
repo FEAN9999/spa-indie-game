@@ -4,6 +4,7 @@ import {
   ARRIVE_MS,
   DAY_END_MIN,
   DAY_MINUTES,
+  DAYS_PER_MONTH,
   EXIT_MS,
   EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
@@ -795,7 +796,9 @@ export class SpaSim {
     if (this.questsOpen()) {
       const rng = this.questRng()
       rollDay(this.progress, this.day, this.questShop(), 1, rng)
-      if (this.progress.monthFrom !== monthStart(this.day)) {
+      // quests opened early by the starter chain can roll a plain month quest the day before the first festival: it rolls again for the festival
+      const festival = festivalOf(this.day)
+      if (this.progress.monthFrom !== monthStart(this.day) || (festival && this.progress.monthly?.festival !== festival)) {
         const last = this.progress.monthly
         rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
         const ended = last && last.state !== 'done' ? last.festival : null
@@ -948,11 +951,14 @@ export class SpaSim {
   /** What the shop has right now that decides which quests it can be given. */
   questShop(): QuestShop {
     const unfinished = REGULAR_IDS.map(id => this.book.regulars[id]).filter(r => r.met && r.hearts < 5)
+    const heartDue = unfinished.some(r => r.visitAt !== null)
+    // quests opened early by the starter chain: before the regulars' days only a visit already due can bring a heart
+    const regularsCome = monthStart(this.day) + DAYS_PER_MONTH - 1 >= REGULARS_FROM_DAY
     return {
       available: this.availableServices(),
       technicians: this.staff.filter(s => s.role === 'technician' && !s.leaving).length,
-      heartable: unfinished.length > 0,
-      heartDue: unfinished.some(r => r.visitAt !== null),
+      heartable: unfinished.length > 0 && (regularsCome || heartDue),
+      heartDue,
       canStudy: this.staff.some(s => !s.leaving && courses(s, this.services).length > 0),
     }
   }

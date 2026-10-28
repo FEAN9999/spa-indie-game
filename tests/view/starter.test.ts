@@ -26,7 +26,7 @@ describe('a locked button', () => {
 describe('the goal line', () => {
   it('names the current goal with its count, without one when it needs one thing, and nothing once the chain is past', () => {
     const sim = chainShop()
-    expect(goalLine(sim)).toEqual({ icon: GOAL_ICON, text: 'Gội đầu cho Chú Sáu' })
+    expect(goalLine(sim)).toEqual({ icon: GOAL_ICON, text: 'Gội đầu cho vị khách đầu tiên' })
     sim.starter.at = STARTER_GOAL_IDS.indexOf('serveFew')
     sim.progress.total.served = 2
     expect(goalLine(sim)?.text).toBe('Phục vụ 4 khách · 2/4')
@@ -48,9 +48,10 @@ describe('the goal card', () => {
   const card = (goal: StarterGoalId, reward: number, opens: StarterFeature | null) => goalCard({ type: 'goalDone', goal, reward, opens })
 
   it('names the goal, its reward, and a button it opened with a line of story', () => {
-    expect(card('firstGuest', 20_000, null)).toEqual({ icon: GOAL_ICON, head: 'Xong mục tiêu', name: 'Gội đầu cho Chú Sáu', line: '+20.000 đ' })
+    expect(card('firstGuest', 20_000, null)).toEqual({ icon: GOAL_ICON, head: 'Xong mục tiêu', name: 'Gội đầu cho vị khách đầu tiên', line: '+20.000 đ' })
     expect(card('serveFew', 30_000, 'build').line).toBe('+30.000 đ · Mở nút Xây dựng. Có tiền rồi thì sắm đồ cho tiệm đẹp hơn!')
     expect(card('serveMany', 50_000, null).line).toBe('+50.000 đ')
+    expect(card('massageTwice', 100_000, null).line).toBe('+100.000 đ · Từ mai có nhiệm vụ mỗi ngày')
   })
 
   it('names the mask gift, or the opening price paid back, and the Dịch vụ button', () => {
@@ -67,7 +68,7 @@ describe('the starter chain list', () => {
     sim.progress.total.served = 6
     const rows = chainRows(sim)
     expect(rows).toHaveLength(11)
-    expect(rows[0]).toEqual({ name: 'Gội đầu cho Chú Sáu', state: 'done', have: 1, need: 1, detail: '+20.000 đ' })
+    expect(rows[0]).toEqual({ name: 'Gội đầu cho vị khách đầu tiên', state: 'done', have: 1, need: 1, detail: '+20.000 đ' })
     expect(rows[2]).toMatchObject({ state: 'done', detail: '+30.000 đ · Mở nút Xây dựng' })
     expect(rows[4]).toEqual({ name: 'Phục vụ 10 khách', state: 'current', have: 6, need: 10, detail: 'Quà: Đắp mặt nạ + 1 ghế · Mở nút Dịch vụ' })
     expect(rows[7]).toMatchObject({ state: 'later', detail: '+50.000 đ · Mở nút Nhân viên' })

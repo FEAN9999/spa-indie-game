@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { AWAY_MIN_MS, CANDIDATES_PER_DAY, REGULAR_VISIT_FROM_MIN, REGULAR_VISIT_TO_MIN } from '../../src/config'
+import { festivalOf } from '../../src/sim/festivals'
 import type { ItemKind } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -278,5 +279,37 @@ describe('the daily quests after the starter chain', () => {
     expect(sim.questsOpen()).toBe(true)
     expect(sim.progress.daily.length).toBeGreaterThan(0)
     expect(events.some(e => e.type === 'badge')).toBe(false)
+  })
+
+  /** A chain shop whose chain was done on day `done`, at the start of day `day`. */
+  function doneOn(done: number, day: number): SpaSim {
+    const sim = chainShop()
+    sim.starter.at = STARTER_GOAL_IDS.length
+    sim.starter.doneDay = done
+    sim.day = day - 1
+    sim.startDay()
+    return sim
+  }
+
+  it('still gives the first festival its month quest when the quests opened before it', () => {
+    const sim = doneOn(3, 7)
+    expect(sim.progress.monthly?.festival).toBeNull()
+    endDay(sim)
+    expect(festivalOf(8)).not.toBeNull()
+    expect(sim.progress.monthly?.festival).toBe(festivalOf(8))
+  })
+
+  it('asks for hearts only in a month a regular can come', () => {
+    const sim = chainShop()
+    const sau = sim.book.regulars.sau
+    sau.met = true
+    sim.day = 4
+    expect(sim.questShop().heartable).toBe(false)
+    sim.day = 7
+    expect(sim.questShop().heartable).toBe(true)
+    // chú Sáu's day-2 visit is the one before the regulars' days
+    sim.day = 2
+    sau.visitAt = REGULAR_VISIT_FROM_MIN
+    expect(sim.questShop().heartable).toBe(true)
   })
 })

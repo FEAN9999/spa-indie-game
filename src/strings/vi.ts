@@ -615,7 +615,7 @@ export const vi = {
   yearScore: 'Điểm của tiệm năm nay: {score}, trung bình các tháng.',
   yearClaim: 'Nhận thưởng',
   yearClose: 'Đóng',
-  goalFirstGuest: 'Gội đầu cho Chú Sáu',
+  goalFirstGuest: 'Gội đầu cho vị khách đầu tiên',
   goalThreeStars: 'Được 3 sao một lần',
   goalServeFew: 'Phục vụ 4 khách',
   goalBuyDecor: 'Mua một món trang trí',

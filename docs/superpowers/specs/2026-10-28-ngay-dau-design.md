@@ -78,7 +78,7 @@ Một danh sách cố định, làm lần lượt từng mục. Mỗi mục có 
 
 | # | Mục tiêu | Thưởng | Mở thêm | Thường xong lúc |
 |---|---|---|---|---|
-| 1 | Gội đầu cho Chú Sáu | 20k | | ngày 1, phút đầu |
+| 1 | Gội đầu cho vị khách đầu tiên | 20k | | ngày 1, phút đầu |
 | 2 | Được 3 sao một lần | 30k | | ngày 1 |
 | 3 | Phục vụ 4 khách | 30k | Nút **Xây dựng** | cuối ngày 1 |
 | 4 | Mua một món trang trí | 40k | | ngày 1 hoặc đầu ngày 2 |
@@ -90,7 +90,7 @@ Một danh sách cố định, làm lần lượt từng mục. Mỗi mục có 
 | 10 | Mở dịch vụ Massage | 100k | | ngày 3–4 |
 | 11 | Massage cho 2 khách | 100k | Nhiệm vụ hằng ngày từ sáng hôm sau | ngày 4 |
 
-- **Mục 1:** khách đầu tiên của tiệm mới luôn là Chú Sáu (mục 4.4).
+- **Mục 1:** khách đầu tiên của tiệm mới luôn là Chú Sáu (mục 4.4). Tên mục không gọi tên chú, vì gội cho bất kỳ khách nào cũng xong mục, và chú có thể bỏ về nếu chờ lâu (sửa khi kiểm tra trên trình duyệt).
 - **Mục 4:** đếm lần mua trong Xây dựng một món thuộc nhóm `decor` hoặc `seat`, không đếm đồ có sẵn. Món rẻ nhất là chậu cây 40k, nên thưởng 40k là mua xong không mất tiền.
 - **Mục 5:** tặng nghĩa là mở dịch vụ không mất 200k, và giường mặt nạ vào hàng quà chờ đặt (`book.gifts`). Đây là món quà lớn (550k) để người chơi thấy "tiệm lớn lên rồi".
   - Nếu người chơi đã tự trả tiền mở mặt nạ trước đó (nút Dịch vụ tới hạn ngày 4 trước khi xong mục 5), thì mục 5 tặng giường cộng 200k tiền mặt.

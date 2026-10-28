@@ -53,6 +53,8 @@ export function goalCard(e: Extract<SimEvent, { type: 'goalDone' }>): GoldCard {
   // the mask gift pays the opening price back when the shop had already paid it
   if (e.goal === 'serveMore') parts.push(t(e.reward > 0 ? 'goalMaskGiftPaid' : 'goalMaskGift'))
   if (e.opens) parts.push(`${t('goalOpens', { name: t(BUTTON_NAME[e.opens]) })}. ${t(STORY[e.opens])}`)
+  // the last goal opens the daily quests, the next morning
+  if (e.goal === STARTER_GOAL_IDS[STARTER_GOAL_IDS.length - 1]) parts.push(t('starterDailyNext'))
   return { icon: GOAL_ICON, head: t('goalDoneHead'), name: t(GOAL_NAME[e.goal]), line: parts.join(' · ') }
 }
 
