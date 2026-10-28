@@ -12,6 +12,8 @@ import {
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
   HEART_AT,
+  HOT_ARRIVAL,
+  HOT_DAYS,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -50,6 +52,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
+import { emptyEventBook, hotOn, planEvent, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -124,6 +127,8 @@ export class SpaSim {
   stats: DayStats = emptyStats()
   book: GuestBook = emptyBook()
   vip: VipBook = emptyVipBook()
+  /** Tomorrow's or today's event, the hot days and the day's event counts. */
+  eventBook: EventBook = emptyEventBook()
   paused = false
   servingCustomerId: number | null = null
   dayOver = false
@@ -280,14 +285,19 @@ export class SpaSim {
     return festivalService(f, this.availableServices())
   }
 
-  /** What the gap between two customers is multiplied by today: shorter in a festival. */
-  eventArrivalFactor(): number {
-    return festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1
+  /** True on the days after Mi Mi's 3 stars. */
+  hotToday(): boolean {
+    return hotOn(this.eventBook, this.day)
   }
 
-  /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival, to go with the crowd. */
+  /** What the gap between two customers is multiplied by today: shorter in a festival or a hot day, once when both. */
+  eventArrivalFactor(): number {
+    return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1)
+  }
+
+  /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival or a hot day, to go with the crowd. */
   private eventPatienceFactor(): number {
-    return festivalOf(this.day) ? FESTIVAL_PATIENCE : 1
+    return festivalOf(this.day) || this.hotToday() ? FESTIVAL_PATIENCE : 1
   }
 
   /**
@@ -633,6 +643,10 @@ export class SpaSim {
     startDay(this.crew)
     planDay(this.book, this.day, this.rng)
     clearStale(this.vip, this.day)
+    const book = this.eventBook
+    if (book.plan && book.plan.day < this.day) book.plan = null
+    book.count = 0
+    book.inspected = false
     this.progress.dayStart = structuredClone(this.progress.total)
     this.checkBadges()
     if (this.questsOpen()) {
@@ -648,6 +662,8 @@ export class SpaSim {
     // told after the quests are rolled, so the service is the one the month settled on
     const festival = festivalOf(this.day)
     if (festival && festival !== festivalOf(this.day - 1)) this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
+    if (book.plan?.day === this.day) this.emit({ type: 'eventToday', plan: { ...book.plan } })
+    if (this.hotToday() && this.day === book.hotUntil - HOT_DAYS + 1) this.emit({ type: 'hotStarted', until: book.hotUntil })
   }
 
   /** The shop as the badges read it. */
@@ -1028,10 +1044,11 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats, festivalOf(this.day) !== null)
-      // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
+      // tomorrow's VIP, then tomorrow's event on any other day, each drawn from a stream of its own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
+      planEvent(this.eventBook, this.day, this.vip.booking?.day ?? null, createRng(this.day * 6151 + this.nextId))
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }

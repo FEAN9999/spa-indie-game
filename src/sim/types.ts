@@ -1,6 +1,7 @@
 import type { BadgeId } from './badges'
 import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
+import type { EventPlan } from './events'
 import type { FestivalId } from './festivals'
 import type { ItemKind } from './items'
 import type { Quest } from './quests'
@@ -166,6 +167,10 @@ export type SimEvent =
   | { type: 'festivalQuestDone'; quest: Quest; festival: FestivalId; gift: boolean }
   /** The first day of a festival month, with the festival service the month settled on. */
   | { type: 'festivalStarted'; festival: FestivalId; service: ServiceId }
+  /** The morning of an announced event. */
+  | { type: 'eventToday'; plan: EventPlan }
+  /** The first of the hot days after Mi Mi's 3 stars; `until` is the last. */
+  | { type: 'hotStarted'; until: number }
   /** A new month began with a new monthly quest. */
   /** `ended`: the festival whose quest the month just over left unfinished. */
   | { type: 'monthStarted'; month: number; ended: FestivalId | null }
