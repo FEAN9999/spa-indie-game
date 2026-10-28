@@ -672,6 +672,35 @@ export const vi = {
   sheetNeed: 'Cần {n}★',
   sheetLeave: 'Rời {place}: {n} khách đang chờ sẽ về, không đánh giá',
   openedToast: 'Đã mở chi nhánh {place}',
+  goalFirstGuest: 'Gội đầu cho vị khách đầu tiên',
+  goalThreeStars: 'Được 3 sao một lần',
+  goalServeFew: 'Phục vụ 4 khách',
+  goalBuyDecor: 'Mua một món trang trí',
+  goalServeMore: 'Phục vụ 10 khách',
+  goalPlaceMaskBed: 'Đặt ghế đắp mặt nạ vào tiệm',
+  goalMaskTwice: 'Đắp mặt nạ cho 2 khách',
+  goalServeMany: 'Phục vụ 16 khách',
+  goalHireTech: 'Thuê một thợ',
+  goalOpenMassage: 'Mở dịch vụ Massage',
+  goalMassageTwice: 'Massage cho 2 khách',
+  goalDoneHead: 'Xong mục tiêu',
+  goalOpens: 'Mở nút {name}',
+  goalStoryBuild: 'Có tiền rồi thì sắm đồ cho tiệm đẹp hơn!',
+  goalStoryServices: 'Tiệm đông rồi, làm thêm món mới cho khách chọn thôi!',
+  goalStoryStaff: 'Tiệm đông rồi, thuê người phụ thôi!',
+  goalMaskGift: 'Quà khai trương: mở Đắp mặt nạ, tặng 1 ghế đắp mặt nạ',
+  goalMaskGiftPaid: 'Quà khai trương: trả lại tiền mở Đắp mặt nạ, tặng 1 ghế đắp mặt nạ',
+  goalMaskGiftShort: 'Quà: Đắp mặt nạ + 1 ghế',
+  goalOpensDaily: 'Mở nhiệm vụ mỗi ngày',
+  goalLine: 'Mục tiêu: {goal} ({have}/{need})',
+  opensWhenDone: 'Mở khi xong: {goal}',
+  hintPlaceGift: 'Đặt ghế đắp mặt nạ ở đây',
+  starterTitle: 'Khởi nghiệp · đã xong {done}/{total}',
+  starterDailyNext: 'Từ mai có nhiệm vụ mỗi ngày',
+  tomorrowSau: 'Ngày mai Chú Sáu ghé lại',
+  tomorrowOpens: 'Ngày mai mở {name}',
+  recordServed: 'Kỷ lục mới: {n} khách!',
+  recordProfit: 'Kỷ lục lãi: {money}!',
 } as const
 
 export type StringKey = keyof typeof vi
@@ -681,3 +710,6 @@ export function t(key: StringKey, params?: Record<string, string | number>): str
   if (!params) return text
   return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match))
 }
+
+/** What a generous customer says as they add to the tip; each fits a speech bubble. */
+export const GENEROUS_LINES: readonly string[] = ['Tay nghề quá trời, giữ hết đi!', 'Đã quá! Bo thêm nè, khỏi thối.', 'Lâu lắm mới thấy sướng vầy, cầm thêm nè!']

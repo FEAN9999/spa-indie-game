@@ -209,10 +209,23 @@ describe('recording a day', () => {
     const p = emptyProgress()
     p.total.served = 30
     const stats = { served: 30, angry: 0, walkedAway: 0, income: 900_000, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 }
-    recordDay(p, stats, true)
+    recordDay(p, stats, true, 1)
     expect(p.recent).toEqual([])
     expect(p.life.bestServed).toBe(30)
-    recordDay(p, stats, false)
+    recordDay(p, stats, false, 2)
     expect(p.recent).toHaveLength(1)
+  })
+
+  it('marks a served record over an old best, a profit record otherwise, and none on the first day', () => {
+    const p = emptyProgress()
+    const day = (served: number, income: number) => ({ served, angry: 0, walkedAway: 0, income, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 })
+    recordDay(p, day(6, 200_000), false, 1)
+    expect(p.life.record).toBeNull()
+    recordDay(p, day(9, 300_000), false, 2)
+    expect(p.life.record).toEqual({ day: 2, kind: 'served' })
+    recordDay(p, day(9, 400_000), false, 3)
+    expect(p.life.record).toEqual({ day: 3, kind: 'profit' })
+    recordDay(p, day(5, 100_000), false, 4)
+    expect(p.life.record).toEqual({ day: 3, kind: 'profit' })
   })
 })

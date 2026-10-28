@@ -4,6 +4,7 @@ import {
   ARRIVE_MS,
   DAY_END_MIN,
   DAY_MINUTES,
+  DAYS_PER_MONTH,
   EXIT_MS,
   EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
@@ -12,6 +13,8 @@ import {
   FESTIVAL_SERVICE_CHANCE,
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
+  GENEROUS_CHANCE,
+  GENEROUS_TIP,
   HEART_AT,
   HOT_ARRIVAL,
   HOT_DAYS,
@@ -28,6 +31,7 @@ import {
   POWER_WARN_MIN,
   QUEST_MIN_LEFT_MIN,
   RATING_WINDOW,
+  REGULARS_FROM_DAY,
   RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
   RESTOCK_PRICE,
@@ -35,6 +39,7 @@ import {
   STAIRS_MS,
   PLACE_KINDS,
   PLACES,
+  STARTER_REWARD,
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
@@ -52,7 +57,7 @@ import { BRANCH_LAYOUT, PLACE_DECOR, placePrice, type PlaceId } from './places'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
 import { emptyFestivalBook, festivalOf, festivalService, FESTIVALS, type FestivalBook } from './festivals'
 import { DayClock } from './clock'
-import { fire, greet, refreshCandidates, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
+import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, refreshCandidates, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
@@ -60,7 +65,7 @@ import { floorOf, towerOf } from './floors'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
-import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, type GuestBook, type RegularId } from './regulars'
+import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, visitMinute, type GuestBook, type RegularId } from './regulars'
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
@@ -71,11 +76,12 @@ import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
+import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
-import { isUnlocked } from './unlocks'
+import type { Feature } from './unlocks'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
@@ -128,6 +134,8 @@ export interface SpaSimOptions {
   rng: Rng
   layout?: string[]
   autoSpawn?: boolean
+  /** A new shop that runs the starter chain; without it the chain has passed, as for every shop from before it. */
+  starter?: boolean
 }
 
 export class SpaSim {
@@ -182,6 +190,8 @@ export class SpaSim {
   badges: Badges = {}
   /** The festivals whose keepsake the shop has been given. */
   festival: FestivalBook = emptyFestivalBook()
+  /** The starter chain: the goal being worked on and the buttons it opened. */
+  starter: StarterBook
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -196,9 +206,10 @@ export class SpaSim {
   private nextStaffId = 1
   private untilArrivalMs = FIRST_ARRIVAL_MS
 
-  constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true }: SpaSimOptions) {
+  constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true, starter = false }: SpaSimOptions) {
     this.rng = rng
     this.autoSpawn = autoSpawn
+    this.starter = starter ? newStarter() : pastStarter()
     this.crew = {
       sim: this,
       rng,
@@ -396,6 +407,7 @@ export class SpaSim {
     if (problem) return problem
     this.money -= SERVICES[id].openCost
     this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
+    this.advanceStarter()
     return null
   }
 
@@ -470,13 +482,18 @@ export class SpaSim {
     // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
     // so a shop with one bed of it gets no queue that sends customers off angry
     const festive = vipSpec || spec || kol ? null : this.festivalServiceToday()
+    // the starter chain's mask gift: the first plain customer once a mask bed is down asks for mask
+    const maskFirst = !opts.service && !vipSpec && !spec && !kol && this.starter.maskNext && available.includes('mask')
+    if (maskFirst) this.starter.maskNext = false
     const service =
       opts.service ??
-      (likes && available.includes(likes)
-        ? likes
-        : festive && available.includes(festive) && this.waitingFor(festive) < this.bedsOf(festive) && this.rng() < FESTIVAL_SERVICE_CHANCE
-          ? festive
-          : drawService(kind, available, this.rng))
+      (maskFirst
+        ? 'mask'
+        : likes && available.includes(likes)
+          ? likes
+          : festive && available.includes(festive) && this.waitingFor(festive) < this.bedsOf(festive) && this.rng() < FESTIVAL_SERVICE_CHANCE
+            ? festive
+            : drawService(kind, available, this.rng))
     const patience = Math.round(
       vipSpec
         ? PATIENCE_MS * VIP_PATIENCE * greetFactor
@@ -600,6 +617,14 @@ export class SpaSim {
     this.stats.served++
     if (technician === null && !c.vip && !c.kol) this.stats.ownerServed++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
+    // the owner's three stars now and then bring a generous customer, who adds to the tip after the bill until it is GENEROUS_TIP times over;
+    // drawn on a stream of its own so the shop's draws stay as they were
+    if (technician === null && stars === 3 && tip > 0 && !c.vip && !c.kol && createRng(this.day * 5303 + c.id)() < GENEROUS_CHANCE) {
+      const extra = tip * (GENEROUS_TIP - 1)
+      this.money += extra
+      this.stats.tips += extra
+      this.emit({ type: 'generous', customerId: c.id, amount: extra, tile: station.bed })
+    }
     // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
     const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
     this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading))
@@ -790,6 +815,7 @@ export class SpaSim {
       ownerOutfit: this.ownerOutfit,
       outfitsSeen: this.outfitsSeen,
       away: this.away,
+      starter: this.starter,
       savedAt: null,
     })
   }
@@ -825,6 +851,7 @@ export class SpaSim {
     sim.ownerOutfit = d.ownerOutfit
     sim.outfitsSeen = d.outfitsSeen
     sim.away = d.away
+    sim.starter = d.starter
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -885,6 +912,11 @@ export class SpaSim {
     // a branch has no regulars, quests, rank or events of its own
     if (this.place !== null) return
     planDay(this.book, this.day, this.rng)
+    // chú Sáu, met on a new shop's first day, comes back on its second, at a minute drawn from a stream of its own;
+    // missed then, he waits for the regulars' own days
+    const sau = this.book.regulars.sau
+    if (this.day === 2 && sau.met) sau.visitAt = visitMinute(createRng(this.day * 3301 + this.nextId))
+    else if (this.day < REGULARS_FROM_DAY) sau.visitAt = null
     clearStale(this.vip, this.day)
     const book = this.eventBook
     if (book.plan && book.plan.day < this.day) book.plan = null
@@ -896,7 +928,9 @@ export class SpaSim {
     if (this.questsOpen()) {
       const rng = this.questRng()
       rollDay(this.progress, this.day, this.questShop(), 1, rng)
-      if (this.progress.monthFrom !== monthStart(this.day)) {
+      // quests opened early by the starter chain can roll a plain month quest the day before the first festival: it rolls again for the festival
+      const festival = festivalOf(this.day)
+      if (this.progress.monthFrom !== monthStart(this.day) || (festival && this.progress.monthly?.festival !== festival)) {
         const last = this.progress.monthly
         rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
         const ended = last && last.state !== 'done' ? last.festival : null
@@ -960,12 +994,12 @@ export class SpaSim {
 
   /**
    * The owner is back after `ms` away: the staff's pay goes into money and nothing else moves.
-   * `tip` is true once per shop, when time away earned nothing because the last day did not qualify, from the day staff can be hired.
+   * `tip` is true once per shop, when time away earned nothing because the last day did not qualify, once staff can be hired.
    */
   comeBack(ms: number): AwayResult {
     const paid = awayPay(this.away, ms)
     this.money += paid
-    const tip = ms >= AWAY_MIN_MS && !this.away.ok && !this.away.tipSeen && this.day >= UNLOCK_DAY.staff
+    const tip = ms >= AWAY_MIN_MS && !this.away.ok && !this.away.tipSeen && this.featureOpen('staff')
     if (tip) this.away.tipSeen = true
     return { paid, ms, profit: awayMean(this.away), days: this.away.profits.length, capped: ms > AWAY_MAX_HOURS * 3_600_000, tip }
   }
@@ -988,19 +1022,77 @@ export class SpaSim {
     this.outfitsSeen = OUTFIT_IDS.filter(id => this.outfitsSeen.includes(id) || ids.includes(id))
   }
 
-  /** Whether the quest button is open today. */
+  /** Whether the daily quests, the badges and the outfits are open today. */
   questsOpen(): boolean {
-    return this.place === null && isUnlocked('quests', this.day)
+    return this.place === null && this.featureOpen('quests')
+  }
+
+  /** Whether the quest button is open: from the first day for a shop that runs the starter chain, to show its goals. */
+  questsButtonOpen(): boolean {
+    return this.questsOpen() || !isPast(this.starter)
+  }
+
+  /** The day a feature opens: its day, or sooner by the starter chain, whose last goal opens the quests from the next day. */
+  openDay(f: Feature): number {
+    const opened: Partial<Record<Feature, number>> = this.starter.opened
+    const early = f === 'quests' ? (this.starter.doneDay ?? Infinity) + 1 : (opened[f] ?? Infinity)
+    return Math.min(UNLOCK_DAY[f], early)
+  }
+
+  featureOpen(f: Feature): boolean {
+    return this.day >= this.openDay(f)
+  }
+
+  /** The shop as the starter goals read it. */
+  starterShop(): StarterShop {
+    const t = this.progress.total
+    return {
+      served: t.served,
+      owner3: t.owner3,
+      bought: this.starter.bought,
+      maskBedPlaced: this.items.some(i => i.kind === 'maskBed'),
+      maskServed: t.services.mask,
+      technicians: this.staff.filter(s => s.role === 'technician' && !s.leaving).length,
+      massageOpen: this.services.includes('massage'),
+      massageServed: t.services.massage,
+    }
+  }
+
+  /**
+   * Finishes every starter goal the shop has reached, pays each into the till and the day, and tells the view.
+   * The mask gift opens mask, or pays its opening price back when it was bought, and gives a mask bed; a button a goal opens
+   * before its day is named, and staff opened early brings today's candidates at once.
+   */
+  private advanceStarter(): void {
+    if (!starterRunning(this.starter)) return
+    for (const goal of settleStarter(this.starter, this.starterShop(), this.day)) {
+      let reward: number = STARTER_REWARD[goal]
+      if (goal === 'serveMore') {
+        if (this.services.includes('mask')) reward += SERVICES.mask.openCost
+        else this.services = SERVICE_IDS.filter(x => x === 'mask' || this.services.includes(x))
+        this.book.gifts.push('maskBed')
+        this.starter.maskNext = true
+      }
+      this.money += reward
+      this.stats.quests += reward
+      const f = STARTER_OPENS[goal]
+      const opens = f && this.day < UNLOCK_DAY[f] ? f : null
+      if (opens === 'staff' && this.candidatesDay !== this.day) refreshCandidates(this.crew)
+      this.emit({ type: 'goalDone', goal, reward, opens })
+    }
   }
 
   /** What the shop has right now that decides which quests it can be given. */
   questShop(): QuestShop {
     const unfinished = REGULAR_IDS.map(id => this.book.regulars[id]).filter(r => r.met && r.hearts < 5)
+    const heartDue = unfinished.some(r => r.visitAt !== null)
+    // quests opened early by the starter chain: before the regulars' days only a visit already due can bring a heart
+    const regularsCome = monthStart(this.day) + DAYS_PER_MONTH - 1 >= REGULARS_FROM_DAY
     return {
       available: this.availableServices(),
       technicians: this.staff.filter(s => s.role === 'technician' && !s.leaving).length,
-      heartable: unfinished.length > 0,
-      heartDue: unfinished.some(r => r.visitAt !== null),
+      heartable: unfinished.length > 0 && (regularsCome || heartDue),
+      heartDue,
       canStudy: this.staff.some(s => !s.leaving && courses(s, this.services).length > 0),
     }
   }
@@ -1062,7 +1154,9 @@ export class SpaSim {
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
   hire(index: number): HireProblem | null {
-    return hire(this.crew, index)
+    const problem = hire(this.crew, index)
+    if (!problem) this.advanceStarter()
+    return problem
   }
 
   /** What `hire` would refuse with, so a button can be faded beforehand; null if the candidate can be hired. */
@@ -1132,7 +1226,9 @@ export class SpaSim {
     if (problem) return problem
     this.money -= price
     this.items.push({ id: this.nextItemId++, kind, x, y, flip })
+    if (starterRunning(this.starter) && ITEMS[kind].group !== 'bed') this.starter.bought++
     this.changeRoom()
+    this.advanceStarter()
     return null
   }
 
@@ -1145,6 +1241,7 @@ export class SpaSim {
     this.items.push({ id: this.nextItemId++, kind, x, y, flip, gift: true })
     this.book.gifts.splice(waiting, 1)
     this.changeRoom()
+    this.advanceStarter()
     return null
   }
 
@@ -1300,7 +1397,9 @@ export class SpaSim {
         // everyone walking in has sat down, so a full shop never uses up her visit; until then she stays due
         const due = dueRegular(this.book, this.clock.minutes)
         const seatLeft = this.seats.filter(s => s.customerId === null).length > this.customers.filter(c => c.state === 'arriving').length
-        this.spawnCustomer(due && seatLeft ? { regular: due } : {})
+        // a shop on the starter chain opens with chú Sáu
+        const opening = starterRunning(this.starter) && !this.book.regulars.sau.met
+        this.spawnCustomer(opening ? { regular: 'sau' } : due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
           arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.arrivalFactor(),
           this.rng(),
@@ -1345,7 +1444,7 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday(), this.day)
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (this.place === null && isJudgeDay(this.day)) {
         this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
@@ -1555,10 +1654,11 @@ export class SpaSim {
     this.emit({ type: 'toast', key: SERVICES[id].busy as Extract<SimEvent, { type: 'toast' }>['key'] })
   }
 
-  /** Moves the running counts, then pays any quest they finish; every count goes through here. */
+  /** Moves the running counts, then pays any quest or starter goal they finish; every count goes through here. */
   private count(apply: (t: Counts) => void): void {
     apply(this.progress.total)
     this.payQuests(settle(this.progress))
+    this.advanceStarter()
   }
 
   private emit(e: SimEvent): void {

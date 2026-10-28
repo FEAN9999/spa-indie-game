@@ -83,13 +83,15 @@ export function heartsFor(points: number): number {
 export const isMember = (s: RegularState): boolean => s.hearts >= MEMBER_HEARTS
 export const bookOpen = (b: GuestBook): boolean => REGULAR_IDS.some(id => b.regulars[id].met)
 
-const visitMinute = (rng: Rng) => REGULAR_VISIT_FROM_MIN + Math.floor(rng() * (REGULAR_VISIT_TO_MIN - REGULAR_VISIT_FROM_MIN))
+export const visitMinute = (rng: Rng) => REGULAR_VISIT_FROM_MIN + Math.floor(rng() * (REGULAR_VISIT_TO_MIN - REGULAR_VISIT_FROM_MIN))
 
 /** The morning plan: who comes today and when. Draws nothing before the regulars begin. */
 export function planDay(book: GuestBook, day: number, rng: Rng): void {
   if (day < REGULARS_FROM_DAY) return
+  // a regular met before the schedule starts (Chú Sáu, on a new shop's first day) keeps no place in it
+  const unmet = SCHEDULED.filter(id => !book.regulars[id].met)
   if (REGULAR_IDS.every(id => book.regulars[id].meetDay === null)) {
-    SCHEDULED.forEach((id, i) => { book.regulars[id].meetDay = day + i * REGULAR_MEET_GAP_DAYS })
+    unmet.forEach((id, i) => { book.regulars[id].meetDay = day + i * REGULAR_MEET_GAP_DAYS })
   }
   for (const id of REGULAR_IDS) book.regulars[id].visitAt = null
   const forced = REGULAR_IDS.filter(id => {

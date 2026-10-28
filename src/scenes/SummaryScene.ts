@@ -6,6 +6,7 @@ import type { ChainDayRow } from '../sim/chain'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
+import { starterNotes } from '../view/starter'
 import { chainSummaryRows, summaryLayout, summaryRows, type SummaryRow } from '../view/summary'
 import { signedMoney } from '../view/chain'
 import { textStyle } from '../view/text'
@@ -50,7 +51,7 @@ export class SummaryScene extends Phaser.Scene {
       { label: 'rating', value: rating ?? 0, kind: 'count', show: v => (rating === null ? t('noRating') : v.toFixed(1)) },
     ]
     const kinds = rows.map(row => row.kind)
-    const notes = summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())
+    const notes = [...starterNotes(sim), ...summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())]
     // each note is its own text, stacked under the rows; they are measured first, since the card and the button follow their height (depth 1 keeps them above the card)
     const flat = summaryLayout(kinds, chain.length, 0)
     const notesTop = flat.buttonY - 95 + 20

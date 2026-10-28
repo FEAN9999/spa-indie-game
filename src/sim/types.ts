@@ -11,11 +11,12 @@ import type { VipId } from './vips'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
 import type { Course } from './staff'
+import type { StarterFeature, StarterGoalId } from './starter'
 
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests', 'openChain'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests', 'openStarter', 'openChain'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -144,6 +145,7 @@ export type SimEvent =
   | { type: 'customerLeft'; id: number; angry: boolean }
   | { type: 'serviceReady'; customerId: number; stationId: number }
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
+  | { type: 'generous'; customerId: number; amount: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
   | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'levelUp'; staffId: number; level: number }
@@ -167,6 +169,8 @@ export type SimEvent =
   | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
   /** A quest was finished and its reward paid; `quest` is a copy as it stood then. */
   | { type: 'questDone'; quest: Quest }
+  /** A starter goal is finished and `reward` paid (with the mask's price back when it was bought); `opens` names a button it opened before its day. */
+  | { type: 'goalDone'; goal: StarterGoalId; reward: number; opens: StarterFeature | null }
   /** A festival quest is finished: told with a gold card, not the quest toast; `gift` when its keepsake was given now. */
   | { type: 'festivalQuestDone'; quest: Quest; festival: FestivalId; gift: boolean }
   /** The first day of a festival month, with the festival service the month settled on. */

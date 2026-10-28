@@ -38,6 +38,13 @@ describe('planDay', () => {
     expect(SCHEDULED.map(id => book.regulars[id].meetDay)).toEqual([12, 14, 16, 18, 20, 22])
   })
 
+  it('leaves a met Chú Sáu out of the day-7 schedule', () => {
+    const book = emptyBook()
+    book.regulars.sau.met = true
+    planDay(book, 7, createRng(1))
+    expect(SCHEDULED.map(id => book.regulars[id].meetDay)).toEqual([7, 9, null, 11, 13, 15])
+  })
+
   it('forces an unmet regular whose day has come', () => {
     const book = emptyBook()
     planDay(book, 7, createRng(1))

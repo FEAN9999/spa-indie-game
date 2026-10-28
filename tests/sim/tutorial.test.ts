@@ -4,6 +4,7 @@ import { bookOpen } from '../../src/sim/regulars'
 import { createRng } from '../../src/sim/rng'
 import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
+import { STARTER_GOAL_IDS } from '../../src/sim/starter'
 import { pickHint } from '../../src/sim/tutorial'
 import { TUTORIAL_HINTS } from '../../src/sim/types'
 import { planBooking } from '../../src/sim/vips'
@@ -255,5 +256,52 @@ describe('the quests hint', () => {
 
   it('gives an old shop on day 9 no hand', () => {
     expect(pickHint(pastTutorial(UNLOCK_DAY.quests + 1))).toBeNull()
+  })
+})
+
+describe('the starter chain hints', () => {
+  /** A shop on the starter chain that has seen every first-day tip. */
+  const chain = () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false, starter: true })
+    for (const h of TUTORIAL_HINTS) sim.markHint(h)
+    return sim
+  }
+
+  it('points at Build from the day its goal opens it until its old day, while it has not been opened', () => {
+    const sim = chain()
+    expect(pickHint(sim)).toBeNull()
+    sim.starter.opened.build = 1
+    expect(pickHint(sim)).toEqual({ hint: 'openBuild' })
+    sim.day = 2
+    expect(pickHint(sim)).toEqual({ hint: 'openBuild' })
+    sim.markHint('openBuild')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('points at Quests on the first morning of the daily quests, never while the chain runs', () => {
+    const sim = chain()
+    for (const h of ['openBuild', 'openStaff', 'openServices', 'openStock'] as const) sim.markHint(h)
+    for (let day = 1; day <= 7; day++) {
+      sim.day = day
+      expect(pickHint(sim), `day ${day}`).toBeNull()
+    }
+    sim.starter.at = STARTER_GOAL_IDS.length
+    sim.starter.doneDay = 4
+    sim.day = 4
+    expect(pickHint(sim)).toBeNull()
+    sim.day = 5
+    expect(pickHint(sim)).toEqual({ hint: 'openQuests' })
+  })
+
+  it('points at Build while the mask bed gift waits on its goal', () => {
+    const sim = chain()
+    sim.markHint('openBuild')
+    sim.starter.opened.build = 1
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('placeMaskBed')
+    expect(pickHint(sim)).toBeNull()
+    sim.book.gifts.push('maskBed')
+    expect(pickHint(sim)).toEqual({ hint: 'placeGift' })
+    sim.starter.at++
+    expect(pickHint(sim)).toBeNull()
   })
 })

@@ -195,6 +195,12 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="-78" cy="-24" r="24" fill="${C.ink}"/><circle cx="68" cy="-24" r="24" fill="${C.ink}"/>` +
         `<circle cx="-78" cy="-24" r="9" fill="${C.silver}"/><circle cx="68" cy="-24" r="9" fill="${C.silver}"/>`,
     ),
+    // the starter goals' flag: a pole with a red pennant
+    'icon-flag': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<g ${ICON}><rect x="16" y="8" width="6" height="50" rx="3" fill="${C.wood}"/><path d="M22,10 L52,20 L22,31 Z" fill="${C.lantern}"/></g>`,
+    ),
     // Safari's share button, for the install steps: an open box with an arrow out of the top
     'icon-share': svgDoc(
       [0, 0, 64, 64],

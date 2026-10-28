@@ -8,20 +8,21 @@ import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
-import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, type Progress, type Quest, type QuestKind } from './quests'
+import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, type Life, type Progress, type Quest, type QuestKind } from './quests'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { isPlaceId, PLACE_IDS, PLACES_READY, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
+import { repairStarter, type StarterBook } from './starter'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 22
+export const SAVE_VERSION = 23
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -98,6 +99,8 @@ export interface SaveData {
   outfitsSeen: OutfitId[]
   /** The last finished days' profits and the rest of what the shop needs to pay itself while closed. */
   away: AwayBook
+  /** The starter chain: past for a shop from before it, or one that never ran it. */
+  starter: StarterBook
   /** The real time of the last write, stamped by the session; null until then. */
   savedAt: number | null
 }
@@ -184,7 +187,7 @@ function withHalfWages(old: object): SaveData {
 /** Checks that `raw` looks like a saved chain of shops: the main shop with its branches; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
   const data = parseShop(raw)
-  // only the main shop has a chain, and it is not at a place
+  // only the main shop has a chain, and it is not at a place; shops saved before version 23 get an empty one
   data.place = null
   data.chain = repairChain((raw as Record<string, unknown>).chain, data)
   return data
@@ -301,6 +304,8 @@ function parseShop(raw: unknown): SaveData {
   data.outfitsSeen = outfits.outfitsSeen
   // shops saved before version 21 have no away book and have never been paid for time closed
   data.away = repairAway(data.away)
+  // shops saved before version 22 have passed the starter chain
+  data.starter = repairStarter(data.starter)
   data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
   data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
   return data
@@ -360,6 +365,12 @@ function repairQuest(x: unknown, period: Quest['period']): Quest | null {
   return { kind: x.kind, period, service: service as ServiceId | null, target: x.target as number, reward: repairCount(x.reward), base: x.base, state: x.state, festival }
 }
 
+/** A record day: a whole day from one up and what it beat; anything else is none. */
+function repairRecord(x: unknown): Life['record'] {
+  if (!isObject(x) || !Number.isInteger(x.day) || (x.day as number) < 1 || (x.kind !== 'served' && x.kind !== 'profit')) return null
+  return { day: x.day as number, kind: x.kind }
+}
+
 /** A well-formed progress block, field by field; a missing one is empty, with today left unrecorded. */
 function repairProgress(x: unknown): Progress {
   const p = emptyProgress()
@@ -370,7 +381,7 @@ function repairProgress(x: unknown): Progress {
   const isRecord = (r: unknown): r is DayRecord => isObject(r) && ['served', 'earned', 'tips', 'owner3', 'staff'].every(k => isNumber(r[k]) && (r[k] as number) >= 0)
   p.recent = list(x.recent).filter(isRecord).map(r => ({ served: r.served, earned: r.earned, tips: r.tips, owner3: r.owner3, staff: r.staff })).slice(-QUEST_RECENT_DAYS)
   const life = isObject(x.life) ? x.life : {}
-  p.life = { dailies: repairCount(life.dailies), bestServed: repairCount(life.bestServed), bestProfit: isNumber(life.bestProfit) ? life.bestProfit : 0, cleanDay: repairBool(life.cleanDay) }
+  p.life = { dailies: repairCount(life.dailies), bestServed: repairCount(life.bestServed), bestProfit: isNumber(life.bestProfit) ? life.bestProfit : 0, cleanDay: repairBool(life.cleanDay), record: repairRecord(life.record) }
   p.questDay = repairCount(x.questDay)
   p.daily = list(x.daily).map(q => repairQuest(q, 'day')).filter((q): q is Quest => q !== null).slice(0, QUESTS_PER_DAY)
   p.yesterday = list(x.yesterday).filter(isKind)
@@ -551,7 +562,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -32,7 +32,7 @@ import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
-import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
+import { GENEROUS_LINES, RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
@@ -53,6 +53,7 @@ import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
+import { goalCard, lockedText } from '../view/starter'
 import { StaffLayer } from '../view/StaffLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
@@ -64,6 +65,7 @@ import type { ChainData } from './ChainScene'
 import type { ChoiceData } from './ChoiceScene'
 import type { GuestBookData } from './GuestBookScene'
 import type { QuestsData } from './QuestsScene'
+import type { StarterData } from './StarterScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
@@ -479,7 +481,8 @@ export class SpaScene extends Phaser.Scene {
         this.session.setAside()
       }
     }
-    return new Chain(new SpaSim({ rng: createRng(seed) }), seed)
+    // a new shop runs the starter chain
+    return new Chain(new SpaSim({ rng: createRng(seed), starter: true }), seed)
   }
 
   /** Coming back to the game moves it to a newer version, unless a service is in progress or the shop has no owner yet. */
@@ -689,11 +692,23 @@ export class SpaScene extends Phaser.Scene {
     if (top) this.pointer.show(text, top.x, top.y, 'down')
   }
 
-  /** The quest panel over the frozen shop, opened only when build mode would be. */
+  /** The quest panel over the frozen shop, opened only when build mode would be; the starter chain's list until the daily quests open. */
   private openQuests(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
     this.modal = true
+    if (!sim.questsOpen()) {
+      sim.markHint('openStarter')
+      const data: StarterData = {
+        sim,
+        onClose: () => {
+          this.modal = false
+          this.session.saveNow()
+        },
+      }
+      this.scene.launch('StarterScene', data)
+      return
+    }
     const intro = !sim.hintDone('openQuests')
     sim.markHint('openQuests')
     sim.markQuestsSeen()
@@ -733,7 +748,8 @@ export class SpaScene extends Phaser.Scene {
     }
     const now = this.time.now
     const next = this.badgeQueue[0]
-    if (next === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
+    // nor while the first day's tour points at the top bar, where the card goes
+    if (next === undefined || this.tour.length > 0 || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
     this.badgeQueue.shift()
     this.badgeUntil = now + this.showCard(next)
   }
@@ -969,8 +985,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   /** A tap on an open bed slot: once building is open and the money is there, a card over the frozen shop asks before buying. */
   private offerBed(slot: Tile): void {
     const price = ITEMS.bed.price
-    if (!isUnlocked('build', this.sim.day)) {
-      this.hud.toast(t('unlocksOn', { day: UNLOCK_DAY.build }))
+    if (!this.sim.featureOpen('build')) {
+      this.hud.toast(lockedText(this.sim, 'build'))
       return
     }
     if (this.sim.money < price) {
@@ -1101,6 +1117,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       this.pointOnPlate(t('hintBuild'), 'build')
       return
     }
+    if (pick?.hint === 'placeGift') {
+      this.pointOnPlate(t('hintPlaceGift'), 'build')
+      return
+    }
     if (pick?.hint === 'openFloor') {
       this.pointOnPlate(t('hintOpenFloor'), 'build')
       return
@@ -1208,6 +1228,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
           ]
         }
         return
+      case 'generous':
+        // the extra a beat after the bill's coin, so the two do not stack, and over the customer's word for it (speech sits at FX_DEPTH + 20)
+        this.time.delayedCall(600, () => this.floatMoney({ ...e.tile }, e.amount, FX_DEPTH + 30))
+        this.say(e.customerId, GENEROUS_LINES[e.customerId % GENEROUS_LINES.length], BUBBLE_MS.greet)
+        return
       case 'review':
         this.showBubble(e.customerId, e.score)
         return
@@ -1313,6 +1338,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       case 'festivalStarted':
         this.badgeQueue.push(festivalStartCard(e, monthOf(this.sim.day)))
+        return
+      case 'goalDone':
+        if (e.reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
+        this.badgeQueue.push(goalCard(e))
         return
       case 'festivalQuestDone':
         this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
@@ -1573,10 +1602,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     return { x: Phaser.Math.Linear(door.x, sideX, (k - 0.3) / 0.7), y: walkY, facing: back, alpha }
   }
 
-  private floatMoney(tile: Tile, amount: number): void {
+  private floatMoney(tile: Tile, amount: number, depth = FX_DEPTH + 10): void {
     if (!this.room.onFloor(tile.y)) return
     const at = this.room.tileToWorld(tile)
-    this.floatMoneyAt(at.x, at.y - 130, amount, FX_DEPTH + 10)
+    this.floatMoneyAt(at.x, at.y - 130, amount, depth)
   }
 
   /** A coin and "+money" centred on x, y that rises and fades. */

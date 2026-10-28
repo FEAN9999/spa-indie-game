@@ -129,8 +129,9 @@ export class BuildScene extends Phaser.Scene {
 
   init(data: BuildData) {
     this.params = data
-    // a regular's gift waits first on the decor tab
-    this.tab = data.sim.book.gifts.length > 0 ? 'decor' : 'bed'
+    // the oldest gift waits first on its own tab
+    const gift = data.sim.book.gifts[0]
+    this.tab = gift ? ITEMS[gift].group : 'bed'
     this.page = 0
     this.held = null
     this.drag = null

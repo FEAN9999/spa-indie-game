@@ -261,6 +261,9 @@ export const GREET_PATIENCE_BASE = 1.15
 export const GREET_PATIENCE_PER_DOT = 0.02
 export const GREET_TIP_PER_DOT = 0.05
 export const STAFF_TIP_PER_DOT = 0.05
+/** One customer in this many the owner serves with three stars tips GENEROUS_TIP times over; never a VIP or Mi Mi. */
+export const GENEROUS_CHANCE = 1 / 8
+export const GENEROUS_TIP = 5
 
 // Personalities: the numbers behind each good side and the flaws that are only numbers
 export const QUICK_WORK_FACTOR = 0.8
@@ -421,6 +424,10 @@ export const RIVAL_YEAR_STEP = 4
 export const RIVAL_SCORE_MAX = 86
 /** What the year's first to fifth place is paid. */
 export const YEAR_REWARD = [3_000_000, 1_000_000, 500_000, 0, 0]
+
+/** The starter chain, in order: what each goal asks for (a count, or 1 for a yes) and what it pays; serveMore pays with the mask gift instead. */
+export const STARTER_NEED = { firstGuest: 1, threeStars: 1, serveFew: 4, buyDecor: 1, serveMore: 10, placeMaskBed: 1, maskTwice: 2, serveMany: 16, hireTech: 1, openMassage: 1, massageTwice: 2 } as const
+export const STARTER_REWARD = { firstGuest: 20_000, threeStars: 30_000, serveFew: 30_000, buyDecor: 40_000, serveMore: 0, placeMaskBed: 30_000, maskTwice: 50_000, serveMany: 50_000, hireTech: 50_000, openMassage: 100_000, massageTwice: 100_000 } as const
 
 /** A shop closed for less than this earns nothing. */
 export const AWAY_MIN_MS = 10 * 60_000
