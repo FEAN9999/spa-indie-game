@@ -305,13 +305,14 @@ export class SpaSim {
     const kind = vipSpec ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
     const available = this.availableServices()
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
-    // in a festival half the plain customers ask for its service, if it has a bed
+    // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
+    // so a shop with one bed of it gets no queue that sends customers off angry
     const festive = vipSpec || spec ? null : this.festivalServiceToday()
     const service =
       opts.service ??
       (likes && available.includes(likes)
         ? likes
-        : festive && available.includes(festive) && this.rng() < FESTIVAL_SERVICE_CHANCE
+        : festive && available.includes(festive) && this.waitingFor(festive) < this.bedsOf(festive) && this.rng() < FESTIVAL_SERVICE_CHANCE
           ? festive
           : drawService(kind, available, this.rng))
     const patience = Math.round(
@@ -487,6 +488,15 @@ export class SpaSim {
     const desk = this.receptionSpot()
     const byDesk = floor.find(t => this.grid.cells[t.y][t.x] === 'floor' && !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
     return byDesk ?? floor[0]
+  }
+
+  /** Customers who want `service` and have not reached a bed yet. */
+  private waitingFor(service: ServiceId): number {
+    return this.customers.filter(c => c.service === service && (c.state === 'arriving' || c.state === 'toSeat' || c.state === 'waiting')).length
+  }
+
+  private bedsOf(service: ServiceId): number {
+    return this.stations.filter(s => s.service === service).length
   }
 
   beauty(): number {

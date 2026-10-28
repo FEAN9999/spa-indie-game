@@ -28,6 +28,17 @@ const withMask = (sim: SpaSim) => {
   sim.buy('maskBed', 6, 2, false)
 }
 
+/** The share of 400 new customers asking for a mask, each walking in with `waiting` mask customers already there. */
+function maskShare(sim: SpaSim, waiting: number): number {
+  let mask = 0
+  for (let i = 0; i < 400; i++) {
+    sim.customers = []
+    for (let w = 0; w < waiting; w++) sim.spawnCustomer({ kind: 'office', service: 'mask' })
+    if (sim.spawnCustomer().service === 'mask') mask++
+  }
+  return mask / 400
+}
+
 describe('a festival month', () => {
   it('has a festival service only in a festival', () => {
     expect(on(37).festivalServiceToday()).toBe('shampoo')
@@ -61,11 +72,18 @@ describe('a festival month', () => {
   it('sends about half the plain customers to the festival service, and regulars to their own', () => {
     const sim = on(40, withMask)
     expect(sim.festivalServiceToday()).toBe('mask')
-    const asks = Array.from({ length: 400 }, () => sim.spawnCustomer().service)
-    const share = asks.filter(s => s === 'mask').length / asks.length
+    const share = maskShare(sim, 0)
     expect(share).toBeGreaterThan(0.5)
     expect(share).toBeLessThan(0.85)
     expect(sim.spawnCustomer({ regular: 'vy' }).service).toBe('shampoo')
+  })
+
+  it('asks for the festival service only while fewer customers wait for it than it has beds', () => {
+    const sim = on(40, withMask)
+    // one bed and one waiting: only the plain draw is left, about 0.4 of mask
+    expect(maskShare(sim, 1)).toBeLessThan(0.5)
+    expect(sim.buy('maskBed', 6, 8, false)).toBeNull()
+    expect(maskShare(sim, 1)).toBeGreaterThan(0.5)
   })
 
   it('never draws the festival service when it has no bed', () => {
