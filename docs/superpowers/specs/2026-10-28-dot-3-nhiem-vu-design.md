@@ -1,7 +1,7 @@
 # Đợt 3, phần 1: lịch tháng, nhiệm vụ và thành tựu
 
 - Ngày: 2026-10-28
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-28)
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 5.4, 5.5 và mục 6 (Đợt 3).
 - Bản phác bấm thử (anh đã duyệt cả 11 điểm, 2026-10-28): https://claude.ai/artifact/4SPJUPVVr5DrGTbExsKUd5
 
