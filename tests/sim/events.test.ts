@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { EVENT_FROM_DAY, INSPECT_MIN } from '../../src/config'
+import { EVENT_FROM_DAY, INSPECT_MIN, POWER_FROM_MIN } from '../../src/config'
 import { dueKol, emptyEventBook, hotDaysLeft, hotOn, planEvent, type EventBook } from '../../src/sim/events'
 import { createRng, type Rng } from '../../src/sim/rng'
 
@@ -25,7 +25,7 @@ describe('planning tomorrow', () => {
     for (const [book, day, vipDay] of cases) {
       const before = structuredClone(book)
       const rng = counting()
-      expect(planEvent(book, day, vipDay, rng)).toBeNull()
+      expect(planEvent(book, day, vipDay, true, rng)).toBeNull()
       expect(book).toEqual(before)
       expect(rng.calls).toBe(0)
     }
@@ -33,7 +33,7 @@ describe('planning tomorrow', () => {
 
   it('plans tomorrow on day 9', () => {
     const book = emptyEventBook()
-    const plan = planEvent(book, 9, null, createRng(3))
+    const plan = planEvent(book, 9, null, true, createRng(3))
     expect(plan?.day).toBe(EVENT_FROM_DAY)
     expect(book.plan).toEqual(plan)
     expect(book.last).toBe(plan?.kind)
@@ -41,21 +41,34 @@ describe('planning tomorrow', () => {
 
   it('never repeats the last event, and spaces the next one 2 to 4 days', () => {
     const gaps = new Set<number>()
+    const kinds = new Set<string>()
     for (let seed = 1; seed <= 200; seed++) {
       const book: EventBook = { ...emptyEventBook(), last: 'kol' }
-      const plan = planEvent(book, 12, null, createRng(seed))!
-      expect(plan.kind).toBe('inspect')
+      const plan = planEvent(book, 12, null, true, createRng(seed))!
+      kinds.add(plan.kind)
       gaps.add(book.nextDay - plan.day)
     }
+    expect([...kinds].sort()).toEqual(['inspect', 'power', 'rival'])
     expect([...gaps].sort()).toEqual([2, 3, 4])
   })
 
-  it('books Mi Mi on a half hour from 10:00 to 17:00 and the inspector at 15:00', () => {
+  it('plans a power cut only in a shop with a machine service', () => {
+    const drawn = (machines: boolean) => {
+      const kinds = new Set<string>()
+      for (let seed = 1; seed <= 400; seed++) kinds.add(planEvent(emptyEventBook(), 12, null, machines, createRng(seed))!.kind)
+      return [...kinds].sort()
+    }
+    expect(drawn(false)).toEqual(['inspect', 'kol', 'rival'])
+    expect(drawn(true)).toEqual(['inspect', 'kol', 'power', 'rival'])
+  })
+
+  it('books Mi Mi on a half hour from 10:00 to 17:00, the inspector at 15:00 and the power cut at 14:00', () => {
     const kol = new Set<number>()
     for (let seed = 1; seed <= 400; seed++) {
-      const plan = planEvent(emptyEventBook(), 12, null, createRng(seed))!
+      const plan = planEvent(emptyEventBook(), 12, null, true, createRng(seed))!
       if (plan.kind === 'inspect') expect(plan.minute).toBe(INSPECT_MIN)
-      else kol.add(plan.minute)
+      else if (plan.kind === 'power') expect(plan.minute).toBe(POWER_FROM_MIN)
+      else if (plan.kind === 'kol') kol.add(plan.minute)
     }
     for (const m of kol) expect(m % 30 === 0 && m >= 600 && m <= 1020).toBe(true)
     expect(kol.has(600)).toBe(true)
@@ -68,7 +81,7 @@ describe('planning tomorrow', () => {
     for (let seed = 1; seed <= 100; seed++) {
       const book = emptyEventBook()
       const rng = createRng(seed)
-      for (let day = 9; day <= 35; day++) if (planEvent(book, day, null, rng)) total++
+      for (let day = 9; day <= 35; day++) if (planEvent(book, day, null, true, rng)) total++
     }
     expect(total / 100).toBeGreaterThanOrEqual(5)
     expect(total / 100).toBeLessThanOrEqual(8)

@@ -14,6 +14,8 @@ import type { TodayLine } from './today'
 export const EVENT_ICON: Record<EventKind | 'hot', { texture: string; disc: string }> = {
   kol: { texture: 'event-phone', disc: C.lotus },
   inspect: { texture: 'event-clip', disc: C.water },
+  rival: { texture: 'event-shop', disc: C.wall },
+  power: { texture: 'event-bolt', disc: C.glow },
   hot: { texture: 'event-spark', disc: C.mustard },
 }
 

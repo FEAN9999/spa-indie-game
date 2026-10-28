@@ -47,6 +47,24 @@ describe("planning tomorrow's event", () => {
     expect(nextDraws(planned)).toEqual(nextDraws(blocked))
   })
 
+  it('knows whether the shop has a machine service it can do', () => {
+    const sim = on(12)
+    expect(sim.hasMachines()).toBe(false)
+    sim.services.push('steam')
+    expect(sim.hasMachines()).toBe(false)
+    sim.items.push({ id: 99, kind: 'steamTent', x: 8, y: 8, flip: false })
+    expect(sim.hasMachines()).toBe(true)
+  })
+
+  it('never plans a power cut for a shop without machines', () => {
+    // every day whose tomorrow is outside a festival month, each a different draw
+    for (const day of [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 24, 25, 26, 30, 31, 32]) {
+      const sim = on(day)
+      close(sim)
+      expect(sim.eventBook.plan?.kind).not.toBe('power')
+    }
+  })
+
   it('skips a day the VIP is booked for', () => {
     const sim = on(12)
     sim.vip.booking = { vip: 'singer', day: 13, minute: 700 }

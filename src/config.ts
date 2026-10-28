@@ -358,3 +358,16 @@ export const INSPECT_MIN = 900
 export const INSPECT_BEAUTY = 30
 /** The Giấy khen's beauty. */
 export const CERTIFICATE_BEAUTY = 4
+/** On the rival's day the picky customers' weight in the kind draw is this many times the usual. */
+export const RIVAL_PICKY_FACTOR = 2
+/** The rival's challenge: this share of an average day's customers served with 3 stars... */
+export const RIVAL_TARGET_SHARE = 0.3
+/** ...and never fewer than this. */
+export const RIVAL_TARGET_MIN = 4
+/** The power is out from 14:00 to 16:00. */
+export const POWER_FROM_MIN = 840
+export const POWER_TO_MIN = 960
+/** The warning comes this many minutes before the power goes. */
+export const POWER_WARN_MIN = 60
+/** Tips on a service finished while the power is out are this many times the usual. */
+export const POWER_TIP_FACTOR = 1.5

@@ -1268,6 +1268,8 @@ describe('save version 18', () => {
     for (const plan of [{ kind: 'party', day: 14, minute: 900 }, { kind: 'kol', day: 14.5, minute: 900 }, { kind: 'kol', day: 15, minute: 900 }, { kind: 'kol', day: 14, minute: 'x' }, 'kol']) {
       expect(repairEvents({ ...good, plan }, 13).plan).toBeNull()
     }
+    // lô C's two kinds need no new save
+    for (const plan of [{ kind: 'rival', day: 14, minute: 0 }, { kind: 'power', day: 14, minute: 840 }]) expect(repairEvents({ ...good, plan }, 13).plan).toEqual(plan)
   })
 
   it('keeps Mi Mi through a reload', () => {

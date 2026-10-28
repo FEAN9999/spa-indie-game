@@ -54,7 +54,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { dueKol, emptyEventBook, hotOn, KOL_LOOK, planEvent, type EventBook } from './events'
+import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -285,6 +285,11 @@ export class SpaSim {
     const m = this.progress.monthly
     if (m?.festival === f && m.service && this.progress.monthFrom === monthStart(this.day)) return m.service
     return festivalService(f, this.availableServices())
+  }
+
+  /** True when the shop can do a service that runs on power, so a power cut would matter. */
+  hasMachines(): boolean {
+    return this.availableServices().some(id => MACHINES.includes(id))
   }
 
   /** True on the days after Mi Mi's 3 stars. */
@@ -1099,7 +1104,7 @@ export class SpaSim {
       // tomorrow's VIP, then tomorrow's event on any other day, each drawn from a stream of its own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
-      planEvent(this.eventBook, this.day, this.vip.booking?.day ?? null, createRng(this.day * 6151 + this.nextId))
+      planEvent(this.eventBook, this.day, this.vip.booking?.day ?? null, this.hasMachines(), createRng(this.day * 6151 + this.nextId))
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
   }
