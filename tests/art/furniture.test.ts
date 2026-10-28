@@ -1,9 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { FURNITURE, furnitureTextures, itemTexture } from '../../src/art/furniture'
+import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { ITEM_KINDS, ITEMS, type ItemKind } from '../../src/sim/items'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
 vi.mock('phaser', () => ({}))
+
+const KEEPSAKES = FESTIVAL_IDS.map(id => FESTIVALS[id].keepsake)
 
 describe('furniture art', () => {
   it("has art for every item kind and the room's movable parts", () => {
@@ -25,7 +28,7 @@ describe('furniture art', () => {
   })
 
   it('draws each gift piece as wide as its footprint, as a picture of its own', () => {
-    const gifts: ItemKind[] = ['vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard']
+    const gifts: ItemKind[] = ['vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard', ...KEEPSAKES]
     for (const kind of gifts) {
       const key = itemTexture(kind)
       expect(key).toBe(`decor-${kind}`)

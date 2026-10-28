@@ -565,6 +565,61 @@ const goldBoard =
   }).join('') +
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
+// festival keepsakes, drawn in the sketch's pixels (80 to a tile, origin at the foot, y up) and scaled into the tile
+const KEEP = 0.011875
+const keepsake = (body: string) =>
+  `<g transform="translate(0.5,1.78) scale(${KEEP})"><ellipse cx="0" cy="0" rx="38" ry="9" fill="${C.ink}" opacity="0.2"/>${body}</g>`
+const ks = `stroke="${C.ink}" stroke-width="4" stroke-linejoin="round"`
+const ks3 = `stroke="${C.ink}" stroke-width="3"`
+const bloom = (x: number, y: number, r: number, fill: string) =>
+  `<circle cx="${x}" cy="${y}" r="${r}" fill="${fill}" ${ks3}/><circle cx="${x}" cy="${y}" r="${f(r * 0.35)}" fill="${C.mustardDark}"/>`
+const starPath = (cx: number, cy: number, R: number, r: number) =>
+  'M' + Array.from({ length: 10 }, (_, i) => {
+    const a = -Math.PI / 2 + (i * Math.PI) / 5
+    const k = i % 2 ? r : R
+    return `${f(cx + Math.cos(a) * k)},${f(cy + Math.sin(a) * k)}`
+  }).join(' L') + 'Z'
+
+// cành mai: bare dark twigs with yellow blossoms in a red-rimmed terracotta pot
+const maiBranch = keepsake(
+  `<path d="M0,-40 Q-4,-70 -26,-104 M-3,-62 Q14,-90 30,-116 M-12,-84 Q-28,-94 -40,-92 M12,-88 Q26,-86 36,-76" fill="none" stroke="${C.woodDark}" stroke-width="6" stroke-linecap="round"/>` +
+    [[-26, -104], [30, -116], [-40, -92], [36, -76], [-6, -74], [18, -100], [-16, -58]].map(([x, y]) => bloom(x, y, 9, C.mustard)).join('') +
+    `<path d="M-32,0 L-26,-40 H26 L32,0Z" fill="${C.terracotta}" ${ks}/><rect x="-30" y="-46" width="60" height="10" rx="4" fill="${C.lantern}" ${ks}/>`,
+)
+
+// khung tim: a wooden frame on two legs with a red heart on cream
+const heartFrame = keepsake(
+  `<path d="M-26,0 L-14,-40 M26,0 L14,-40" stroke="${C.woodDark}" stroke-width="6" stroke-linecap="round"/><rect x="-40" y="-124" width="80" height="88" rx="8" fill="${C.woodLight}" ${ks}/>` +
+    `<rect x="-28" y="-112" width="56" height="64" rx="4" fill="${C.paper}" ${ks}/><path d="M0,-58 C-26,-74 -22,-100 -8,-98 C-3,-97 0,-92 0,-89 C0,-92 3,-97 8,-98 C22,-100 26,-74 0,-58Z" fill="${C.lantern}" ${ks}/>`,
+)
+
+// bình hoa hồng: three red roses on green stems in a cobalt vase
+const roseVase = keepsake(
+  `<path d="M0,-44 V-96 M-4,-50 Q-20,-70 -24,-90 M4,-50 Q20,-70 26,-86" fill="none" stroke="${C.leaf}" stroke-width="5" stroke-linecap="round"/>` +
+    [[0, -100], [-24, -92], [26, -88]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="13" fill="${C.lantern}" ${ks3}/><path d="M${x - 6},${y} q6,-8 12,0 q-6,7 -12,0" fill="none" stroke="${C.lanternDark}" stroke-width="3"/>`).join('') +
+    `<path d="M-18,0 Q-30,-28 -12,-48 H12 Q30,-28 18,0Z" fill="${C.cobalt}" ${ks}/>`,
+)
+
+// đèn ông sao: a red five-point star lantern with a gold heart and two tassels, on a stick
+const starLantern = keepsake(
+  `<path d="M0,0 V-62" stroke="${C.woodDark}" stroke-width="7" stroke-linecap="round"/><path d="M-30,-84 l-8,24 M30,-84 l8,24" stroke="${C.mustard}" stroke-width="5" stroke-linecap="round"/>` +
+    `<path d="${starPath(0, -100, 44, 19)}" fill="${C.lantern}" ${ks}/><path d="${starPath(0, -100, 20, 9)}" fill="${C.mustard}" opacity="0.85"/>`,
+)
+
+// lẵng hoa: a woven basket with a handle, full of pink, yellow, cream and red flowers
+const flowerBasket = keepsake(
+  `<path d="M-36,-44 Q0,-118 36,-44" fill="none" stroke="${C.woodDark}" stroke-width="6"/>` +
+    ([[-22, -60, C.lotus], [0, -72, C.mustard], [22, -60, C.paper], [-10, -50, C.lantern], [12, -50, C.lotus]] as const).map(([x, y, fill]) => bloom(x, y, 13, fill)).join('') +
+    `<path d="M-40,-44 H40 L30,0 H-30Z" fill="${C.plank}" ${ks}/><path d="M-35,-30 H35 M-32,-16 H32" stroke="${C.woodDark}" stroke-width="3"/>`,
+)
+
+// cây thông: a three-tier fir with red and gold baubles and a gold star on top
+const xmasTree = keepsake(
+  `<rect x="-9" y="-22" width="18" height="22" fill="${C.wood}" ${ks}/><path d="M0,-128 L28,-88 H14 L38,-52 H20 L46,-20 H-46 L-20,-52 H-38 L-14,-88 H-28Z" fill="${C.leaf}" ${ks}/>` +
+    [[-16, -34], [18, -42], [-6, -68], [10, -94], [-22, -58], [22, -70]].map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="7" fill="${i % 2 ? C.mustard : C.lantern}" ${ks3}/>`).join('') +
+    `<path d="${starPath(0, -130, 17, 7)}" fill="${C.mustard}" ${ks}/>`,
+)
+
 // lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]
 const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
@@ -606,6 +661,12 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-photoStar': { w: 1, h: 1.7, body: photo(photoStar) },
   'decor-photoChef': { w: 1, h: 1.7, body: photo(photoChef) },
   'decor-goldBoard': { w: 2, h: 1.75, body: goldBoard },
+  'decor-maiBranch': { w: 1, h: 1.9, body: maiBranch },
+  'decor-heartFrame': { w: 1, h: 1.9, body: heartFrame },
+  'decor-roseVase': { w: 1, h: 1.9, body: roseVase },
+  'decor-starLantern': { w: 1, h: 1.9, body: starLantern },
+  'decor-flowerBasket': { w: 1, h: 1.9, body: flowerBasket },
+  'decor-xmasTree': { w: 1, h: 1.9, body: xmasTree },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },
