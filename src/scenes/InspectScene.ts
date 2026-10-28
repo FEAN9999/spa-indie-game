@@ -15,7 +15,7 @@ export interface InspectData {
 }
 
 const ROW_X = 140
-const ROW_Y = 830
+const ROW_Y = 800
 const ROW_STEP = 140
 const ROW_W = 800
 const ROW_H = 116
