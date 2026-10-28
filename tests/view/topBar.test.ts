@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { layoutTopBar, TOP_BAR } from '../../src/view/topBar'
+import { dayTimeText, layoutTopBar, TOP_BAR } from '../../src/view/topBar'
 
 // widths in canvas px, measured in the game at the HUD's font sizes
 describe('top bar layout', () => {
@@ -18,5 +18,12 @@ describe('top bar layout', () => {
     expect(l.moneyScale).toBeLessThan(1)
     expect(l.ratingX + 170).toBeCloseTo(TOP_BAR.rowRight)
     expect(l.starX - TOP_BAR.starW / 2 - (TOP_BAR.moneyX + 800 * l.moneyScale)).toBeCloseTo(16)
+  })
+})
+
+describe('the day and time line', () => {
+  it('names the festival between the month and the time', () => {
+    expect(dayTimeText(37, '08:06')).toBe('Ngày 37 · Tháng 1 · Tết · 08:06')
+    expect(dayTimeText(46, '08:06')).toBe('Ngày 46 · Tháng 4 · 08:06')
   })
 })

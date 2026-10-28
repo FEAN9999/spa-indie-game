@@ -451,6 +451,10 @@ export const vi = {
   whyMidAutumn: 'trời se lạnh, xông lá cho ấm',
   whyOctober20: 'chiều chị em hết mức',
   whyNoel: 'trời lạnh, đá nóng ấm người',
+  todayFestival: 'Dịp {festival} · {service} {count}',
+  todayFestivalDone: 'Dịp {festival} · đã xong nhiệm vụ lễ',
+  todayFestivalPlain: 'Dịp {festival} · món lễ {service}',
+  serviceFestivalTag: 'Món lễ +20%',
 } as const
 
 export type StringKey = keyof typeof vi

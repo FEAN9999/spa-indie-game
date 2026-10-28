@@ -1,15 +1,17 @@
 import * as Phaser from 'phaser'
+import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
-import { monthOf } from '../sim/calendar'
+import { FESTIVALS } from '../sim/festivals'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
-import { layoutTopBar, TOP_BAR } from './topBar'
+import { FESTIVAL_COLORS, todayLine } from './festivals'
+import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { addToast } from './ui'
 import { clockStar } from './vip'
 
@@ -21,6 +23,8 @@ const BANNER_H = 110
 const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const NAV_Y = 2020
+/** Today's line sits where the toasts go, over the floor buttons, so it never hides the shop's wall; a toast covers it while it shows. */
+const TODAY = { y: 1690, h: 66, discR: 26, pad: 12, gap: 14, icon: 46 }
 const PLATE_R = 62
 /** Radius of the red low-stock dot: about 30 px across with its outline. */
 const DOT_R = 13
@@ -75,6 +79,9 @@ export class Hud {
   lastBannerAt = -Infinity
   private readonly book: Phaser.GameObjects.Container
   private readonly bookBadge: Phaser.GameObjects.Container
+  /** Today's line, and what it was last drawn with. */
+  private readonly today: Phaser.GameObjects.Container
+  private todayKey = ''
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -114,6 +121,8 @@ export class Hud {
       sound.play('tap')
       onPause()
     })
+
+    this.today = add.container(GAME_W / 2, TODAY.y).setDepth(DEPTH).setVisible(false)
 
     // the guest book, once the first regular has come; its "Mới" stays until the book is first opened
     this.book = add.container(BOOK_BUTTON.x, BOOK_BUTTON.y).setDepth(DEPTH).setVisible(false)
@@ -178,7 +187,7 @@ export class Hud {
     if (this.money.style.color !== moneyColor) this.money.setColor(moneyColor)
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
-    this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${t('monthLabel', { month: monthOf(this.sim.day) })} · ${this.sim.clock.label()}`)
+    this.dayTime.setText(dayTimeText(this.sim.day, this.sim.clock.label()))
     this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
     this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)
@@ -188,6 +197,7 @@ export class Hud {
     // an invisible container is not hit-tested, so the book button takes no tap until a regular has come or a VIP is booked
     this.book.setVisible(this.sim.bookShown())
     this.bookBadge.setVisible(!this.sim.hintDone(this.sim.bookHint()))
+    this.updateToday()
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
       const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
@@ -236,6 +246,38 @@ export class Hud {
       ],
       onComplete: () => box.destroy(),
     })
+  }
+
+  /** Redraws today's line when its words change; it hides under a toast and on the summary. */
+  private updateToday(): void {
+    const line = this.sim.dayOver ? null : todayLine(this.sim)
+    const key = line ? `${line.festival}|${line.text}` : ''
+    if (key !== this.todayKey) {
+      this.todayKey = key
+      this.today.removeAll(true)
+      if (line) {
+        const add = this.scene.add
+        const text = add.text(0, 0, line.text, textStyle(30)).setOrigin(0, 0.5)
+        const w = TODAY.pad + 2 * TODAY.discR + TODAY.gap + text.width + 2 * TODAY.pad
+        const left = -w / 2
+        const discX = left + TODAY.pad + TODAY.discR
+        text.setX(discX + TODAY.discR + TODAY.gap)
+        const bg = add
+          .graphics()
+          .fillStyle(hex(C.cream), 1)
+          .fillRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
+          .lineStyle(4, hex(C.ink))
+          .strokeRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
+          .fillStyle(hex(FESTIVAL_COLORS[line.festival][0]), 1)
+          .fillCircle(discX, 0, TODAY.discR)
+          .lineStyle(3, hex(C.ink))
+          .strokeCircle(discX, 0, TODAY.discR)
+        const icon = add.image(discX, 0, itemTexture(FESTIVALS[line.festival].keepsake))
+        icon.setScale(TODAY.icon / Math.max(icon.width, icon.height))
+        this.today.add([bg, icon, text])
+      }
+    }
+    this.today.setVisible(line !== null && !this.toastBox?.active)
   }
 
   /** Replaces the toast on screen, if any; destroying one that already faded does nothing. */

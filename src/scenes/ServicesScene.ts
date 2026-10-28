@@ -57,6 +57,10 @@ const ACTION_X = 825
 const ACTION_W = 310
 const ACTION_H = 110
 const DONE_Y = 1895
+/** The festival service's tag after its price. */
+const TAG_GAP = 14
+const TAG_PAD = 14
+const TAG_H = 38
 const TOAST_Y = 2060
 const FADED_ALPHA = 0.45
 const TOAST_DEPTH = 20
@@ -162,6 +166,14 @@ export class ServicesScene extends Phaser.Scene {
     this.show()
   }
 
+  /** A small pill after the price: this is the festival service, dearer this month. */
+  private festivalTag(x: number, y: number): void {
+    const label = this.add.text(0, 0, t('serviceFestivalTag'), textStyle(24, '800', C.paper)).setOrigin(0.5)
+    const w = label.width + 2 * TAG_PAD
+    const bg = this.add.graphics().fillStyle(hex(C.lantern), 1).fillRoundedRect(-w / 2, -TAG_H / 2, w, TAG_H, TAG_H / 2).lineStyle(3, hex(C.ink)).strokeRoundedRect(-w / 2, -TAG_H / 2, w, TAG_H, TAG_H / 2)
+    this.keep(this.add.container(x + w / 2, y, [bg, label]))
+  }
+
   private row(id: ServiceId, y0: number): void {
     const { sim } = this.params
     const spec = SERVICES[id]
@@ -170,7 +182,8 @@ export class ServicesScene extends Phaser.Scene {
     const first = this.shown.length
     this.keep(this.add.image(ICON_X, cy, `svc-${id}`).setScale(1.5))
     this.keep(this.add.text(TEXT_X, cy - 58, t(spec.name), textStyle(40)).setOrigin(0, 0.5))
-    this.keep(this.add.text(TEXT_X, cy - 14, t('servicePrice', { money: formatMoney(spec.price) }), textStyle(28, '600')).setOrigin(0, 0.5))
+    const price = this.keep(this.add.text(TEXT_X, cy - 14, t('servicePrice', { money: formatMoney(spec.price) }), textStyle(28, '600')).setOrigin(0, 0.5))
+    if (id === sim.festivalServiceToday()) this.festivalTag(price.x + price.width + TAG_GAP, cy - 14)
     this.keep(
       this.add
         .text(TEXT_X, cy + 16, t('serviceNeeds', { bed, money: formatMoney(ITEMS[spec.bed].price) }), { ...textStyle(26, '600'), wordWrap: { width: TEXT_WRAP } })

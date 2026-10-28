@@ -11,6 +11,7 @@ import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
+import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
 import { ITEMS } from '../sim/items'
@@ -675,6 +676,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
+    this.room.setFestival(festivalOf(this.sim.day))
     this.hud.update()
     this.updateFloorBar()
     this.updatePointer(delta)
