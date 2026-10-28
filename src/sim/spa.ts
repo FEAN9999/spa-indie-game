@@ -657,6 +657,7 @@ export class SpaSim {
       badges: this.badges,
       festival: this.festival,
       events: this.eventBook,
+      rank: this.rank,
     })
   }
 
@@ -685,6 +686,7 @@ export class SpaSim {
     sim.badges = d.badges ?? {}
     sim.festival = d.festival
     sim.eventBook = d.events
+    sim.rank = d.rank
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes

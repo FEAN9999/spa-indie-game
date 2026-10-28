@@ -9,8 +9,9 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyEventBook } from '../../src/sim/events'
+import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
@@ -36,6 +37,7 @@ import v14 from '../fixtures/save-v14.json'
 import v15 from '../fixtures/save-v15.json'
 import v16 from '../fixtures/save-v16.json'
 import v17 from '../fixtures/save-v17.json'
+import v18 from '../fixtures/save-v18.json'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -97,12 +99,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([18, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([19, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(18)
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -234,13 +236,14 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 18', () => {
+  it('still leaves alone only saves newer than version 19', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 15 }).v).toBe(15)
     expect(parseSave({ ...good, v: 16 }).v).toBe(16)
     expect(parseSave({ ...good, v: 17 }).v).toBe(17)
     expect(parseSave({ ...good, v: 18 }).v).toBe(18)
-    expect(() => parseSave({ ...good, v: 19 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 19 }).v).toBe(19)
+    expect(() => parseSave({ ...good, v: 20 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -480,7 +483,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(18)
+    expect(copy.toSave().v).toBe(19)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -1028,7 +1031,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(18)
+    expect(saved.v).toBe(19)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1114,7 +1117,7 @@ describe('save version 15', () => {
     expect(parsed.progress).toMatchObject({ dayStart: null, daily: [], questDay: 0, monthly: null })
     const sim = open(v14)
     expect(sim.floors).toBe(2)
-    expect(sim.toSave().v).toBe(18)
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
   it('still opens every older save, and still clears the stairs spot of a v13 one', () => {
@@ -1168,7 +1171,7 @@ describe('save version 16', () => {
   it('opens the v15 shop with no badge list, so its first load judges it as an old shop', () => {
     expect(parseSave(structuredClone(v15)).badges).toBeNull()
     expect(parseSave(structuredClone(v14)).badges).toBeNull()
-    expect(open(v15).toSave().v).toBe(18)
+    expect(open(v15).toSave().v).toBe(19)
   })
 
   it('still opens every older save', () => {
@@ -1195,7 +1198,7 @@ describe('save version 17', () => {
     const sim = open(v16)
     expect(sim.festival).toEqual({ keepsakes: [] })
     for (const q of [...sim.progress.daily, sim.progress.monthly!]) expect(q.festival).toBeNull()
-    expect(sim.toSave().v).toBe(18)
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
   it('keeps an old month quest through a festival month', () => {
@@ -1242,7 +1245,7 @@ describe('save version 18', () => {
     expect(sim.eventBook).toEqual(emptyEventBook(14))
     expect(sim.customers).toHaveLength(1)
     expect(sim.customers.every(c => c.kol === false)).toBe(true)
-    expect(sim.toSave().v).toBe(18)
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
   it('still opens every older save', () => {
@@ -1295,5 +1298,122 @@ describe('save version 18', () => {
     const copy = viaJson(sim)
     expect(copy.dayOver).toBe(true)
     expect(copy.eventBook).toEqual(sim.eventBook)
+  })
+})
+
+describe('save version 19', () => {
+  const closeDay = (sim: SpaSim) => {
+    sim.clock.minutes = 1190
+    advanceUntil(sim, () => sim.dayOver, 400_000)
+    sim.drainEvents()
+  }
+
+  it('gives the v18 shop one star and starts its month today', () => {
+    const sim = open(v18)
+    expect(sim.day).toBe(29)
+    expect(sim.rank.stars).toBe(1)
+    expect(sim.rank.month).toEqual({ from: 29, served: 190, lost: 11 })
+    expect(sim.rank.scores).toEqual([])
+    expect(sim.rank.last).toBeNull()
+    expect(sim.toSave().v).toBe(19)
+  })
+
+  it('judges an old shop at the end of its month', () => {
+    const sim = open(v18)
+    closeDay(sim)
+    expect(sim.rank.last).toBeNull()
+    sim.startDay()
+    closeDay(sim)
+    expect(sim.rank.last?.day).toBe(30)
+    expect(sim.rank.last?.input.servedPerDay).toBe((sim.progress.total.served - 190) / 2)
+  })
+
+  it("gives an old shop's year award from the months since", () => {
+    const sim = open(v18)
+    sim.day = 35
+    sim.startDay()
+    closeDay(sim)
+    expect(sim.rank.lastYear?.day).toBe(36)
+    expect(sim.rank.lastYear?.score).toBe(sim.rank.last?.total)
+  })
+
+  it('still opens every older save', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18]) expect(() => open(raw)).not.toThrow()
+  })
+
+  it('repairs a damaged rank book field by field', () => {
+    const last = { day: 30, input: {}, parts: [1, 2, 3, 4, 5], total: 15, before: 1, after: 1, reward: 0 }
+    const lastYear = { day: 36, year: 1, score: 15, table: [], place: 3, reward: 0, gifts: [] }
+    const good = { stars: 3, month: { from: 31, served: 7, lost: 2 }, scores: [10, 20, 100, 0], last, lastYear, wins: 2, meritGiven: true }
+    const start = { served: 190, lost: 11 }
+    expect(repairRank(structuredClone(good), 33, start)).toEqual(good)
+    for (const stars of [0, 6, 2.5, 'x']) expect(repairRank({ ...good, stars }, 33, start).stars).toBe(1)
+    for (const month of [null, 'x', { from: 1.5, served: 7, lost: 2 }, { from: 31, served: -1, lost: 2 }, { from: 31, served: 7 }]) {
+      expect(repairRank({ ...good, month }, 33, start).month).toEqual({ from: 33, ...start })
+    }
+    expect(repairRank({ ...good, scores: [5, -1, 101, 2.5, 'x', 50] }, 33, start).scores).toEqual([5, 50])
+    expect(repairRank({ ...good, scores: 'x' }, 33, start).scores).toEqual([])
+    for (const bad of [null, 'x', 4, [], { day: 1.5 }]) {
+      const r = repairRank({ ...good, last: bad, lastYear: bad }, 33, start)
+      expect(r.last).toBeNull()
+      expect(r.lastYear).toBeNull()
+    }
+    const r = repairRank({ ...good, wins: -1, meritGiven: 1 }, 33, start)
+    expect(r.wins).toBe(0)
+    expect(r.meritGiven).toBe(false)
+    expect(repairRank(undefined, 33, start)).toEqual(emptyRankBook(33, 190, 11))
+  })
+
+  it('round-trips a judged shop', () => {
+    const sim = new SpaSim(opts())
+    sim.profileDone = true
+    sim.day = 8
+    sim.startDay()
+    sim.reviews = Array(20).fill(5)
+    sim.progress.total.served = 45
+    closeDay(sim)
+    expect(sim.rank.last).not.toBeNull()
+    expect(viaJson(sim).rank).toEqual(sim.rank)
+  })
+
+  it("reloads day 9's evening without judging or paying again", () => {
+    const sim = new SpaSim(opts())
+    sim.profileDone = true
+    sim.reviews = Array(20).fill(5)
+    sim.progress.total.served = 45
+    sim.rank.month = { from: 7, served: 0, lost: 0 }
+    sim.day = 8
+    sim.startDay()
+    closeDay(sim)
+    expect(sim.rank.last?.day).toBe(9)
+    const copy = viaJson(sim)
+    expect(copy.dayOver).toBe(true)
+    expect(copy.money).toBe(sim.money)
+    expect(copy.rank).toEqual(sim.rank)
+    copy.drainEvents()
+    copy.advance(5000)
+    expect(copy.money).toBe(sim.money)
+    expect(copy.rank).toEqual(sim.rank)
+  })
+
+  it('reloads day 36 without a second cup or certificate', () => {
+    const sim = new SpaSim(opts())
+    sim.profileDone = true
+    sim.reviews = Array(20).fill(5)
+    sim.progress.total.served = 45
+    sim.rank.stars = 5
+    sim.rank.month = { from: 34, served: 0, lost: 0 }
+    sim.rank.scores = [72, 72, 72]
+    sim.day = 35
+    sim.startDay()
+    closeDay(sim)
+    expect(sim.rank.lastYear?.place).toBe(2)
+    const copy = viaJson(sim)
+    expect(copy.money).toBe(sim.money)
+    expect(copy.rank).toEqual(sim.rank)
+    expect(copy.book.gifts).toEqual(sim.book.gifts)
+    expect(copy.book.gifts.filter(g => g === 'merit')).toHaveLength(1)
+    copy.advance(5000)
+    expect(copy.money).toBe(sim.money)
   })
 })

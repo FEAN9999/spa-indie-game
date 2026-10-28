@@ -13,11 +13,12 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { emptyRankBook, type MonthResult, type RankBook, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 18
+export const SAVE_VERSION = 19
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -77,6 +78,8 @@ export interface SaveData {
   festival: FestivalBook
   /** Tomorrow's or today's event, the hot days and the day's event counts. */
   events: EventBook
+  /** The shop's grade, this month's start and the year's scores. */
+  rank: RankBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -224,6 +227,8 @@ export function parseSave(raw: unknown): SaveData {
   data.festival = repairFestival(data.festival)
   // shops saved before version 18 have had no event, and the first may come tomorrow
   data.events = repairEvents(data.events, data.day)
+  // shops saved before version 19 start at one star, their month counted from today
+  data.rank = repairRank(data.rank, data.day, data.progress.dayStart ?? data.progress.total)
   return data
 }
 
@@ -337,6 +342,27 @@ export function repairEvents(x: unknown, day: number): EventBook {
   }
 }
 
+/**
+ * A well-formed rank book, field by field; a missing one is one star with the month counted from `start` today.
+ * A saved month or year result is kept as is when it has a whole day.
+ */
+export function repairRank(x: unknown, day: number, start: { served: number; lost: number }): RankBook {
+  const book = emptyRankBook(day, start.served, start.lost)
+  if (!isObject(x)) return book
+  if (Number.isInteger(x.stars) && (x.stars as number) >= 1 && (x.stars as number) <= 5) book.stars = x.stars as Stars
+  const m = x.month
+  if (isObject(m) && [m.from, m.served, m.lost].every(n => Number.isInteger(n) && (n as number) >= 0)) {
+    book.month = { from: m.from as number, served: m.served as number, lost: m.lost as number }
+  }
+  book.scores = (Array.isArray(x.scores) ? x.scores : []).filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 100)
+  const result = <T extends { day: number }>(r: unknown): T | null => (isObject(r) && Number.isInteger(r.day) ? (r as unknown as T) : null)
+  book.last = result<MonthResult>(x.last)
+  book.lastYear = result<YearResult>(x.lastYear)
+  book.wins = repairCount(x.wins)
+  book.meritGiven = repairBool(x.meritGiven)
+  return book
+}
+
 /** A well-formed VIP book, field by field; a missing one is empty. A booking more than a day ahead is dropped, or it would block every later one. */
 function repairVipBook(x: unknown, day: number): VipBook {
   const book = emptyVipBook()
@@ -419,7 +445,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
