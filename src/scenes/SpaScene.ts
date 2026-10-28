@@ -6,6 +6,7 @@ import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
 import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
+import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
@@ -31,6 +32,7 @@ import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
+import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
@@ -52,6 +54,7 @@ import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
+import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
 import type { GuestBookData } from './GuestBookScene'
 import type { QuestsData } from './QuestsScene'
@@ -158,6 +161,10 @@ export class SpaScene extends Phaser.Scene {
   private studiedToastMs = 0
   /** The scene time before which a queued toast may not go up, so finished quests follow each other and whatever was said just before. */
   private toastQueueAt = 0
+  /** The "Chủ tiệm về rồi" card is open. */
+  private awayOpen = false
+  /** Earnings from returns to the page, paid and saved already, whose cards wait for a mini-game or an update check. */
+  private heldAway: AwayResult[] = []
   /** The wear toast, held while a panel covers the shop; a later wear replaces it. */
   private heldWearToast: string | null = null
   /** Gold cards waiting to show, in the order they came: new badges and festival cards. */
@@ -194,6 +201,8 @@ export class SpaScene extends Phaser.Scene {
     this.inspectNote = null
     this.toastQueueAt = 0
     this.heldWearToast = null
+    this.awayOpen = false
+    this.heldAway = []
     this.badgeQueue = []
     this.badgeUntil = 0
     this.foundToast = null
@@ -232,8 +241,12 @@ export class SpaScene extends Phaser.Scene {
       if (this.sim.profileDone) this.session.saveNow()
     }
     this.time.addEvent({ delay: AUTOSAVE_MS, loop: true, callback: autosave })
+    let hiddenAt: number | null = null
     const saveOnHide = () => {
-      if (document.visibilityState === 'hidden') autosave()
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+        autosave()
+      }
     }
     const saveOnLeave = () => autosave()
     document.addEventListener('visibilitychange', saveOnHide)
@@ -241,7 +254,20 @@ export class SpaScene extends Phaser.Scene {
     // back in the game: first the shop another page may have saved meanwhile, then a newer version
     const stopWatching = onReturn(() => {
       this.session.reloadIfChangedElsewhere()
-      void this.checkForUpdate()
+      let paid = false
+      if (this.session.open && this.sim.profileDone && hiddenAt !== null) {
+        const back = this.sim.comeBack(Date.now() - hiddenAt)
+        hiddenAt = null
+        if (back.paid > 0) {
+          paid = true
+          this.heldAway.push(back)
+          this.session.saveNow()
+        } else if (back.tip) {
+          this.badgeQueue.push(awayTip())
+          this.session.saveNow()
+        }
+      }
+      if (!paid) void this.checkForUpdate()
     })
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       document.removeEventListener('visibilitychange', saveOnHide)
@@ -265,9 +291,42 @@ export class SpaScene extends Phaser.Scene {
         if (!this.sim.dayOver) this.pause()
       })
     }
-    // a reopened shop waits on the pause card; an ended day reopens its summary by itself
-    else if (!this.sim.dayOver) this.pause()
+    // a reopened shop is welcomed back, then waits on the pause card; an ended day reopens its summary by itself
+    else {
+      const back = this.sim.comeBack(saved.savedAt === null ? 0 : Date.now() - saved.savedAt)
+      const pauseUnlessOver = () => {
+        if (!this.sim.dayOver) this.pause()
+      }
+      if (back.paid > 0) {
+        this.session.saveNow()
+        this.showAway(back, pauseUnlessOver)
+      } else {
+        if (back.tip) {
+          this.badgeQueue.push(awayTip())
+          this.session.saveNow()
+        }
+        pauseUnlessOver()
+      }
+    }
     if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
+  }
+
+  /** The welcome-back card over whatever is open; closing it puts `modal` back as it was, so a panel underneath stays frozen. */
+  private showAway(back: AwayResult, then?: () => void): void {
+    const wasModal = this.modal
+    this.awayOpen = true
+    this.modal = true
+    const data: AwayData = {
+      sim: this.sim,
+      back,
+      onDone: () => {
+        this.awayOpen = false
+        this.modal = wasModal
+        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, back.paid, HUD_DEPTH + 40)
+        then?.()
+      },
+    }
+    this.scene.launch('AwayScene', data)
   }
 
   /** The slot was saved by a newer version: nothing runs and nothing is written; reloading fetches the newer version. */
@@ -774,6 +833,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   update(time: number, delta: number) {
     if (this.tooNew) return
+    // over a panel too, so it does not wait for the panel to close
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.holding && !this.awayOpen) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)
