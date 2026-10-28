@@ -566,8 +566,6 @@ export class SpaScene extends Phaser.Scene {
     const begin = () => {
       sound.startOfDay()
       sim.markHint('summary')
-      // the month's own toast (sent by startDay) was timed by this value
-      const monthToastMs = this.studiedToastMs
       sim.startDay()
       this.showFloor(1)
       this.session.saveNow()
@@ -575,9 +573,9 @@ export class SpaScene extends Phaser.Scene {
       const reward = (month?.reward ?? 0) + (year?.reward ?? 0)
       if (reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, reward, HUD_DEPTH + 40)
       if (month && month.after > month.before) {
-        // after the month's toast and the VIP one, not on top of them
+        // after the VIP toast and before the month's (which the next update sends, timed by what this leaves)
         const text = t('rankUpToast', { n: month.after })
-        const at = Math.max(monthToastMs, this.studiedToastMs) + LATE_TOAST_MS
+        const at = this.studiedToastMs + LATE_TOAST_MS
         this.time.delayedCall(at, () => this.hud.toast(text))
         this.studiedToastMs = at + LATE_TOAST_MS
         this.room.setRank(month.after)

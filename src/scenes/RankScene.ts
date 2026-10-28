@@ -103,7 +103,8 @@ export class RankScene extends Phaser.Scene {
     const body = this.add.text(MID, 1440, sub, { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5, 0)
     // the sub text lives in the box under the head: never taller than what is left of it
     if (body.height > 170) body.setScale(170 / body.height)
-    addButton(this, MID, 1770, 560, 130, t('openDay', { day: r.day + 1 }), 'primary', done, 46)
+    // the summary's button sits at about the same place: a second tap on it must not close this card before it is seen
+    this.time.delayedCall(COUNT_MS, () => addButton(this, MID, 1770, 560, 130, t('openDay', { day: r.day + 1 }), 'primary', done, 46))
   }
 
   private yearCard(r: YearResult, shopName: string, done: () => void): void {

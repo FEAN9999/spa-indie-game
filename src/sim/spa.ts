@@ -457,8 +457,8 @@ export class SpaSim {
   }
 
   /**
-   * The customer pays, reviews and leaves; `technician` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the price, but tips on the plain one.
-   * Anyone else pays FESTIVAL_PRICE times the price for the festival service, and tips on that.
+   * The customer pays, reviews and leaves; `technician` is null when the owner did the work. A VIP pays VIP_PRICE_FACTOR times the graded price, but tips on the plain graded one.
+   * Anyone else pays FESTIVAL_PRICE times the graded price for the festival service, and tips on that.
    */
   private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
     const plain = rankPrice(SERVICES[c.service].price, this.rank.stars)

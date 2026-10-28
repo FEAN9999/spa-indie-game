@@ -70,6 +70,13 @@ describe('yearLines', () => {
     expect(yearLines(y(4, []), 'T').lines.slice(-2)).toEqual(['Năm 2 các tiệm kia lên thêm 4 điểm.', 'Điểm của tiệm năm nay: 68, trung bình các tháng.'])
     expect(yearLines(y(4, [], 12), 'T').lines).toEqual(['Năm sau cố lên. Không mất gì.', 'Điểm của tiệm năm nay: 68, trung bình các tháng.'])
   })
+  it('says the rivals rise only while one of them still does', () => {
+    const next = (year: number) => yearLines(y(4, [], year), 'T').lines.some(l => l.includes('lên thêm'))
+    expect(next(1)).toBe(true)
+    expect(next(4)).toBe(true)
+    expect(next(10)).toBe(true)
+    expect(next(11)).toBe(false)
+  })
   it('rows', () => {
     const r = yearLines({ ...y(5, []), table: [...rivalsFor(1), { rival: null, pts: 68 }] }, 'Spa Của Tôi')
     expect(r.rows.map(x => x.name)).toEqual(['Tiệm gội Cô Ba', 'Ngọc Lan Spa', 'Spa Hoa Sen', 'SPA MỚI', 'Spa Của Tôi'])

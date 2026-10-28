@@ -1,4 +1,4 @@
-import { DAYS_PER_MONTH, RANK_FROM_DAY, RANK_PRICE_STEP, RANK_STAR_AT, RIVAL_SCORE_MAX, RIVAL_YEAR_STEP } from '../config'
+import { DAYS_PER_MONTH, RANK_FROM_DAY, RANK_PRICE_STEP, RANK_STAR_AT, RIVAL_YEAR_STEP } from '../config'
 import { monthStart } from '../sim/calendar'
 import { rivalsFor, starsFor, type MonthResult, type RankInput, type RivalId, type Stars, type YearResult, type YearRow } from '../sim/rank'
 import { formatMoney } from '../strings/format'
@@ -69,7 +69,8 @@ export function yearLines(r: YearResult, shopName: string): { rows: { name: stri
   } else if (r.place === 2) lines.push(t(r.gifts.includes('merit') ? 'yearSecondMerit' : 'yearSecond', { money }))
   else if (r.place === 3) lines.push(t('yearThird', { money }))
   else lines.push(t('yearLast'))
-  if (rivalsFor(r.year + 1).some(x => x.pts < RIVAL_SCORE_MAX)) lines.push(t('yearNext', { next: r.year + 1, step: RIVAL_YEAR_STEP }))
+  const now = rivalsFor(r.year)
+  if (rivalsFor(r.year + 1).some((x, i) => x.pts > now[i].pts)) lines.push(t('yearNext', { next: r.year + 1, step: RIVAL_YEAR_STEP }))
   lines.push(t('yearScore', { score: r.score }))
   return { rows, lines, button: t(r.place <= 3 ? 'yearClaim' : 'yearClose') }
 }

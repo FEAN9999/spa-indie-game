@@ -22,7 +22,7 @@ const HEADING_H = 64
 const NOTE_GAP = 14
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
-/** End-of-day card: the day's numbers count up, then the player starts the next day. */
+/** End-of-day card: the day's numbers count up, then the player goes on (to the grade cards on a judging evening, else the next day). */
 export class SummaryScene extends Phaser.Scene {
   private params!: SummaryData
 

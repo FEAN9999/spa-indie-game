@@ -13,7 +13,7 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
-import { emptyRankBook, type MonthResult, type RankBook, type Stars, type YearResult } from './rank'
+import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
@@ -342,7 +342,6 @@ export function repairEvents(x: unknown, day: number): EventBook {
   }
 }
 
-const RIVAL_IDS: unknown[] = ['coBa', 'ngocLan', 'hoaSen', 'spaMoi']
 const isStar = (x: unknown): boolean => Number.isInteger(x) && (x as number) >= 1 && (x as number) <= 5
 
 /** A saved month result when it is whole enough for the views to read; null otherwise. */
@@ -358,23 +357,25 @@ function repairMonthResult(r: unknown): MonthResult | null {
 
 /** A saved year result when it is whole enough for the views to read, its gifts filtered to the known two; null otherwise. */
 function repairYearResult(r: unknown): YearResult | null {
-  if (!isObject(r) || !Number.isInteger(r.day) || !isNumber(r.year) || !isNumber(r.score) || !isNumber(r.place) || !isNumber(r.reward)) return null
-  if (!Array.isArray(r.table) || !Array.isArray(r.gifts)) return null
-  const rows = r.table.every(row => isObject(row) && (row.rival === null || RIVAL_IDS.includes(row.rival)) && isNumber(row.pts))
+  if (!isObject(r) || !Number.isInteger(r.day) || !isNumber(r.year) || !isNumber(r.score) || !isNumber(r.reward)) return null
+  if (!Number.isInteger(r.place) || (r.place as number) < 1 || (r.place as number) > 5) return null
+  // the card draws one row per entry and hangs its only button under them, so any other count could push it off the screen
+  if (!Array.isArray(r.table) || r.table.length !== 5 || !Array.isArray(r.gifts)) return null
+  const rows = r.table.every(row => isObject(row) && (row.rival === null || RIVAL_IDS.includes(row.rival as RivalId)) && isNumber(row.pts))
   if (!rows) return null
   return { ...(r as unknown as YearResult), gifts: r.gifts.filter((g): g is 'trophy' | 'merit' => g === 'trophy' || g === 'merit') }
 }
 
 /**
  * A well-formed rank book, field by field; a missing one is one star with the month counted from `start` today.
- * A saved month or year result is kept as is when it has a whole day.
+ * A saved month or year result is kept only with its full shape (see repairMonthResult and repairYearResult).
  */
 export function repairRank(x: unknown, day: number, start: { served: number; lost: number }): RankBook {
   const book = emptyRankBook(day, start.served, start.lost)
   if (!isObject(x)) return book
-  if (Number.isInteger(x.stars) && (x.stars as number) >= 1 && (x.stars as number) <= 5) book.stars = x.stars as Stars
+  if (isStar(x.stars)) book.stars = x.stars as Stars
   const m = x.month
-  if (isObject(m) && [m.from, m.served, m.lost].every(n => Number.isInteger(n) && (n as number) >= 0)) {
+  if (isObject(m) && [m.from, m.served, m.lost].every(n => Number.isInteger(n) && (n as number) >= 0) && (m.from as number) <= day) {
     book.month = { from: m.from as number, served: m.served as number, lost: m.lost as number }
   }
   book.scores = (Array.isArray(x.scores) ? x.scores : []).filter((n): n is number => Number.isInteger(n) && n >= 0 && n <= 100)

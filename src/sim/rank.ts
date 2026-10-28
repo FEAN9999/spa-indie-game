@@ -76,7 +76,9 @@ const RIVALS: { id: RivalId; base: number }[] = [
   { id: 'spaMoi', base: RIVAL_BASE.spaMoi },
 ]
 
-const clamp01 = (x: number): number => Math.min(1, Math.max(0, x))
+export const RIVAL_IDS: RivalId[] = RIVALS.map(r => r.id)
+
+const clamp01= (x: number): number => Math.min(1, Math.max(0, x))
 const part = (x: number): number => Math.round(20 * clamp01(x))
 
 /** The five parts of a month's grade, each a whole number from 0 to 20. */

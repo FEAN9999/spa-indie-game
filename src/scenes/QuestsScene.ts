@@ -112,7 +112,7 @@ const NOTE_Y = 1790
 type Tab = keyof typeof TAB_X
 
 /**
- * The quest panel over the frozen shop, in two tabs: today's three quests with the swap and the month's quest, and the badges.
+ * The quest panel over the frozen shop, in three tabs: today's three quests with the swap and the month's quest, the badges, and the shop's grade.
  * Every tap stays in this scene, so the shop waits underneath.
  */
 export class QuestsScene extends Phaser.Scene {

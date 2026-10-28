@@ -1343,12 +1343,12 @@ describe('save version 19', () => {
 
   it('repairs a damaged rank book field by field', () => {
     const last = { day: 30, input: { rating: null, beauty: 4, services: 2, servedPerDay: 3.5, lostShare: 0.1 }, parts: [1, 2, 3, 4, 5], total: 15, before: 1, after: 1, reward: 0 }
-    const lastYear = { day: 36, year: 1, score: 15, table: [{ rival: 'coBa', pts: 40 }, { rival: null, pts: 15 }], place: 3, reward: 0, gifts: [] }
+    const lastYear = { day: 36, year: 1, score: 15, table: [{ rival: 'coBa', pts: 40 }, { rival: 'ngocLan', pts: 50 }, { rival: 'hoaSen', pts: 60 }, { rival: 'spaMoi', pts: 70 }, { rival: null, pts: 15 }], place: 5, reward: 0, gifts: [] }
     const good = { stars: 3, month: { from: 31, served: 7, lost: 2 }, scores: [10, 20, 100, 0], last, lastYear, wins: 2, meritGiven: true }
     const start = { served: 190, lost: 11 }
     expect(repairRank(structuredClone(good), 33, start)).toEqual(good)
     for (const stars of [0, 6, 2.5, 'x']) expect(repairRank({ ...good, stars }, 33, start).stars).toBe(1)
-    for (const month of [null, 'x', { from: 1.5, served: 7, lost: 2 }, { from: 31, served: -1, lost: 2 }, { from: 31, served: 7 }]) {
+    for (const month of [null, 'x', { from: 1.5, served: 7, lost: 2 }, { from: 31, served: -1, lost: 2 }, { from: 31, served: 7 }, { from: 34, served: 7, lost: 2 }]) {
       expect(repairRank({ ...good, month }, 33, start).month).toEqual({ from: 33, ...start })
     }
     expect(repairRank({ ...good, scores: [5, -1, 101, 2.5, 'x', 50] }, 33, start).scores).toEqual([5, 50])
@@ -1361,6 +1361,8 @@ describe('save version 19', () => {
     expect(repairRank({ ...good, last: { ...last, parts: [1, 2] } }, 33, start).last).toBeNull()
     expect(repairRank({ ...good, last: { ...last, after: 6 } }, 33, start).last).toBeNull()
     expect(repairRank({ ...good, lastYear: { ...lastYear, table: [{ rival: 'x', pts: 1 }] } }, 33, start).lastYear).toBeNull()
+    expect(repairRank({ ...good, lastYear: { ...lastYear, table: [...lastYear.table, { rival: null, pts: 1 }] } }, 33, start).lastYear).toBeNull()
+    for (const place of [0, 6, 2.5]) expect(repairRank({ ...good, lastYear: { ...lastYear, place } }, 33, start).lastYear).toBeNull()
     expect(repairRank({ ...good, lastYear: { ...lastYear, gifts: ['merit', 'x'] } }, 33, start).lastYear?.gifts).toEqual(['merit'])
     const r = repairRank({ ...good, wins: -1, meritGiven: 1 }, 33, start)
     expect(r.wins).toBe(0)

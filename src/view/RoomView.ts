@@ -28,12 +28,12 @@ const ITEM_DEPTH_BIAS = -0.5
 /** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
 const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
 
+/** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
+const PLAQUE = { x: 4.3, y: 17.5, bottom: 28 }
 /**
  * The rival's sign stands on floor 1's sidewalk against the right edge, its board clear of today's line in the middle of the same band:
  * its right edge and board in pixels, its middle row in tiles.
  */
-/** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
-const PLAQUE = { x: 4.3, y: 17.5, bottom: 28 }
 const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
