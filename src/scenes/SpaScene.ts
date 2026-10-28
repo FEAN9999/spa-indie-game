@@ -455,7 +455,10 @@ export class SpaScene extends Phaser.Scene {
     const sim = this.sim
     if (sim.dayOver || sim.paused || sim.servingCustomerId !== null) return
     if (this.foundToast) {
-      this.queueToast(this.foundToast)
+      // after this morning's month, VIP and stairs toasts, which are spaced the same way
+      const text = this.foundToast
+      this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
+      this.studiedToastMs += LATE_TOAST_MS
       this.foundToast = null
     }
     const now = this.time.now
