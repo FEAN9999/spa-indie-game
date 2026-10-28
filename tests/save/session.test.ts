@@ -53,6 +53,17 @@ describe('save session', () => {
     expect([store.load(1)?.money, store.currentSlot(), reloads]).toEqual([9, 1, ['old']])
   })
 
+  it('is no longer open after a save finds another page has written the slot', () => {
+    const store = new SaveStore(new MemStorage())
+    const reloads: string[] = []
+    const old = new SaveSession(store, () => shop(1), () => reloads.push('old'))
+    old.load()
+    new SaveSession(store, () => shop(9), () => reloads.push('new')).saveNow()
+    expect(old.open).toBe(true)
+    old.saveNow()
+    expect([old.open, reloads]).toEqual([false, ['old']])
+  })
+
   it('a page that falls behind still switches slots without writing its old shop', () => {
     const store = new SaveStore(new MemStorage())
     const reloads: string[] = []

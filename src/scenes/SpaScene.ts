@@ -380,6 +380,8 @@ export class SpaScene extends Phaser.Scene {
       const mainCards = this.sim.place === null ? { badgeQueue: this.badgeQueue, inspectNote: this.inspectNote } : this.mainCards
       this.chain.goTo(place)
       this.session.saveNow()
+      // another page saved first: the session has closed and the page is reloading, so no new scene may open a session on that save
+      if (!this.session.open) return
       const data: SpaSceneData = { chain: this.chain, mainCards, heldAway: this.heldAway, arrived: true }
       this.scene.restart(data)
     })
