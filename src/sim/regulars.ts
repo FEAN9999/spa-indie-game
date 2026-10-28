@@ -88,8 +88,10 @@ const visitMinute = (rng: Rng) => REGULAR_VISIT_FROM_MIN + Math.floor(rng() * (R
 /** The morning plan: who comes today and when. Draws nothing before the regulars begin. */
 export function planDay(book: GuestBook, day: number, rng: Rng): void {
   if (day < REGULARS_FROM_DAY) return
+  // a regular met before the schedule starts (Chú Sáu, on a new shop's first day) keeps no place in it
+  const unmet = SCHEDULED.filter(id => !book.regulars[id].met)
   if (REGULAR_IDS.every(id => book.regulars[id].meetDay === null)) {
-    SCHEDULED.forEach((id, i) => { book.regulars[id].meetDay = day + i * REGULAR_MEET_GAP_DAYS })
+    unmet.forEach((id, i) => { book.regulars[id].meetDay = day + i * REGULAR_MEET_GAP_DAYS })
   }
   for (const id of REGULAR_IDS) book.regulars[id].visitAt = null
   const forced = REGULAR_IDS.filter(id => {

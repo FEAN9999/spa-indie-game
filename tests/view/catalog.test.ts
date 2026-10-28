@@ -62,6 +62,11 @@ describe('build mode catalogue', () => {
     expect([...shown].sort()).toEqual(ITEM_KINDS.filter(k => !ITEMS[k].giftOnly).sort())
   })
 
+  it('shows a gift bed first on the bed tab, not on the decor tab', () => {
+    expect(catalogPage('bed', 0, ['shampoo', 'mask'], ['maskBed']).entries[0]).toEqual({ kind: 'maskBed', gift: true })
+    expect(kinds(catalogPage('decor', 0, ['shampoo', 'mask'], ['maskBed']))).not.toContain('maskBed')
+  })
+
   it('shows pending gifts first on the decor tab and never the gift-only kinds otherwise', () => {
     const gifts: ItemKind[] = ['silkScreen', 'vyPainting']
     const first = catalogPage('decor', 0, ['shampoo'], gifts)

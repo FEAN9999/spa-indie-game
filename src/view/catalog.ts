@@ -12,11 +12,11 @@ export interface CatalogEntry {
 
 /**
  * One page of a tab's cards in catalogue order, a bed only once its service is open; turning past either end comes round to the other.
- * The decor tab starts with one card per waiting gift, oldest first; the gift-only kinds are never for sale.
+ * A tab starts with one card per waiting gift of its group, oldest first; the gift-only kinds are never for sale.
  */
 export function catalogPage(group: ItemGroup, page: number, open: ServiceId[], gifts: ItemKind[]): { entries: CatalogEntry[]; page: number; pages: number } {
   const forSale = ITEM_KINDS.filter(k => ITEMS[k].group === group && !ITEMS[k].giftOnly && (group !== 'bed' || open.includes(serviceOfBed(k)!)))
-  const all = [...(group === 'decor' ? gifts.map(kind => ({ kind, gift: true })) : []), ...forSale.map(kind => ({ kind, gift: false }))]
+  const all = [...gifts.filter(k => ITEMS[k].group === group).map(kind => ({ kind, gift: true })), ...forSale.map(kind => ({ kind, gift: false }))]
   const pages = Math.ceil(all.length / CARDS_PER_PAGE)
   const p = ((page % pages) + pages) % pages
   return { entries: all.slice(p * CARDS_PER_PAGE, (p + 1) * CARDS_PER_PAGE), page: p, pages }
