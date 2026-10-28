@@ -95,6 +95,36 @@ export const C = {
   mapLand: '#EFE2CB',
   straw: '#E8C878',
   strawDark: '#B9944A',
+  // the old town branch: dark wood planks, gạch tàu tiles, a Hội An yellow wall with weathered patches, dark wood walls
+  phoPlank: '#7A4A2C',
+  phoPlankLine: '#5E3820',
+  phoPlankGrain: '#8C5835',
+  phoTile: '#C9744F',
+  phoTileDark: '#C26B47',
+  phoTileSeam: '#9E5236',
+  phoTileSpeck: '#B45F3E',
+  phoWall: '#E9B13F',
+  phoWallPatch: '#DA9C2E',
+  phoWood: '#5A3520',
+  // the uptown branch: light wood, white marble with gold seams, cream panels with gold trim, a glass wall onto three towers
+  caoPlank: '#DCC6A2',
+  caoPlankLine: '#C4AA80',
+  marble: '#F7F4EE',
+  marbleSeam: '#E4DDD2',
+  marbleVein: '#DCD5CA',
+  caoGold: '#C9A24A',
+  caoGoldLight: '#D9B65A',
+  caoWall: '#F4EBDD',
+  caoWallLine: '#E3D5BF',
+  caoGlass: '#D6E6EE',
+  caoGlassShine: '#E8F1F5',
+  towerFar: '#9DB4C4',
+  towerNear: '#7F9BB0',
+  towerMid: '#A9BDCB',
+  caoMat: '#E9DCC6',
+  caoHill: '#B9CBB0',
+  // an orchid's petals
+  orchid: '#FBEFF3',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]

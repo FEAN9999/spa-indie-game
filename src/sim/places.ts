@@ -15,7 +15,11 @@ export const PLACES_READY: readonly PlaceId[] = ['beach']
 export const BRANCH_LAYOUT: string[] = SPA_LAYOUT_1A.map(row => row.replaceAll('U', '.'))
 
 /** The piece a branch at each place opens with, laid as a gift on a tile that blocks no path and no spot. */
-export const PLACE_DECOR: Partial<Record<PlaceId, { kind: ItemKind; x: number; y: number }>> = { beach: { kind: 'surfboard', x: 11, y: 10 } }
+export const PLACE_DECOR: Record<PlaceId, { kind: ItemKind; x: number; y: number }> = {
+  beach: { kind: 'surfboard', x: 11, y: 10 },
+  oldTown: { kind: 'lanternString', x: 11, y: 10 },
+  uptown: { kind: 'orchid', x: 11, y: 10 },
+}
 
 /** A service's plain price at a place, to the nearest thousand. */
 export const placePrice = (price: number, place: PlaceId): number => Math.round((price * PLACES[place].priceFactor) / 1000) * 1000

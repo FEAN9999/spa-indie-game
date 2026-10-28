@@ -130,12 +130,16 @@ describe('opening a branch', () => {
 })
 
 describe("a branch's own decor", () => {
-  it('lays one surfboard at the beach: a gift that blocks nothing, on the rebuilt room, with its beauty', () => {
-    const branch = beachOf()
-    const boards = branch.items.filter(i => i.kind === 'surfboard')
-    expect(boards).toEqual([{ id: expect.any(Number), kind: 'surfboard', x: 11, y: 10, flip: false, gift: true }])
-    const others = branch.items.filter(i => i.kind !== 'surfboard')
-    expect(placeProblem(branch.shellGrid(), others, boards[0], { door: branch.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
+  it.each([
+    ['beach', 'surfboard'],
+    ['oldTown', 'lanternString'],
+    ['uptown', 'orchid'],
+  ] as const)('lays one piece at %s, a gift that blocks nothing, on the rebuilt room, with its beauty', (place, kind) => {
+    const branch = SpaSim.newBranch(place, starShop(), createRng(9))
+    const pieces = branch.items.filter(i => i.kind === kind)
+    expect(pieces).toEqual([{ id: expect.any(Number), kind, x: 11, y: 10, flip: false, gift: true }])
+    const others = branch.items.filter(i => i.kind !== kind)
+    expect(placeProblem(branch.shellGrid(), others, pieces[0], { door: branch.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
     expect(isWalkable(branch.grid, { x: 11, y: 10 })).toBe(false)
     expect(branch.beauty()).toBe(beautyOf(others) + 3)
   })

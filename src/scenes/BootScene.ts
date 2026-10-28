@@ -10,11 +10,13 @@ import { mapTexture } from '../art/map'
 import { maskTextures } from '../art/maskArt'
 import { massageTextures } from '../art/massageArt'
 import { mudTextures } from '../art/mudArt'
+import { oldTownRoomTexture } from '../art/oldTown'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { steamTextures } from '../art/steamArt'
 import { stoneTextures } from '../art/stoneArt'
 import { loadSvgTextures } from '../art/svg'
+import { uptownRoomTexture } from '../art/uptown'
 import { GAME_H, GAME_W } from '../config'
 import { buildGrid } from '../sim/grid'
 import { shellOf } from '../sim/items'
@@ -35,6 +37,8 @@ export class BootScene extends Phaser.Scene {
     await loadSvgTextures(this, {
       room: roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])),
       'room-beach': beachRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
+      'room-oldTown': oldTownRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
+      'room-uptown': uptownRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
       'chain-map': mapTexture(),
       ...floorTextures(),
       ...furnitureTextures(),

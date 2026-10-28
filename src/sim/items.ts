@@ -10,7 +10,7 @@ export type ItemKind =
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
   | 'photoSinger' | 'photoMiss' | 'photoStar' | 'photoChef' | 'goldBoard'
   | 'maiBranch' | 'heartFrame' | 'roseVase' | 'starLantern' | 'flowerBasket' | 'xmasTree'
-  | 'certificate' | 'trophy' | 'merit' | 'surfboard'
+  | 'certificate' | 'trophy' | 'merit' | 'surfboard' | 'lanternString' | 'orchid'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor'
 export type SetId = 'saigon' | 'bamboo'
@@ -69,6 +69,8 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   trophy: { w: 1, h: 1, price: 0, beauty: TROPHY_BEAUTY, group: 'decor', giftOnly: true, name: 'itemTrophy' },
   merit: { w: 1, h: 1, price: 0, beauty: MERIT_BEAUTY, group: 'decor', giftOnly: true, name: 'itemMerit' },
   surfboard: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemSurfboard' },
+  lanternString: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemLanternString' },
+  orchid: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemOrchid' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]

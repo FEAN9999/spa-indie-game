@@ -98,11 +98,11 @@ describe('items', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
   })
 
-  it('keeps eighteen free gift-only decor pieces out of the sets', () => {
+  it('keeps twenty free gift-only decor pieces out of the sets', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual([
       'vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard',
       'maiBranch', 'heartFrame', 'roseVase', 'starLantern', 'flowerBasket', 'xmasTree', 'certificate',
-      'trophy', 'merit', 'surfboard',
+      'trophy', 'merit', 'surfboard', 'lanternString', 'orchid',
     ])
     expect(ITEMS.certificate).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemCertificate' })
     expect(ITEMS.vyPainting).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' })

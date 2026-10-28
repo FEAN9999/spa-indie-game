@@ -122,9 +122,9 @@ export class RoomView {
     }
   }
 
-  /** Floor 1's room: the beach's own, or the main shop's. */
+  /** Floor 1's room: the place's own at a branch, or the main shop's. */
   private groundRoom(): string {
-    return this.place === 'beach' ? 'room-beach' : 'room'
+    return this.place ? `room-${this.place}` : 'room'
   }
 
   /** Shows `floor`: its room, the desk and screen on floor 1, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */

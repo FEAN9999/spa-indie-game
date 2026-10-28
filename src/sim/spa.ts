@@ -247,10 +247,8 @@ export class SpaSim {
     branch.profileDone = main.profileDone
     branch.purse = main.purse
     const decor = PLACE_DECOR[place]
-    if (decor) {
-      branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
-      branch.rebuildRoom()
-    }
+    branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
+    branch.rebuildRoom()
     refreshCandidates(branch.crew)
     return branch
   }

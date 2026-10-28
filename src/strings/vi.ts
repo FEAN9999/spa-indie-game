@@ -171,6 +171,8 @@ export const vi = {
   itemTrophy: 'Cúp vàng',
   itemMerit: 'Bằng khen',
   itemSurfboard: 'Ván lướt sóng',
+  itemLanternString: 'Dây đèn lồng Hội An',
+  itemOrchid: 'Chậu lan hồ điệp',
   itemTeaChest: 'Tủ chè',
   itemJar: 'Chum sứ xanh trắng',
   itemBambooBench: 'Ghế chờ tre',
