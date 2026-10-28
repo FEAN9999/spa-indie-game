@@ -341,3 +341,20 @@ export const FESTIVAL_PRICE = 1.2
 export const FESTIVAL_QUEST_SHARE = 0.5
 /** Each festival keepsake's beauty. */
 export const KEEPSAKE_BEAUTY = 5
+
+/** Random events start on this day. */
+export const EVENT_FROM_DAY = 10
+/** From one event to the next, at least and at most this many days. */
+export const EVENT_GAP_DAYS: [number, number] = [2, 4]
+/** An event's reward against one plain daily quest's. */
+export const EVENT_REWARD_FACTOR = 2
+/** How many days the shop is hot after Mi Mi's 3 stars, from the next morning. */
+export const HOT_DAYS = 2
+/** On a hot day the gap between two customers is this much of the usual one. */
+export const HOT_ARRIVAL = 0.8
+/** The inspector comes at 15:00. */
+export const INSPECT_MIN = 900
+/** The beauty the inspector wants. */
+export const INSPECT_BEAUTY = 30
+/** The Giấy khen's beauty. */
+export const CERTIFICATE_BEAUTY = 4
