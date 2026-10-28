@@ -322,6 +322,8 @@ export const CLEAN_DAY_MIN_SERVED = 15
 
 /** What each badge with a number in it asks for. */
 export const BADGE_GOALS = { served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
+/** The badges each owner outfit asks for, from the uniform to the gấm; the bà ba is free and the Spa của năm dress comes from a win. */
+export const OUTFIT_NEED = [2, 4, 6, 9, 12, 16, 20] as const
 /** How long the gold banner for a new badge stays on screen. */
 export const BADGE_BANNER_MS = 3000
 /** A gold card stays this much longer for each line its sentence wraps onto after the first. */

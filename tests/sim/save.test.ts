@@ -9,7 +9,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyEventBook } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
@@ -38,6 +38,7 @@ import v15 from '../fixtures/save-v15.json'
 import v16 from '../fixtures/save-v16.json'
 import v17 from '../fixtures/save-v17.json'
 import v18 from '../fixtures/save-v18.json'
+import v19 from '../fixtures/save-v19.json'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -99,7 +100,7 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([19, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([20, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
@@ -236,14 +237,15 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 19', () => {
+  it('still leaves alone only saves newer than version 20', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 15 }).v).toBe(15)
     expect(parseSave({ ...good, v: 16 }).v).toBe(16)
     expect(parseSave({ ...good, v: 17 }).v).toBe(17)
     expect(parseSave({ ...good, v: 18 }).v).toBe(18)
     expect(parseSave({ ...good, v: 19 }).v).toBe(19)
-    expect(() => parseSave({ ...good, v: 20 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 20 }).v).toBe(20)
+    expect(() => parseSave({ ...good, v: 21 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -483,7 +485,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(19)
+    expect(copy.toSave().v).toBe(20)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -1031,7 +1033,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(19)
+    expect(saved.v).toBe(20)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1171,7 +1173,7 @@ describe('save version 16', () => {
   it('opens the v15 shop with no badge list, so its first load judges it as an old shop', () => {
     expect(parseSave(structuredClone(v15)).badges).toBeNull()
     expect(parseSave(structuredClone(v14)).badges).toBeNull()
-    expect(open(v15).toSave().v).toBe(19)
+    expect(open(v15).toSave().v).toBe(20)
   })
 
   it('still opens every older save', () => {
@@ -1315,7 +1317,7 @@ describe('save version 19', () => {
     expect(sim.rank.month).toEqual({ from: 29, served: 190, lost: 11 })
     expect(sim.rank.scores).toEqual([])
     expect(sim.rank.last).toBeNull()
-    expect(sim.toSave().v).toBe(19)
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
   it('judges an old shop at the end of its month', () => {
@@ -1338,7 +1340,7 @@ describe('save version 19', () => {
   })
 
   it('still opens every older save', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18]) expect(() => open(raw)).not.toThrow()
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19]) expect(() => open(raw)).not.toThrow()
   })
 
   it('repairs a damaged rank book field by field', () => {
@@ -1421,5 +1423,50 @@ describe('save version 19', () => {
     expect(copy.book.gifts.filter(g => g === 'merit')).toHaveLength(1)
     copy.advance(5000)
     expect(copy.money).toBe(sim.money)
+  })
+})
+
+describe('save version 20', () => {
+  const worn = (ownerOutfit: unknown, outfitsSeen: unknown, badges = 0, wins = 0) => repairOutfits(ownerOutfit, outfitsSeen, badges, wins)
+
+  it('puts the v19 shop in the bà ba, with its grade intact', () => {
+    const sim = open(v19)
+    expect(sim.ownerOutfit).toBe('baba')
+    expect(sim.outfitsSeen).toEqual(['baba'])
+    expect(sim.rank.stars).toBe(2)
+    expect(sim.rank.last?.day).toBe(28)
+    expect(sim.toSave().v).toBe(20)
+  })
+
+  it('puts a locked or unknown outfit back to the bà ba', () => {
+    expect(worn('gam', ['baba'], 3).ownerOutfit).toBe('baba')
+    expect(worn('gam', ['baba'], 20).ownerOutfit).toBe('gam')
+    expect(worn('year', ['baba'], 25, 0).ownerOutfit).toBe('baba')
+    expect(worn('cape', ['baba']).ownerOutfit).toBe('baba')
+    expect(worn(42, ['baba']).ownerOutfit).toBe('baba')
+  })
+
+  it('keeps the known outfits seen, in order, with the bà ba always there', () => {
+    expect(worn('baba', 'x').outfitsSeen).toEqual(['baba'])
+    expect(worn('baba', undefined).outfitsSeen).toEqual(['baba'])
+    expect(worn('baba', ['teal', 'cape', 7]).outfitsSeen).toEqual(['baba', 'teal'])
+    expect(worn('baba', ['lotus', 'uniform']).outfitsSeen).toEqual(['baba', 'uniform', 'lotus'])
+  })
+
+  it('repairs a damaged outfit field when parsing', () => {
+    const raw = { ...structuredClone(v19), v: 20, ownerOutfit: 'gam', outfitsSeen: ['teal', 'cape', 7] }
+    const data = parseSave(raw)
+    expect(data.ownerOutfit).toBe('baba')
+    expect(data.outfitsSeen).toEqual(['baba', 'teal'])
+  })
+
+  it('round-trips the outfit worn and the outfits seen', () => {
+    const sim = open(v19)
+    sim.badges = { served100: 0, firstCard: 0 }
+    sim.wearOutfit('uniform')
+    sim.markOutfitsSeen(['uniform'])
+    const copy = open(sim.toSave())
+    expect(copy.ownerOutfit).toBe('uniform')
+    expect(copy.outfitsSeen).toEqual(['baba', 'uniform'])
   })
 })

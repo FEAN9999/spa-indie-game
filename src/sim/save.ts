@@ -13,12 +13,13 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 19
+export const SAVE_VERSION = 20
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -80,6 +81,8 @@ export interface SaveData {
   events: EventBook
   /** The shop's grade, this month's start and the year's scores. */
   rank: RankBook
+  ownerOutfit: OutfitId
+  outfitsSeen: OutfitId[]
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -229,6 +232,10 @@ export function parseSave(raw: unknown): SaveData {
   data.events = repairEvents(data.events, data.day)
   // shops saved before version 19 start at one star, their month counted from today
   data.rank = repairRank(data.rank, data.day, data.progress.dayStart ?? data.progress.total)
+  // shops saved before version 20 wear the bà ba and have been told of nothing else
+  const outfits = repairOutfits(data.ownerOutfit, data.outfitsSeen, Object.keys(data.badges ?? {}).length, data.rank.wins)
+  data.ownerOutfit = outfits.ownerOutfit
+  data.outfitsSeen = outfits.outfitsSeen
   return data
 }
 
@@ -312,6 +319,15 @@ function repairProgress(x: unknown): Progress {
 export function repairBadges(x: unknown): Badges | null {
   if (!isObject(x)) return null
   return Object.fromEntries(BADGE_IDS.filter(id => Number.isInteger(x[id]) && (x[id] as number) >= 0).map(id => [id, x[id]])) as Badges
+}
+
+/** The outfit worn, one the shop has or else the bà ba, and the outfits it has been told about, known ones in wardrobe order with the bà ba always there. */
+export function repairOutfits(worn: unknown, seen: unknown, badges: number, wins: number): { ownerOutfit: OutfitId; outfitsSeen: OutfitId[] } {
+  const list = Array.isArray(seen) ? seen : []
+  return {
+    ownerOutfit: isOutfitId(worn) && unlockedOutfits(badges, wins).includes(worn) ? worn : 'baba',
+    outfitsSeen: OUTFIT_IDS.filter(id => id === 'baba' || list.includes(id)),
+  }
 }
 
 /** The known festivals, each once; none when there is no list. */
@@ -468,7 +484,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

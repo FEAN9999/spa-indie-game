@@ -61,6 +61,7 @@ import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay,
 import { createRng, randomLook, type Rng } from './rng'
 import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
+import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -144,6 +145,10 @@ export class SpaSim {
   dayOver = false
   shopName = t('defaultShopName')
   ownerLook: Look = { ...DEFAULT_OWNER_LOOK }
+  /** The outfit the owner wears; only one the shop has can be worn. */
+  ownerOutfit: OutfitId = 'baba'
+  /** The outfits the shop has been told about, in wardrobe order. */
+  outfitsSeen: OutfitId[] = ['baba']
   profileDone = false
   hints: HintId[] = []
   staff: Staff[] = []
@@ -658,6 +663,8 @@ export class SpaSim {
       festival: this.festival,
       events: this.eventBook,
       rank: this.rank,
+      ownerOutfit: this.ownerOutfit,
+      outfitsSeen: this.outfitsSeen,
     })
   }
 
@@ -687,6 +694,8 @@ export class SpaSim {
     sim.festival = d.festival
     sim.eventBook = d.events
     sim.rank = d.rank
+    sim.ownerOutfit = d.ownerOutfit
+    sim.outfitsSeen = d.outfitsSeen
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -809,6 +818,29 @@ export class SpaSim {
     const found = newBadges(this.badges, this.badgeShop())
     for (const id of found) this.badges[id] = 0
     if (found.length > 0 && this.questsOpen()) this.emit({ type: 'badgesFound', n: found.length })
+  }
+
+  /** The outfits the shop has, from its badges and Spa của năm wins; never stored, so nothing is ever taken away. */
+  unlockedOutfits(): OutfitId[] {
+    return unlockedOutfits(Object.keys(this.badges).length, this.rank.wins)
+  }
+
+  /** Puts an outfit on the owner; false, and no change, for one the shop does not have. */
+  wearOutfit(id: OutfitId): boolean {
+    if (!this.unlockedOutfits().includes(id)) return false
+    this.ownerOutfit = id
+    return true
+  }
+
+  /** The outfits the shop has that it has not been told about; none before the quest button opens. */
+  newOutfits(): OutfitId[] {
+    if (!this.questsOpen()) return []
+    return this.unlockedOutfits().filter(id => !this.outfitsSeen.includes(id))
+  }
+
+  /** Records that the shop has been told about these outfits. */
+  markOutfitsSeen(ids: OutfitId[]): void {
+    this.outfitsSeen = OUTFIT_IDS.filter(id => this.outfitsSeen.includes(id) || ids.includes(id))
   }
 
   /** Whether the quest button is open today. */
