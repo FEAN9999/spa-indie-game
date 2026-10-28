@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { DAY_END_MIN, STEP_MS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
+import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
+import v15 from '../fixtures/save-v15.json'
 import { advanceUntil, ownerServes } from './helpers'
 
 const opts = () => ({ rng: createRng(1), autoSpawn: false })
@@ -107,5 +109,38 @@ describe('the badge snapshot', () => {
     expect(shop.served).toBe(42)
     expect(shop.bestServed).toBe(20)
     expect(shop.technicians).toBe(0)
+  })
+})
+
+describe("an old shop's first load", () => {
+  const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
+  const HAD = { served100: 0, cleanDay: 0, firstCard: 0, vipPhoto: 0, floor2: 0, million: 0 }
+
+  it('gives what it already has as Có từ trước, with one found event and no banner', () => {
+    const sim = open(v15)
+    expect(sim.badges).toEqual(HAD)
+    const events = sim.drainEvents()
+    expect(badgeEvents(events)).toEqual([{ type: 'badgesFound', n: 6 }])
+    expect(badgeEvents(step(sim))).toEqual([])
+  })
+
+  it('gives nothing more when its new save is opened again', () => {
+    const again = open(JSON.parse(JSON.stringify(open(v15).toSave())))
+    expect(again.badges).toEqual(HAD)
+    expect(badgeEvents(again.drainEvents())).toEqual([])
+  })
+
+  it('does the same on the summary, and still reopens it', () => {
+    const sim = open({ ...v15, dayOver: true })
+    expect(sim.badges).toEqual(HAD)
+    const events = sim.drainEvents()
+    expect(badgeEvents(events)).toEqual([{ type: 'badgesFound', n: 6 }])
+    expect(events.some(e => e.type === 'dayEnded')).toBe(true)
+  })
+
+  it('stays quiet before day 8', () => {
+    const sim = open({ ...v15, day: 6 })
+    expect(sim.badges).toEqual(HAD)
+    expect(badgeEvents(sim.drainEvents())).toEqual([])
   })
 })

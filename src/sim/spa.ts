@@ -497,6 +497,7 @@ export class SpaSim {
       vip: this.vip,
       recipes: this.recipes,
       progress: this.progress,
+      badges: this.badges,
     })
   }
 
@@ -522,6 +523,7 @@ export class SpaSim {
     sim.vip = d.vip
     sim.recipes = d.recipes
     sim.progress = d.progress
+    sim.badges = d.badges ?? {}
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -562,6 +564,7 @@ export class SpaSim {
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })
+    if (d.badges === null) sim.findBadges()
     sim.catchUpQuests()
     if (sim.dayOver) sim.emit({ type: 'dayEnded', stats: { ...sim.stats } })
     return sim
@@ -620,6 +623,13 @@ export class SpaSim {
       this.badges[id] = this.day
       if (this.questsOpen()) this.emit({ type: 'badge', id })
     }
+  }
+
+  /** Gives an old shop, on its first load since badges came, every badge it already has as Có từ trước (day 0), with no banner. */
+  private findBadges(): void {
+    const found = newBadges(this.badges, this.badgeShop())
+    for (const id of found) this.badges[id] = 0
+    if (found.length > 0 && this.questsOpen()) this.emit({ type: 'badgesFound', n: found.length })
   }
 
   /** Whether the quest button is open today. */
