@@ -68,7 +68,8 @@ export interface Life {
   cleanDay: boolean
 }
 
-export type QuestKind = 'serve' | 'owner3' | 'earn' | 'tips' | 'service' | 'staff' | 'noWalk' | 'heart' | 'study'
+export const QUEST_KINDS = ['serve', 'owner3', 'earn', 'tips', 'service', 'staff', 'noWalk', 'heart', 'study'] as const
+export type QuestKind = (typeof QUEST_KINDS)[number]
 
 export interface Quest {
   kind: QuestKind

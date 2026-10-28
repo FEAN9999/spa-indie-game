@@ -1,10 +1,11 @@
-import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
+import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, type Progress, type Quest, type QuestKind } from './quests'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
@@ -13,7 +14,9 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 14
+export const SAVE_VERSION = 15
+/** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
+export const STAIRS_SAVE_VERSION = 14
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -63,6 +66,8 @@ export interface SaveData {
   vip: VipBook
   /** The recipes tried and the hints heard. */
   recipes: RecipeBook
+  /** What the shop has counted, and its quests. */
+  progress: Progress
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -148,7 +153,7 @@ function withHalfWages(old: object): SaveData {
 export function parseSave(raw: unknown): SaveData {
   // read before parseVersioned, whose helpers rewrite `v` for the oldest saves
   // a stored parsed save keeps the flag, with `v` already rewritten, until the sim saves itself again
-  const before = isObject(raw) && typeof raw.v === 'number' && raw.v < SAVE_VERSION
+  const before = isObject(raw) && typeof raw.v === 'number' && raw.v < STAIRS_SAVE_VERSION
   const flagged = before || (isObject(raw) && raw.clearStairs === true)
   const data = parseVersioned(raw)
   // floors are a whole number from 1 to MAX_FLOORS, else one; an older save has one, and its stairs spot is cleared on load
@@ -200,6 +205,8 @@ export function parseSave(raw: unknown): SaveData {
   climb(data.owner)
   data.customers.forEach(climb)
   data.staff.forEach(climb)
+  // shops saved before version 15 start counting now, so today is not recorded
+  data.progress = repairProgress(data.progress)
   return data
 }
 
@@ -232,6 +239,49 @@ function repairBook(x: unknown, day: number): GuestBook {
   book.extraAt = repairNullable(x.extraAt)
   book.boardGiven = repairBool(x.boardGiven)
   return book
+}
+
+function repairCounts(x: unknown): Counts {
+  const c = isObject(x) ? x : {}
+  const services: Record<string, unknown> = isObject(c.services) ? c.services : {}
+  const out = zeroCounts()
+  for (const k of ['served', 'earned', 'tips', 'owner3', 'staff', 'lost', 'hearts', 'courses'] as const) out[k] = repairCount(c[k])
+  for (const id of SERVICE_IDS) out.services[id] = repairCount(services[id])
+  return out
+}
+
+const isKind = (x: unknown): x is QuestKind => (QUEST_KINDS as readonly unknown[]).includes(x)
+
+/** A whole quest, or null for one too damaged to keep. */
+function repairQuest(x: unknown, period: Quest['period']): Quest | null {
+  if (!isObject(x) || !isKind(x.kind)) return null
+  const service = x.kind === 'service' ? x.service : null
+  if (x.kind === 'service' && !SERVICE_IDS.includes(service as ServiceId)) return null
+  if (!Number.isInteger(x.target) || (x.target as number) < 1 || !isNumber(x.base) || x.base < 0) return null
+  if (x.state !== 'open' && x.state !== 'done' && x.state !== 'failed') return null
+  return { kind: x.kind, period, service: service as ServiceId | null, target: x.target as number, reward: repairCount(x.reward), base: x.base, state: x.state }
+}
+
+/** A well-formed progress block, field by field; a missing one is empty, with today left unrecorded. */
+function repairProgress(x: unknown): Progress {
+  const p = emptyProgress()
+  if (!isObject(x)) return { ...p, dayStart: null }
+  const list = (v: unknown): unknown[] => (Array.isArray(v) ? v : [])
+  p.total = repairCounts(x.total)
+  p.dayStart = isObject(x.dayStart) ? repairCounts(x.dayStart) : null
+  const isRecord = (r: unknown): r is DayRecord => isObject(r) && ['served', 'earned', 'tips', 'owner3', 'staff'].every(k => isNumber(r[k]) && (r[k] as number) >= 0)
+  p.recent = list(x.recent).filter(isRecord).map(r => ({ served: r.served, earned: r.earned, tips: r.tips, owner3: r.owner3, staff: r.staff })).slice(-QUEST_RECENT_DAYS)
+  const life = isObject(x.life) ? x.life : {}
+  p.life = { dailies: repairCount(life.dailies), bestServed: repairCount(life.bestServed), bestProfit: isNumber(life.bestProfit) ? life.bestProfit : 0, cleanDay: repairBool(life.cleanDay) }
+  p.questDay = repairCount(x.questDay)
+  p.daily = list(x.daily).map(q => repairQuest(q, 'day')).filter((q): q is Quest => q !== null).slice(0, QUESTS_PER_DAY)
+  p.yesterday = list(x.yesterday).filter(isKind)
+  p.swaps = Math.min(QUEST_SWAPS_PER_DAY, repairCount(x.swaps))
+  p.monthFrom = repairCount(x.monthFrom)
+  p.monthly = repairQuest(x.monthly, 'month')
+  p.lastMonthKind = isKind(x.lastMonthKind) ? x.lastMonthKind : null
+  p.seenDay = repairCount(x.seenDay)
+  return p
 }
 
 /** A well-formed VIP book, field by field; a missing one is empty. A booking more than a day ahead is dropped, or it would block every later one. */
@@ -316,7 +366,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

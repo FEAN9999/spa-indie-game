@@ -486,6 +486,7 @@ export class SpaSim {
       book: this.book,
       vip: this.vip,
       recipes: this.recipes,
+      progress: this.progress,
     })
   }
 
@@ -510,6 +511,7 @@ export class SpaSim {
     sim.book = d.book
     sim.vip = d.vip
     sim.recipes = d.recipes
+    sim.progress = d.progress
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes

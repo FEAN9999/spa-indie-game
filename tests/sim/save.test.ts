@@ -31,6 +31,7 @@ import v10 from '../fixtures/save-v10.json'
 import v11 from '../fixtures/save-v11.json'
 import v12 from '../fixtures/save-v12.json'
 import v13 from '../fixtures/save-v13.json'
+import v14 from '../fixtures/save-v14.json'
 import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -92,12 +93,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([14, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([15, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(14)
+    expect(sim.toSave().v).toBe(15)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -229,11 +230,11 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 14', () => {
+  it('still leaves alone only saves newer than version 15', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    expect(parseSave({ ...good, v: 13 }).v).toBe(13)
     expect(parseSave({ ...good, v: 14 }).v).toBe(14)
-    expect(() => parseSave({ ...good, v: 15 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 15 }).v).toBe(15)
+    expect(() => parseSave({ ...good, v: 16 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -473,7 +474,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(14)
+    expect(copy.toSave().v).toBe(15)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -1017,7 +1018,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(14)
+    expect(saved.v).toBe(15)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1092,5 +1093,62 @@ describe('save version 14', () => {
     const saved = sim.toSave()
     expect('clearStairs' in saved).toBe(false)
     expect(stairsEvents(open(saved))).toEqual([])
+  })
+})
+
+describe('save version 15', () => {
+  it('opens the v14 shop with its floors, no stairs clearing, and an uncounted day', () => {
+    const parsed = parseSave(structuredClone(v14))
+    expect(parsed.floors).toBe(2)
+    expect('clearStairs' in parsed).toBe(false)
+    expect(parsed.progress).toMatchObject({ dayStart: null, daily: [], questDay: 0, monthly: null })
+    const sim = open(v14)
+    expect(sim.floors).toBe(2)
+    expect(sim.toSave().v).toBe(15)
+  })
+
+  it('still opens every older save, and still clears the stairs spot of a v13 one', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14]) expect(() => open(raw)).not.toThrow()
+    expect(parseSave(structuredClone(v13)).clearStairs).toBe(true)
+  })
+
+  it('keeps the counts, the recent days and the quests through a round trip', () => {
+    const sim = new SpaSim(opts())
+    const p = sim.progress
+    Object.assign(p.total, { served: 12, earned: 900_000, tips: 80_000, owner3: 4, lost: 2 })
+    p.total.services.mask = 3
+    p.recent = [
+      { served: 10, earned: 500_000, tips: 40_000, owner3: 2, staff: 0 },
+      { served: 12, earned: 600_000, tips: 50_000, owner3: 3, staff: 1 },
+    ]
+    p.life = { dailies: 5, bestServed: 14, bestProfit: 420_000, cleanDay: false }
+    p.questDay = 1
+    p.daily = [
+      { kind: 'serve', period: 'day', service: null, target: 8, reward: 30_000, base: 4, state: 'done' },
+      { kind: 'noWalk', period: 'day', service: null, target: 1, reward: 50_000, base: 1, state: 'failed' },
+      { kind: 'service', period: 'day', service: 'mask', target: 3, reward: 30_000, base: 1, state: 'open' },
+    ]
+    p.yesterday = ['tips', 'earn', 'owner3']
+    p.swaps = 1
+    p.monthFrom = 1
+    p.monthly = { kind: 'earn', period: 'month', service: null, target: 1_200_000, reward: 150_000, base: 300_000, state: 'open' }
+    p.lastMonthKind = 'serve'
+    p.seenDay = 1
+    expect(viaJson(sim).progress).toEqual(p)
+  })
+
+  it('repairs a damaged progress block instead of losing the shop', () => {
+    const raw: any = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    const quest = { kind: 'serve', period: 'day', service: null, target: 8, reward: 30_000, base: 0, state: 'open' }
+    raw.progress.daily = [quest, { ...quest, kind: 'fly' }, { ...quest, kind: 'service', service: 'nails' }]
+    raw.progress.swaps = 7
+    raw.progress.total.served = -3
+    const parsed = parseSave(raw)
+    expect(parsed.progress.daily).toEqual([quest])
+    expect(parsed.progress.swaps).toBe(1)
+    expect(parsed.progress.total.served).toBe(0)
+    const empty = parseSave({ ...raw, progress: 'x' }).progress
+    expect(empty).toMatchObject({ dayStart: null, daily: [], monthly: null, recent: [], questDay: 0 })
+    expect(empty.total.served).toBe(0)
   })
 })
