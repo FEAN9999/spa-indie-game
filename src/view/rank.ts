@@ -1,6 +1,6 @@
 import { DAYS_PER_MONTH, RANK_FROM_DAY, RANK_PRICE_STEP, RANK_STAR_AT, RIVAL_SCORE_MAX, RIVAL_YEAR_STEP } from '../config'
 import { monthStart } from '../sim/calendar'
-import { rivalsFor, starsFor, type MonthResult, type RankInput, type RivalId, type Stars, type YearResult } from '../sim/rank'
+import { rivalsFor, starsFor, type MonthResult, type RankInput, type RivalId, type Stars, type YearResult, type YearRow } from '../sim/rank'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 
@@ -51,12 +51,16 @@ export function monthOutcome(r: MonthResult): { head: string; sub: string } {
   return { head, sub: t('rankKeepSub', { left: RANK_STAR_AT[r.after - 1] - r.total, next: r.after + 1 }) }
 }
 
-export function yearLines(r: YearResult, shopName: string): { rows: { name: string; pts: string; me: boolean }[]; lines: string[]; button: string } {
-  const rows = r.table.map(row => ({
+/** A year table's rows as texts: the name (the shop's own for its row), the points and whether it is the shop. */
+export const yearRows = (table: YearRow[], shopName: string): { name: string; pts: string; me: boolean }[] =>
+  table.map(row => ({
     name: row.rival === null ? shopName : t(RIVAL_NAME[row.rival]),
     pts: t('rankRowPts', { n: row.pts }),
     me: row.rival === null,
   }))
+
+export function yearLines(r: YearResult, shopName: string): { rows: { name: string; pts: string; me: boolean }[]; lines: string[]; button: string } {
+  const rows = yearRows(r.table, shopName)
   const money = formatMoney(r.reward)
   const lines: string[] = []
   if (r.place === 1) {

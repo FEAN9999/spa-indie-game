@@ -1,11 +1,12 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
-import { GAME_H, GAME_W } from '../config'
+import { DAYS_PER_MONTH, GAME_H, GAME_W, MONTHS_PER_YEAR } from '../config'
 import { BADGE_IDS, badgeProgress, type BadgeId } from '../sim/badges'
 import { daysLeftInMonth, monthOf, yearOf } from '../sim/calendar'
 import { FESTIVALS } from '../sim/festivals'
 import { progressOf, type Quest } from '../sim/quests'
+import { standings, yearSoFar } from '../sim/rank'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
@@ -13,6 +14,7 @@ import { BADGE_TEXT, badgeStatus } from '../view/badges'
 import { FESTIVAL_COLORS, keepsakeLine } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import { questCount, questIcon, questTitle } from '../view/quests'
+import { judgeDayOf, partRows, starsLine, totalLine, yearRows } from '../view/rank'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -28,9 +30,9 @@ const MID = GAME_W / 2
 const TITLE_Y = 290
 const INTRO_WRAP = 860
 const TAB_Y = 418
-const TAB_W = 440
+const TAB_W = 300
 const TAB_H = 110
-const TAB_X = { quests: 300, badges: 780 } as const
+const TAB_X = { quests: 220, badges: 540, rank: 860 } as const
 const LEFT = 90
 const RIGHT = 990
 const DAY_HEAD_Y = 545
@@ -86,6 +88,33 @@ const DETAIL_TEXT_X = 120
 const DETAIL_NAME_Y = 1650
 const DETAIL_COND_Y = 1702
 const DETAIL_STATUS_Y = 1752
+const STAR_Y = 560
+const STAR_R = 46
+const STAR_DX = 112
+const STARS_LINE_Y = 650
+const RANK_HEAD_Y = 740
+const PART_TOP = 790
+const PART_STEP = 100
+const PART_DISC_X = 140
+const PART_DISC_R = 38
+const PART_ICON_W = 52
+const PART_TEXT_X = 200
+const PART_TEXT_W = 260
+const PART_BAR_X = 480
+const PART_BAR_W = 340
+const PART_PTS_X = 980
+const TOTAL_Y = 1310
+const YEAR_HEAD_Y = 1410
+const TABLE_TOP = 1452
+const TABLE_STEP = 64
+const TABLE_X = 80
+const TABLE_W = 920
+const TABLE_ROW_H = 60
+const PLACE_X = 130
+const NAME_X = 180
+const NAME_W = 560
+const TABLE_PTS_X = 960
+const NOTE_Y = 1790
 
 type Tab = keyof typeof TAB_X
 
@@ -135,12 +164,13 @@ export class QuestsScene extends Phaser.Scene {
     if (this.params.intro && this.tab === 'quests') {
       this.keep(this.add.text(MID, TITLE_Y, t('questsIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
     } else this.keep(this.add.text(MID, TITLE_Y, t('navQuests'), textStyle(60)).setOrigin(0.5))
-    for (const tab of ['quests', 'badges'] as const) {
-      const label = tab === 'quests' ? t('navQuests') : t('tabBadges')
+    for (const tab of ['quests', 'badges', 'rank'] as const) {
+      const label = tab === 'quests' ? t('navQuests') : tab === 'badges' ? t('tabBadges') : t('tabRank')
       this.keep(addButton(this, TAB_X[tab], TAB_Y, TAB_W, TAB_H, label, tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
     }
     if (this.tab === 'quests') this.questsTab()
-    else this.badgesTab()
+    else if (this.tab === 'badges') this.badgesTab()
+    else this.rankTab()
     this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
   }
 
@@ -209,6 +239,77 @@ export class QuestsScene extends Phaser.Scene {
     this.keep(this.label(DETAIL_TEXT_X, DETAIL_NAME_Y, t(BADGE_TEXT[this.picked].name), 40))
     this.keep(this.label(DETAIL_TEXT_X, DETAIL_COND_Y, t(BADGE_TEXT[this.picked].cond), 30, '600'))
     this.keep(this.label(DETAIL_TEXT_X, DETAIL_STATUS_Y, status.text, 30, '800', status.done ? C.teal : C.soft))
+  }
+
+  /** The shop's grade, the month's five parts so far, and the year's table as it stands. */
+  private rankTab(): void {
+    const { sim } = this.params
+    const now = sim.rankNow()
+    const stars = sim.rank.stars
+    const judgeDay = judgeDayOf(sim.day)
+
+    const g = this.keep(this.add.graphics())
+    for (let i = 0; i < 5; i++) {
+      const cx = MID + (i - 2) * STAR_DX
+      const got = i < stars
+      g.fillStyle(hex(got ? C.gold : C.sand), 1).lineStyle(5, hex(got ? C.mustardDark : C.soft))
+      const pts: Phaser.Math.Vector2[] = []
+      for (let k = 0; k < 10; k++) {
+        const a = (Math.PI / 5) * k - Math.PI / 2
+        const r = k % 2 === 0 ? STAR_R : STAR_R * 0.45
+        pts.push(new Phaser.Math.Vector2(cx + Math.cos(a) * r, STAR_Y + Math.sin(a) * r))
+      }
+      g.fillPoints(pts, true).strokePoints(pts, true)
+    }
+    this.keep(this.fit(this.add.text(MID, STARS_LINE_Y, starsLine(stars), textStyle(36)).setOrigin(0.5), ROW_W))
+
+    this.keep(this.fit(this.label(LEFT, RANK_HEAD_Y, t('rankMonthHead', { month: monthOf(sim.day) }), 38), 460))
+    this.keep(this.fit(this.label(RIGHT, RANK_HEAD_Y, t('rankJudgeOn', { day: judgeDay }), 30, '600', C.soft).setOrigin(1, 0.5), 400))
+    partRows(now.input, now.parts).forEach((row, i) => {
+      const top = PART_TOP + i * PART_STEP
+      const cy = top + 30
+      this.keep(this.add.graphics().fillStyle(hex(C.sand), 1).fillCircle(PART_DISC_X, cy, PART_DISC_R).lineStyle(4, hex(C.ink)).strokeCircle(PART_DISC_X, cy, PART_DISC_R))
+      const icon = this.keep(this.add.image(PART_DISC_X, cy, row.icon))
+      icon.setScale(PART_ICON_W / Math.max(icon.width, icon.height))
+      this.keep(this.fit(this.label(PART_TEXT_X, top + 8, row.name, 30, '800'), PART_TEXT_W))
+      this.keep(this.fit(this.label(PART_TEXT_X, top + 48, row.value, 26, '600', C.soft), PART_TEXT_W))
+      const k = Math.max(0, Math.min(1, row.pts / 20))
+      const bar = this.keep(
+        this.add
+          .graphics()
+          .fillStyle(hex(C.paper), 1)
+          .fillRoundedRect(PART_BAR_X, cy - BAR_H / 2, PART_BAR_W, BAR_H, BAR_H / 2)
+          .lineStyle(4, hex(C.ink))
+          .strokeRoundedRect(PART_BAR_X, cy - BAR_H / 2, PART_BAR_W, BAR_H, BAR_H / 2),
+      )
+      if (k > 0) bar.fillStyle(hex(C.teal), 1).fillRoundedRect(PART_BAR_X + 4, cy - BAR_H / 2 + 4, Math.max(BAR_H - 8, (PART_BAR_W - 8) * k), BAR_H - 8, (BAR_H - 8) / 2)
+      this.keep(this.label(PART_PTS_X, cy, `${row.pts}/20`, 32).setOrigin(1, 0.5))
+    })
+    this.keep(this.fit(this.add.text(MID, TOTAL_Y, totalLine(now.total, stars, judgeDay), textStyle(34, '800', C.teal)).setOrigin(0.5), ROW_W))
+
+    const year = yearOf(sim.day)
+    const yearEnd = year * DAYS_PER_MONTH * MONTHS_PER_YEAR
+    this.keep(this.fit(this.label(LEFT, YEAR_HEAD_Y, t('rankYearHead', { year }), 38), 560))
+    this.keep(this.fit(this.label(RIGHT, YEAR_HEAD_Y, t('rankJudgeOn', { day: yearEnd }), 30, '600', C.soft).setOrigin(1, 0.5), 340))
+    const table = standings(yearSoFar(sim.rank, now.total), year)
+    yearRows(table, sim.shopName).forEach((row, i) => {
+      const top = TABLE_TOP + i * TABLE_STEP
+      const cy = top + TABLE_ROW_H / 2
+      if (row.me) {
+        this.keep(
+          this.add.graphics().fillStyle(hex(C.tealPale), 1).fillRoundedRect(TABLE_X, top, TABLE_W, TABLE_ROW_H, TABLE_ROW_H / 2).lineStyle(3, hex(C.teal)).strokeRoundedRect(TABLE_X, top, TABLE_W, TABLE_ROW_H, TABLE_ROW_H / 2),
+        )
+      }
+      this.keep(this.label(PLACE_X, cy, String(i + 1), 32, '800', i === 0 ? C.mustardDark : C.soft).setOrigin(0.5))
+      this.keep(this.fit(this.label(NAME_X, cy, row.name, 32, row.me ? '800' : '600'), NAME_W))
+      this.keep(this.label(TABLE_PTS_X, cy, row.pts, 30, '800').setOrigin(1, 0.5))
+    })
+    this.keep(this.fit(this.add.text(MID, NOTE_Y, t('rankYearNote'), textStyle(26, '600', C.soft)).setOrigin(0.5), ROW_W))
+  }
+
+  /** Scales a text down to fit `w` when it is wider. */
+  private fit(text: Phaser.GameObjects.Text, w: number): Phaser.GameObjects.Text {
+    return text.setScale(Math.min(1, w / text.width))
   }
 
   /** One quest's row from `top`: disc, title, progress or the closing-time line, reward, and the stamp or the swap. `i` is a daily quest's place, null for the month's. */
