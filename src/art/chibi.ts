@@ -563,6 +563,92 @@ const flowerShirtUp: Part = {
     `<path d="M-5.2,-0.4 Q0,2.2 5.2,-0.4 L4.8,1.6 Q0,4 -4.8,1.6Z" ${LAPEL}/>`,
 }
 
+// the backpacker: a cobalt cap with a darker peak and a cream button, and a big olive pack with a rolled mat on top
+/** The dome centred on cx, its panel seams and button; the peak is seen below it from the front, and pointing forward from the side. */
+const capDome = (cx: number) =>
+  `<path d="M${cx - 12.6},-6.2 Q${cx - 13.4},-18.6 ${cx},-19 Q${cx + 13.4},-18.6 ${cx + 12.6},-6.2 Q${cx},-8.6 ${cx - 12.6},-6.2Z" fill="${C.cobalt}" ${LINE}/>` +
+  `<path d="M${cx},-19 V-7.6 M${cx - 7.4},-17 Q${cx - 3.6},-12 ${cx - 4.2},-7.4 M${cx + 7.4},-17 Q${cx + 3.6},-12 ${cx + 4.2},-7.4" stroke="${C.capSeam}" stroke-width=".7" fill="none"/>` +
+  `<circle cx="${cx}" cy="-18.6" r="1.2" fill="${CREAM}" ${LINE}/>`
+const capDown: Part = {
+  viewBox: [-14, -20.5, 28, 19],
+  body:
+    capDome(0) +
+    `<path d="M-11.6,-6.6 Q0,-9.2 11.6,-6.6 Q12.6,-2.6 0,-2.2 Q-12.6,-2.6 -11.6,-6.6Z" fill="${C.capPeak}" ${LINE}/>`,
+}
+const capSide: Part = {
+  viewBox: [-17, -20.5, 34, 19],
+  body: capDome(-1) + `<path d="M7,-6.8 Q15.4,-6.4 16.2,-3.4 Q9,-2.4 4,-3.6Z" fill="${C.capPeak}" ${LINE}/>`,
+}
+const capUp: Part = { viewBox: [-14, -20.5, 28, 15], body: capDome(0) }
+
+const PACK = C.olive
+/** The pack's pouches and the rolled mat on top, wider than the pack, with its two ties. */
+const packMat = (x1: number, x2: number) =>
+  `<rect x="${x1}" y="-13.4" width="${x2 - x1}" height="7.4" rx="3.7" fill="${C.terracotta}" ${LINE}/>` +
+  `<path d="M${x1 + 6},-13.4 V-6 M${x2 - 6},-13.4 V-6" stroke="${INK}" stroke-width=".9"/>`
+/** The pack seen from the front shows only past the body's outline: its two sides and the mat's ends, plus the shoulder straps over the body. */
+const bigPackDown: Part = {
+  viewBox: [-20, -14, 40, 32],
+  body:
+    `<clipPath id="past"><rect x="-20" y="-14" width="11" height="32"/><rect x="9" y="-14" width="11" height="32"/></clipPath>` +
+    `<g clip-path="url(#past)"><rect x="-15.6" y="-7" width="31.2" height="23" rx="6" fill="${PACK}" ${LINE}/>` +
+    `<path d="M-15.6,3 H15.6" ${FINE}/>` +
+    packMat(-19, 19) +
+    `</g>` +
+    `<rect x="-6.8" y="-0.6" width="2.6" height="14" rx="1.3" fill="${PACK}" ${LINE}/><rect x="4.2" y="-0.6" width="2.6" height="14" rx="1.3" fill="${PACK}" ${LINE}/>`,
+}
+/** Its depth at the back, the mat across the top, and a strap over the shoulder. */
+const bigPackSide: Part = {
+  viewBox: [-20, -14, 40, 32],
+  body:
+    `<rect x="-17" y="-5" width="10.4" height="21" rx="4.6" fill="${PACK}" ${LINE}/>` +
+    `<path d="M-17,3 H-6.6" ${FINE}/>` +
+    `<rect x="-18.4" y="-12.4" width="14.4" height="7.4" rx="3.7" fill="${C.terracotta}" ${LINE}/>` +
+    `<path d="M-6.8,2 Q-2,-1.2 4.4,2.6 L5,12" stroke="${INK}" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>` +
+    `<path d="M-6.8,2 Q-2,-1.2 4.4,2.6 L5,12" stroke="${PACK}" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
+}
+/** From behind, the whole pack with the mat on top. */
+const bigPackUp: Part = {
+  viewBox: [-20, -14, 40, 32],
+  body:
+    `<rect x="-15.6" y="-7" width="31.2" height="23" rx="6" fill="${PACK}" ${LINE}/>` +
+    `<path d="M-15.6,3 H15.6 M-15.6,9 H-12 M15.6,9 H12" ${FINE}/>` +
+    packMat(-19, 19),
+}
+
+// the lady: eleven pearls at the collar, a berry handbag with a gold handle, and a gold hairpin through her bun
+/** Pearls on an arc under the collar, half as wide from the side. */
+const pearls = (n: number, rx: number): Part => ({
+  viewBox: body.viewBox,
+  body: Array.from({ length: n }, (_, i) => {
+    const a = Math.PI * (0.12 + (0.76 * i) / (n - 1))
+    return `<circle cx="${(Math.cos(a) * -rx).toFixed(2)}" cy="${(Math.sin(a) * 5.4 + 0.2).toFixed(2)}" r="1.15" fill="${W}" stroke="${INK}" stroke-width=".5"/>`
+  }).join(''),
+})
+const pearlsDown = pearls(11, 7)
+const pearlsSide = pearls(7, 3.6)
+/** The bag at her hand (drawn over the body, under the arm; from the side the near arm is mid-body, so it moves there), its handle gold; the clasp shows only from the front. */
+const handbag = (dx: number, clasp: boolean): Part => ({
+  viewBox: [-19, 6, 38, 17],
+  body:
+    `<g transform="translate(${dx} 0)">` +
+    `<path d="M8.6,12.4 Q11.6,6.8 14.6,12.4" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
+    `<path d="M8.6,12.4 Q11.6,6.8 14.6,12.4" stroke="${GOLD}" stroke-width="1.1" fill="none" stroke-linecap="round"/>` +
+    `<path d="M6.8,12.2 H16.4 L17.4,20.6 Q11.6,22 5.8,20.6Z" fill="${C.berry}" ${LINE}/>` +
+    `<path d="M6.6,14.8 H16.6" ${FINE}/>` +
+    (clasp ? `<rect x="10.4" y="13.8" width="2.4" height="2.2" rx=".5" fill="${GOLD}" stroke="${INK}" stroke-width=".5"/>` : '') +
+    `</g>`,
+})
+/** The pin across the bun, with a bead at its upper end: the bun is at (0, -12) from the front and behind, and at (-8.5, -9) from the side. */
+const hairpin = (x1: number, y1: number, x2: number, y2: number): Part => ({
+  viewBox: [-17, -21, 34, 17],
+  body:
+    `<path d="M${x1},${y1} L${x2},${y2}" stroke="${C.mustardDark}" stroke-width="1.3" stroke-linecap="round"/>` +
+    `<circle cx="${x1}" cy="${y1}" r="1.5" fill="${GOLD}" ${LINE}/>`,
+})
+const hairpinDown = hairpin(4.4, -16.8, -4.8, -8.4)
+const hairpinSide = hairpin(-4, -14.2, -12.8, -4.8)
+
 const parts: Record<string, Part> = {
   leg,
   arm,
@@ -639,6 +725,20 @@ const parts: Record<string, Part> = {
   'flowerShirt-down': flowerShirtDown,
   'flowerShirt-side': flowerShirtSide,
   'flowerShirt-up': flowerShirtUp,
+  'cap-down': capDown,
+  'cap-side': capSide,
+  'cap-up': capUp,
+  'bigPack-down': bigPackDown,
+  'bigPack-side': bigPackSide,
+  'bigPack-up': bigPackUp,
+  'pearls-down': pearlsDown,
+  'pearls-side': pearlsSide,
+  'handbag-down': handbag(0, true),
+  'handbag-side': handbag(-11.6, true),
+  'handbag-up': handbag(0, false),
+  'hairpin-down': hairpinDown,
+  'hairpin-side': hairpinSide,
+  'hairpin-up': hairpinDown,
   'mask-face': maskFace,
   'towel-wrap': towelWrap,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),

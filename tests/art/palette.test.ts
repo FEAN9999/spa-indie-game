@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
+import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
 
 describe('look palettes', () => {
@@ -33,6 +33,14 @@ describe('look palettes', () => {
     expect(customerColors(look, 'elder')).toEqual({ ...lookColors(look), hair: ELDER_HAIR, kind: 'elder' })
     expect(customerColors(look, 'student').hair).toBe(lookColors(look).hair)
     expect(customerColors(look, 'celeb')).toEqual({ ...lookColors(look), kind: 'celeb' })
+  })
+
+  it("makes a backpacker blond and gives a lady the bun hair style, whatever their look", () => {
+    expect(BACKPACKER_HAIR).toBe(0xe8c468)
+    for (const look of [{ skin: 2, hair: 1, hairStyle: 0, shirt: 3 }, { skin: 0, hair: 4, hairStyle: 2, shirt: 1 }])
+      expect(customerColors(look, 'backpacker')).toEqual({ ...lookColors(look), hair: BACKPACKER_HAIR, kind: 'backpacker' })
+    const look = { skin: 1, hair: 2, hairStyle: 0, shirt: 4 }
+    expect(customerColors(look, 'lady')).toEqual({ ...lookColors(look), hairStyle: 3, kind: 'lady' })
   })
 
   it('names the regular a customer is, on top of their kind', () => {

@@ -95,6 +95,11 @@ export const C = {
   mapLand: '#EFE2CB',
   straw: '#E8C878',
   strawDark: '#B9944A',
+  // the backpacker's cobalt cap (darker peak and seams) and olive pack, the lady's berry handbag
+  capPeak: '#244C86',
+  capSeam: '#1E3F70',
+  olive: '#7C8B3E',
+  berry: '#B23A5B',
   // the old town branch: dark wood planks, gạch tàu tiles, a Hội An yellow wall with weathered patches, dark wood walls
   phoPlank: '#7A4A2C',
   phoPlankLine: '#5E3820',
@@ -138,6 +143,8 @@ export const PANTS = 0x3b2b26
 export const INSPECTOR_SHIRT = 0x3d4a66
 /** An elder customer's grey hair. */
 export const ELDER_HAIR = 0xd8d2c8
+/** A backpacker's blond hair. */
+export const BACKPACKER_HAIR = 0xe8c468
 
 export interface CharacterColors {
   skin: number
@@ -161,12 +168,13 @@ export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
 }
 
-/** A customer's colors: their look, with an elder's hair grey, their kind, the regular they are, the VIP they are, and Mi Mi's mark, if any. */
+/** A customer's colors: their look, with an elder's hair grey, a backpacker's blond, a lady's hair in a bun, their kind, the regular they are, the VIP they are, and Mi Mi's mark, if any. */
 export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null, vip: VipId | null = null, kol = false): CharacterColors {
   const colors = lookColors(look)
   return {
     ...colors,
-    hair: kind === 'elder' ? ELDER_HAIR : colors.hair,
+    hair: kind === 'elder' ? ELDER_HAIR : kind === 'backpacker' ? BACKPACKER_HAIR : colors.hair,
+    ...(kind === 'lady' ? { hairStyle: 3 } : {}),
     kind,
     ...(regular ? { regular } : {}),
     ...(vip ? { vip } : {}),

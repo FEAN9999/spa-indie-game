@@ -96,6 +96,21 @@ describe('chibi and fx art', () => {
       }
   })
 
+  it("draws the backpacker's cap, big pack and the lady's hairpin, handbag and pearls, untinted, each with an anchor", () => {
+    const keys = Object.keys(chibiTextures())
+    for (const part of ['cap', 'bigPack', 'hairpin', 'handbag', 'pearls'])
+      for (const side of ['down', 'side', 'up']) {
+        const key = `${part}-${side}`
+        if (key === 'pearls-up') {
+          expect(keys, key).not.toContain(key)
+          continue
+        }
+        expect(keys, key).toContain(key)
+        expect(keys, key).not.toContain(`${key}-line`)
+        expect(PART_ANCHORS[key], key).toBeDefined()
+      }
+  })
+
   it("draws Mi Mi's phone and the inspector's clipboard from the front and the side, untinted", () => {
     const keys = Object.keys(chibiTextures())
     for (const part of ['phone', 'clipboard']) {

@@ -38,8 +38,15 @@ const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]
     { key: 'sunglasses', on: 'face' },
     { key: 'strawHat', on: 'hair' },
   ],
-  backpacker: [],
-  lady: [],
+  backpacker: [
+    { key: 'bigPack', on: 'body' },
+    { key: 'cap', on: 'hair' },
+  ],
+  lady: [
+    { key: 'pearls', on: 'body' },
+    { key: 'handbag', on: 'body' },
+    { key: 'hairpin', on: 'hair' },
+  ],
   celeb: [
     { key: 'sunglasses', on: 'face' },
     { key: 'hat', on: 'hair' },
