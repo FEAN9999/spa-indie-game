@@ -1366,6 +1366,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         const data: SummaryData = {
           sim: this.sim,
           firstDay: !this.sim.hintDone('summary'),
+          chain: this.chain.branches.length ? this.chain.dayRows() : [],
           onNewDay: () => this.showRankCards(),
         }
         this.scene.launch('SummaryScene', data)

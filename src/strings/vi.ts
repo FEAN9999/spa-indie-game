@@ -90,6 +90,8 @@ export const vi = {
   shampooDry: 'Vuốt để lau khô bằng khăn',
   shampooDone: 'Xong rồi!',
   summaryTitle: 'Tổng kết ngày {day}',
+  summaryChain: 'Cả chuỗi hôm nay',
+  summaryChainTotal: 'Tổng',
   summaryFirstDay: 'Bấm Ngày mới để mở cửa tiếp. Game tự lưu.',
   served: 'Khách đã phục vụ',
   leftUnhappy: 'Khách bỏ về',

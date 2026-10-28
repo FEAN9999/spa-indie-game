@@ -2,10 +2,12 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
+import type { ChainDayRow } from '../sim/chain'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
-import { summaryRows, type SummaryRow } from '../view/summary'
+import { chainSummaryRows, summaryLayout, summaryRows, type SummaryRow } from '../view/summary'
+import { signedMoney } from '../view/chain'
 import { textStyle } from '../view/text'
 import { summaryNotes } from '../view/vip'
 
@@ -13,12 +15,11 @@ export interface SummaryData {
   sim: SpaSim
   onNewDay: () => void
   firstDay: boolean
+  /** The day's profit per shop; empty when there is no branch, and the summary is then as it always was. */
+  chain: ChainDayRow[]
 }
 
 const COUNT_MS = 800
-const ROW_Y = 650
-const ROW_H = 90
-const HEADING_H = 64
 const NOTE_GAP = 14
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
@@ -35,7 +36,7 @@ export class SummaryScene extends Phaser.Scene {
   }
 
   create() {
-    const { sim, onNewDay, firstDay } = this.params
+    const { sim, onNewDay, firstDay, chain } = this.params
     sound.endOfDay()
     const s = sim.stats
     const rating = sim.rating()
@@ -48,31 +49,33 @@ export class SummaryScene extends Phaser.Scene {
       { label: 'balance', value: sim.money, kind: 'money', show: formatMoney, color: sim.money < 0 ? C.lantern : C.ink },
       { label: 'rating', value: rating ?? 0, kind: 'count', show: v => (rating === null ? t('noRating') : v.toFixed(1)) },
     ]
-    const heights = rows.map(row => (row.kind === 'heading' ? HEADING_H : ROW_H))
-    const rowsEnd = ROW_Y + heights.reduce((sum, h) => sum + h, 0)
+    const kinds = rows.map(row => row.kind)
     const notes = summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())
-    // each note is its own text, stacked under the rows; the button goes under their measured height, so they are drawn before the card (depth 1 keeps them above it)
-    let noteBottom = rowsEnd + 20
+    // each note is its own text, stacked under the rows; they are measured first, since the card and the button follow their height (depth 1 keeps them above the card)
+    const flat = summaryLayout(kinds, chain.length, 0)
+    const notesTop = flat.buttonY - 95 + 20
+    let noteBottom = notesTop
     for (const note of notes) {
       const style = note.booking ? textStyle(36, '800', C.teal) : textStyle(34, '600')
       const text = this.add.text(GAME_W / 2, noteBottom, note.text, { ...style, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0).setDepth(1)
       noteBottom += text.height + NOTE_GAP
     }
-    const buttonY = (notes.length ? noteBottom - NOTE_GAP : rowsEnd) + 20 + 75
-    const cardH = buttonY + 75 + 60 - 420
+    const L = summaryLayout(kinds, chain.length, notes.length ? noteBottom - NOTE_GAP - notesTop : 0)
+    const heights = kinds.map(k => (k === 'heading' ? L.headingH : L.rowH))
+    const { top: cardTop, buttonY, cardH } = L
 
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
     const card = this.add
       .graphics()
       .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(90, 420, 900, cardH, 60)
+      .fillRoundedRect(90, cardTop, 900, cardH, 60)
       .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(90, 420, 900, cardH, 60)
-    const name = this.add.text(GAME_W / 2, 485, sim.shopName, textStyle(44, '600')).setOrigin(0.5)
+      .strokeRoundedRect(90, cardTop, 900, cardH, 60)
+    const name = this.add.text(GAME_W / 2, L.nameY, sim.shopName, textStyle(44, '600')).setOrigin(0.5)
     if (name.width > 760) name.setScale(760 / name.width)
-    this.add.text(GAME_W / 2, 565, t('summaryTitle', { day: sim.day }), textStyle(60)).setOrigin(0.5)
+    this.add.text(GAME_W / 2, L.titleY, t('summaryTitle', { day: sim.day }), textStyle(60)).setOrigin(0.5)
 
-    let top = ROW_Y
+    let top = L.rowsTop
     const values = rows.map((row, i) => {
       const y = top + heights[i] / 2
       if (row.kind === 'heading') {
@@ -87,6 +90,27 @@ export class SummaryScene extends Phaser.Scene {
       top += heights[i]
       return value
     })
+    if (chain.length > 0) {
+      // the whole chain, in a pale block under the rows: a heading, a line per shop, a rule and the total
+      const lines = chainSummaryRows(chain)
+      const h = (lines.length + 1) * L.chainRowH + 20
+      card
+        .fillStyle(hex(C.tealPale), 1)
+        .fillRoundedRect(120, L.chainTop, 840, h, 34)
+        .lineStyle(4, hex(C.teal))
+        .strokeRoundedRect(120, L.chainTop, 840, h, 34)
+      let y = L.chainTop + 10 + L.chainRowH / 2
+      this.add.text(GAME_W / 2, y, t('summaryChain'), textStyle(38, '800', C.tealDark)).setOrigin(0.5)
+      y += L.chainRowH
+      lines.forEach((line, i) => {
+        const last = i === lines.length - 1
+        if (last) card.lineStyle(3, hex(C.teal), 1).lineBetween(160, y - L.chainRowH / 2, 920, y - L.chainRowH / 2)
+        const color = last ? C.tealDark : line.value < 0 ? C.lantern : C.ink
+        this.add.text(160, y, line.label, textStyle(last ? 40 : 36, last ? '800' : '600', last ? C.tealDark : C.ink)).setOrigin(0, 0.5)
+        this.add.text(920, y, signedMoney(line.value), textStyle(last ? 44 : 40, '800', color)).setOrigin(1, 0.5)
+        y += L.chainRowH
+      })
+    }
     this.tweens.addCounter({
       from: 0,
       to: 1,

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DayStats } from '../../src/sim/types'
-import { summaryRows } from '../../src/view/summary'
+import { GAME_H } from '../../src/config'
+import { chainSummaryRows, summaryLayout, summaryRows, type SummaryRow } from '../../src/view/summary'
 
 const stats = (over: Partial<DayStats>): DayStats => ({
   served: 0,
@@ -54,5 +55,39 @@ describe('end-of-day rows', () => {
     expect(row(s, 'questReward')).toEqual({ label: 'questReward', value: 90000, kind: 'money' })
     expect(row(s, 'profit')?.value).toBe(840000)
     expect(labels(stats({ income: 400000 }))).not.toContain('questReward')
+  })
+})
+
+describe('the chain on the summary', () => {
+  it('names each shop, then adds a total', () => {
+    expect(chainSummaryRows([{ place: null, profit: 1_000_000 }, { place: 'beach', profit: -50_000 }])).toEqual([
+      { label: 'Tiệm gốc', value: 1_000_000 },
+      { label: 'Bãi biển', value: -50_000 },
+      { label: 'Tổng', value: 950_000 },
+    ])
+  })
+
+  it('lays out exactly as before with no chain shops', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money']
+    const l = summaryLayout(kinds, 0, 0)
+    expect([l.top, l.nameY, l.titleY, l.rowsTop, l.rowH, l.headingH]).toEqual([420, 485, 565, 650, 90, 64])
+    const rowsEnd = 650 + 5 * 90 + 64
+    expect(l.buttonY).toBe(rowsEnd + 95)
+    expect(l.cardH).toBe(rowsEnd + 95 + 135 - 420)
+    expect(summaryLayout(kinds, 0, 100).buttonY).toBe(rowsEnd + 20 + 100 + 95)
+  })
+
+  it('goes compact with chain shops and puts the block 24 px under the rows', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'heading', 'money']
+    const l = summaryLayout(kinds, 2, 0)
+    expect([l.top, l.nameY, l.titleY, l.rowsTop, l.rowH, l.headingH, l.chainRowH]).toEqual([200, 262, 340, 410, 66, 50, 58])
+    expect(l.chainTop).toBe(410 + 66 + 50 + 66 + 24)
+    expect(l.buttonY).toBeGreaterThan(l.chainTop + 4 * 58)
+  })
+
+  it('fits the worst case on the screen', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money', 'money', 'heading', 'money', 'money', 'money', 'money', 'money']
+    const l = summaryLayout(kinds, 2, 330)
+    expect(l.top + l.cardH).toBeLessThanOrEqual(GAME_H - 40)
   })
 })
