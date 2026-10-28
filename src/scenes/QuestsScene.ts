@@ -1,13 +1,16 @@
 import * as Phaser from 'phaser'
+import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
 import { BADGE_IDS, badgeProgress, type BadgeId } from '../sim/badges'
 import { daysLeftInMonth, monthOf, yearOf } from '../sim/calendar'
+import { FESTIVALS } from '../sim/festivals'
 import { progressOf, type Quest } from '../sim/quests'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { BADGE_TEXT, badgeStatus } from '../view/badges'
+import { FESTIVAL_COLORS, keepsakeLine } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import { questCount, questIcon, questTitle } from '../view/quests'
 import { textStyle } from '../view/text'
@@ -58,6 +61,11 @@ const SIDE_X = 905
 const SIDE_W = 140
 const SIDE_H = 64
 const FOOTER_Y = 1620
+/** A festival quest's row is this much taller, for its keepsake line, and the footer moves down with it. */
+const FESTIVAL_EXTRA = 50
+/** The keepsake line under the bar: how far below the bar, and its little picture's height. */
+const KEEP_DY = 52
+const KEEP_ICON = 40
 const DONE_Y = 1895
 const FAILED_ALPHA = 0.6
 const GRID_X = 175
@@ -154,12 +162,21 @@ export class QuestsScene extends Phaser.Scene {
 
     const left = daysLeftInMonth(sim.day)
     const month = monthOf(sim.day)
-    this.keep(this.label(LEFT, MONTH_HEAD_Y, left === 1 ? t('questMonthToday', { month }) : t('questMonth', { month, n: left }), 40))
+    const festival = p.monthly?.festival ?? null
+    const head = festival
+      ? left === 1
+        ? t('questMonthFestivalToday', { month, festival: t(FESTIVALS[festival].name) })
+        : t('questMonthFestival', { month, festival: t(FESTIVALS[festival].name), n: left })
+      : left === 1
+        ? t('questMonthToday', { month })
+        : t('questMonth', { month, n: left })
+    this.keep(this.label(LEFT, MONTH_HEAD_Y, head, 40))
     this.keep(this.label(RIGHT, MONTH_HEAD_Y, t('questYear', { year: yearOf(sim.day) }), 30, '600', C.soft).setOrigin(1, 0.5))
-    if (p.monthly) this.row(p.monthly, null, MONTH_ROW_TOP, MONTH_ROW_H)
+    const extra = festival ? FESTIVAL_EXTRA : 0
+    if (p.monthly) this.row(p.monthly, null, MONTH_ROW_TOP, MONTH_ROW_H + extra)
     else this.keep(this.add.text(MID, MONTH_ROW_TOP + MONTH_ROW_H / 2, t('questsNoneToday'), textStyle(34, '600', C.soft)).setOrigin(0.5))
 
-    this.keep(this.add.text(MID, FOOTER_Y, t('questFooter'), textStyle(30, '600', C.soft)).setOrigin(0.5))
+    this.keep(this.add.text(MID, FOOTER_Y + extra, t('questFooter'), textStyle(30, '600', C.soft)).setOrigin(0.5))
   }
 
   /** The twenty medals, four to a row, and the picked one's name, condition and status. */
@@ -208,11 +225,11 @@ export class QuestsScene extends Phaser.Scene {
         .fillRoundedRect(ROW_X, top, ROW_W, h, ROW_R)
         .lineStyle(4, hex(C.ink))
         .strokeRoundedRect(ROW_X, top, ROW_W, h, ROW_R)
-        .fillStyle(hex(monthly ? C.mustard : C.sand), 1)
+        .fillStyle(hex(q.festival ? FESTIVAL_COLORS[q.festival][0] : monthly ? C.mustard : C.sand), 1)
         .fillCircle(DISC_X, cy, DISC_R)
         .strokeCircle(DISC_X, cy, DISC_R),
     )
-    const icon = this.add.image(DISC_X, cy, questIcon(q))
+    const icon = this.add.image(DISC_X, cy, q.festival ? itemTexture(FESTIVALS[q.festival].keepsake) : questIcon(q))
     row.add(icon.setScale(ICON_W / Math.max(icon.width, icon.height)))
     const title = this.add.text(TEXT_X, top + TITLE_TOP, questTitle(q), monthly ? { ...textStyle(36), wordWrap: { width: TITLE_WRAP } } : textStyle(36))
     // a day's row has room for one line, so a long title (a big money target) is drawn smaller instead
@@ -235,6 +252,14 @@ export class QuestsScene extends Phaser.Scene {
       if (k > 0) bar.fillStyle(hex(C.teal), 1).fillRoundedRect(TEXT_X + 4, lineY - BAR_H / 2 + 4, Math.max(BAR_H - 8, (BAR_W - 8) * k), BAR_H - 8, (BAR_H - 8) / 2)
       row.add(bar)
       row.add(this.label(COUNT_X, lineY, questCount(q, sim.progress.total), 30))
+    }
+
+    // a festival quest says what keepsake it gives, or that the shop has it and this time pays only money
+    if (q.festival) {
+      const keepY = lineY + KEEP_DY
+      const gift = this.add.image(TEXT_X + KEEP_ICON / 2, keepY, itemTexture(FESTIVALS[q.festival].keepsake))
+      row.add(gift.setScale(KEEP_ICON / Math.max(gift.width, gift.height)))
+      row.add(this.label(TEXT_X + KEEP_ICON + 10, keepY, keepsakeLine(q.festival, sim.festival.keepsakes.includes(q.festival) && q.state !== 'done'), 28, '800', C.terracotta))
     }
 
     if (q.state === 'done') row.add(this.stamp(lineY))

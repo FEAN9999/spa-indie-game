@@ -455,6 +455,19 @@ export const vi = {
   todayFestivalDone: 'Dịp {festival} · đã xong nhiệm vụ lễ',
   todayFestivalPlain: 'Dịp {festival} · món lễ {service}',
   serviceFestivalTag: 'Món lễ +20%',
+  festStartHead: 'Tháng {month} · cả tháng là dịp {festival}',
+  festStartName: '{festival} tới rồi!',
+  festStartLine: 'Khách đông hơn, nửa số khách gọi {service} ({why}), giá lễ cao hơn 20%.',
+  festStartLineSwap: 'Khách đông hơn, nửa số khách gọi {service}, giá lễ cao hơn 20%. Tiệm chưa có {wanted} nên khách gọi {service}.',
+  festDoneHead: 'Xong nhiệm vụ lễ · +{money}',
+  festDoneOwned: 'Đã có {gift} từ trước',
+  festDoneGiftLine: 'Đã cất vào Xây dựng, đặt đâu tùy anh.',
+  festDoneOwnedLine: 'Quà lưu niệm mỗi món chỉ một lần, lần này nhận tiền thưởng.',
+  festMissedToast: 'Hết dịp {festival} · {gift} chờ dịp {festival} năm sau',
+  keepsakeNew: 'Quà lưu niệm: {gift}',
+  keepsakeOwned: 'Đã có {gift} · lần này chỉ tiền',
+  questMonthFestival: 'Tháng {month} · dịp {festival} · còn {n} ngày',
+  questMonthFestivalToday: 'Tháng {month} · dịp {festival} · còn hôm nay',
 } as const
 
 export type StringKey = keyof typeof vi

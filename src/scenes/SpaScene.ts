@@ -11,6 +11,7 @@ import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
+import { monthOf } from '../sim/calendar'
 import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
@@ -34,6 +35,7 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { festivalDoneCard, festivalStartCard, monthToast, type GoldCard } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
@@ -77,8 +79,8 @@ const SPEECH_TIP = -CHARACTER_HEIGHT_PX - 70
 const HEART_DX = -64
 /** The toast after another that a toast right now would overwrite. */
 const LATE_TOAST_MS = 2200
-/** The new-badge card under the top bar, from the sketch. */
-const BADGE_CARD = { x: 110, y: 236, w: 860, h: 200, r: 50, medalX: 230, medalY: 336, textX: 330 }
+/** The gold card under the top bar (a new badge, a festival), from the sketch; a line that wraps makes it taller. */
+const BADGE_CARD = { x: 110, y: 236, w: 860, h: 200, r: 50, medalX: 230, medalY: 336, textX: 330, textW: 610, bottomPad: 26, discR: 64, icon: 104 }
 const BADGE_FADE_MS = 250
 /** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
 const STAR_TWINKLE = 0.04
@@ -149,8 +151,8 @@ export class SpaScene extends Phaser.Scene {
   private studiedToastMs = 0
   /** The scene time before which a queued toast may not go up, so finished quests follow each other and whatever was said just before. */
   private toastQueueAt = 0
-  /** New badges waiting for their banner, in the order they came. */
-  private badgeQueue: BadgeId[] = []
+  /** Gold cards waiting to show, in the order they came: new badges and festival cards. */
+  private badgeQueue: (BadgeId | GoldCard)[] = []
   /** The scene time the badge banner on screen is gone. */
   private badgeUntil = 0
   /** An old shop's "already has" toast, held until no summary covers the shop. */
@@ -463,29 +465,44 @@ export class SpaScene extends Phaser.Scene {
       this.foundToast = null
     }
     const now = this.time.now
-    const id = this.badgeQueue[0]
-    if (id === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
+    const next = this.badgeQueue[0]
+    if (next === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
     this.badgeQueue.shift()
     this.badgeUntil = now + BADGE_BANNER_MS
-    this.showBadge(id)
+    this.showCard(next)
   }
 
-  /** A gold card under the top bar with the badge's medal, "Huy hiệu mới", its name and what it asked; it plays the level-up sound. */
-  private showBadge(id: BadgeId): void {
+  /**
+   * A gold card under the top bar: a new badge's medal, "Huy hiệu mới", its name and what it asked, or a festival card's picture and words.
+   * A long heading or name is drawn smaller to fit; a long line wraps and the card grows under it. It plays the level-up sound.
+   */
+  private showCard(next: BadgeId | GoldCard): void {
+    const card: Omit<GoldCard, 'icon'> =
+      typeof next === 'string' ? { head: t('badgeNew'), name: t(BADGE_TEXT[next].name), line: t(BADGE_TEXT[next].cond) } : next
+    const fit = (text: Phaser.GameObjects.Text) => text.setScale(Math.min(1, BADGE_CARD.textW / text.width))
+    const head = fit(this.add.text(BADGE_CARD.textX, 300, card.head, textStyle(32, '800', C.terracotta)).setOrigin(0, 0.5))
+    const name = fit(this.add.text(BADGE_CARD.textX, 352, card.name, textStyle(50)).setOrigin(0, 0.5))
+    const line = this.add.text(BADGE_CARD.textX, 0, card.line, { ...textStyle(28, '600', C.soft), wordWrap: { width: BADGE_CARD.textW } })
+    // the first line sits where a badge's one line always did
+    line.setY(400 - line.height / line.getWrappedText().length / 2)
+    const h = Math.max(BADGE_CARD.h, line.y + line.height + BADGE_CARD.bottomPad - BADGE_CARD.y)
+    const iconY = BADGE_CARD.y + h / 2
     const bg = this.add
       .graphics()
       .fillStyle(hex(C.goldPale), 1)
-      .fillRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, BADGE_CARD.h, BADGE_CARD.r)
+      .fillRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
       .lineStyle(5, hex(C.ink))
-      .strokeRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, BADGE_CARD.h, BADGE_CARD.r)
+      .strokeRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
+    const icon: Phaser.GameObjects.GameObject[] = []
+    if (typeof next === 'string') icon.push(addMedal(this, next, BADGE_CARD.medalX, iconY, { got: true, ring: null }))
+    else {
+      const disc = this.add.circle(BADGE_CARD.medalX, iconY, BADGE_CARD.discR, hex(next.icon.disc)).setStrokeStyle(5, hex(C.ink))
+      const picture = this.add.image(BADGE_CARD.medalX, iconY, next.icon.texture)
+      picture.setScale(BADGE_CARD.icon / Math.max(picture.width, picture.height))
+      icon.push(disc, picture)
+    }
     const box = this.add
-      .container(0, 0, [
-        bg,
-        addMedal(this, id, BADGE_CARD.medalX, BADGE_CARD.medalY, { got: true, ring: null }),
-        this.add.text(BADGE_CARD.textX, 300, t('badgeNew'), textStyle(32, '800', C.terracotta)).setOrigin(0, 0.5),
-        this.add.text(BADGE_CARD.textX, 352, t(BADGE_TEXT[id].name), textStyle(50)).setOrigin(0, 0.5),
-        this.add.text(BADGE_CARD.textX, 400, t(BADGE_TEXT[id].cond), textStyle(28, '600', C.soft)).setOrigin(0, 0.5),
-      ])
+      .container(0, 0, [bg, ...icon, head, name, line])
       .setDepth(HUD_DEPTH + 60)
       .setAlpha(0)
     sound.play('levelUp')
@@ -914,11 +931,18 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'badge':
         this.badgeQueue.push(e.id)
         return
+      case 'festivalStarted':
+        this.badgeQueue.push(festivalStartCard(e, monthOf(this.sim.day)))
+        return
+      case 'festivalQuestDone':
+        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
+        this.badgeQueue.push(festivalDoneCard(e))
+        return
       case 'badgesFound':
         this.foundToast = t('badgesFoundToast', { n: e.n })
         return
       case 'monthStarted': {
-        const text = t('monthQuestToast', { month: e.month })
+        const text = monthToast(e, this.sim.festival.keepsakes)
         this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
         this.studiedToastMs += LATE_TOAST_MS
         return

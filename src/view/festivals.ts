@@ -1,8 +1,12 @@
+import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { monthStart } from '../sim/calendar'
 import { FESTIVALS, festivalOf, type FestivalId } from '../sim/festivals'
+import { ITEMS } from '../sim/items'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
+import type { SimEvent } from '../sim/types'
+import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { questCount } from './quests'
 
@@ -28,4 +32,51 @@ export function todayLine(sim: SpaSim): { festival: FestivalId; text: string } |
     return { festival, text: t('todayFestival', { festival: name, service: t(SERVICES[q.service!].name), count: questCount(q, p.total) }) }
   }
   return { festival, text: t('todayFestivalPlain', { festival: name, service: t(SERVICES[sim.festivalServiceToday()!].name) }) }
+}
+
+/** A gold card under the top bar: a picture in a disc, a small heading, a name and a line that may wrap. */
+export interface GoldCard {
+  /** The texture in the disc and the disc's colour. */
+  icon: { texture: string; disc: string }
+  head: string
+  name: string
+  line: string
+}
+
+const festivalName = (f: FestivalId) => t(FESTIVALS[f].name)
+const giftName = (f: FestivalId) => t(ITEMS[FESTIVALS[f].keepsake].name)
+const festivalIcon = (f: FestivalId) => ({ texture: itemTexture(FESTIVALS[f].keepsake), disc: FESTIVAL_COLORS[f][0] })
+
+/** The card on a festival's first morning; when the shop lacks the festival's service it says which one customers ask for instead. */
+export function festivalStartCard(e: Extract<SimEvent, { type: 'festivalStarted' }>, month: number): GoldCard {
+  const spec = FESTIVALS[e.festival]
+  const festival = festivalName(e.festival)
+  const service = t(SERVICES[e.service].name)
+  const line =
+    e.service === spec.service
+      ? t('festStartLine', { service, why: t(spec.why) })
+      : t('festStartLineSwap', { service, wanted: t(SERVICES[spec.service].name) })
+  return { icon: festivalIcon(e.festival), head: t('festStartHead', { month, festival }), name: t('festStartName', { festival }), line }
+}
+
+/** The card for a finished festival quest: its keepsake the first time, only its money after. */
+export function festivalDoneCard(e: Extract<SimEvent, { type: 'festivalQuestDone' }>): GoldCard {
+  const gift = giftName(e.festival)
+  return {
+    icon: festivalIcon(e.festival),
+    head: t('festDoneHead', { money: formatMoney(e.quest.reward) }),
+    name: e.gift ? t('keepsakeNew', { gift }) : t('festDoneOwned', { gift }),
+    line: t(e.gift ? 'festDoneGiftLine' : 'festDoneOwnedLine'),
+  }
+}
+
+/** The new month's toast: that a missed festival's keepsake waits for next year, unless the shop already has it. */
+export function monthToast(e: Extract<SimEvent, { type: 'monthStarted' }>, keepsakes: readonly FestivalId[]): string {
+  if (e.ended && !keepsakes.includes(e.ended)) return t('festMissedToast', { festival: festivalName(e.ended), gift: giftName(e.ended) })
+  return t('monthQuestToast', { month: e.month })
+}
+
+/** The festival quest's last line: the keepsake it gives, or that this time it pays only money. */
+export function keepsakeLine(f: FestivalId, owned: boolean): string {
+  return t(owned ? 'keepsakeOwned' : 'keepsakeNew', { gift: giftName(f) })
 }
