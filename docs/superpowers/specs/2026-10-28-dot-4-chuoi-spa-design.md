@@ -1,7 +1,7 @@
 # Đợt 4, phần 1: chuỗi spa (chi nhánh, điều nhân viên và hàng)
 
 - Ngày: 2026-10-28
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-28, "Duyệt, làm đi")
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 6 (Đợt 4). Đi sau Đợt 3 (`2026-10-28-dot-3-hang-ao-vang-design.md`), đã lên mạng ở save v21.
 - Bản phác bấm thử: https://claude.ai/artifact/PQf7QfKtqDq6o7EyPPXLyd
 
