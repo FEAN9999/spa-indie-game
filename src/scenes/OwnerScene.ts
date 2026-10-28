@@ -4,6 +4,7 @@ import { C, HAIR, OWNER_SHIRT, SKIN, ownerColors } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, OWNER_LOOK_COUNTS } from '../config'
 import { SHOP_NAME_MAX, suggestShopName } from '../sim/profile'
+import type { OutfitId } from '../sim/outfits'
 import type { Facing, Look } from '../sim/types'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
@@ -17,6 +18,8 @@ export interface OwnerData {
   mode: OwnerMode
   look: Look
   name: string
+  /** The outfit the preview wears; a new shop is in the bà ba. */
+  outfit: OutfitId
   onSave: (look: Look, name: string) => void
   onClose: () => void
 }
@@ -165,7 +168,7 @@ export class OwnerScene extends Phaser.Scene {
 
   /** Draws the chosen look: the preview, the tile colors and the rings. */
   private refresh(): void {
-    const colors = ownerColors(this.look)
+    const colors = ownerColors(this.look, this.params.mode === 'new' ? 'baba' : this.params.outfit)
     this.preview?.container.destroy()
     this.preview = new CharacterView(this, colors)
     this.preview.container.setPosition(MID, PREVIEW_Y).setScale(2)

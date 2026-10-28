@@ -1,6 +1,7 @@
 import type { CustomerKind } from '../sim/customers'
 import type { RegularId } from '../sim/regulars'
 import type { VipId } from '../sim/vips'
+import type { OutfitId } from '../sim/outfits'
 import type { Look } from '../sim/types'
 
 /** Named colors from the approved style A board (spec 7.1). */
@@ -96,6 +97,8 @@ export interface CharacterColors {
   hair: number
   hairStyle: number
   shirt: number
+  /** The owner's outfit; the shirt colour counts only in the bà ba, which is also what unset means. */
+  outfit?: OutfitId
   apron?: boolean
   /** A customer's kind, which decides what they wear. */
   kind?: CustomerKind
@@ -124,8 +127,8 @@ export function customerColors(look: Look, kind: CustomerKind, regular: RegularI
   }
 }
 
-export function ownerColors(look: Look): CharacterColors {
-  return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: OWNER_SHIRT[look.shirt] }
+export function ownerColors(look: Look, outfit: OutfitId = 'baba'): CharacterColors {
+  return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: OWNER_SHIRT[look.shirt], ...(outfit === 'baba' ? {} : { outfit }) }
 }
 
 /** The hygiene inspector: dark hair in a bun and a navy shirt, with the clipboard. */

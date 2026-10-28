@@ -1,8 +1,10 @@
 import * as Phaser from 'phaser'
 import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
+import { OUTFIT_HAS_HAT, OUTFIT_PANTS } from '../art/outfits'
 import { PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
 import type { CustomerKind } from '../sim/customers'
+import type { OutfitId } from '../sim/outfits'
 import type { RegularId } from '../sim/regulars'
 import type { VipId } from '../sim/vips'
 import type { Facing } from '../sim/types'
@@ -78,6 +80,9 @@ const VISITOR_WORN: Record<NonNullable<CharacterColors['visitor']>, { key: strin
   inspector: [{ key: 'clipboard', on: 'body' }],
 }
 
+/** The texture of an outfit's torso or hat from a side: `down`, `side` or `up`. */
+export const outfitKey = (part: 'outfit' | 'outfitHat', id: OutfitId, dir: string) => `${part}-${id}-${dir}`
+
 /** A chibi built from tinted part textures and animated in code, with its feet at the container origin. */
 export class CharacterView {
   readonly container: Phaser.GameObjects.Container
@@ -87,6 +92,11 @@ export class CharacterView {
   private readonly legs: Phaser.GameObjects.Image[]
   private readonly arms: Phaser.GameObjects.Image[]
   private readonly body: Phaser.GameObjects.Image
+  /** The outfit the owner wears in place of the bà ba, or null in the bà ba. */
+  private readonly outfit: Exclude<OutfitId, 'baba'> | null
+  /** The sleeves over the arms, which follow them. */
+  private sleeves: Phaser.GameObjects.Image[] = []
+  private readonly outfitHat: Phaser.GameObjects.Image | null
   private readonly apron: Phaser.GameObjects.Image | null
   private readonly head: Phaser.GameObjects.Image
   private readonly face: Phaser.GameObjects.Image
@@ -121,6 +131,8 @@ export class CharacterView {
     // each tinted part followed by its outline
     const withLines = (imgs: Phaser.GameObjects.Image[]) => imgs.flatMap(img => [img, ...(this.lines.has(img) ? [this.lines.get(img)!] : [])])
     this.hairStyle = colors.hairStyle
+    const dressed = colors.outfit && colors.outfit !== 'baba' ? colors.outfit : null
+    this.outfit = dressed
     const wear = (on: 'body' | 'face' | 'hair') =>
       (colors.visitor ? VISITOR_WORN[colors.visitor] : colors.vip ? VIP_WORN[colors.vip] : colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
         .filter(w => w.on === on)
@@ -130,11 +142,13 @@ export class CharacterView {
           return img
         })
     this.shadow = scene.add.image(0, 0, 'shadow')
-    this.legs = [part('leg', -3.5 * U, HIP_Y, PANTS), part('leg', 3.5 * U, HIP_Y, PANTS)]
-    this.body = part('body', 0, BODY_Y, colors.shirt)
+    this.legs = [part('leg', -3.5 * U, HIP_Y, dressed ? OUTFIT_PANTS[dressed] : PANTS), part('leg', 3.5 * U, HIP_Y, dressed ? OUTFIT_PANTS[dressed] : PANTS)]
+    // an outfit takes the body's place: untinted, its outline drawn in, and re-textured for each side by setFacing
+    this.body = dressed ? part(outfitKey('outfit', dressed, 'down'), 0, BODY_Y) : part('body', 0, BODY_Y, colors.shirt)
     this.apron = colors.apron ? part('apron-down', 0, BODY_Y) : null
     this.bodyWorn = wear('body')
     this.arms = [part('arm', -9 * U, SHOULDER_Y, colors.skin), part('arm', 9 * U, SHOULDER_Y, colors.skin)]
+    if (dressed) this.sleeves = this.arms.map(arm => part(`sleeve-${dressed}`, arm.x, SHOULDER_Y))
     this.head = part('head', 0, HEAD_Y, colors.skin)
     this.frontFace = colors.kind === 'picky' ? 'face-frown' : 'face-down'
     this.face = part(this.frontFace, 0, HEAD_Y)
@@ -142,19 +156,25 @@ export class CharacterView {
     const onFace = wear('face')
     this.hair = part(`hair${colors.hairStyle}-down`, 0, HEAD_Y, colors.hair)
     const onHair = wear('hair')
+    this.outfitHat = dressed && OUTFIT_HAS_HAT.includes(dressed) ? part(outfitKey('outfitHat', dressed, 'down'), 0, HEAD_Y) : null
+    if (this.outfitHat) onHair.push(this.outfitHat)
     this.towel = part('towel-wrap', 0, HEAD_Y).setVisible(false)
     this.upper = scene.add.container(
       0,
       0,
-      withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.bodyWorn, ...this.arms, this.head, this.face, this.mask, ...onFace, this.hair, ...onHair, this.towel]),
+      withLines([this.body, ...(this.apron ? [this.apron] : []), ...this.bodyWorn, ...(this.sleeves.length ? this.arms.flatMap((arm, i) => [arm, this.sleeves[i]]) : this.arms), this.head, this.face, this.mask, ...onFace, this.hair, ...onHair, this.towel]),
     )
     this.blanket = part('blanket', 0, BLANKET_TOP).setVisible(false)
     this.container = scene.add.container(0, 0, [this.shadow, ...withLines(this.legs), this.blanket, this.upper])
     this.setFacing('down')
   }
 
-  /** Copies each tinted part's texture, place, turn, flip and visibility to its outline. */
+  /** Copies each tinted part's texture, place, turn, flip and visibility to its outline, and each arm's to its sleeve. */
   private syncLines(): void {
+    this.sleeves.forEach((sleeve, i) => {
+      const arm = this.arms[i]
+      sleeve.setPosition(arm.x, arm.y).setRotation(arm.rotation).setFlipX(this.facing === 'left').setVisible(arm.visible)
+    })
     for (const [fill, line] of this.lines) {
       const key = `${fill.texture.key}-line`
       if (line.texture.key !== key) line.setTexture(key)
@@ -176,6 +196,14 @@ export class CharacterView {
     this.legs[1].x = (side ? 1.5 : 3.5) * U
     this.arms[0].setVisible(!side && !lying)
     this.arms[1].x = (side ? 0 : 9) * U
+    if (this.outfit) {
+      const torso = outfitKey('outfit', this.outfit, dir)
+      this.body.setTexture(torso).setOrigin(PART_ANCHORS[torso].ox, PART_ANCHORS[torso].oy).setFlipX(f === 'left')
+      if (this.outfitHat) {
+        const hat = outfitKey('outfitHat', this.outfit, dir)
+        this.outfitHat.setTexture(hat).setOrigin(PART_ANCHORS[hat].ox, PART_ANCHORS[hat].oy).setFlipX(f === 'left').setVisible(!lying)
+      }
+    }
     // the apron shows its front or its side, and hides from behind and with the body
     this.apron?.setTexture(`apron-${side ? 'side' : 'down'}`).setFlipX(f === 'left').setVisible(f !== 'up' && this.body.visible)
     // what the kind, the regular or the VIP wears comes off on the bed

@@ -213,7 +213,7 @@ export class SpaScene extends Phaser.Scene {
     this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
-    this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
+    this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests())
@@ -316,6 +316,16 @@ export class SpaScene extends Phaser.Scene {
     }
   }
 
+  private buildOwner(): CharacterView {
+    return new CharacterView(this, ownerColors(this.sim.ownerLook, this.sim.ownerOutfit))
+  }
+
+  /** Draws the owner again from the sim's look and outfit. */
+  rebuildOwner(): void {
+    this.owner.container.destroy()
+    this.owner = this.buildOwner()
+  }
+
   /** Opens the owner card over the shop; `after` runs once it closes. */
   openOwnerCard(mode: OwnerMode, after: () => void): void {
     this.modal = true
@@ -323,10 +333,10 @@ export class SpaScene extends Phaser.Scene {
       mode,
       look: { ...this.sim.ownerLook },
       name: this.sim.shopName,
+      outfit: this.sim.ownerOutfit,
       onSave: (look, name) => {
         this.sim.setProfile(look, name)
-        this.owner.container.destroy()
-        this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
+        this.rebuildOwner()
         this.session.saveNow()
       },
       onClose: () => {
