@@ -55,7 +55,7 @@ describe('yearLines', () => {
     ({ day: 36, year, score: 68, table: [], place, reward, gifts })
   it('first with a trophy', () => {
     const r = yearLines(y(1, ['trophy'], 1, 3_000_000), 'Tiệm')
-    expect(r.lines.slice(0, 2)).toEqual(['Tiệm đoạt Spa của năm! Thưởng 3.000.000 đ.', 'Lần đầu nên có thêm cúp vàng (vào Xây dựng).'])
+    expect(r.lines.slice(0, 2)).toEqual(['Tiệm đoạt Spa của năm! Thưởng 3.000.000 đ.', 'Lần đầu nên có thêm cúp vàng (vào Xây dựng) và áo dài Spa của năm.'])
     expect(r.button).toBe('Nhận thưởng')
   })
   it('second, third, fourth', () => {

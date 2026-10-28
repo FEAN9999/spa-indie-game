@@ -60,6 +60,7 @@ import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { InspectData } from './InspectScene'
+import type { NewOutfitData } from './NewOutfitScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -584,6 +585,30 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('InspectScene', data)
   }
 
+  /** Nothing else is asking for the player: no card, mini-game, customer being served, badge or morning banner. */
+  private shopFree(): boolean {
+    const { sim, time } = this
+    return (
+      !this.modal && !this.holding && !sim.paused && !sim.dayOver && sim.servingCustomerId === null && this.inspectNote === null && this.badgeQueue.length === 0 && time.now >= this.badgeUntil && time.now >= this.hud.lastBannerAt + BANNER_MS
+    )
+  }
+
+  /** The Áo mới card for the highest outfit just unlocked; either button counts all of them as seen. */
+  private showNewOutfits(): void {
+    const ids = this.sim.newOutfits()
+    if (ids.length === 0) return
+    const id = ids[ids.length - 1]
+    this.modal = true
+    const done = (wear: boolean) => () => {
+      this.sim.markOutfitsSeen(ids)
+      this.modal = false
+      if (wear) this.wear(id)
+      this.session.saveNow()
+    }
+    const data: NewOutfitData = { sim: this.sim, id, more: ids.length - 1, onLater: done(false), onWear: done(true) }
+    this.scene.launch('NewOutfitScene', data)
+  }
+
   /** The judging evening's cards, month then year, each from the results the sim saved (it paid them already, so a reload shows the same and pays nothing); then the next day starts. */
   private showRankCards(): void {
     const { sim } = this
@@ -763,6 +788,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       // a card opened by this frame's events (a bed slot's) goes first; a badge card waits for whichever card is up, rather than play under it
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
       if (!this.modal) this.pumpBadges()
+      if (!this.modal && this.shopFree()) this.showNewOutfits()
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose

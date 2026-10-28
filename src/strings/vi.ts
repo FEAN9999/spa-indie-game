@@ -589,7 +589,7 @@ export const vi = {
   rankRivalHoaSen: 'Spa Hoa Sen',
   rankRowPts: '{n} điểm',
   yearFirst: 'Tiệm đoạt Spa của năm! Thưởng {money}.',
-  yearTrophy: 'Lần đầu nên có thêm cúp vàng (vào Xây dựng).',
+  yearTrophy: 'Lần đầu nên có thêm cúp vàng (vào Xây dựng) và áo dài Spa của năm.',
   yearSecond: 'Hạng nhì. Thưởng {money}.',
   yearSecondMerit: 'Hạng nhì. Thưởng {money} và bằng khen.',
   yearThird: 'Hạng ba. Thưởng {money}.',
