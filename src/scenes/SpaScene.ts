@@ -774,7 +774,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   update(time: number, delta: number) {
     if (this.tooNew) return
     if (!this.modal) {
-      if (this.heldWearToast && !this.sim.paused) {
+      if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)
         this.heldWearToast = null
       }

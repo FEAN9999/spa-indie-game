@@ -1,3 +1,4 @@
+import { BADGE_IDS } from '../sim/badges'
 import { OUTFIT_IDS, outfitNeed, type OutfitId } from '../sim/outfits'
 import { t, type StringKey } from '../strings/vi'
 
@@ -15,7 +16,7 @@ export const OUTFIT_NAME: Record<OutfitId, StringKey> = {
 }
 
 /** The wardrobe's head: the badges the shop has and the outfits open. */
-export const wardrobeHead = (badges: number, open: number): string => t('wardrobeHead', { badges, open, total: OUTFIT_IDS.length })
+export const wardrobeHead = (badges: number, open: number): string => t('wardrobeHead', { badges, badgeTotal: BADGE_IDS.length, open, total: OUTFIT_IDS.length })
 
 /** The line under the picked outfit: worn, ready to wear, or what it still asks for. */
 export function outfitStatus(id: OutfitId, worn: OutfitId, unlocked: OutfitId[], badges: number): { text: string; ok: boolean } {

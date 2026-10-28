@@ -154,7 +154,7 @@ export class OwnerScene extends Phaser.Scene {
       addButton(this, MID + 190, BUTTON_Y, 350, BUTTON_H, t('save'), 'primary', () => this.save(this.look, this.typedName()))
     }
 
-    if (mode === 'edit' && this.params.sim) addButton(this, WARDROBE_X, WARDROBE_Y, WARDROBE_W, WARDROBE_H, t('wardrobe'), 'plain', () => this.openWardrobe(), 40)
+    if (mode === 'edit' && this.params.sim?.questsOpen()) addButton(this, WARDROBE_X, WARDROBE_Y, WARDROBE_W, WARDROBE_H, t('wardrobe'), 'plain', () => this.openWardrobe(), 40)
 
     this.refresh()
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { OUTFIT_IDS } from '../../src/sim/outfits'
 import { t } from '../../src/strings/vi'
+import { BADGE_IDS } from '../../src/sim/badges'
 import { OUTFIT_NAME, newOutfitHead, newOutfitMore, outfitStatus, outfitTileTag, wardrobeHead } from '../../src/view/outfits'
 
 describe('wardrobe texts', () => {
@@ -19,7 +20,7 @@ describe('wardrobe texts', () => {
   })
 
   it('heads the wardrobe with the badge count and the open outfits', () => {
-    expect(wardrobeHead(9, 5)).toBe('Có 9/20 huy hiệu · mở 5/9 bộ')
+    expect(wardrobeHead(9, 5)).toBe(`Có 9/${BADGE_IDS.length} huy hiệu · mở 5/9 bộ`)
   })
 
   it('tells the four states of an outfit', () => {

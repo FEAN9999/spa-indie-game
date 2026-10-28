@@ -399,7 +399,7 @@ export const vi = {
   badgesFoundToast: 'Tiệm đã có sẵn {n} huy hiệu. Xem ở nút Nhiệm vụ.',
   wardrobe: 'Tủ áo',
   wardrobeButton: 'Tủ áo · {open}/{total} bộ',
-  wardrobeHead: 'Có {badges}/20 huy hiệu · mở {open}/{total} bộ',
+  wardrobeHead: 'Có {badges}/{badgeTotal} huy hiệu · mở {open}/{total} bộ',
   outfitBaba: 'Áo bà ba',
   outfitUniform: 'Đồng phục spa',
   outfitKhanran: 'Bà ba khăn rằn',
