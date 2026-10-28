@@ -107,7 +107,6 @@ export class SummaryScene extends Phaser.Scene {
     button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', C.paper)).setOrigin(0.5))
     button.setSize(600, 150).setInteractive().on('pointerup', () => {
       sound.play('tap')
-      sound.startOfDay()
       onNewDay()
       this.scene.stop()
     })

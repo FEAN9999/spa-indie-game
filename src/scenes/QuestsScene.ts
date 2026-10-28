@@ -15,6 +15,7 @@ import { FESTIVAL_COLORS, keepsakeLine } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import { questCount, questIcon, questTitle } from '../view/quests'
 import { judgeDayOf, partRows, starsLine, totalLine, yearRows } from '../view/rank'
+import { addPartRow, starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -95,14 +96,6 @@ const STARS_LINE_Y = 650
 const RANK_HEAD_Y = 740
 const PART_TOP = 790
 const PART_STEP = 100
-const PART_DISC_X = 140
-const PART_DISC_R = 38
-const PART_ICON_W = 52
-const PART_TEXT_X = 200
-const PART_TEXT_W = 260
-const PART_BAR_X = 480
-const PART_BAR_W = 340
-const PART_PTS_X = 980
 const TOTAL_Y = 1310
 const YEAR_HEAD_Y = 1410
 const TABLE_TOP = 1452
@@ -250,15 +243,9 @@ export class QuestsScene extends Phaser.Scene {
 
     const g = this.keep(this.add.graphics())
     for (let i = 0; i < 5; i++) {
-      const cx = MID + (i - 2) * STAR_DX
       const got = i < stars
+      const pts = starPoints(MID + (i - 2) * STAR_DX, STAR_Y, STAR_R)
       g.fillStyle(hex(got ? C.gold : C.sand), 1).lineStyle(5, hex(got ? C.mustardDark : C.soft))
-      const pts: Phaser.Math.Vector2[] = []
-      for (let k = 0; k < 10; k++) {
-        const a = (Math.PI / 5) * k - Math.PI / 2
-        const r = k % 2 === 0 ? STAR_R : STAR_R * 0.45
-        pts.push(new Phaser.Math.Vector2(cx + Math.cos(a) * r, STAR_Y + Math.sin(a) * r))
-      }
       g.fillPoints(pts, true).strokePoints(pts, true)
     }
     this.keep(this.fit(this.add.text(MID, STARS_LINE_Y, starsLine(stars), textStyle(36)).setOrigin(0.5), ROW_W))
@@ -267,23 +254,9 @@ export class QuestsScene extends Phaser.Scene {
     this.keep(this.fit(this.label(RIGHT, RANK_HEAD_Y, t('rankJudgeOn', { day: judgeDay }), 30, '600', C.soft).setOrigin(1, 0.5), 400))
     partRows(now.input, now.parts).forEach((row, i) => {
       const top = PART_TOP + i * PART_STEP
-      const cy = top + 30
-      this.keep(this.add.graphics().fillStyle(hex(C.sand), 1).fillCircle(PART_DISC_X, cy, PART_DISC_R).lineStyle(4, hex(C.ink)).strokeCircle(PART_DISC_X, cy, PART_DISC_R))
-      const icon = this.keep(this.add.image(PART_DISC_X, cy, row.icon))
-      icon.setScale(PART_ICON_W / Math.max(icon.width, icon.height))
-      this.keep(this.fit(this.label(PART_TEXT_X, top + 8, row.name, 30, '800'), PART_TEXT_W))
-      this.keep(this.fit(this.label(PART_TEXT_X, top + 48, row.value, 26, '600', C.soft), PART_TEXT_W))
-      const k = Math.max(0, Math.min(1, row.pts / 20))
-      const bar = this.keep(
-        this.add
-          .graphics()
-          .fillStyle(hex(C.paper), 1)
-          .fillRoundedRect(PART_BAR_X, cy - BAR_H / 2, PART_BAR_W, BAR_H, BAR_H / 2)
-          .lineStyle(4, hex(C.ink))
-          .strokeRoundedRect(PART_BAR_X, cy - BAR_H / 2, PART_BAR_W, BAR_H, BAR_H / 2),
-      )
-      if (k > 0) bar.fillStyle(hex(C.teal), 1).fillRoundedRect(PART_BAR_X + 4, cy - BAR_H / 2 + 4, Math.max(BAR_H - 8, (PART_BAR_W - 8) * k), BAR_H - 8, (BAR_H - 8) / 2)
-      this.keep(this.label(PART_PTS_X, cy, `${row.pts}/20`, 32).setOrigin(1, 0.5))
+      const part = addPartRow(this, top, row)
+      for (const obj of part.objects) this.keep(obj)
+      part.fill(Math.max(0, Math.min(1, row.pts / 20)))
     })
     this.keep(this.fit(this.add.text(MID, TOTAL_Y, totalLine(now.total, stars, judgeDay), textStyle(34, '800', C.teal)).setOrigin(0.5), ROW_W))
 

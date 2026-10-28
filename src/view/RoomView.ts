@@ -6,10 +6,12 @@ import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { tileRuns, type Grid } from '../sim/grid'
 import { ITEMS, workTile, type Item } from '../sim/items'
+import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
 import { t } from '../strings/vi'
 import { FESTIVAL_COLORS } from './festivals'
 import { retagFloors } from './floors'
+import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
@@ -30,6 +32,8 @@ const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
  * The rival's sign stands on floor 1's sidewalk against the right edge, its board clear of today's line in the middle of the same band:
  * its right edge and board in pixels, its middle row in tiles.
  */
+/** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
+const PLAQUE = { x: 4.3, y: 17.5, bottom: 28 }
 const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
@@ -77,6 +81,8 @@ export class RoomView {
   private readonly sign: Phaser.GameObjects.Text
   private readonly rival: Phaser.GameObjects.Container
   private rivalOn = false
+  private readonly plaque: Phaser.GameObjects.Container
+  private readonly plaqueStars: Phaser.GameObjects.Graphics
   private readonly dark: Phaser.GameObjects.Rectangle
   private readonly candles: Phaser.GameObjects.Image[] = []
   private offMarks: Phaser.GameObjects.Image[] = []
@@ -91,6 +97,8 @@ export class RoomView {
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
     this.rival = this.rivalSign()
+    this.plaqueStars = scene.add.graphics()
+    this.plaque = this.plaqueBoard()
     this.dark = scene.add.rectangle(MAP_X, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
     for (const c of CANDLES) {
       const at = { x: MAP_X + c.x * TILE, y: MAP_Y + c.y * TILE }
@@ -122,6 +130,7 @@ export class RoomView {
     this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
     this.drawFestival()
     this.rival.setVisible(this.rivalOn && floor === 1)
+    this.plaque.setVisible(floor === 1)
   }
 
   /** Stands the rival's SPA MỚI sign on floor 1's sidewalk, or takes it away. */
@@ -161,6 +170,34 @@ export class RoomView {
     const at = { x: RIVAL_SIGN.right - edge, y: MAP_Y + RIVAL_SIGN.y * TILE }
     // whoever walks the sidewalk passes behind it: its depth is the board's bottom
     return this.scene.add.container(at.x, at.y, [g, name, line]).setDepth(at.y + top + h).setVisible(false)
+  }
+
+  /** Lights the first `stars` of the plaque's five stars gold; the rest stay pale. */
+  setRank(stars: Stars): void {
+    const g = this.plaqueStars.clear()
+    for (let i = 0; i < 5; i++) {
+      const got = i < stars
+      const pts = starPoints(-60 + i * 30, 1, 13, 0.43)
+      g.fillStyle(hex(got ? C.gold : C.cream), got ? 1 : 0.55).lineStyle(3, hex(C.ink), got ? 1 : 0.55).fillPoints(pts, true).strokePoints(pts, true)
+    }
+  }
+
+  /** A light-wood board on two dark-wood hangers with five star slots; setRank fills the stars. */
+  private plaqueBoard(): Phaser.GameObjects.Container {
+    const g = this.scene.add
+      .graphics()
+      .lineStyle(4, hex(C.woodDark))
+      .lineBetween(-52, -40, -40, -26)
+      .lineBetween(52, -40, 40, -26)
+      .fillStyle(hex(C.woodLight), 1)
+      .fillRoundedRect(-86, -28, 172, 56, 12)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-86, -28, 172, 56, 12)
+      .fillStyle(hex(C.woodDark), 0.35)
+      .fillRoundedRect(-78, -20, 156, 40, 8)
+    const at = { x: MAP_X + PLAQUE.x * TILE, y: MAP_Y + PLAQUE.y * TILE }
+    // whoever walks past stands in front of it: its depth is the board's bottom
+    return this.scene.add.container(at.x, at.y, [g, this.plaqueStars]).setDepth(at.y + PLAQUE.bottom)
   }
 
   /** Hangs the festival's bunting on the walls and its sign on floor 1, or takes them down for null. */

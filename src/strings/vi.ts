@@ -532,6 +532,7 @@ export const vi = {
   rankYearHead: 'Spa của năm · năm {year}',
   rankYearNote: 'Điểm của tiệm là trung bình các tháng đã chấm trong năm.',
   rankCardKicker: 'Tối ngày {day} · chấm hạng tháng {month}',
+  rankCardTitle: 'Chấm hạng tiệm',
   rankTotal: 'Tổng',
   openDay: 'Mở cửa ngày {day}',
   rankUpToast: 'Tiệm lên {n} sao · biển hạng cạnh cửa đã đổi',

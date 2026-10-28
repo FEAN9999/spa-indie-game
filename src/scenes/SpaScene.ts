@@ -58,6 +58,7 @@ import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { InspectData } from './InspectScene'
+import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
 const FX_DEPTH = 9000
@@ -209,6 +210,7 @@ export class SpaScene extends Phaser.Scene {
     }
     this.sim = this.openShop(saved)
     this.room = new RoomView(this, this.sim.grid)
+    this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
@@ -554,6 +556,34 @@ export class SpaScene extends Phaser.Scene {
       },
     }
     this.scene.launch('InspectScene', data)
+  }
+
+  /** The judging evening's cards, month then year, each from the results the sim saved (it paid them already, so a reload shows the same and pays nothing); then the next day starts. */
+  private showRankCards(): void {
+    const { sim } = this
+    const month = sim.rank.last?.day === sim.day ? sim.rank.last : null
+    const year = sim.rank.lastYear?.day === sim.day ? sim.rank.lastYear : null
+    const begin = () => {
+      sound.startOfDay()
+      sim.markHint('summary')
+      sim.startDay()
+      this.showFloor(1)
+      this.session.saveNow()
+      this.showMorningBanner()
+      const reward = (month?.reward ?? 0) + (year?.reward ?? 0)
+      if (reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, reward, HUD_DEPTH + 40)
+      if (month && month.after > month.before) {
+        this.queueToast(t('rankUpToast', { n: month.after }))
+        this.room.setRank(month.after)
+      }
+    }
+    const launch = (kind: 'month' | 'year', onDone: () => void) => {
+      const data: RankData = { sim, kind, onDone }
+      this.scene.launch('RankScene', data)
+    }
+    const yearCard = () => (year ? launch('year', begin) : begin())
+    if (month) launch('month', yearCard)
+    else yearCard()
   }
 
   private showMorningBanner(): void {
@@ -1023,13 +1053,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         const data: SummaryData = {
           sim: this.sim,
           firstDay: !this.sim.hintDone('summary'),
-          onNewDay: () => {
-            this.sim.markHint('summary')
-            this.sim.startDay()
-            this.showFloor(1)
-            this.session.saveNow()
-            this.showMorningBanner()
-          },
+          onNewDay: () => this.showRankCards(),
         }
         this.scene.launch('SummaryScene', data)
         return
