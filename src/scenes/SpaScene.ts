@@ -575,7 +575,8 @@ export class SpaScene extends Phaser.Scene {
     }
     const now = this.time.now
     const next = this.badgeQueue[0]
-    if (next === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
+    // nor while the first day's tour points at the top bar, where the card goes
+    if (next === undefined || this.tour.length > 0 || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
     this.badgeQueue.shift()
     this.badgeUntil = now + this.showCard(next)
   }

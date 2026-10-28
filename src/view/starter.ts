@@ -74,8 +74,10 @@ export function chainRows(sim: SpaSim): ChainRow[] {
     const parts: string[] = []
     if (STARTER_REWARD[goal] > 0) parts.push(`+${formatMoney(STARTER_REWARD[goal])}`)
     if (goal === 'serveMore') parts.push(t('goalMaskGiftShort'))
+    // a button is named while it is still locked, and on the done goal that opened it before its day
     const opens = STARTER_OPENS[goal]
-    if (opens) parts.push(t('goalOpens', { name: t(BUTTON_NAME[opens]) }))
+    const early = opens && (state === 'done' ? (sim.starter.opened[opens] ?? Infinity) < UNLOCK_DAY[opens] : !sim.featureOpen(opens))
+    if (opens && early) parts.push(t('goalOpens', { name: t(BUTTON_NAME[opens]) }))
     // the last goal opens the daily quests
     if (i === STARTER_GOAL_IDS.length - 1) parts.push(t('goalOpensDaily'))
     return { name: t(GOAL_NAME[goal]), state, have: state === 'done' ? need : have, need, detail: parts.join(' · ') }

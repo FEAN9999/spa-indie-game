@@ -63,6 +63,7 @@ describe('the starter chain list', () => {
   it('marks the done goals, the current one with its count, and later ones with what they give', () => {
     const sim = chainShop()
     sim.starter.at = STARTER_GOAL_IDS.indexOf('serveMore')
+    sim.starter.opened.build = 1
     sim.progress.total.served = 6
     const rows = chainRows(sim)
     expect(rows).toHaveLength(11)
@@ -71,6 +72,18 @@ describe('the starter chain list', () => {
     expect(rows[4]).toEqual({ name: 'Phục vụ 10 khách', state: 'current', have: 6, need: 10, detail: 'Quà: Đắp mặt nạ + 1 giường · Mở nút Dịch vụ' })
     expect(rows[7]).toMatchObject({ state: 'later', detail: '+50.000 đ · Mở nút Nhân viên' })
     expect(rows[10]).toMatchObject({ state: 'later', detail: '+100.000 đ · Mở nhiệm vụ mỗi ngày' })
+  })
+
+  it('names a button only while it is locked, or on the done goal that opened it early', () => {
+    const sim = chainShop()
+    sim.day = 2
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('serveFew')
+    expect(chainRows(sim)[2].detail).toBe('+30.000 đ')
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('buyDecor')
+    sim.starter.opened.build = 2
+    expect(chainRows(sim)[2].detail).toBe('+30.000 đ')
+    sim.starter.opened.build = 1
+    expect(chainRows(sim)[2].detail).toBe('+30.000 đ · Mở nút Xây dựng')
   })
 
   it('marks every goal done once the chain is', () => {
