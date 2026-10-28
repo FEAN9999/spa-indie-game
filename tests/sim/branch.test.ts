@@ -44,6 +44,40 @@ describe('the tourist and the kind lists', () => {
     expect(Math.abs(kinds.filter(k => k === 'tourist').length / 9000 - 5 / 9)).toBeLessThan(0.03)
   })
 
+  it('never draws a backpacker or a lady at the main shop', () => {
+    for (const picky of [1, 2]) {
+      const rng = createRng(3)
+      const kinds = new Set(Array.from({ length: 3000 }, () => drawKind(40, rng, picky)))
+      expect(kinds.has('backpacker')).toBe(false)
+      expect(kinds.has('lady')).toBe(false)
+    }
+  })
+
+  it("draws the old town's own kinds by weight", () => {
+    const rng = createRng(4)
+    const kinds = Array.from({ length: 9000 }, () => drawKind(40, rng, 1, PLACE_KINDS.oldTown))
+    expect(new Set(kinds)).toEqual(new Set(['backpacker', 'elder', 'student', 'picky']))
+    expect(Math.abs(kinds.filter(k => k === 'backpacker').length / 9000 - 4 / 9)).toBeLessThan(0.03)
+  })
+
+  it("draws the uptown's own kinds by weight", () => {
+    const rng = createRng(4)
+    const kinds = Array.from({ length: 9000 }, () => drawKind(40, rng, 1, PLACE_KINDS.uptown))
+    expect(new Set(kinds)).toEqual(new Set(['lady', 'office', 'picky']))
+    expect(Math.abs(kinds.filter(k => k === 'lady').length / 9000 - 4 / 9)).toBeLessThan(0.03)
+  })
+
+  it("gives a lady's two reviews to the branch, not the main shop or the guest book", () => {
+    const main = starShop()
+    const branch = SpaSim.newBranch('uptown', main, createRng(9))
+    const before = [branch.reviews.length, [...main.reviews]] as const
+    ownerServes(branch, 3, { kind: 'lady', service: 'shampoo' })
+    expect(branch.reviews.length).toBe(before[0] + 2)
+    expect(main.reviews).toEqual(before[1])
+    expect(Object.keys(branch.book.served)).toEqual([...MAIN_KINDS])
+    expect(branch.book.kindsMet).toEqual([])
+  })
+
   it('counts the five main kinds in the guest book and no tourist', () => {
     expect(MAIN_KINDS).toEqual(['student', 'office', 'picky', 'elder', 'celeb'])
     expect(kindRows(emptyBook()).map(r => r.kind)).toEqual(MAIN_KINDS)

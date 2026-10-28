@@ -44,6 +44,7 @@ import v19 from '../fixtures/save-v19.json'
 import v20 from '../fixtures/save-v20.json'
 import v21 from '../fixtures/save-v21.json'
 import v22 from '../fixtures/save-v22.json'
+import v23 from '../fixtures/save-v23.json'
 import { Chain } from '../../src/sim/chain'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, starShop, startService } from './helpers'
 
@@ -106,7 +107,7 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([23, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([24, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
@@ -247,7 +248,7 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 23', () => {
+  it('still leaves alone only saves newer than version 24', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 15 }).v).toBe(15)
     expect(parseSave({ ...good, v: 16 }).v).toBe(16)
@@ -258,7 +259,8 @@ describe('save version 3', () => {
     expect(parseSave({ ...good, v: 21 }).v).toBe(21)
     expect(parseSave({ ...good, v: 22 }).v).toBe(22)
     expect(parseSave({ ...good, v: 23 }).v).toBe(23)
-    expect(() => parseSave({ ...good, v: 24 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 24 }).v).toBe(24)
+    expect(() => parseSave({ ...good, v: 25 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -498,7 +500,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(23)
+    expect(copy.toSave().v).toBe(24)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -1046,7 +1048,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(23)
+    expect(saved.v).toBe(24)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1186,7 +1188,7 @@ describe('save version 16', () => {
   it('opens the v15 shop with no badge list, so its first load judges it as an old shop', () => {
     expect(parseSave(structuredClone(v15)).badges).toBeNull()
     expect(parseSave(structuredClone(v14)).badges).toBeNull()
-    expect(open(v15).toSave().v).toBe(23)
+    expect(open(v15).toSave().v).toBe(24)
   })
 
   it('still opens every older save', () => {
@@ -1448,7 +1450,7 @@ describe('save version 20', () => {
     expect(sim.outfitsSeen).toEqual(['baba'])
     expect(sim.rank.stars).toBe(2)
     expect(sim.rank.last?.day).toBe(28)
-    expect(sim.toSave().v).toBe(23)
+    expect(sim.toSave().v).toBe(24)
   })
 
   it('puts a locked or unknown outfit back to the bà ba', () => {
@@ -1491,7 +1493,7 @@ describe('save version 21', () => {
     expect(data.savedAt).toBeNull()
     expect(data.stats.ownerServed).toBe(0)
     expect(data.ownerOutfit).toBe('teal')
-    expect(open(v20).toSave().v).toBe(23)
+    expect(open(v20).toSave().v).toBe(24)
   })
 
   it('reads a save time that is not a number as none', () => {
@@ -1519,7 +1521,7 @@ describe('save version 22', () => {
     expect(sim.money).toBe(v21.money)
     expect(sim.drainEvents().some(e => e.type === 'goalDone')).toBe(false)
     expect(sim.questsButtonOpen()).toBe(true)
-    expect(sim.toSave().v).toBe(23)
+    expect(sim.toSave().v).toBe(24)
   })
 
   it('round-trips a shop mid-chain exactly, and pays no goal again on reload', () => {
@@ -1563,7 +1565,7 @@ describe('save version 23', () => {
     expect(data.place).toBeNull()
     expect(data.chain).toEqual({ at: null, told: false, branches: [] })
     expect([data.day, data.rank.stars, data.savedAt]).toEqual([29, 2, 1_793_000_000_000])
-    expect(open(v21).toSave().v).toBe(23)
+    expect(open(v21).toSave().v).toBe(24)
   })
 
   it('opens the v22 shop with no place and an empty chain, changing nothing else', () => {
@@ -1573,7 +1575,7 @@ describe('save version 23', () => {
     expect(chain).toEqual({ at: null, told: false, branches: [] })
     expect(rest).toEqual(v22)
     const saved = Chain.fromSave(data, 8).toSave()
-    expect([saved.v, saved.place, saved.chain]).toEqual([23, null, { at: null, told: false, branches: [] }])
+    expect([saved.v, saved.place, saved.chain]).toEqual([24, null, { at: null, told: false, branches: [] }])
     expect(saved.starter).toEqual(v22.starter)
     expect(saved.progress.life.record).toBeNull()
   })
@@ -1588,7 +1590,7 @@ describe('save version 23', () => {
     expect(sim.progress.life.record).toEqual({ day: 28, kind: 'profit' })
     expect(sim.drainEvents().some(e => e.type === 'goalDone')).toBe(false)
     const saved = new Chain(sim, 8).toSave()
-    expect([saved.v, saved.place, saved.chain]).toEqual([23, null, { at: null, told: false, branches: [] }])
+    expect([saved.v, saved.place, saved.chain]).toEqual([24, null, { at: null, told: false, branches: [] }])
     expect(saved.starter).toEqual(starter)
     expect(saved.progress.life.record).toEqual({ day: 28, kind: 'profit' })
   })
@@ -1696,5 +1698,44 @@ describe('save version 23', () => {
     const raw = chainJson()
     raw.chain = 7
     expect(parseSave(raw).chain).toEqual({ at: null, told: false, branches: [] })
+  })
+})
+
+describe('save version 24', () => {
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23 }
+
+  it('opens the v23 shop with its beach as it was', () => {
+    expect(parseSave(structuredClone(v23))).toEqual(v23)
+    const chain = Chain.fromSave(parseSave(structuredClone(v23)), 8)
+    expect(chain.at).toBe('beach')
+    expect(chain.branches.length).toBe(1)
+    expect(chain.shop('beach')!.staff.length).toBe(1)
+    expect(chain.main.money).toBe(v23.money)
+    expect(chain.toSave().v).toBe(24)
+  })
+
+  it('keeps the new kinds of a branch customer and reads an unknown one as office', () => {
+    const kindsBack = (kind: string) => {
+      const main = starShop(4, 14_000_000, 5)
+      const chain = new Chain(main, 8)
+      expect(chain.open('beach')).toBeNull()
+      const beach = chain.shop('beach')!
+      beach.spawnCustomer({ kind: 'tourist', service: 'shampoo' })
+      const raw = JSON.parse(JSON.stringify(chain.toSave()))
+      raw.chain.branches[0].customers[0].kind = kind
+      return Chain.fromSave(parseSave(raw), 8).shop('beach')!.customers[0].kind
+    }
+    expect([kindsBack('lady'), kindsBack('backpacker'), kindsBack('moon')]).toEqual(['lady', 'backpacker', 'office'])
+  })
+
+  it('opens every older save and saves it as 24', () => {
+    for (const [name, raw] of Object.entries(fixtures)) {
+      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
+      expect([name, saved.v]).toEqual([name, 24])
+    }
+  })
+
+  it('refuses a save newer than 24', () => {
+    expect(() => parseSave({ ...structuredClone(v23), v: 25 })).toThrow(SaveTooNewError)
   })
 })

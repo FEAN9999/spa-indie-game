@@ -136,3 +136,10 @@ describe("the rival's day", () => {
     expect(ratio).toBeLessThan(1.85)
   })
 })
+
+describe('the backpacker and the lady', () => {
+  it('are the two place-only kinds', () => {
+    expect(KINDS.backpacker).toEqual({ fromDay: 1, weight: 0, patience: 1.3, tip: [0.5, 1, 2], prefers: ['massage', 'steam', 'shampoo'], grading: 'normal', reviews: 1, speed: 5, hard: false })
+    expect(KINDS.lady).toEqual({ fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true })
+  })
+})
