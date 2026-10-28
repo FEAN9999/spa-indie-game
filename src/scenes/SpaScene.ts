@@ -32,6 +32,7 @@ import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/
 import { HandPointer } from '../view/HandPointer'
 import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
+import { questTitle } from '../view/quests'
 import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
@@ -139,6 +140,8 @@ export class SpaScene extends Phaser.Scene {
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
   /** Delay for the next "finished a course" or stairs toast this morning, so they follow the VIP-today toast and each other. */
   private studiedToastMs = 0
+  /** The scene time before which a queued toast may not go up, so finished quests follow each other and whatever was said just before. */
+  private toastQueueAt = 0
   /** What clearing an older shop's stairs spot did, held until no card, summary or mini-game covers the shop, so its toasts are seen. */
   private stairsNote: Extract<SimEvent, { type: 'stairsCleared' }> | null = null
   private patienceHintMs = 0
@@ -162,6 +165,7 @@ export class SpaScene extends Phaser.Scene {
     this.tooNew = false
     this.bannerOnResume = false
     this.stairsNote = null
+    this.toastQueueAt = 0
     this.tour = []
     this.patienceHintMs = 0
     this.regularHintMs = 0
@@ -418,6 +422,14 @@ export class SpaScene extends Phaser.Scene {
       },
     }
     this.scene.launch('QuestsScene', data)
+  }
+
+  /** Shows the toast once the one before it has had LATE_TOAST_MS on screen, after any toast already queued here. */
+  private queueToast(text: string): void {
+    const now = this.time.now
+    const at = Math.max(now, this.hud.lastToastAt + LATE_TOAST_MS, this.toastQueueAt)
+    this.toastQueueAt = at + LATE_TOAST_MS
+    this.time.delayedCall(at - now, () => this.hud.toast(text))
   }
 
   /** The held stairs note, a toast at a time after any morning toasts. */
@@ -826,6 +838,16 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'bedSlot':
         this.offerBed(e.slot)
         return
+      case 'questDone':
+        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
+        this.queueToast(t('questDoneToast', { name: questTitle(e.quest), money: formatMoney(e.quest.reward) }))
+        return
+      case 'monthStarted': {
+        const text = t('monthQuestToast', { month: e.month })
+        this.time.delayedCall(this.studiedToastMs, () => this.hud.toast(text))
+        this.studiedToastMs += LATE_TOAST_MS
+        return
+      }
       case 'dayEnded': {
         this.session.saveNow()
         const data: SummaryData = {
@@ -1033,11 +1055,16 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   private floatMoney(tile: Tile, amount: number): void {
     if (!this.room.onFloor(tile.y)) return
     const at = this.room.tileToWorld(tile)
+    this.floatMoneyAt(at.x, at.y - 130, amount, FX_DEPTH + 10)
+  }
+
+  /** A coin and "+money" centred on x, y that rises and fades. */
+  private floatMoneyAt(x: number, y: number, amount: number, depth: number): void {
     const label = this.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
     const width = 48 + 8 + label.width
     const coin = this.add.image(-width / 2 + 24, 0, 'coin')
     label.x = -width / 2 + 56
-    const box = this.add.container(at.x, at.y - 130, [coin, label]).setDepth(FX_DEPTH + 10)
+    const box = this.add.container(x, y, [coin, label]).setDepth(depth)
     this.tweens.add({ targets: box, y: box.y - 60, duration: 1000, ease: 'Cubic.easeOut' })
     this.tweens.add({ targets: box, alpha: 0, duration: 1000, ease: 'Cubic.easeIn', onComplete: () => box.destroy() })
   }

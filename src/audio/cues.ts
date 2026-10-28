@@ -21,7 +21,8 @@ export const SFX_THROTTLE_MS: Record<Sfx, number> = {
 export function cueFor(e: SimEvent): OneShot | null {
   switch (e.type) {
     case 'customerArrived': return 'chime'
-    case 'paid': return 'coin'
+    case 'paid':
+    case 'questDone': return 'coin'
     case 'customerLeft': return e.angry ? 'huff' : null
     case 'levelUp':
     case 'studied': return 'levelUp'

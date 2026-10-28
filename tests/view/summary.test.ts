@@ -46,4 +46,12 @@ describe('end-of-day rows', () => {
     expect(row(s, 'giftMoney')).toEqual({ label: 'giftMoney', value: 300000, kind: 'money' })
     expect(row(s, 'profit')?.value).toBe(750000)
   })
+
+  it('shows quest money after the gifts and in the profit, and no row on a day without any', () => {
+    const s = stats({ income: 400000, tips: 50000, gifts: 300000, quests: 90000 })
+    expect(labels(s)).toEqual(['served', 'leftUnhappy', 'summaryIn', 'income', 'tips', 'giftMoney', 'questReward', 'profit'])
+    expect(row(s, 'questReward')).toEqual({ label: 'questReward', value: 90000, kind: 'money' })
+    expect(row(s, 'profit')?.value).toBe(840000)
+    expect(labels(stats({ income: 400000 }))).not.toContain('questReward')
+  })
 })

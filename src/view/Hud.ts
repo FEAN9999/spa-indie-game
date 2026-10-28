@@ -67,6 +67,8 @@ export class Hud {
   private readonly clockStar: Phaser.GameObjects.Image
   private readonly plates: NavPlate[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
+  /** When the last toast went up, in scene time. */
+  lastToastAt = -Infinity
   private readonly book: Phaser.GameObjects.Container
   private readonly bookBadge: Phaser.GameObjects.Container
 
@@ -234,6 +236,7 @@ export class Hud {
   /** Replaces the toast on screen, if any; destroying one that already faded does nothing. */
   toast(text: string): void {
     this.toastBox?.destroy()
+    this.lastToastAt = this.scene.time.now
     this.toastBox = addToast(this.scene, GAME_W / 2, 1690, text).setDepth(DEPTH + 50)
   }
 }

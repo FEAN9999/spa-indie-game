@@ -379,6 +379,9 @@ export const vi = {
   questEarnMonth: 'Kiếm {money} trong tháng',
   questHeart: 'Cho 1 khách quen lên thêm 1 tim',
   questStudy: 'Cho 1 người đi học 1 khoá',
+  questDoneToast: 'Xong nhiệm vụ: {name} · +{money}',
+  monthQuestToast: 'Tháng {month}: có nhiệm vụ tháng mới',
+  questReward: 'Thưởng nhiệm vụ',
 } as const
 
 export type StringKey = keyof typeof vi

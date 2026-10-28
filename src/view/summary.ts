@@ -8,7 +8,7 @@ export interface SummaryRow {
   kind: 'count' | 'money' | 'heading'
 }
 
-/** The day's rows on the end-of-day card: guests, Thu, Chi (only when there was any) and the profit. */
+/** The day's rows on the end-of-day card: guests, Thu (gift and quest money only when there was any), Chi (only when there was any) and the profit. */
 export function summaryRows(stats: DayStats): SummaryRow[] {
   const rows: SummaryRow[] = [
     { label: 'served', value: stats.served, kind: 'count' },
@@ -18,6 +18,7 @@ export function summaryRows(stats: DayStats): SummaryRow[] {
     { label: 'tips', value: stats.tips, kind: 'money' },
   ]
   if (stats.gifts > 0) rows.push({ label: 'giftMoney', value: stats.gifts, kind: 'money' })
+  if (stats.quests > 0) rows.push({ label: 'questReward', value: stats.quests, kind: 'money' })
   if (stats.wages > 0 || stats.restock > 0) {
     rows.push({ label: 'summaryOut', value: 0, kind: 'heading' })
     if (stats.wages > 0) rows.push({ label: 'wages', value: -stats.wages, kind: 'money' })

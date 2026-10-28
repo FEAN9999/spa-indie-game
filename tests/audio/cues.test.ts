@@ -10,11 +10,13 @@ describe('sound cues', () => {
     expect(cueFor({ type: 'studied', staffId: 1, course: 'mask', level: 2 })).toBe('levelUp')
     expect(cueFor({ type: 'heart', customerId: 1, regular: 'hanh', hearts: 1, member: false })).toBe('star')
     expect(cueFor({ type: 'vipArrived', customerId: 1, vip: 'singer', first: true })).toBe('vip')
+    expect(cueFor({ type: 'questDone', quest: { kind: 'serve', period: 'day', service: null, target: 8, reward: 30000, base: 0, state: 'done' } })).toBe('coin')
   })
   it('stays quiet for a calm leave and other events', () => {
     expect(cueFor({ type: 'customerLeft', id: 1, angry: false })).toBeNull()
     expect(cueFor({ type: 'roomChanged' })).toBeNull()
     expect(cueFor({ type: 'stockLow', item: 'towel' })).toBeNull()
+    expect(cueFor({ type: 'monthStarted', month: 4 })).toBeNull()
   })
   it('throttles each sound on its own', () => {
     const th = new Throttle()
