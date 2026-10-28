@@ -363,6 +363,13 @@ describe('the power cut', () => {
     expect(copy.powerOut()).toBe(true)
   })
 
+  it('gives no hour-ahead warning once the shop has no machine left', () => {
+    const sim = powerDay()
+    sim.services = ['shampoo', 'mask', 'massage']
+    sim.clock.minutes = 770
+    expect(powerSaid(stepTo(sim, 1000))).toEqual([{ type: 'powerOff' }, { type: 'powerOn' }])
+  })
+
   it('says nothing on a day without a power cut', () => {
     const sim = powerDay(false)
     sim.clock.minutes = 770

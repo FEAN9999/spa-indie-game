@@ -1132,7 +1132,9 @@ export class SpaSim {
     // the power cut is told as the clock crosses each of its minutes, so a shop loaded mid-cut says nothing again
     if (plan?.kind === 'power' && plan.day === this.day) {
       const crossed = (m: number) => before < m && this.clock.minutes >= m
-      if (crossed(POWER_FROM_MIN - POWER_WARN_MIN)) this.emit({ type: 'powerWarn', machines: this.availableServices().filter(id => MACHINES.includes(id)) })
+      // the warning names the machines that will rest, so a shop that sold its last one since the announcement gets none
+      const machines = this.availableServices().filter(id => MACHINES.includes(id))
+      if (crossed(POWER_FROM_MIN - POWER_WARN_MIN) && machines.length > 0) this.emit({ type: 'powerWarn', machines })
       if (crossed(POWER_FROM_MIN)) this.emit({ type: 'powerOff' })
       if (crossed(POWER_TO_MIN)) this.emit({ type: 'powerOn' })
     }

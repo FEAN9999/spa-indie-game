@@ -34,11 +34,11 @@ const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
 const DARK = { color: 0x1e2440, alpha: 0.48 }
-/** The candles' places in tiles, the same on every floor: on the desk, on the tea table under the waiting bench, between the first two beds, by the stairs. */
+/** The candles' places in tiles, the same on every floor: on the desk, on the tea table under the waiting bench, in the corner by the first bed's foot, by the stairs. */
 const CANDLES = [
   { x: 9.5, y: 13.9 },
   { x: 4, y: 15.3 },
-  { x: 3.5, y: 3.6 },
+  { x: 1.5, y: 5.6 },
   { x: 11.2, y: 11.1 },
 ]
 /** How far over a machine's footprint its off mark sits, in tiles. */
