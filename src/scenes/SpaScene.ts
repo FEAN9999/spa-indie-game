@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
-import { C, customerColors, ownerColors } from '../art/palette'
+import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
 import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
@@ -56,6 +56,7 @@ import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
+import type { InspectData } from './InspectScene'
 import type { SummaryData } from './SummaryScene'
 
 const FX_DEPTH = 9000
@@ -160,6 +161,8 @@ export class SpaScene extends Phaser.Scene {
   private foundToast: string | null = null
   /** What clearing an older shop's stairs spot did, held until no card, summary or mini-game covers the shop, so its toasts are seen. */
   private stairsNote: Extract<SimEvent, { type: 'stairsCleared' }> | null = null
+  /** The inspection, held until nothing else is open or being played. */
+  private inspectNote: Extract<SimEvent, { type: 'inspected' }> | null = null
   private patienceHintMs = 0
   private regularHintMs = 0
   private vipHintMs = 0
@@ -181,6 +184,7 @@ export class SpaScene extends Phaser.Scene {
     this.tooNew = false
     this.bannerOnResume = false
     this.stairsNote = null
+    this.inspectNote = null
     this.toastQueueAt = 0
     this.badgeQueue = []
     this.badgeUntil = 0
@@ -529,6 +533,28 @@ export class SpaScene extends Phaser.Scene {
     }
   }
 
+  /** The inspector at the floor-1 door and the inspection card over the frozen shop; Xong pays out and lets the shop run again. */
+  private showInspection(): void {
+    const result = this.inspectNote!
+    this.inspectNote = null
+    this.modal = true
+    if (this.viewFloor !== 1) this.showFloor(1)
+    const door = this.room.tileToWorld(this.sim.grid.door)
+    const inspector = new CharacterView(this, inspectorColors())
+    inspector.container.setPosition(door.x, door.y).setDepth(door.y)
+    const data: InspectData = {
+      result,
+      onDone: () => {
+        inspector.container.destroy()
+        this.modal = false
+        if (result.reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, result.reward, HUD_DEPTH + 40)
+        if (result.cert) this.queueToast(t('certToast'))
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('InspectScene', data)
+  }
+
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
     const b = this.sim.vip.booking
@@ -663,6 +689,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
       if (low.length > 0) this.queueToast(stockLowText(low))
       if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
+      if (this.inspectNote && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
       this.pumpBadges()
     }
 
@@ -955,6 +982,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       case 'kolLeft':
         this.queueToast(t('kolLeftToast'))
+        return
+      case 'inspected':
+        this.inspectNote = e
         return
       case 'badgesFound':
         this.foundToast = t('badgesFoundToast', { n: e.n })
