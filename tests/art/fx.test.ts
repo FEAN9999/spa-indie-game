@@ -11,6 +11,9 @@ describe('fx art', () => {
     for (const item of STOCK_ITEMS) expect(fx[`stock-${item}`], item).toBeDefined()
   })
 
+  it("has the three event icons: Mi Mi's phone, the inspector's clipboard and the hot days' sparkle", () =>
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['event-phone', 'event-clip', 'event-spark'])))
+
   it('has the heart, card and book icons', () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['heart-full', 'heart-empty', 'icon-card', 'icon-book'])))
 

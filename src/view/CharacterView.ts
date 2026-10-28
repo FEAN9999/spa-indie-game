@@ -72,6 +72,12 @@ const VIP_WORN: Record<VipId, { key: string; on: 'body' | 'face' | 'hair' }[]> =
   chef: [{ key: 'chefHat', on: 'hair' }],
 }
 
+/** What an event's visitor holds, ahead of everything else worn; the face still comes from the kind. */
+const VISITOR_WORN: Record<NonNullable<CharacterColors['visitor']>, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
+  kol: [{ key: 'phone', on: 'body' }],
+  inspector: [{ key: 'clipboard', on: 'body' }],
+}
+
 /** A chibi built from tinted part textures and animated in code, with its feet at the container origin. */
 export class CharacterView {
   readonly container: Phaser.GameObjects.Container
@@ -116,7 +122,7 @@ export class CharacterView {
     const withLines = (imgs: Phaser.GameObjects.Image[]) => imgs.flatMap(img => [img, ...(this.lines.has(img) ? [this.lines.get(img)!] : [])])
     this.hairStyle = colors.hairStyle
     const wear = (on: 'body' | 'face' | 'hair') =>
-      (colors.vip ? VIP_WORN[colors.vip] : colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
+      (colors.visitor ? VISITOR_WORN[colors.visitor] : colors.vip ? VIP_WORN[colors.vip] : colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
         .filter(w => w.on === on)
         .map(w => {
           const img = part(`${w.key}-down`, 0, on === 'body' ? BODY_Y : HEAD_Y)

@@ -84,6 +84,8 @@ export const OWNER_SHIRT = [0x2f7d6e, 0x4e9a6b, 0xa8302a, 0x8a5634]
 /** Light teal, kept well away from every customer and owner shirt. */
 export const STAFF_SHIRT = 0x8fd3c1
 export const PANTS = 0x3b2b26
+/** The inspector's navy shirt, unlike any customer's, owner's or staff's. */
+export const INSPECTOR_SHIRT = 0x3d4a66
 /** An elder customer's grey hair. */
 export const ELDER_HAIR = 0xd8d2c8
 
@@ -99,20 +101,34 @@ export interface CharacterColors {
   regular?: RegularId
   /** The VIP a customer is, who wears her own things ahead of the regular's and the kind's. */
   vip?: VipId
+  /** An event's visitor, who holds her own thing ahead of everything else worn: Mi Mi's phone or the inspector's clipboard. */
+  visitor?: 'kol' | 'inspector'
 }
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
 }
 
-/** A customer's colors: their look, with an elder's hair grey, their kind, the regular they are and the VIP they are, if any. */
-export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null, vip: VipId | null = null): CharacterColors {
+/** A customer's colors: their look, with an elder's hair grey, their kind, the regular they are, the VIP they are, and Mi Mi's mark, if any. */
+export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null, vip: VipId | null = null, kol = false): CharacterColors {
   const colors = lookColors(look)
-  return { ...colors, hair: kind === 'elder' ? ELDER_HAIR : colors.hair, kind, ...(regular ? { regular } : {}), ...(vip ? { vip } : {}) }
+  return {
+    ...colors,
+    hair: kind === 'elder' ? ELDER_HAIR : colors.hair,
+    kind,
+    ...(regular ? { regular } : {}),
+    ...(vip ? { vip } : {}),
+    ...(kol ? { visitor: 'kol' as const } : {}),
+  }
 }
 
 export function ownerColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: OWNER_SHIRT[look.shirt] }
+}
+
+/** The hygiene inspector: dark hair in a bun and a navy shirt, with the clipboard. */
+export function inspectorColors(): CharacterColors {
+  return { skin: SKIN[1], hair: HAIR[0], hairStyle: 3, shirt: INSPECTOR_SHIRT, visitor: 'inspector' }
 }
 
 export function staffColors(look: Look): CharacterColors {

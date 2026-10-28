@@ -6,6 +6,7 @@ const HEART_PATH = 'M28,47 C14,38 5,29 5,19 C5,11 11,6 17.5,6 C22,6 26,9 28,13 C
 const OUTLINE = `stroke="${C.ink}" stroke-width="4" stroke-linejoin="round"`
 const INNER = `stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"`
 const ICON = `stroke="${C.ink}" stroke-width="2.6"`
+const EVENT = `stroke="${C.ink}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"`
 
 const bubble = (inner: string) =>
   svgDoc(
@@ -104,6 +105,19 @@ export function fxTextures(): Record<string, string> {
       `<g ${ICON}><circle cx="43" cy="22" r="7" fill="${C.mustard}"/><rect x="33" y="31" width="20" height="21" rx="9" fill="${C.mustard}"/>` +
         `<circle cx="23" cy="21" r="8" fill="${C.teal}"/><rect x="12" y="31" width="23" height="23" rx="10" fill="${C.teal}"/></g>`,
     ),
+    // the events' pictures, on their coloured discs: Mi Mi's phone with a video, the inspector's clipboard with a tick, the hot days' sparkle
+    'event-phone': svgDoc(
+      [-32, -32, 64, 64],
+      1,
+      `<g ${EVENT}><rect x="-13" y="-23" width="26" height="46" rx="5" fill="${C.cream}"/><path d="M-5,-8 L7,0 L-5,8Z" fill="${C.lotus}"/></g>`,
+    ),
+    'event-clip': svgDoc(
+      [-32, -32, 64, 64],
+      1,
+      `<g ${EVENT}><rect x="-17" y="-17" width="34" height="40" rx="4" fill="${C.cream}"/><rect x="-8" y="-23" width="16" height="10" rx="2" fill="${C.woodLight}"/>` +
+        `<path d="M-9,2 l6,6 l12,-12" fill="none" stroke="${C.teal}" stroke-width="5"/></g>`,
+    ),
+    'event-spark': svgDoc([-32, -32, 64, 64], 1, `<path d="M0,-22 Q3,-3 22,0 Q3,3 0,22 Q-3,3 -22,0 Q-3,-3 0,-22Z" fill="${C.cream}" ${EVENT}/>`),
     // one customer, for the "serve" quests
     'quest-guest': svgDoc([0, 0, 64, 64], 1, `<g ${ICON}><circle cx="32" cy="21" r="10" fill="${C.lotus}"/><rect x="17" y="34" width="30" height="22" rx="11" fill="${C.lotus}"/></g>`),
     'icon-services': svgDoc(

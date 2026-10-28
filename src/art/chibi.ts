@@ -436,6 +436,27 @@ const micPinSide: Part = {
     `<rect x="5.5" y="8.8" width="1.4" height="3.2" rx=".7" fill="${SILVER}" ${LINE}/>`,
 }
 
+// the event visitors, each holding a thing at the right hand: Mi Mi a dark phone in a pink case, the inspector a clipboard
+const SCREEN = '#3B2B26'
+const BOARD = '#8A5634'
+const phoneDown: Part = {
+  viewBox: body.viewBox,
+  body: `<rect x="3.2" y="8" width="4" height="6.2" rx="1" fill="${LOTUS}" ${LINE}/><rect x="3.9" y="8.8" width="2.6" height="4.4" rx=".4" fill="${SCREEN}"/>`,
+}
+const phoneSide: Part = {
+  viewBox: body.viewBox,
+  body: `<rect x="4.2" y="8" width="3" height="6" rx="1" fill="${LOTUS}" ${LINE}/><rect x="4.8" y="8.8" width="1.8" height="4.2" rx=".4" fill="${SCREEN}"/>`,
+}
+const clipboard = (x: number, w: number): Part => ({
+  viewBox: body.viewBox,
+  body:
+    `<rect x="${x}" y="7.4" width="${w}" height="7" rx=".8" fill="${BOARD}" ${LINE}/><rect x="${x + 0.7}" y="8.6" width="${w - 1.4}" height="5.2" fill="${CREAM}"/>` +
+    `<rect x="${x + w / 2 - 1.1}" y="6.8" width="2.2" height="1.4" rx=".4" fill="${SILVER}" ${LINE}/>` +
+    `<path d="M${x + 1.3},10.4 H${x + w - 1.3} M${x + 1.3},12 H${x + w - 1.3}" ${FINE}/>`,
+})
+const clipboardDown = clipboard(2.6, 5.4)
+const clipboardSide = clipboard(3.8, 4.4)
+
 // Ngân Sa: a small gold tiara with a red gem, and a cream sash with red edges across the chest
 const gem = (cx: number, cy: number) => `<path d="M${cx},${cy - 1.9} L${cx + 1.5},${cy} L${cx},${cy + 1.9} L${cx - 1.5},${cy}Z" fill="${RED}" ${LINE}/>`
 const tiara = (cx: number, w: number): Part => ({
@@ -553,6 +574,10 @@ const parts: Record<string, Part> = {
   'featherBoa-up': featherBoaUp,
   'micPin-down': micPinDown,
   'micPin-side': micPinSide,
+  'phone-down': phoneDown,
+  'phone-side': phoneSide,
+  'clipboard-down': clipboardDown,
+  'clipboard-side': clipboardSide,
   'tiara-down': tiaraDown,
   'tiara-side': tiaraSide,
   'tiara-up': tiaraUp,

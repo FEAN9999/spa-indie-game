@@ -986,7 +986,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip)),
+      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol)),
       bar: this.add.graphics(),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
@@ -1076,7 +1076,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     s.heart.setVisible(heart)
     if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge))
 
-    const star = c.vip !== null && !lying
+    const star = (c.vip !== null && !lying) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
     s.vipStar.setVisible(star)
     if (star) {
       const waiting = c.state === 'waiting'

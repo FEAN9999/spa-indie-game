@@ -85,6 +85,19 @@ describe('chibi and fx art', () => {
       }
   })
 
+  it("draws Mi Mi's phone and the inspector's clipboard from the front and the side, untinted", () => {
+    const keys = Object.keys(chibiTextures())
+    for (const part of ['phone', 'clipboard']) {
+      for (const side of ['down', 'side']) {
+        const key = `${part}-${side}`
+        expect(keys, key).toContain(key)
+        expect(keys, key).not.toContain(`${key}-line`)
+        expect(PART_ANCHORS[key], key).toBeDefined()
+      }
+      expect(keys).not.toContain(`${part}-up`)
+    }
+  })
+
   it('draws a badge for every service', () => {
     const fx = fxTextures()
     for (const id of SERVICE_IDS) expect(fx[`svc-${id}`], id).toBeDefined()
