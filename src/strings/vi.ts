@@ -497,6 +497,8 @@ export const vi = {
   kolArrivedToast: 'Mi Mi tới rồi · làm cho Mi Mi 3 sao nhé',
   kolPostedToast: 'Mi Mi khen hết lời',
   kolLeftToast: 'Mi Mi về rồi, không đăng bài',
+  rivalSignName: 'SPA MỚI',
+  rivalSignLine: 'Khai trương hôm nay',
   rivalBeatenHead: 'Giữ được khách · +{money}',
   rivalBeatenName: 'Khách vẫn chọn tiệm mình!',
   rivalBeatenLine: 'Spa Mới khai trương đông mấy cũng không lấy được khách quen.',

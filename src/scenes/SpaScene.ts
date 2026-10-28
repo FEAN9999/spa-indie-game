@@ -12,6 +12,7 @@ import { PROBLEM_TEXT } from '../sim/build'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
 import { monthOf } from '../sim/calendar'
+import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
@@ -19,7 +20,7 @@ import { ITEMS } from '../sim/items'
 import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
-import type { ServiceId } from '../sim/services'
+import { SERVICES, type ServiceId } from '../sim/services'
 import { SpaSim } from '../sim/spa'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
@@ -570,6 +571,12 @@ export class SpaScene extends Phaser.Scene {
     this.syncRoom()
   }
 
+  /** The top-centre tile of every machine bed, for its off mark while the power is out. */
+  private machineBeds(): Tile[] {
+    const kinds = MACHINES.map(id => SERVICES[id].bed)
+    return this.sim.items.filter(i => kinds.includes(i.kind)).map(i => ({ x: i.x + ITEMS[i.kind].w / 2, y: i.y }))
+  }
+
   /** The floor a customer is shown on: the street, where arrivals and leavers walk, counts as floor 1. */
   private floorOfCustomer(c: Customer): number {
     return this.streetPlacement(c) ? 1 : floorOf(c.pos.y)
@@ -725,6 +732,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
     this.room.setFestival(festivalOf(this.sim.day))
+    this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
+    this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.hud.update(this.modal)
     this.updateFloorBar()
     this.updatePointer(delta)

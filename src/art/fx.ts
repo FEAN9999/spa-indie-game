@@ -118,6 +118,31 @@ export function fxTextures(): Record<string, string> {
         `<path d="M-9,2 l6,6 l12,-12" fill="none" stroke="${C.teal}" stroke-width="5"/></g>`,
     ),
     'event-spark': svgDoc([-32, -32, 64, 64], 1, `<path d="M0,-22 Q3,-3 22,0 Q3,3 0,22 Q-3,3 -22,0 Q-3,-3 0,-22Z" fill="${C.cream}" ${EVENT}/>`),
+    // the rival's shop with its awning and door, and the power cut's bolt
+    'event-shop': svgDoc(
+      [-32, -32, 64, 64],
+      1,
+      `<g ${EVENT}><path d="M-19,-6 V22 H19 V-6Z" fill="${C.cream}"/><path d="M-23,-6 L-17,-21 H17 L23,-6Z" fill="${C.terracotta}"/><path d="M-6,22 V8 H6 V22Z" fill="${C.woodLight}"/></g>`,
+    ),
+    'event-bolt': svgDoc([-32, -32, 64, 64], 1, `<path d="M5,-24 L-13,3 H1 L-4,24 L14,-4 H0Z" fill="${C.cream}" ${EVENT}/>`),
+    // the power cut: a candle, the warm glow round it, and the off mark over an idle machine
+    'fx-candle': svgDoc(
+      [-10, -31, 20, 54],
+      1,
+      `<rect x="-7" y="-6" width="14" height="26" rx="3" fill="${C.cream}" stroke="${C.ink}" stroke-width="3"/><path d="M0,-8 q-6,-10 0,-20 q6,10 0,20" fill="${C.mustard}"/>`,
+    ),
+    'fx-glow': svgDoc(
+      [-110, -110, 220, 220],
+      1,
+      `<defs><radialGradient id="glow"><stop offset="0" stop-color="${C.glow}" stop-opacity="0.75"/><stop offset="1" stop-color="${C.glow}" stop-opacity="0"/></radialGradient></defs><circle r="110" fill="url(#glow)"/>`,
+    ),
+    'power-off': svgDoc(
+      [-38, -38, 76, 76],
+      1,
+      `<circle r="34" fill="${C.cream}" stroke="${C.ink}" stroke-width="4"/>` +
+        `<path d="M5,-24 L-13,3 H1 L-4,24 L14,-4 H0Z" transform="scale(0.8)" fill="none" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
+        `<path d="M-22,-22 L22,22" stroke="${C.terracotta}" stroke-width="7" stroke-linecap="round"/>`,
+    ),
     // one customer, for the "serve" quests
     'quest-guest': svgDoc([0, 0, 64, 64], 1, `<g ${ICON}><circle cx="32" cy="21" r="10" fill="${C.lotus}"/><rect x="17" y="34" width="30" height="22" rx="11" fill="${C.lotus}"/></g>`),
     'icon-services': svgDoc(

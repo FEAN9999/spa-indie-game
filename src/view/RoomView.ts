@@ -26,6 +26,21 @@ const ITEM_DEPTH_BIAS = -0.5
 /** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
 const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
 
+/** The rival's sign stands on floor 1's sidewalk right of the door; its centre in tiles, and its board in pixels. */
+const RIVAL_SIGN = { x: 10.92, y: 19.1, w: 300, h: 110, top: -60 }
+/** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
+const DARK_DEPTH = 5000
+const DARK = { color: 0x1e2440, alpha: 0.48 }
+/** The candles' places in tiles, the same on every floor: on the desk, by the waiting bench, between the first beds, by the stairs. */
+const CANDLES = [
+  { x: 9.5, y: 13.9 },
+  { x: 3.5, y: 12.6 },
+  { x: 4, y: 3.6 },
+  { x: 11.2, y: 11.1 },
+]
+/** How far over a machine's footprint its off mark sits, in tiles. */
+const OFF_MARK_LIFT = 0.3
+
 /** The stairs' top-left tile, where the 1 × 3 'stairs' texture goes; the rope hangs on its bottom tile. */
 const STAIRS_TILE = { x: 11, y: 7 }
 
@@ -57,6 +72,13 @@ export class RoomView {
   private festival: FestivalId | null = null
   private readonly bunting: Phaser.GameObjects.Graphics
   private readonly sign: Phaser.GameObjects.Text
+  private readonly rival: Phaser.GameObjects.Container
+  private rivalOn = false
+  private readonly dark: Phaser.GameObjects.Rectangle
+  private readonly candles: Phaser.GameObjects.Image[] = []
+  private offMarks: Phaser.GameObjects.Image[] = []
+  /** The power cut's floor and machine tiles as last drawn, or 'off', so a frame without a change draws nothing. */
+  private powerKey = ''
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -65,6 +87,14 @@ export class RoomView {
     this.room = scene.add.image(MAP_X, MAP_Y, 'room').setOrigin(0, 0).setDepth(0)
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
+    this.rival = this.rivalSign()
+    this.dark = scene.add.rectangle(MAP_X, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
+    for (const c of CANDLES) {
+      const at = { x: MAP_X + c.x * TILE, y: MAP_Y + c.y * TILE }
+      this.candles.push(scene.add.image(at.x, at.y, 'fx-glow').setDepth(DARK_DEPTH + 1).setVisible(false))
+      // the candle's texture has its 0,0 between the flame and the body, on the glow's centre
+      this.candles.push(scene.add.image(at.x, at.y, 'fx-candle').setOrigin(0.5, 31 / 54).setDepth(DARK_DEPTH + 2).setVisible(false))
+    }
     this.stairs = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y), 'stairs').setOrigin(0, 0).setDepth(PART_DEPTH).setVisible(false)
     // under whoever stands on the foot below it, over whoever is on the stairs
     this.rope = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y + 2), 'stairsRope').setOrigin(0, 0).setDepth(this.rowY(STAIRS_TILE.y + 3) + ITEM_DEPTH_BIAS).setVisible(false)
@@ -88,6 +118,41 @@ export class RoomView {
     this.stairs.setVisible(maxFloors > 1 && floor < 3)
     this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
     this.drawFestival()
+    this.rival.setVisible(this.rivalOn && floor === 1)
+  }
+
+  /** Stands the rival's SPA MỚI sign on floor 1's sidewalk, or takes it away. */
+  setRival(on: boolean): void {
+    this.rivalOn = on
+    this.rival.setVisible(on && this.floor === 1)
+  }
+
+  /** Darkens the room with four candles and marks each machine bed on the floor in view, given as its top-centre tile; or lights it again. */
+  setPowerOut(on: boolean, machineBeds: Tile[]): void {
+    const key = on ? `${this.floor}:${machineBeds.map(t => `${t.x},${t.y}`).join(' ')}` : 'off'
+    if (key === this.powerKey) return
+    this.powerKey = key
+    this.dark.setVisible(on)
+    for (const c of this.candles) c.setVisible(on)
+    for (const m of this.offMarks) m.destroy()
+    this.offMarks = on
+      ? machineBeds.filter(t => this.onFloor(t.y)).map(t => this.scene.add.image(MAP_X + t.x * TILE, this.rowY(t.y - OFF_MARK_LIFT), 'power-off').setDepth(DARK_DEPTH + 3))
+      : []
+  }
+
+  /** The sign: a cream board with the new shop's name over its opening, and two balloons on strings. */
+  private rivalSign(): Phaser.GameObjects.Container {
+    const { w, h } = RIVAL_SIGN
+    const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y)
+    const string = (side: number) => new Phaser.Curves.QuadraticBezier(v(128 * side, -30), v(140 * side, -90), v(118 * side, -110)).getPoints(12)
+    const g = this.scene.add.graphics().lineStyle(3, hex(C.ink)).strokePoints(string(-1)).strokePoints(string(1))
+    for (const [x, color] of [[-118, C.lotus], [118, C.water]] as const) g.fillStyle(hex(color), 1).fillEllipse(x, -128, 40, 48).lineStyle(3, hex(C.ink)).strokeEllipse(x, -128, 40, 48)
+    g.fillStyle(hex(C.cream), 1).fillRoundedRect(-w / 2, RIVAL_SIGN.top, w, h, 18).lineStyle(4, hex(C.ink)).strokeRoundedRect(-w / 2, RIVAL_SIGN.top, w, h, 18)
+    const name = this.scene.add.text(0, -26, t('rivalSignName'), textStyle(36, '800', C.terracotta)).setOrigin(0.5)
+    const line = this.scene.add.text(0, 18, t('rivalSignLine'), textStyle(24, '600', C.soft)).setOrigin(0.5)
+    const at = { x: MAP_X + RIVAL_SIGN.x * TILE, y: MAP_Y + RIVAL_SIGN.y * TILE }
+    // whoever walks the sidewalk passes behind it: its depth is the board's bottom
+    return this.scene.add.container(at.x, at.y, [g, name, line]).setDepth(at.y + RIVAL_SIGN.top + h).setVisible(false)
   }
 
   /** Hangs the festival's bunting on the walls and its sign on floor 1, or takes them down for null. */
