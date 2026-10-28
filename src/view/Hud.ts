@@ -4,6 +4,8 @@ import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
+import { placeName } from './chain'
+import { navX, type NavId } from './nav'
 import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
@@ -26,30 +28,27 @@ const TODAY = { y: 1690, h: 66, discR: 26, pad: 12, gap: 14, icon: 46 }
 const PLATE_R = 62
 /** Radius of the red low-stock dot: about 30 px across with its outline. */
 const DOT_R = 13
-const navX = (i: number) => 135 + i * 270
-/** The top of the build button's plate, where the hand points. */
-export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
-/** The top of the staff button's plate, where the hand points. */
-export const STAFF_PLATE_TOP = { x: navX(1), y: NAV_Y - PLATE_R }
-/** The top of the services button's plate, where the hand points. */
-export const SERVICES_PLATE_TOP = { x: navX(2), y: NAV_Y - PLATE_R }
-/** The top of the quests button's plate, where the hand points. */
-export const QUESTS_PLATE_TOP = { x: navX(3), y: NAV_Y - PLATE_R }
+/** Five plates are a little smaller, to fit the width; four are as they were. */
+const plateR = (n: number) => (n === 5 ? 56 : PLATE_R)
+/** The branch ribbon: its top and height; the pill is the text's width plus `pad`, with the pin at its left and the text 27 px right of centre. */
+const RIBBON = { y: 198, h: 64, font: 31, pad: 90, textX: 27, textW: 860 }
 
 /** The guest-book button, in the top bar's second row. */
 export const BOOK_BUTTON = { x: 870, y: 152 }
 const BOOK_R = 38
 
 /** Each button opens with its feature's day. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
-const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }[] = [
-  { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
-  { key: 'navStaff', icon: 'icon-staff', feature: 'staff', hint: 'openStaff' },
-  { key: 'navServices', icon: 'icon-services', feature: 'services', hint: 'openServices', later: { feature: 'stock', hint: 'openStock' } },
-  { key: 'navQuests', icon: 'icon-quests', feature: 'quests', hint: 'openQuests' },
-]
+const NAV: Record<NavId, { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }> = {
+  build: { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
+  staff: { key: 'navStaff', icon: 'icon-staff', feature: 'staff', hint: 'openStaff' },
+  services: { key: 'navServices', icon: 'icon-services', feature: 'services', hint: 'openServices', later: { feature: 'stock', hint: 'openStock' } },
+  quests: { key: 'navQuests', icon: 'icon-quests', feature: 'quests', hint: 'openQuests' },
+  chain: { key: 'navChain', icon: 'icon-chain', hint: 'openChain' },
+}
 const LOCKED_ALPHA = 0.45
 
 interface NavPlate {
+  id: NavId
   feature?: Feature
   hint?: HintId
   later?: { feature: Feature; hint: HintId }
@@ -59,6 +58,10 @@ interface NavPlate {
   badge: Phaser.GameObjects.Container | null
   /** The red dot: on the services plate while something runs low, on the quests plate while new quests wait. */
   dot: Phaser.GameObjects.Arc | null
+  /** Everything the plate is made of, to take it down when the row changes. */
+  parts: Phaser.GameObjects.GameObject[]
+  /** Where the hand points: the top of the plate. */
+  top: { x: number; y: number }
 }
 
 /** Top bar, pause button, bottom nav and toasts. Every element swallows its taps. */
@@ -69,7 +72,12 @@ export class Hud {
   private readonly dayTime: Phaser.GameObjects.Text
   /** The gold star after the time while a VIP's booking is near. */
   private readonly clockStar: Phaser.GameObjects.Image
-  private readonly plates: NavPlate[] = []
+  private plates: NavPlate[] = []
+  /** The buttons the bar was last built with. */
+  private navKey = ''
+  /** The branch ribbon, and the words it was drawn with. */
+  private ribbon: Phaser.GameObjects.Container | null = null
+  private ribbonKey = ''
   private toastBox: Phaser.GameObjects.Container | null = null
   /** When the last toast went up, in scene time. */
   lastToastAt = -Infinity
@@ -85,11 +93,13 @@ export class Hud {
     private readonly scene: Phaser.Scene,
     private readonly sim: SpaSim,
     onPause: () => void,
-    onBuild: () => void,
-    onStaff: () => void,
-    onServices: () => void,
+    private readonly onBuild: () => void,
+    private readonly onStaff: () => void,
+    private readonly onServices: () => void,
     onBook: () => void,
-    onQuests: () => void,
+    private readonly onQuests: () => void,
+    private readonly onChain: () => void,
+    private readonly nav: () => NavId[],
   ) {
     const add = scene.add
 
@@ -143,33 +153,59 @@ export class Hud {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(0, 1940, GAME_W, 260, 48)
     add.zone(0, 1940, GAME_W, 220).setOrigin(0).setInteractive().setDepth(DEPTH)
-    NAV.forEach((n, i) => {
-      const x = navX(i)
+    this.buildNav()
+  }
+
+  /** The hand's target on the plate `id`, or null while the bar has no such button. */
+  plateTop(id: NavId): { x: number; y: number } | null {
+    return this.plates.find(p => p.id === id)?.top ?? null
+  }
+
+  /** Builds the plates of the bar from the buttons `nav` gives: five a little smaller, four as they were. */
+  private buildNav(): void {
+    const add = this.scene.add
+    const ids = this.nav()
+    this.navKey = ids.join()
+    for (const p of this.plates) for (const o of p.parts) o.destroy()
+    this.plates = []
+    const n = ids.length
+    const r = plateR(n)
+    const step = GAME_W / n
+    ids.forEach((id, i) => {
+      const spec = NAV[id]
+      const x = navX(i, n)
+      const isChain = id === 'chain'
       const btn = add.container(x, NAV_Y).setDepth(DEPTH)
-      // a blue-and-white plate: cobalt double ring
-      btn.add(add.circle(0, 0, PLATE_R, hex(C.cream)).setStrokeStyle(5, hex(C.cobalt)))
-      btn.add(add.circle(0, 0, 52).setStrokeStyle(2, hex(C.cobalt)))
-      const icon = add.image(0, 0, n.icon).setScale(1.3)
+      // a blue-and-white plate: cobalt double ring; the chain's is pale gold with a mustard ring
+      btn.add(add.circle(0, 0, r, hex(isChain ? C.goldPale : C.cream)).setStrokeStyle(5, hex(isChain ? C.mustardDark : C.cobalt)))
+      if (!isChain) btn.add(add.circle(0, 0, r - 10).setStrokeStyle(2, hex(C.cobalt)))
+      const icon = add.image(0, 0, spec.icon).setScale(n === 5 ? 1.2 : 1.3)
       // a padlock on the plate's top-right while the feature waits for its day
-      const lock = add.image(44, -44, 'icon-lock')
+      const lock = add.image(r - 18, -(r - 18), 'icon-lock')
       btn.add([icon, lock])
       // and a red "Mới" on its top-left once it opens, until it is first used
-      const badge = n.hint ? this.badge() : null
-      if (badge) btn.add(badge)
+      const badge = spec.hint ? this.badge() : null
+      if (badge) {
+        badge.setPosition(-(r - 18), -(r - 18))
+        btn.add(badge)
+      }
       // and, on the services and quests plates, a red dot on the top-right
-      const dot = n.feature === 'services' || n.feature === 'quests' ? add.circle(44, -44, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
+      const dot = spec.feature === 'services' || spec.feature === 'quests' ? add.circle(r - 18, -(r - 18), DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
       if (dot) btn.add(dot)
-      const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
-      const feature = n.feature
+      const label = add.text(x, 2112, t(spec.key), textStyle(n === 5 ? 30 : 34, '600')).setOrigin(0.5).setDepth(DEPTH)
+      // a label never passes its plate's width
+      if (label.width > step - 16) label.setScale((step - 16) / label.width)
+      const feature = spec.feature
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
         sound.play('tap')
         if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
-        else if (feature === 'build') onBuild()
-        else if (feature === 'staff') onStaff()
-        else if (feature === 'services') onServices()
-        else onQuests()
+        else if (id === 'build') this.onBuild()
+        else if (id === 'staff') this.onStaff()
+        else if (id === 'services') this.onServices()
+        else if (id === 'chain') this.onChain()
+        else this.onQuests()
       })
-      this.plates.push({ feature, hint: n.hint, later: n.later, icon, label, lock, badge, dot })
+      this.plates.push({ id, feature, hint: spec.hint, later: spec.later, icon, label, lock, badge, dot, parts: [btn, label], top: { x, y: NAV_Y - r } })
     })
   }
 
@@ -186,7 +222,7 @@ export class Hud {
     if (this.money.style.color !== moneyColor) this.money.setColor(moneyColor)
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
-    this.dayTime.setText(dayTimeText(this.sim.day, this.sim.clock.label()))
+    this.dayTime.setText(dayTimeText(this.sim.day, this.sim.clock.label(), this.sim.place === null))
     this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
     this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.eventBook, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)
@@ -197,6 +233,9 @@ export class Hud {
     this.book.setVisible(this.sim.bookShown())
     this.bookBadge.setVisible(!this.sim.hintDone(this.sim.bookHint()))
     this.updateToday(covered)
+    // the evening the shop reaches 3 stars, or a switch of shops, changes the buttons
+    if (this.nav().join() !== this.navKey) this.buildNav()
+    this.updateRibbon()
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
       const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
@@ -208,6 +247,30 @@ export class Hud {
       p.badge?.setVisible(!locked && (fresh || freshLater))
       p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0))
     }
+  }
+
+  /** At a branch, a teal ribbon under the top bar names the shop and the place; a long shop name shrinks to fit. */
+  private updateRibbon(): void {
+    const place = this.sim.place
+    const key = place === null ? '' : `${this.sim.shopName}|${place}`
+    if (key === this.ribbonKey) return
+    this.ribbonKey = key
+    this.ribbon?.destroy()
+    this.ribbon = null
+    if (place === null) return
+    const add = this.scene.add
+    const label = add.text(0, 0, t('ribbonAt', { shop: this.sim.shopName, place: placeName(place) }), textStyle(RIBBON.font, '800', C.cream)).setOrigin(0.5)
+    if (label.width > RIBBON.textW) label.setScale(RIBBON.textW / label.width)
+    const w = label.displayWidth + RIBBON.pad
+    const bg = add
+      .graphics()
+      .fillStyle(hex(C.teal), 1)
+      .fillRoundedRect(-w / 2, 0, w, RIBBON.h, RIBBON.h / 2)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, 0, w, RIBBON.h, RIBBON.h / 2)
+    const pin = add.image(-w / 2 + 40, RIBBON.h / 2, 'icon-chain').setScale(0.7)
+    label.setPosition(RIBBON.textX, RIBBON.h / 2)
+    this.ribbon = add.container(GAME_W / 2, RIBBON.y, [bg, pin, label]).setDepth(DEPTH)
   }
 
   /** A lantern-red pill with "Mới", centred where the lock sits mirrored. */

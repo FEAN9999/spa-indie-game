@@ -42,7 +42,8 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
-import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { navIds, type NavId } from '../view/nav'
+import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
 import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
 import { addMedal } from '../view/medal'
@@ -265,7 +266,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests())
+    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
     this.floorBar = new FloorBar(this, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
@@ -651,6 +652,17 @@ export class SpaScene extends Phaser.Scene {
       },
     }
     this.scene.launch('GuestBookScene', data)
+  }
+
+  /** Marks the chain button as used. Task 8 opens the map from here. */
+  private openChainMap(): void {
+    this.chain.main.markHint('openChain')
+  }
+
+  /** The hand over a bottom-bar button, if the bar has it. */
+  private pointOnPlate(text: string, id: NavId): void {
+    const top = this.hud.plateTop(id)
+    if (top) this.pointer.show(text, top.x, top.y, 'down')
   }
 
   /** The quest panel over the frozen shop, opened only when build mode would be. */
@@ -1050,27 +1062,27 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
     const pick = pickHint(sim)
     if (pick?.hint === 'openBuild') {
-      this.pointer.show(t('hintBuild'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintBuild'), 'build')
       return
     }
     if (pick?.hint === 'openFloor') {
-      this.pointer.show(t('hintOpenFloor'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintOpenFloor'), 'build')
       return
     }
     if (pick?.hint === 'openStaff') {
-      this.pointer.show(t('hintStaff'), STAFF_PLATE_TOP.x, STAFF_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintStaff'), 'staff')
       return
     }
     if (pick?.hint === 'openServices') {
-      this.pointer.show(t('hintServices'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintServices'), 'services')
       return
     }
     if (pick?.hint === 'openStock') {
-      this.pointer.show(t('hintStock'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintStock'), 'services')
       return
     }
     if (pick?.hint === 'openQuests') {
-      this.pointer.show(t('hintQuests'), QUESTS_PLATE_TOP.x, QUESTS_PLATE_TOP.y, 'down')
+      this.pointOnPlate(t('hintQuests'), 'quests')
       return
     }
     if (pick?.hint === 'openBook') {

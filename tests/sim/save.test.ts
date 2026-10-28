@@ -149,6 +149,10 @@ describe('save version 2', () => {
     expect(() => parseSave({ ...good, shopName: 5 })).toThrow(SaveError)
   })
 
+  it('keeps the hint of the chain button', () => {
+    expect(parseSave({ ...busyShop().toSave(), hints: ['openChain'] }).hints).toEqual(['openChain'])
+  })
+
   it('tells a save from a newer version apart from other unknown versions', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(() => parseSave({ ...good, v: 99 })).toThrow(SaveTooNewError)

@@ -21,8 +21,8 @@ export function layoutTopBar(moneyW: number, ratingW: number): TopBarLayout {
   return { moneyScale, starX: starLeft + TOP_BAR.starW / 2, ratingX: starLeft + TOP_BAR.starW + GAP }
 }
 
-/** The top bar's second row: the day, the month, the festival if there is one, and the time. */
-export function dayTimeText(day: number, clock: string): string {
-  const festival = festivalOf(day)
+/** The top bar's second row: the day, the month, the festival if there is one (a branch has none), and the time. */
+export function dayTimeText(day: number, clock: string, festivals = true): string {
+  const festival = festivals ? festivalOf(day) : null
   return [t('dayLabel', { day }), t('monthLabel', { month: monthOf(day) }), ...(festival ? [t(FESTIVALS[festival].name)] : []), clock].join(' · ')
 }

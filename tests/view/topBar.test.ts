@@ -26,4 +26,9 @@ describe('the day and time line', () => {
     expect(dayTimeText(37, '08:06')).toBe('Ngày 37 · Tháng 1 · Tết · 08:06')
     expect(dayTimeText(46, '08:06')).toBe('Ngày 46 · Tháng 4 · 08:06')
   })
+
+  it('leaves the festival out at a branch, which has none', () => {
+    expect(dayTimeText(37, '08:06', false)).toBe('Ngày 37 · Tháng 1 · 08:06')
+    expect(dayTimeText(37, '08:06', true)).toBe('Ngày 37 · Tháng 1 · Tết · 08:06')
+  })
 })

@@ -108,6 +108,8 @@ export const vi = {
   navStaff: 'Nhân viên',
   navServices: 'Dịch vụ',
   navQuests: 'Nhiệm vụ',
+  navChain: 'Chuỗi',
+  ribbonAt: '{shop} · {place}',
   unlocksOn: 'Mở vào ngày {day}',
   createTitle: 'Tạo chủ tiệm',
   profileTitle: 'Chủ tiệm và tên tiệm',
