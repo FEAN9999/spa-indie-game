@@ -151,7 +151,7 @@ export type SimEvent =
   | { type: 'studied'; staffId: number; course: Course; level: number }
   /** A booked course taught nothing (already at the top), so the tuition went back to the till. */
   | { type: 'studyRefunded'; staffId: number; amount: number }
-  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' | 'busyStone' | 'busyMud' }
+  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' | 'busyStone' | 'busyMud' | 'powerWait' }
   /** An item reached the low-stock count, or ran out when a customer needed it. */
   | { type: 'stockLow'; item: StockItem }
   | { type: 'stockOut'; item: StockItem }
@@ -191,6 +191,10 @@ export type SimEvent =
     }
   /** The rival's challenge was met: enough 3-star customers today, with what it paid. */
   | { type: 'rivalBeaten'; reward: number }
+  /** An hour before the power cut, with the shop's services that will rest. */
+  | { type: 'powerWarn'; machines: ServiceId[] }
+  | { type: 'powerOff' }
+  | { type: 'powerOn' }
   /** A new month began with a new monthly quest. */
   /** `ended`: the festival whose quest the month just over left unfinished. */
   | { type: 'monthStarted'; month: number; ended: FestivalId | null }

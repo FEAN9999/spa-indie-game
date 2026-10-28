@@ -148,6 +148,7 @@ export const vi = {
   busySteam: 'Lều xông đang bận',
   busyStone: 'Giường đá đang bận',
   busyMud: 'Bồn bùn đang bận',
+  powerWait: 'Đang cúp điện, chờ có điện nhé',
   itemBench: 'Ghế chờ mây',
   itemPlant: 'Chậu cây',
   itemTea: 'Bàn trà',

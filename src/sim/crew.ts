@@ -299,7 +299,7 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
     if (s.path.length > 0) return
     const c = sim.customers.find(x => x.id === task.customerId)
     const station = c && sim.stations.find(x => x.customerId === null && x.service === c.service)
-    if (!c || c.state !== 'waiting' || !station || sim.missingStock(c.service)) {
+    if (!c || c.state !== 'waiting' || !station || sim.missingStock(c.service) || sim.machineDown(c.service)) {
       s.task = null
       return
     }
@@ -366,7 +366,7 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const vipHeld = sim.customers.filter(c => c.vip !== null && c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state)).map(c => c.service)
   const urgent = (c: Customer) => c.patienceMs < c.patienceMaxMs / 2
   const next = queue
-    .filter(c => !vipHeld.includes(c.service) && !heldFor(c) && hasRoom(c.service) && hasStock(c.service))
+    .filter(c => !vipHeld.includes(c.service) && !heldFor(c) && hasRoom(c.service) && hasStock(c.service) && !sim.machineDown(c.service))
     .sort((a, b) => Number(urgent(b)) - Number(urgent(a)) || (urgent(a) ? 0 : s.tiers[b.service] - s.tiers[a.service]) || b.stateMs - a.stateMs || a.id - b.id)[0]
   if (!next) return false
   const path = h.walkTo(s, besideSeat(sim.grid, next.seat!))

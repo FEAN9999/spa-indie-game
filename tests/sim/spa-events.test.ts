@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK, RIVAL_TARGET_MIN } from '../../src/config'
+import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK, POWER_FROM_MIN, POWER_TIP_FACTOR, RIVAL_TARGET_MIN } from '../../src/config'
 import { averageDay, baseReward, type DayRecord } from '../../src/sim/quests'
 import { parseSave } from '../../src/sim/save'
 import { reviewScore } from '../../src/sim/economy'
-import { KOL_LOOK, rivalTarget } from '../../src/sim/events'
+import { KOL_LOOK, MACHINES, powerOutAt, rivalTarget } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil, ownerServes, seatAndWait } from './helpers'
+import { REGULAR_IDS } from '../../src/sim/regulars'
+import { advanceUntil, hireStaff, ownerServes, seatAndWait } from './helpers'
 
 const opts = () => ({ rng: createRng(1), autoSpawn: false })
 
@@ -320,5 +321,157 @@ describe("the rival's day", () => {
     expect(rivalTarget([day(25)])).toBe(8)
     expect(rivalTarget([day(20), day(40)])).toBe(9)
     expect(rivalDay().rivalTarget()).toBe(rivalTarget(rivalDay().progress.recent))
+  })
+})
+
+describe('the power cut', () => {
+  /** A shop on day 20 with a Xông lá tent and a Đá nóng bed, whose power goes from 14:00 to 16:00 today. */
+  const powerDay = (power = true) =>
+    on(20, s => {
+      s.services = ['shampoo', 'mask', 'massage', 'steam', 'stone']
+      s.money = 5_000_000
+      expect(s.buy('steamTent', 8, 8, false)).toBeNull()
+      expect(s.buy('stoneBed', 4, 8, false)).toBeNull()
+      if (power) s.eventBook.plan = { kind: 'power', day: 20, minute: POWER_FROM_MIN }
+    })
+  /** Steps the shop until the clock reaches `minute`, keeping what it says. */
+  const stepTo = (sim: SpaSim, minute: number, events: SimEvent[] = []) => {
+    advanceUntil(sim, () => sim.clock.minutes >= minute, 400_000, events)
+    return [...events, ...sim.drainEvents()]
+  }
+  const toasts = (events: SimEvent[]) => ofType(events, 'toast').map(e => e.key)
+  const powerSaid = (events: SimEvent[]) => events.filter(e => e.type === 'powerWarn' || e.type === 'powerOff' || e.type === 'powerOn')
+
+  it('is out from 14:00 until 16:00 on its day only', () => {
+    const book = { ...on(20).eventBook, plan: { kind: 'power' as const, day: 20, minute: POWER_FROM_MIN } }
+    expect([839, 840, 959, 960].map(m => powerOutAt(book, 20, m))).toEqual([false, true, true, false])
+    expect(powerOutAt(book, 21, 900)).toBe(false)
+    expect(powerOutAt({ ...book, plan: { kind: 'inspect', day: 20, minute: 900 } }, 20, 900)).toBe(false)
+  })
+
+  it('says each power change once, and not again after a reload', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 770
+    const events = stepTo(sim, 1000)
+    expect(powerSaid(events)).toEqual([{ type: 'powerWarn', machines: ['steam', 'stone'] }, { type: 'powerOff' }, { type: 'powerOn' }])
+
+    const out = powerDay()
+    out.clock.minutes = 900
+    const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(out.toSave()))), opts())
+    expect(copy.powerOut()).toBe(true)
+    expect(powerSaid(stepTo(copy, 950))).toEqual([])
+    expect(copy.powerOut()).toBe(true)
+  })
+
+  it('says nothing on a day without a power cut', () => {
+    const sim = powerDay(false)
+    sim.clock.minutes = 770
+    expect(powerSaid(stepTo(sim, 1000))).toEqual([])
+    sim.clock.minutes = 900
+    expect(sim.powerOut()).toBe(false)
+  })
+
+  it('asks the owner to wait when she taps a customer of a machine', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 800
+    const c = seatAndWait(sim, { kind: 'office', service: 'steam' })
+    sim.clock.minutes = 845
+    sim.drainEvents()
+    sim.tapTile(c.seat!)
+    expect(toasts(sim.drainEvents())).toEqual(['powerWait'])
+    expect(sim.owner.task).toBeNull()
+  })
+
+  it("calls off the owner's fetch of a machine customer when the power goes on the way", () => {
+    const sim = powerDay()
+    sim.clock.minutes = 800
+    const c = seatAndWait(sim, { kind: 'office', service: 'steam' })
+    sim.clock.minutes = 839.9
+    sim.tapTile(c.seat!)
+    expect(sim.owner.task).toEqual({ kind: 'fetch', customerId: c.id })
+    const events: SimEvent[] = []
+    advanceUntil(sim, () => sim.owner.task === null, 120_000, events)
+    expect(sim.clock.minutes).toBeGreaterThanOrEqual(840)
+    expect(c.state).toBe('waiting')
+    expect(c.stationId).toBeNull()
+    expect(toasts([...events, ...sim.drainEvents()])).toContain('powerWait')
+  })
+
+  it('lets a technician pass over a machine customer for a hand service', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 800
+    const steam = seatAndWait(sim, { kind: 'office', service: 'steam' })
+    const shampoo = seatAndWait(sim, { kind: 'office', service: 'shampoo' })
+    sim.clock.minutes = 845
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.task !== null)
+    expect(tech.task).toMatchObject({ kind: 'fetch', customerId: shampoo.id })
+    advanceUntil(sim, () => shampoo.state === 'inService')
+    expect(steam.state).toBe('waiting')
+    expect(steam.stationId).toBeNull()
+  })
+
+  it("calls off a technician's fetch of a machine customer when the power goes on the way", () => {
+    const sim = powerDay()
+    sim.clock.minutes = 800
+    const steam = seatAndWait(sim, { kind: 'office', service: 'steam' })
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => tech.task !== null)
+    expect(tech.task).toMatchObject({ kind: 'fetch', customerId: steam.id })
+    expect(tech.path.length).toBeGreaterThan(0)
+    sim.clock.minutes = 839.9
+    stepTo(sim, 860)
+    expect(steam.state).toBe('waiting')
+    expect(steam.stationId).toBeNull()
+    expect(tech.task?.kind).not.toBe('serve')
+  })
+
+  it('finishes and pays a machine service already running when the power goes', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 800
+    const c = seatAndWait(sim, { kind: 'office', service: 'stone' })
+    const tech = hireStaff(sim, 'technician')
+    advanceUntil(sim, () => c.state === 'inService')
+    sim.clock.minutes = 845
+    const events: SimEvent[] = []
+    advanceUntil(sim, () => ofType(events, 'paid').length > 0, 400_000, events)
+    expect(ofType(events, 'paid')[0].customerId).toBe(c.id)
+    expect(sim.powerOut()).toBe(true)
+    expect(tech.task?.kind).not.toBe('serve')
+  })
+
+  it('new customers ask for a hand service while the power is out', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 900
+    const asked = [...REGULAR_IDS.map(regular => sim.spawnCustomer({ regular })), ...Array.from({ length: 200 }, () => sim.spawnCustomer())].map(c => c.service)
+    expect(asked.filter(s => MACHINES.includes(s))).toEqual([])
+    sim.clock.minutes = 970
+    const later = Array.from({ length: 200 }, () => sim.spawnCustomer().service)
+    expect(later.some(s => MACHINES.includes(s))).toBe(true)
+  })
+
+  it('keeps every waiting customer patient while it is out', () => {
+    const sim = powerDay()
+    sim.clock.minutes = 830
+    const c = seatAndWait(sim, { kind: 'office', service: 'shampoo' })
+    stepTo(sim, 845)
+    const patience = c.patienceMs
+    stepTo(sim, 950)
+    expect(c.patienceMs).toBe(patience)
+    sim.clock.minutes = 959
+    stepTo(sim, 962)
+    expect(c.patienceMs).toBeLessThan(patience)
+  })
+
+  it('tips half again for a service paid while it is out', () => {
+    const plain = powerDay(false)
+    plain.clock.minutes = 900
+    const { tip } = ownerServes(plain, 3, { kind: 'office', service: 'shampoo' })
+    expect(tip).toBeGreaterThan(0)
+    const out = powerDay()
+    out.clock.minutes = 900
+    expect(Math.abs(ownerServes(out, 3, { kind: 'office', service: 'shampoo' }).tip - tip * POWER_TIP_FACTOR)).toBeLessThanOrEqual(1)
+    out.clock.minutes = 970
+    expect(ownerServes(out, 3, { kind: 'office', service: 'shampoo' }).tip).toBe(tip)
   })
 })

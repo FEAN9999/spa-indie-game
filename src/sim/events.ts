@@ -1,4 +1,4 @@
-import { EVENT_FROM_DAY, EVENT_GAP_DAYS, HOT_DAYS, INSPECT_MIN, POWER_FROM_MIN, RIVAL_TARGET_MIN, RIVAL_TARGET_SHARE, VIP_FROM_MIN, VIP_TO_MIN } from '../config'
+import { EVENT_FROM_DAY, EVENT_GAP_DAYS, HOT_DAYS, INSPECT_MIN, POWER_FROM_MIN, POWER_TO_MIN, RIVAL_TARGET_MIN, RIVAL_TARGET_SHARE, VIP_FROM_MIN, VIP_TO_MIN } from '../config'
 import { festivalOf } from './festivals'
 import { averageDay, type DayRecord } from './quests'
 import type { Rng } from './rng'
@@ -82,6 +82,10 @@ export const hotDaysLeft = (book: EventBook, day: number): number => (hotOn(book
 
 /** True on the rival's opening day. */
 export const rivalToday = (book: EventBook, day: number): boolean => book.plan?.kind === 'rival' && book.plan.day === day
+
+/** True while the power is out: on a power-cut day, from POWER_FROM_MIN until POWER_TO_MIN. */
+export const powerOutAt = (book: EventBook, day: number, minutes: number): boolean =>
+  book.plan?.kind === 'power' && book.plan.day === day && minutes >= POWER_FROM_MIN && minutes < POWER_TO_MIN
 
 /** The rival's challenge: 3-star customers to serve, a share of an average recent day's customers, never under RIVAL_TARGET_MIN. */
 export const rivalTarget = (recent: DayRecord[]): number => Math.max(RIVAL_TARGET_MIN, Math.round(RIVAL_TARGET_SHARE * averageDay(recent).served))

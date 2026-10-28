@@ -22,6 +22,10 @@ import {
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
+  POWER_FROM_MIN,
+  POWER_TIP_FACTOR,
+  POWER_TO_MIN,
+  POWER_WARN_MIN,
   QUEST_MIN_LEFT_MIN,
   RATING_WINDOW,
   RECIPE_TRY_COST,
@@ -55,7 +59,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, rivalTarget, rivalToday, type EventBook } from './events'
+import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -293,6 +297,16 @@ export class SpaSim {
     return this.availableServices().some(id => MACHINES.includes(id))
   }
 
+  /** True while today's power cut is on. */
+  powerOut(): boolean {
+    return powerOutAt(this.eventBook, this.day, this.clock.minutes)
+  }
+
+  /** True when the service runs on power and the power is out: nobody new starts on it. */
+  machineDown(service: ServiceId): boolean {
+    return this.powerOut() && MACHINES.includes(service)
+  }
+
   /** True on the days after Mi Mi's 3 stars. */
   hotToday(): boolean {
     return hotOn(this.eventBook, this.day)
@@ -323,7 +337,7 @@ export class SpaSim {
     const kol = opts.kol === true
     const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : kol ? { ...KOL_LOOK } : randomLook(this.rng)
     const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng, rivalToday(this.eventBook, this.day) ? RIVAL_PICKY_FACTOR : 1))
-    const available = this.availableServices()
+    const available = this.availableServices().filter(id => !this.machineDown(id))
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
     // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
     // so a shop with one bed of it gets no queue that sends customers off angry
@@ -395,6 +409,10 @@ export class SpaSim {
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
     if (waiting) {
+      if (this.machineDown(waiting.service)) {
+        this.emit({ type: 'toast', key: 'powerWait' })
+        return
+      }
       const missing = this.missingStock(waiting.service)
       if (missing) {
         this.emit({ type: 'stockOut', item: missing })
@@ -444,7 +462,10 @@ export class SpaSim {
     const base = !c.vip && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
     const price = c.vip ? plain * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
-    const tip = Math.round(tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)))
+    // a customer served while the power is out tips half again
+    const tip = Math.round(
+      tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)) * (this.powerOut() ? POWER_TIP_FACTOR : 1),
+    )
     this.money += price + tip
     this.stats.income += price
     this.stats.tips += tip
@@ -1078,6 +1099,7 @@ export class SpaSim {
 
   private step(dt: number): void {
     if (this.paused || this.dayOver || this.servingCustomerId !== null) return
+    const before = this.clock.minutes
     this.clock.advance(dt)
 
     if (this.autoSpawn && !this.clock.isClosed) {
@@ -1107,6 +1129,13 @@ export class SpaSim {
     // the inspector looks round once, at the first step at or after the planned minute
     const plan = this.eventBook.plan
     if (!this.eventBook.inspected && plan?.kind === 'inspect' && plan.day === this.day && this.clock.minutes >= plan.minute) this.inspect()
+    // the power cut is told as the clock crosses each of its minutes, so a shop loaded mid-cut says nothing again
+    if (plan?.kind === 'power' && plan.day === this.day) {
+      const crossed = (m: number) => before < m && this.clock.minutes >= m
+      if (crossed(POWER_FROM_MIN - POWER_WARN_MIN)) this.emit({ type: 'powerWarn', machines: this.availableServices().filter(id => MACHINES.includes(id)) })
+      if (crossed(POWER_FROM_MIN)) this.emit({ type: 'powerOff' })
+      if (crossed(POWER_TO_MIN)) this.emit({ type: 'powerOn' })
+    }
 
     moveAlong(this.owner, OWNER_SPEED, dt)
     for (const s of this.staff) moveAlong(s, staffWalkSpeed(s), dt)
@@ -1139,7 +1168,8 @@ export class SpaSim {
         if (c.path.length === 0) this.setState(c, 'waiting')
         break
       case 'waiting':
-        c.patienceMs -= dt
+        // nobody loses patience while the power is out
+        if (!this.powerOut()) c.patienceMs -= dt
         // the owner's turn with a regular runs only while a bed of their service is free
         if (c.regular && this.stations.some(s => s.service === c.service && s.customerId === null)) c.heldMs += dt
         if (c.patienceMs <= 0) this.loseCustomer(c)
@@ -1179,6 +1209,11 @@ export class SpaSim {
       const missing = this.missingStock(c.service)
       if (missing) {
         this.emit({ type: 'stockOut', item: missing })
+        this.owner.task = null
+        return
+      }
+      if (this.machineDown(c.service)) {
+        this.emit({ type: 'toast', key: 'powerWait' })
         this.owner.task = null
         return
       }
