@@ -856,7 +856,7 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      expect([key, saved[key]]).toEqual([key, raw[key]])
+      expect([key, saved[key]]).toEqual([key, key === 'stats' ? { ...raw.stats, quests: 0 } : raw[key]])
     }
     expect(saved.v).toBe(SAVE_VERSION)
     expect(sim.recipes).toEqual(emptyRecipes())
@@ -874,7 +874,7 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      expect([key, saved[key]]).toEqual([key, raw[key]])
+      expect([key, saved[key]]).toEqual([key, key === 'stats' ? { ...raw.stats, quests: 0 } : raw[key]])
     }
     expect(saved.v).toBe(SAVE_VERSION)
     expect(saved.recipes.steam).toEqual(raw.recipes.steam)

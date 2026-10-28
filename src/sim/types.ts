@@ -112,6 +112,8 @@ export interface DayStats {
   restock: number
   /** Gift money from regulars today. */
   gifts: number
+  /** Quest rewards paid today. */
+  quests: number
 }
 
 export type SimEvent =

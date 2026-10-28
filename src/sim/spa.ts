@@ -37,6 +37,7 @@ import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
+import { emptyProgress, recordDay, type Counts, type Progress } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -57,7 +58,7 @@ export type StudyProblem = 'money' | 'booked' | 'course'
 /** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
 export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
-const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0 })
+const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0 })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. A step onto another floor is a climb: they stand on the foot for STAIRS_MS, then appear on the other foot. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
@@ -127,6 +128,8 @@ export class SpaSim {
   stock: Record<StockItem, number> = fullStock()
   /** What has been tried and heard for each recipe, and whether it is solved. */
   recipes: RecipeBook = emptyRecipes()
+  /** What the shop has counted, and its quests. */
+  progress: Progress = emptyProgress()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -373,6 +376,14 @@ export class SpaSim {
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
+    this.count(t => {
+      t.served++
+      t.earned += price + tip
+      t.tips += tip
+      t.services[c.service]++
+      if (technician) t.staff++
+      else if (stars === 3) t.owner3++
+    })
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && technician?.trait === 'calm' ? 'normal' : spec.grading))
     // a VIP has her own page in the book, not a place among the kinds served
@@ -382,7 +393,10 @@ export class SpaSim {
     } else noteServed(this.book, c.kind)
     if (c.regular) {
       const r = addVisit(this.book, c.regular, stars, technician === null, this.day)
-      if (r.hearts) this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
+      if (r.hearts) {
+        this.count(t => t.hearts++)
+        this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
+      }
       if (r.gift) {
         if (r.gift.kind === 'money') {
           this.money += r.gift.amount
@@ -551,6 +565,7 @@ export class SpaSim {
     startDay(this.crew)
     planDay(this.book, this.day, this.rng)
     clearStale(this.vip, this.day)
+    this.progress.dayStart = structuredClone(this.progress.total)
   }
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
@@ -575,7 +590,9 @@ export class SpaSim {
 
   /** Books a night course for the person: the tuition is taken now (not counted in the day's costs), and the tier or friendliness rises when the next day starts. */
   study(staffId: number, course: Course): StudyProblem | null {
-    return study(this.crew, staffId, course)
+    const problem = study(this.crew, staffId, course)
+    if (!problem) this.count(t => t.courses++)
+    return problem
   }
 
   /** How many floors the shop's layout has: one, or every floor of the tower when it has stairs. */
@@ -814,6 +831,7 @@ export class SpaSim {
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
       payWages(this.crew)
+      recordDay(this.progress, this.stats)
       // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
@@ -943,6 +961,7 @@ export class SpaSim {
     if (!seat && c.vip === null) {
       this.emit({ type: 'noSeat', id: c.id })
       this.stats.walkedAway++
+      this.count(t => t.lost++)
       this.startLeaving(c)
       return
     }
@@ -963,6 +982,7 @@ export class SpaSim {
     this.addReview(c, ANGRY_REVIEW)
     if (c.regular) loseVisit(this.book, c.regular)
     this.stats.angry++
+    this.count(t => t.lost++)
     this.startLeaving(c)
   }
 
@@ -992,6 +1012,11 @@ export class SpaSim {
   /** Tells the player every bed of the service is taken. */
   private emitBusy(id: ServiceId): void {
     this.emit({ type: 'toast', key: SERVICES[id].busy as Extract<SimEvent, { type: 'toast' }>['key'] })
+  }
+
+  /** Moves the running counts; every count goes through here. */
+  private count(apply: (t: Counts) => void): void {
+    apply(this.progress.total)
   }
 
   private emit(e: SimEvent): void {

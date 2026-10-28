@@ -11,6 +11,7 @@ const stats = (over: Partial<DayStats>): DayStats => ({
   wages: 0,
   restock: 0,
   gifts: 0,
+  quests: 0,
   ...over,
 })
 const labels = (s: DayStats) => summaryRows(s).map(r => r.label)

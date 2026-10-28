@@ -2,8 +2,12 @@ import { ARRIVAL_MAX_FACTOR, ARRIVAL_MIN_MS, BEAUTY_BASE, BEAUTY_MAX_SPEEDUP, BE
 
 import type { Grading } from './customers'
 import { isRecipeService, type ServiceId } from './services'
+import type { DayStats } from './types'
 
 export type Stars = 1 | 2 | 3
+
+/** What the day left in the till: everything that came in, less wages and restocking. */
+export const dayProfit = (s: DayStats): number => s.income + s.tips + s.gifts + s.quests - s.wages - s.restock
 
 export function tipFor(price: number, stars: Stars): number {
   return Math.round(price * TIP_RATE[stars])

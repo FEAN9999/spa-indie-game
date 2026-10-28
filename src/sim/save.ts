@@ -196,7 +196,7 @@ export function parseSave(raw: unknown): SaveData {
   // shops saved before version 12 have an empty recipe book; a recipe whose service is open is solved
   data.recipes = repairRecipes(data.recipes, data.services)
   data.items = data.items.map(({ gift, ...i }) => (typeof gift === 'boolean' ? { ...i, gift } : i))
-  data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0 }
+  data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0, quests: isNumber(data.stats.quests) ? data.stats.quests : 0 }
   climb(data.owner)
   data.customers.forEach(climb)
   data.staff.forEach(climb)

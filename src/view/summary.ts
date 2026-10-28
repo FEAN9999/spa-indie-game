@@ -1,3 +1,4 @@
+import { dayProfit } from '../sim/economy'
 import type { DayStats } from '../sim/types'
 import type { StringKey } from '../strings/vi'
 
@@ -22,6 +23,6 @@ export function summaryRows(stats: DayStats): SummaryRow[] {
     if (stats.wages > 0) rows.push({ label: 'wages', value: -stats.wages, kind: 'money' })
     if (stats.restock > 0) rows.push({ label: 'restockCost', value: -stats.restock, kind: 'money' })
   }
-  rows.push({ label: 'profit', value: stats.income + stats.tips + stats.gifts - stats.wages - stats.restock, kind: 'money' })
+  rows.push({ label: 'profit', value: dayProfit(stats), kind: 'money' })
   return rows
 }
