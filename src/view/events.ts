@@ -1,12 +1,13 @@
 import { C } from '../art/palette'
-import { INSPECT_BEAUTY, LOW_STOCK } from '../config'
+import { INSPECT_BEAUTY, LOW_STOCK, POWER_FROM_MIN, POWER_TO_MIN, POWER_WARN_MIN } from '../config'
 import { clockLabel } from '../sim/clock'
-import { hotDaysLeft, type EventKind, type EventPlan } from '../sim/events'
+import { hotDaysLeft, MACHINES, type EventKind, type EventPlan } from '../sim/events'
+import { SERVICES, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { STOCK_NAME } from '../sim/stock'
 import type { SimEvent } from '../sim/types'
 import { formatMoney } from '../strings/format'
-import { t } from '../strings/vi'
+import { t, type StringKey } from '../strings/vi'
 import type { GoldCard } from './festivals'
 import type { TodayLine } from './today'
 
@@ -19,22 +20,49 @@ export const EVENT_ICON: Record<EventKind | 'hot', { texture: string; disc: stri
   hot: { texture: 'event-spark', disc: C.mustard },
 }
 
-/** The summary's line for tomorrow's event. */
-export function eventNote(plan: EventPlan): string {
-  return t(plan.kind === 'kol' ? 'eventNoteKol' : 'eventNoteInspect', { time: clockLabel(plan.minute) })
+/** Each event's summary note, and its morning card's name and line. */
+const EVENT_TEXT: Record<EventKind, { note: StringKey; name: StringKey; line: StringKey }> = {
+  kol: { note: 'eventNoteKol', name: 'eventKolName', line: 'eventKolLine' },
+  inspect: { note: 'eventNoteInspect', name: 'eventInspectName', line: 'eventInspectLine' },
+  rival: { note: 'eventNoteRival', name: 'eventRivalName', line: 'eventRivalLine' },
+  power: { note: 'eventNotePower', name: 'eventPowerName', line: 'eventPowerLine' },
 }
 
-/** The quiet card on the morning of an event. */
-export function eventCard(plan: EventPlan): GoldCard {
-  const time = clockLabel(plan.minute)
-  const kol = plan.kind === 'kol'
+/** What the event texts fill in: the event's time, the rival's 3-star `target`, and the power cut's hours. */
+const eventParams = (plan: EventPlan, target: number) => ({
+  time: clockLabel(plan.minute),
+  n: target,
+  from: clockLabel(POWER_FROM_MIN),
+  to: clockLabel(POWER_TO_MIN),
+  hours: (POWER_TO_MIN - POWER_FROM_MIN) / 60,
+})
+
+/** The summary's line for tomorrow's event; `target` is the rival's 3-star count. */
+export function eventNote(plan: EventPlan, target: number): string {
+  return t(EVENT_TEXT[plan.kind].note, eventParams(plan, target))
+}
+
+/** The quiet card on the morning of an event; `target` is the rival's 3-star count. */
+export function eventCard(plan: EventPlan, target: number): GoldCard {
+  const text = EVENT_TEXT[plan.kind]
+  const params = eventParams(plan, target)
+  return { icon: EVENT_ICON[plan.kind], head: t('eventHead'), name: t(text.name, params), line: t(text.line, params), quiet: true }
+}
+
+/** The gold card when the rival's challenge is met. */
+export function rivalBeatenCard(e: Extract<SimEvent, { type: 'rivalBeaten' }>): GoldCard {
   return {
-    icon: EVENT_ICON[plan.kind],
-    head: t('eventHead'),
-    name: t(kol ? 'eventKolName' : 'eventInspectName'),
-    line: t(kol ? 'eventKolLine' : 'eventInspectLine', { time }),
-    quiet: true,
+    icon: { texture: 'heart-full', disc: C.lotus },
+    head: t('rivalBeatenHead', { money: formatMoney(e.reward) }),
+    name: t('rivalBeatenName'),
+    line: t('rivalBeatenLine'),
   }
+}
+
+/** The toast an hour before the power cut, naming the shop's machine services in lower case. */
+export function powerWarnText(machines: ServiceId[]): string {
+  const names = MACHINES.filter(id => machines.includes(id)).map(id => t(SERVICES[id].name).toLocaleLowerCase('vi'))
+  return t('powerWarnToast', { hours: POWER_WARN_MIN / 60, machines: names.join(', ') })
 }
 
 /** The quiet card on the first hot morning. */
@@ -42,12 +70,23 @@ export function hotCard(): GoldCard {
   return { icon: EVENT_ICON.hot, head: t('hotHead'), name: t('hotName'), line: t('hotLine'), quiet: true }
 }
 
-/** Today's line for an event: the inspection until done, then Mi Mi booked, in the shop, or none once she is on her way out. */
+/**
+ * Today's line for an event: the power cut until the power is back, the inspection until done, Mi Mi booked, in the shop,
+ * or none once she is on her way out, then the rival's count.
+ */
 export function eventLine(sim: SpaSim): TodayLine | null {
   const plan = sim.eventBook.plan?.day === sim.day ? sim.eventBook.plan : null
+  const to = clockLabel(POWER_TO_MIN)
+  if (plan?.kind === 'power' && sim.clock.minutes < POWER_FROM_MIN) return { icon: EVENT_ICON.power, text: t('eventPowerName', { from: clockLabel(POWER_FROM_MIN), to }) }
+  if (sim.powerOut()) return { icon: EVENT_ICON.power, text: t('todayPowerOut', { to }) }
   if (plan?.kind === 'inspect' && !sim.eventBook.inspected) return { icon: EVENT_ICON.inspect, text: t('todayInspect', { time: clockLabel(plan.minute) }) }
   if (plan?.kind === 'kol') return { icon: EVENT_ICON.kol, text: t('todayKol', { time: clockLabel(plan.minute) }) }
   if (sim.customers.some(c => c.kol && c.state !== 'leaving' && c.state !== 'exiting')) return { icon: EVENT_ICON.kol, text: t('todayKolHere') }
+  if (plan?.kind === 'rival') {
+    const target = sim.rivalTarget()
+    const n = sim.eventBook.count
+    return { icon: EVENT_ICON.rival, text: n >= target ? t('todayRivalDone') : t('todayRival', { n, target }) }
+  }
   return null
 }
 

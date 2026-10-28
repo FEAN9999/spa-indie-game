@@ -22,14 +22,14 @@ export function bookingText(key: 'vipBookingNote' | 'vipTodayToast', b: Booking)
  * The notes under the summary rows, the booking's and the event's marked: the first day's note, tomorrow's booking,
  * the VIP reminder until the VIP hint is done, then tomorrow's event (never on a VIP's day).
  */
-export function summaryNotes(firstDay: boolean, vip: VipBook, events: EventBook, day: number, vipHintDone: boolean): { text: string; booking: boolean }[] {
+export function summaryNotes(firstDay: boolean, vip: VipBook, events: EventBook, day: number, vipHintDone: boolean, rivalTarget: number): { text: string; booking: boolean }[] {
   const notes: { text: string; booking: boolean }[] = []
   if (firstDay) notes.push({ text: t('summaryFirstDay'), booking: false })
   if (vip.booking?.day === day + 1) {
     notes.push({ text: bookingText('vipBookingNote', vip.booking), booking: true })
     if (!vipHintDone) notes.push({ text: t('vipFirstNote'), booking: false })
   }
-  if (events.plan?.day === day + 1) notes.push({ text: eventNote(events.plan), booking: true })
+  if (events.plan?.day === day + 1) notes.push({ text: eventNote(events.plan, rivalTarget), booking: true })
   return notes
 }
 

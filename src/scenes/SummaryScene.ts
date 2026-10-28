@@ -50,7 +50,7 @@ export class SummaryScene extends Phaser.Scene {
     ]
     const heights = rows.map(row => (row.kind === 'heading' ? HEADING_H : ROW_H))
     const rowsEnd = ROW_Y + heights.reduce((sum, h) => sum + h, 0)
-    const notes = summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'))
+    const notes = summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())
     // each note is its own text, stacked under the rows; the button goes under their measured height, so they are drawn before the card (depth 1 keeps them above it)
     let noteBottom = rowsEnd + 20
     for (const note of notes) {

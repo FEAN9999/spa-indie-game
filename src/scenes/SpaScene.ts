@@ -35,7 +35,7 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
-import { eventCard, hotCard } from '../view/events'
+import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
 import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
@@ -970,7 +970,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.badgeQueue.push(festivalDoneCard(e))
         return
       case 'eventToday':
-        this.badgeQueue.push(eventCard(e.plan))
+        this.badgeQueue.push(eventCard(e.plan, this.sim.rivalTarget()))
         return
       case 'hotStarted':
         this.badgeQueue.push(hotCard())
@@ -986,6 +986,19 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       case 'inspected':
         this.inspectNote = e
+        return
+      case 'rivalBeaten':
+        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
+        this.badgeQueue.push(rivalBeatenCard(e))
+        return
+      case 'powerWarn':
+        this.queueToast(powerWarnText(e.machines))
+        return
+      case 'powerOff':
+        this.queueToast(t('powerOffToast'))
+        return
+      case 'powerOn':
+        this.queueToast(t('powerOnToast'))
         return
       case 'badgesFound':
         this.foundToast = t('badgesFoundToast', { n: e.n })

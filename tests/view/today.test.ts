@@ -39,6 +39,28 @@ describe("today's line", () => {
     expect(todayLine(sim)).toBeNull()
   })
 
+  it('tells the power cut before and during, then nothing, ahead of a hot day', () => {
+    const sim = on(13, s => {
+      s.eventBook.plan = { kind: 'power', day: 13, minute: 840 }
+      s.eventBook.hotUntil = 13
+    })
+    sim.clock.minutes = 839
+    expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.power, text: 'Cúp điện 14:00 – 16:00' })
+    sim.clock.minutes = 900
+    expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.power, text: 'Đang cúp điện · có lại lúc 16:00' })
+    sim.clock.minutes = 960
+    expect(todayLine(sim)?.icon).toEqual(EVENT_ICON.hot)
+  })
+
+  it("counts the rival's 3-star customers, then says they were kept", () => {
+    const sim = on(13, s => (s.eventBook.plan = { kind: 'rival', day: 13, minute: 0 }))
+    const target = sim.rivalTarget()
+    sim.eventBook.count = 2
+    expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.rival, text: `Giữ khách · 2/${target} khách 3 sao` })
+    sim.eventBook.count = target
+    expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.rival, text: 'Đã giữ được khách' })
+  })
+
   it('counts the hot days down', () => {
     const hot = (s: SpaSim) => (s.eventBook.hotUntil = 14)
     expect(todayLine(on(13, hot))).toEqual({ icon: EVENT_ICON.hot, text: 'Đang hot · còn 2 ngày' })

@@ -1,10 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
+import { C } from '../../src/art/palette'
 import { VIP_WARN_MIN } from '../../src/config'
 import { emptyEventBook, type EventBook, type EventPlan } from '../../src/sim/events'
 import type { SimEvent } from '../../src/sim/types'
 import { emptyVipBook } from '../../src/sim/vips'
 import { formatMoney } from '../../src/strings/format'
-import { EVENT_ICON, eventCard, eventNote, hotCard, inspectResult, inspectRows } from '../../src/view/events'
+import { t } from '../../src/strings/vi'
+import { EVENT_ICON, eventCard, eventNote, hotCard, inspectResult, inspectRows, powerWarnText, rivalBeatenCard } from '../../src/view/events'
 import { festivalStartCard } from '../../src/view/festivals'
 import { clockStar, summaryNotes } from '../../src/view/vip'
 
@@ -13,17 +15,22 @@ vi.mock('phaser', () => ({}))
 
 const kol: EventPlan = { kind: 'kol', day: 13, minute: 870 }
 const inspect: EventPlan = { kind: 'inspect', day: 13, minute: 900 }
+const rival: EventPlan = { kind: 'rival', day: 13, minute: 0 }
+const power: EventPlan = { kind: 'power', day: 13, minute: 840 }
 const withPlan = (plan: EventPlan): EventBook => ({ ...emptyEventBook(), plan })
 
 describe("tomorrow's event on the summary", () => {
   it('says what comes, and when', () => {
-    expect(eventNote(kol)).toBe('Ngày mai: KOL Mi Mi ghé review lúc 14:30 · được 3 sao thì 2 ngày sau khách đông hơn.')
-    expect(eventNote(inspect)).toBe('Ngày mai: Thanh tra vệ sinh ghé khoảng 15:00 · xem kho, khách bỏ về và độ gọn đẹp.')
+    expect(eventNote(kol, 4)).toBe('Ngày mai: KOL Mi Mi ghé review lúc 14:30 · được 3 sao thì 2 ngày sau khách đông hơn.')
+    expect(eventNote(inspect, 4)).toBe('Ngày mai: Thanh tra vệ sinh ghé khoảng 15:00 · xem kho, khách bỏ về và độ gọn đẹp.')
+    expect(eventNote(rival, 5)).toBe('Ngày mai: Spa Mới khai trương sát bên · khách khó tính ghé nhiều gấp đôi. Làm 5 khách 3 sao là giữ được khách.')
+    expect(eventNote(power, 4)).toBe('Ngày mai: Cúp điện 14:00 – 16:00 · máy nghỉ 2 tiếng.')
   })
 
   it('is a marked note the day before only', () => {
-    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 12, true)).toEqual([{ text: eventNote(kol), booking: true }])
-    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 13, true)).toEqual([])
+    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 12, true, 4)).toEqual([{ text: eventNote(kol, 4), booking: true }])
+    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 13, true, 4)).toEqual([])
+    expect(summaryNotes(false, emptyVipBook(), withPlan(rival), 12, true, 7)).toEqual([{ text: eventNote(rival, 7), booking: true }])
   })
 })
 
@@ -38,18 +45,41 @@ describe("the clock star for Mi Mi", () => {
 
 describe('event cards', () => {
   it("tells the morning's event, quietly", () => {
-    expect(eventCard(kol)).toEqual({
+    expect(eventCard(kol, 4)).toEqual({
       icon: EVENT_ICON.kol,
       head: 'Hôm nay',
       name: 'KOL Mi Mi ghé review',
       line: 'Hẹn 14:30. Làm cho Mi Mi được 3 sao thì 2 ngày sau khách đông hơn.',
       quiet: true,
     })
-    expect(eventCard(inspect)).toMatchObject({
+    expect(eventCard(inspect, 4)).toMatchObject({
       icon: EVENT_ICON.inspect,
       name: 'Thanh tra vệ sinh ghé',
       line: 'Khoảng 15:00. Xem kho, khách bỏ về và độ gọn đẹp. Đạt có thưởng, chưa đạt không phạt.',
       quiet: true,
+    })
+    expect(eventCard(rival, 6)).toEqual({
+      icon: EVENT_ICON.rival,
+      head: 'Hôm nay',
+      name: 'Spa Mới khai trương sát bên',
+      line: 'Khách khó tính ghé nhiều gấp đôi để so hai tiệm. Làm 6 khách 3 sao là giữ được khách, có thưởng.',
+      quiet: true,
+    })
+    expect(eventCard(power, 4)).toEqual({
+      icon: EVENT_ICON.power,
+      head: 'Hôm nay',
+      name: 'Cúp điện 14:00 – 16:00',
+      line: 'Máy nghỉ 2 tiếng. Khách đang chờ không sốt ruột, khách làm tay tip gấp rưỡi.',
+      quiet: true,
+    })
+  })
+
+  it('cheers the rival beaten, out loud', () => {
+    expect(rivalBeatenCard({ type: 'rivalBeaten', reward: 456_000 })).toEqual({
+      icon: { texture: 'heart-full', disc: C.lotus },
+      head: `Giữ được khách · +${formatMoney(456_000)}`,
+      name: 'Khách vẫn chọn tiệm mình!',
+      line: 'Spa Mới khai trương đông mấy cũng không lấy được khách quen.',
     })
   })
 
@@ -100,5 +130,18 @@ describe('the inspection card', () => {
     expect(inspectResult(failed({ stock: false, calm: false }))).toEqual({ ok: false, head: 'Chưa đạt · không bị phạt', line: 'Lần sau nhớ nhập thêm hàng trước giờ hẹn nhé' })
     expect(inspectResult(failed({ calm: false })).line).toBe('Lần sau để ý khách đang chờ nhé')
     expect(inspectResult(failed({ tidy: false })).line).toBe('Lần sau thêm cây, tranh cho tiệm đẹp hơn nhé')
+  })
+})
+
+describe('the power cut toasts', () => {
+  it("names the shop's machines an hour before, lower case and in order", () => {
+    expect(powerWarnText(['steam', 'stone'])).toBe('1 tiếng nữa cúp điện · máy xông lá, đá nóng sẽ nghỉ')
+    expect(powerWarnText(['mud', 'steam'])).toBe('1 tiếng nữa cúp điện · máy xông lá, tắm bùn sẽ nghỉ')
+  })
+
+  it('says when it goes, when it comes back, and asks to wait', () => {
+    expect(t('powerOffToast')).toBe('Cúp điện rồi · gội đầu, mặt nạ, massage vẫn làm được')
+    expect(t('powerOnToast')).toBe('Có điện lại rồi')
+    expect(t('powerWait')).toBe('Đang cúp điện, chờ có điện nhé')
   })
 })
