@@ -324,3 +324,18 @@ export const CLEAN_DAY_MIN_SERVED = 15
 export const BADGE_GOALS = { served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
 /** How long the gold banner for a new badge stays on screen. */
 export const BADGE_BANNER_MS = 3000
+
+/** Festivals start on this day, with the quests, so the first days stay for learning. */
+export const FESTIVAL_FROM_DAY = 8
+/** In a festival month the gap between two customers is this much of the usual one. */
+export const FESTIVAL_ARRIVAL = 0.8
+/** In a festival month a new customer (not a VIP) waits this much longer. */
+export const FESTIVAL_PATIENCE = 1.2
+/** The share of plain new customers who ask for the festival service. */
+export const FESTIVAL_SERVICE_CHANCE = 0.5
+/** The festival service costs this much more in its month, for all but VIPs. */
+export const FESTIVAL_PRICE = 1.2
+/** A festival quest's target against the shop's "serve N customers this month" target. */
+export const FESTIVAL_QUEST_SHARE = 0.5
+/** Each festival keepsake's beauty. */
+export const KEEPSAKE_BEAUTY = 5
