@@ -28,7 +28,7 @@ describe('furniture art', () => {
   })
 
   it('draws each gift piece as wide as its footprint, as a picture of its own', () => {
-    const gifts: ItemKind[] = ['vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard', ...KEEPSAKES]
+    const gifts: ItemKind[] = ['vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard', 'certificate', 'trophy', 'merit', ...KEEPSAKES]
     for (const kind of gifts) {
       const key = itemTexture(kind)
       expect(key).toBe(`decor-${kind}`)

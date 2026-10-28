@@ -630,6 +630,27 @@ const certificate = keepsake(
     `<circle cx="26" cy="-60" r="8" fill="${C.lantern}" ${ks3}/>`,
 )
 
+// cúp vàng: a gold cup with two handles and a cream star on a dark wooden base, scaled to stay near its tile
+const trophy = keepsake(
+  `<g transform="scale(0.7)"><rect x="-34" y="-30" width="68" height="30" rx="6" fill="${C.woodDark}" ${ks}/>` +
+    `<rect x="-22" y="-44" width="44" height="16" rx="4" fill="${C.gold}" ${ks}/>` +
+    `<path d="M-8,-44 V-62 H8 V-44" fill="${C.gold}" ${ks}/>` +
+    `<path d="M-36,-124 Q-60,-124 -54,-100 Q-48,-84 -24,-82 M36,-124 Q60,-124 54,-100 Q48,-84 24,-82" fill="none" stroke="${C.ink}" stroke-width="13" stroke-linecap="round"/>` +
+    `<path d="M-36,-124 Q-60,-124 -54,-100 Q-48,-84 -24,-82 M36,-124 Q60,-124 54,-100 Q48,-84 24,-82" fill="none" stroke="${C.gold}" stroke-width="6" stroke-linecap="round"/>` +
+    `<path d="M-40,-136 H40 V-112 Q40,-62 0,-62 Q-40,-62 -40,-112Z" fill="${C.gold}" ${ks}/>` +
+    `<path d="M-28,-128 V-110 Q-28,-90 -16,-80" fill="none" stroke="${C.cream}" stroke-width="5" stroke-linecap="round" opacity="0.7"/>` +
+    `<path d="${starPath(0, -106, 17, 7.5)}" fill="${C.cream}" ${ks3}/></g>`,
+)
+
+// bằng khen: a wide framed certificate on a stand with writing and a silver seal, scaled to stay inside its tile
+const merit = keepsake(
+  `<g transform="scale(0.8)"><path d="M-24,0 L-12,-46 M24,0 L12,-46" stroke="${C.woodDark}" stroke-width="6" stroke-linecap="round"/>` +
+    `<rect x="-62" y="-150" width="124" height="104" rx="8" fill="${C.woodLight}" ${ks}/>` +
+    `<rect x="-50" y="-138" width="100" height="80" rx="4" fill="${C.paper}" stroke="${C.lantern}" stroke-width="3"/>` +
+    `<path d="M-34,-118 H34 M-34,-102 H20 M-34,-86 H10" stroke="${C.soft}" stroke-width="4"/>` +
+    `<circle cx="32" cy="-74" r="14" fill="${C.silver}" ${ks3}/></g>`,
+)
+
 // lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]
 const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
@@ -678,6 +699,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-flowerBasket': { w: 1, h: 1.9, body: flowerBasket },
   'decor-xmasTree': { w: 1, h: 1.9, body: xmasTree },
   'decor-certificate': { w: 1, h: 1.9, body: certificate },
+  'decor-trophy': { w: 1, h: 1.9, body: trophy },
+  'decor-merit': { w: 1, h: 1.9, body: merit },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

@@ -97,15 +97,22 @@ describe('items', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
   })
 
-  it('keeps fifteen free gift-only decor pieces out of the sets', () => {
+  it('keeps seventeen free gift-only decor pieces out of the sets', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual([
       'vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard',
       'maiBranch', 'heartFrame', 'roseVase', 'starLantern', 'flowerBasket', 'xmasTree', 'certificate',
+      'trophy', 'merit',
     ])
     expect(ITEMS.certificate).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemCertificate' })
     expect(ITEMS.vyPainting).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' })
     expect(ITEMS.silkScreen).toEqual({ w: 2, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemSilkScreen' })
     expect(ITEMS.regularsBoard).toEqual({ w: 2, h: 1, price: 0, beauty: 6, group: 'decor', giftOnly: true, name: 'itemRegularsBoard' })
+  })
+
+  it('the gold cup and the bằng khen are gift-only 1×1 decor, never sold', () => {
+    expect(ITEMS.trophy).toEqual({ w: 1, h: 1, price: 0, beauty: 8, group: 'decor', giftOnly: true, name: 'itemTrophy' })
+    expect(ITEMS.merit).toEqual({ w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemMerit' })
+    expect(ITEM_KINDS.filter(k => ITEMS[k].group === 'decor' && !ITEMS[k].giftOnly)).not.toContain('trophy')
   })
 
   it('the photos are one tile and the gold board two', () => {

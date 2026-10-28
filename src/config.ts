@@ -358,6 +358,10 @@ export const INSPECT_MIN = 900
 export const INSPECT_BEAUTY = 30
 /** The Giấy khen's beauty. */
 export const CERTIFICATE_BEAUTY = 4
+/** The gold cup's beauty, given for Spa của năm. */
+export const TROPHY_BEAUTY = 8
+/** The bằng khen's beauty, given for a place in the year. */
+export const MERIT_BEAUTY = 5
 /** On the rival's day the picky customers' weight in the kind draw is this many times the usual. */
 export const RIVAL_PICKY_FACTOR = 2
 /** The rival's challenge: this share of an average day's customers served with 3 stars... */

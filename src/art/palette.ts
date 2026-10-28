@@ -8,6 +8,8 @@ export const C = {
   ink: '#4A2E22',
   cream: '#FBF7EE',
   paper: '#FBF3E4',
+  gold: '#F7C531',
+  silver: '#C9CFD3',
   sand: '#F3E6D3',
   tile: '#F6ECDB',
   tileSeam: '#E2D3BC',
