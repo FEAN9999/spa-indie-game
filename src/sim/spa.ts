@@ -48,7 +48,7 @@ import { t } from '../strings/vi'
 import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
-import { BRANCH_LAYOUT, placePrice, type PlaceId } from './places'
+import { BRANCH_LAYOUT, PLACE_DECOR, placePrice, type PlaceId } from './places'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
 import { emptyFestivalBook, festivalOf, festivalService, FESTIVALS, type FestivalBook } from './festivals'
 import { DayClock } from './clock'
@@ -223,7 +223,7 @@ export class SpaSim {
     this.purse.money = v
   }
 
-  /** A branch of the main shop at `place`: its own staff, stock and customers, drawing from its own stream, on the same day and minute, paid from the main shop's purse. */
+  /** A branch of the main shop at `place`: the first day's room with the place's own decor, its own staff, stock and customers, drawing from its own stream, on the same day and minute, paid from the main shop's purse. */
   static newBranch(place: PlaceId, main: SpaSim, rng: Rng): SpaSim {
     const branch = new SpaSim({ rng, layout: BRANCH_LAYOUT, autoSpawn: main.autoSpawn })
     branch.place = place
@@ -235,6 +235,11 @@ export class SpaSim {
     branch.ownerOutfit = main.ownerOutfit
     branch.profileDone = main.profileDone
     branch.purse = main.purse
+    const decor = PLACE_DECOR[place]
+    if (decor) {
+      branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
+      branch.rebuildRoom()
+    }
     refreshCandidates(branch.crew)
     return branch
   }

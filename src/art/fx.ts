@@ -158,6 +158,13 @@ export function fxTextures(): Record<string, string> {
         `<rect x="24" y="5" width="16" height="10" rx="3" fill="${C.mustard}"/>` +
         `<path d="M23,27 H41 M23,35 H41 M23,43 H34" stroke="${C.terracotta}" stroke-width="3" stroke-linecap="round"/></g>`,
     ),
+    // the chain: a map pin on the ground
+    'icon-chain': svgDoc(
+      [0, 0, 64, 64],
+      1,
+      `<g ${ICON}><ellipse cx="32" cy="57" rx="12" ry="4" fill="${C.sand}"/>` +
+        `<path d="M32,57 C22,44 15,36 15,25 A17,17 0 1 1 49,25 C49,36 42,44 32,57Z" fill="${C.terracotta}"/><circle cx="32" cy="25" r="7" fill="${C.cream}"/></g>`,
+    ),
     // Safari's share button, for the install steps: an open box with an arrow out of the top
     'icon-share': svgDoc(
       [0, 0, 64, 64],

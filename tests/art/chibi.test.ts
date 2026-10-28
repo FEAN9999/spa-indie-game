@@ -85,6 +85,17 @@ describe('chibi and fx art', () => {
       }
   })
 
+  it("draws the tourist's straw hat and flower shirt from every side, untinted, each with an anchor", () => {
+    const keys = Object.keys(chibiTextures())
+    for (const part of ['strawHat', 'flowerShirt'])
+      for (const side of ['down', 'side', 'up']) {
+        const key = `${part}-${side}`
+        expect(keys, key).toContain(key)
+        expect(keys, key).not.toContain(`${key}-line`)
+        expect(PART_ANCHORS[key], key).toBeDefined()
+      }
+  })
+
   it("draws Mi Mi's phone and the inspector's clipboard from the front and the side, untinted", () => {
     const keys = Object.keys(chibiTextures())
     for (const part of ['phone', 'clipboard']) {

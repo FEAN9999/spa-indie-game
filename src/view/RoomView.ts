@@ -6,6 +6,7 @@ import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { tileRuns, type Grid } from '../sim/grid'
 import { ITEMS, workTile, type Item } from '../sim/items'
+import type { PlaceId } from '../sim/places'
 import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
 import { t } from '../strings/vi'
@@ -89,11 +90,13 @@ export class RoomView {
   /** The power cut's floor and machine tiles as last drawn, or 'off', so a frame without a change draws nothing. */
   private powerKey = ''
 
+  /** `place` is where the shop is, null for the main shop: the beach has its own floor 1, and a branch has no rank plaque. */
   constructor(
     private readonly scene: Phaser.Scene,
     grid: Grid,
+    private readonly place: PlaceId | null,
   ) {
-    this.room = scene.add.image(MAP_X, MAP_Y, 'room').setOrigin(0, 0).setDepth(0)
+    this.room = scene.add.image(MAP_X, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
     this.rival = this.rivalSign()
@@ -119,10 +122,15 @@ export class RoomView {
     }
   }
 
+  /** Floor 1's room: the beach's own, or the main shop's. */
+  private groundRoom(): string {
+    return this.place === 'beach' ? 'room-beach' : 'room'
+  }
+
   /** Shows `floor`: its room, the desk and screen on floor 1, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
-    this.room.setTexture(floor === 1 ? 'room' : floor === 2 ? 'room-2' : 'room-3')
+    this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
     for (const f of this.fixtures) f.setVisible(floor === 1)
     // the rooftop has the coop where the stairs are, and no rope
     this.coop.setVisible(floor === 3)
@@ -130,7 +138,7 @@ export class RoomView {
     this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
     this.drawFestival()
     this.rival.setVisible(this.rivalOn && floor === 1)
-    this.plaque.setVisible(floor === 1)
+    this.plaque.setVisible(floor === 1 && this.place === null)
   }
 
   /** Stands the rival's SPA MỚI sign on floor 1's sidewalk, or takes it away. */

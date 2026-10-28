@@ -651,6 +651,14 @@ const merit = keepsake(
     `<circle cx="32" cy="-74" r="14" fill="${C.silver}" ${ks3}/></g>`,
 )
 
+// ván lướt sóng: the beach's gold surfboard with a teal stripe and a red band, leaning back on its tail, drawn in the
+// sketch's pixels (78 to a tile, origin at the tail) and scaled to about 0.8 of the sketch's height
+const surfboard =
+  `<ellipse cx="0.5" cy="2.64" rx="0.3" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
+  `<g transform="translate(0.6,2.64) rotate(-6) scale(0.0098)">` +
+  `<path d="M0,0 Q-30,-10 -30,-150 Q-28,-250 0,-268 Q28,-250 30,-150 Q30,-10 0,0Z" fill="${C.gold}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
+  `<path d="M0,-8 V-256" stroke="${C.teal}" stroke-width="12"/><path d="M-22,-60 Q0,-70 22,-60" stroke="${C.lantern}" stroke-width="8" fill="none"/></g>`
+
 // lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]
 const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
@@ -701,6 +709,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-certificate': { w: 1, h: 1.9, body: certificate },
   'decor-trophy': { w: 1, h: 1.9, body: trophy },
   'decor-merit': { w: 1, h: 1.9, body: merit },
+  'decor-surfboard': { w: 1, h: 2.7, body: surfboard },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

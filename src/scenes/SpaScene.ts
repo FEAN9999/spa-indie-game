@@ -224,7 +224,7 @@ export class SpaScene extends Phaser.Scene {
       return
     }
     this.sim = this.openShop(saved)
-    this.room = new RoomView(this, this.sim.grid)
+    this.room = new RoomView(this, this.sim.grid, this.sim.place)
     this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)

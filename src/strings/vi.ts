@@ -166,6 +166,7 @@ export const vi = {
   itemCertificate: 'Giấy khen',
   itemTrophy: 'Cúp vàng',
   itemMerit: 'Bằng khen',
+  itemSurfboard: 'Ván lướt sóng',
   itemTeaChest: 'Tủ chè',
   itemJar: 'Chum sứ xanh trắng',
   itemBambooBench: 'Ghế chờ tre',

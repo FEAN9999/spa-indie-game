@@ -55,7 +55,7 @@ function clock(cx: number): string {
 }
 
 /** Glass shop front either side of the door, with mullions, glints, door posts and a doormat. */
-function shopFront(cols: number, rows: number, doorX: number): string {
+export function shopFront(cols: number, rows: number, doorX: number): string {
   const y = rows - 0.45
   const h = 0.45
   const out: string[] = []
@@ -71,6 +71,18 @@ function shopFront(cols: number, rows: number, doorX: number): string {
   out.push(rect(doorX - 0.12, y - 0.15, 0.2, 0.68, C.wood, `rx="0.05" ${outline(0.035)}`))
   out.push(rect(doorX + 0.92, y - 0.15, 0.2, 0.68, C.wood, `rx="0.05" ${outline(0.035)}`))
   return out.join('')
+}
+
+/** The street below the front wall: the sidewalk with its joints, then the road with its dashed line. */
+export function street(cols: number, rows: number): string {
+  const joints: string[] = []
+  for (let x = 0.45; x < cols; x += 0.9) joints.push(`M${x},${rows} V${rows + 1.2}`)
+  return (
+    rect(0, rows, cols, 1.2, C.sidewalk) +
+    `<path d="${joints.join(' ')}" stroke="${C.sidewalkLine}" stroke-width="${FINE}"/>` +
+    rect(0, rows + 1.2, cols, STREET_TILES - 1.2, C.road) +
+    `<path d="M0,${rows + 1.6} H${cols}" stroke="${C.cream}" stroke-width="0.07" stroke-dasharray="0.5 0.35"/>`
+  )
 }
 
 /** The bare room in tile units: wood service room, gạch bông front, runner, walls, shop front, street. RoomView draws the rest. */
@@ -104,14 +116,7 @@ function roomBody(grid: Grid): string {
   out.push(rect(cols - 0.5, 0, 0.2, rows, C.wallDark, outline(0.04)))
 
   out.push(shopFront(cols, rows, door.x))
-
-  // street: sidewalk and road
-  out.push(rect(0, rows, cols, 1.2, C.sidewalk))
-  const joints: string[] = []
-  for (let x = 0.45; x < cols; x += 0.9) joints.push(`M${x},${rows} V${rows + 1.2}`)
-  out.push(`<path d="${joints.join(' ')}" stroke="${C.sidewalkLine}" stroke-width="${FINE}"/>`)
-  out.push(rect(0, rows + 1.2, cols, STREET_TILES - 1.2, C.road))
-  out.push(`<path d="M0,${rows + 1.6} H${cols}" stroke="${C.cream}" stroke-width="0.07" stroke-dasharray="0.5 0.35"/>`)
+  out.push(street(cols, rows))
 
   return out.join('')
 }

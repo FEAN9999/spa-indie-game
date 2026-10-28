@@ -17,6 +17,8 @@ describe('fx art', () => {
   it("has the rival's shop and the power cut's bolt, the candle with its glow, and the machines' off mark", () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['event-shop', 'event-bolt', 'fx-candle', 'fx-glow', 'power-off'])))
 
+  it('has the Chuỗi map pin', () => expect(Object.keys(fxTextures())).toContain('icon-chain'))
+
   it('has the heart, card and book icons', () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['heart-full', 'heart-empty', 'icon-card', 'icon-book'])))
 

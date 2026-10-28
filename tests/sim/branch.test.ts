@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { CANDIDATES_PER_DAY, HOT_DAYS, PLACE_KINDS, STOCK_START } from '../../src/config'
+import { CANDIDATES_PER_DAY, HOT_DAYS, OWNER_START, PLACE_KINDS, STOCK_START } from '../../src/config'
+import { placeProblem } from '../../src/sim/build'
 import { drawKind, MAIN_KINDS } from '../../src/sim/customers'
 import { festivalOf } from '../../src/sim/festivals'
-import { itemsFromLayout } from '../../src/sim/items'
+import { isWalkable } from '../../src/sim/grid'
+import { beautyOf, itemsFromLayout } from '../../src/sim/items'
 import { BRANCH_LAYOUT, placePrice } from '../../src/sim/places'
 import { isJudgeDay } from '../../src/sim/rank'
 import { emptyBook } from '../../src/sim/regulars'
@@ -65,7 +67,8 @@ describe('opening a branch', () => {
     expect(branch.candidates.length).toBe(CANDIDATES_PER_DAY)
     expect(branch.maxFloors()).toBe(1)
     expect(branch.grid.stairs).toEqual([])
-    expect(branch.items).toEqual(itemsFromLayout(BRANCH_LAYOUT))
+    const laid = itemsFromLayout(BRANCH_LAYOUT)
+    expect(branch.items).toEqual([...laid, { id: laid.length + 1, kind: 'surfboard', x: 11, y: 10, flip: false, gift: true }])
   })
 
   it('shares one purse', () => {
@@ -85,6 +88,18 @@ describe('opening a branch', () => {
     a.advance(60_000)
     b.advance(60_000)
     expect(a.toSave()).toEqual(b.toSave())
+  })
+})
+
+describe("a branch's own decor", () => {
+  it('lays one surfboard at the beach: a gift that blocks nothing, on the rebuilt room, with its beauty', () => {
+    const branch = beachOf()
+    const boards = branch.items.filter(i => i.kind === 'surfboard')
+    expect(boards).toEqual([{ id: expect.any(Number), kind: 'surfboard', x: 11, y: 10, flip: false, gift: true }])
+    const others = branch.items.filter(i => i.kind !== 'surfboard')
+    expect(placeProblem(branch.shellGrid(), others, boards[0], { door: branch.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
+    expect(isWalkable(branch.grid, { x: 11, y: 10 })).toBe(false)
+    expect(branch.beauty()).toBe(beautyOf(others) + 3)
   })
 })
 

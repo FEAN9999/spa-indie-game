@@ -522,6 +522,47 @@ const chefHatDown = chefHat(0)
 const chefHatSide = chefHat(-1)
 const chefHatUp = chefHat(0)
 
+// the tourist: a wide straw hat with a red band, and a shirt printed with hibiscus, open at the collar over a cream undershirt
+/** The brim, the crown centred on cx with its red band and weave, and a cream flower on the band at `flowerX`, if it shows. */
+const strawHat = (cx: number, flowerX: number | null): Part => ({
+  viewBox: [-21.5, -20, 43, 20.5],
+  body:
+    `<ellipse cx="0" cy="-5.6" rx="20.5" ry="5" fill="${C.straw}" ${LINE}/>` +
+    `<path d="M-15,-5 Q0,-1.8 15,-5 M-11,-3.4 Q0,-0.8 11,-3.4" stroke="${C.strawDark}" stroke-width=".7" fill="none"/>` +
+    `<path d="M${cx - 9.6},-6 Q${cx - 10.4},-18.4 ${cx},-18.6 Q${cx + 10.4},-18.4 ${cx + 9.6},-6 Q${cx},-3.8 ${cx - 9.6},-6Z" fill="${C.straw}" ${LINE}/>` +
+    `<path d="M${cx - 9.8},-9.8 Q${cx},-7.6 ${cx + 9.8},-9.8 L${cx + 9.7},-6.8 Q${cx},-4.6 ${cx - 9.7},-6.8Z" fill="${RED}" stroke="${INK}" stroke-width=".9" stroke-linejoin="round"/>` +
+    `<path d="M${cx - 6},-14 Q${cx},-12.6 ${cx + 6},-14 M${cx - 7.6},-11.6 L${cx - 6.6},-15.6 M${cx - 2.6},-11 L${cx - 2.2},-16.6 M${cx + 2.6},-11 L${cx + 2.2},-16.6 M${cx + 7.6},-11.6 L${cx + 6.6},-15.6" stroke="${C.strawDark}" stroke-width=".6" fill="none"/>` +
+    (flowerX === null ? '' : flower(flowerX, -8.4, 2.6, 5, CREAM, GOLD)),
+})
+const strawHatDown = strawHat(0, 7.4)
+const strawHatSide = strawHat(-1, 6.4)
+const strawHatUp = strawHat(0, null)
+/** Hibiscus on the tinted body, each [x, y, petal colour], kept inside the body's outline. */
+const hibiscus = (spots: [number, number, string][]) =>
+  `<clipPath id="shirt"><rect x="-8.35" y="0.65" width="16.7" height="16.7" rx="6.35"/></clipPath>` +
+  `<g clip-path="url(#shirt)">${spots.map(([x, y, petal]) => flower(x, y, 3.1, 5, petal, RED)).join('')}</g>`
+const LAPEL = `fill="${C.tealLight}" ${LINE}`
+const flowerShirtDown: Part = {
+  viewBox: body.viewBox,
+  body:
+    hibiscus([[-5, 5, LOTUS], [4.6, 8, CREAM], [-3.6, 13, CREAM], [5.2, 14.4, LOTUS], [0.4, 10.6, C.gold]]) +
+    `<path d="M-3.4,-0.4 L0,4.2 L3.4,-0.4" fill="${CREAM}" ${LINE}/>` +
+    `<path d="M-3.4,-0.4 L-1,5.6 L-5.2,2.8Z M3.4,-0.4 L1,5.6 L5.2,2.8Z" ${LAPEL}/>`,
+}
+const flowerShirtSide: Part = {
+  viewBox: body.viewBox,
+  body:
+    hibiscus([[-4.8, 5, LOTUS], [3.4, 8.6, CREAM], [-3.4, 13.2, C.gold], [4.8, 14.6, LOTUS]]) +
+    `<path d="M2,0.2 L4,3.6 L5.8,0.9" fill="${CREAM}" ${LINE}/>` +
+    `<path d="M2,0.2 L3.6,5 L0.8,3Z" ${LAPEL}/>`,
+}
+const flowerShirtUp: Part = {
+  viewBox: body.viewBox,
+  body:
+    hibiscus([[-4.4, 5.4, CREAM], [4.4, 6, LOTUS], [0, 11, LOTUS], [-4.6, 14.6, C.gold], [4.8, 14.8, CREAM]]) +
+    `<path d="M-5.2,-0.4 Q0,2.2 5.2,-0.4 L4.8,1.6 Q0,4 -4.8,1.6Z" ${LAPEL}/>`,
+}
+
 const parts: Record<string, Part> = {
   leg,
   arm,
@@ -592,6 +633,12 @@ const parts: Record<string, Part> = {
   'chefHat-down': chefHatDown,
   'chefHat-side': chefHatSide,
   'chefHat-up': chefHatUp,
+  'strawHat-down': strawHatDown,
+  'strawHat-side': strawHatSide,
+  'strawHat-up': strawHatUp,
+  'flowerShirt-down': flowerShirtDown,
+  'flowerShirt-side': flowerShirtSide,
+  'flowerShirt-up': flowerShirtUp,
   'mask-face': maskFace,
   'towel-wrap': towelWrap,
   'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),

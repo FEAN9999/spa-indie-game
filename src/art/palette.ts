@@ -78,6 +78,23 @@ export const C = {
   coopStepLow: '#94633C',
   coopStepMid: '#7E5232',
   coopStepHigh: '#56331F',
+  // the beach branch: sea, its wall and floors, a shell; the chain map's land, beach and river; the tourist's straw hat
+  sea: '#6FB3CF',
+  seaWash: '#E3F0F3',
+  seaWashLine: '#C8DFE5',
+  seaWall: '#BFD9E2',
+  beachTile: '#EAF4F6',
+  beachTileDark: '#D5E8EE',
+  beachTileSeam: '#BCD7DF',
+  beachPlank: '#EAD3AB',
+  beachPlankLine: '#CFB287',
+  beachPlankGrain: '#DCC197',
+  seashell: '#F2B8A0',
+  sandBeach: '#F1DDB0',
+  river: '#8CC4D6',
+  mapLand: '#EFE2CB',
+  straw: '#E8C878',
+  strawDark: '#B9944A',
 } as const
 
 export const SKIN = [0xf7d5b8, 0xebc3a0, 0xd9a47e, 0xb97f58]

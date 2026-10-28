@@ -4,6 +4,7 @@ import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
 import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, bedTile, footprint, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { t } from '../../src/strings/vi'
 
 describe('items', () => {
   it('reads the furniture of the default shop', () => {
@@ -97,11 +98,11 @@ describe('items', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
   })
 
-  it('keeps seventeen free gift-only decor pieces out of the sets', () => {
+  it('keeps eighteen free gift-only decor pieces out of the sets', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual([
       'vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard',
       'maiBranch', 'heartFrame', 'roseVase', 'starLantern', 'flowerBasket', 'xmasTree', 'certificate',
-      'trophy', 'merit',
+      'trophy', 'merit', 'surfboard',
     ])
     expect(ITEMS.certificate).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemCertificate' })
     expect(ITEMS.vyPainting).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' })
@@ -113,6 +114,11 @@ describe('items', () => {
     expect(ITEMS.trophy).toEqual({ w: 1, h: 1, price: 0, beauty: 8, group: 'decor', giftOnly: true, name: 'itemTrophy' })
     expect(ITEMS.merit).toEqual({ w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemMerit' })
     expect(ITEM_KINDS.filter(k => ITEMS[k].group === 'decor' && !ITEMS[k].giftOnly)).not.toContain('trophy')
+  })
+
+  it("the beach's surfboard is gift-only 1×1 decor, as pretty as the jar", () => {
+    expect(ITEMS.surfboard).toEqual({ w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemSurfboard' })
+    expect(t(ITEMS.surfboard.name)).toBe('Ván lướt sóng')
   })
 
   it('the photos are one tile and the gold board two', () => {
