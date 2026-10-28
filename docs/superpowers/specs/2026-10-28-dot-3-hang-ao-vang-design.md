@@ -1,7 +1,7 @@
 # Đợt 3, phần 3–5: hạng tiệm, áo chủ tiệm, tiền khi vắng
 
 - Ngày: 2026-10-28
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-28, "Duyệt, làm đi")
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 6 (Đợt 3). Đi sau:
   - phần 1 `2026-10-28-dot-3-nhiem-vu-design.md` (lịch tháng, nhiệm vụ, huy hiệu);
   - phần 2 `2026-10-28-dot-3-le-su-kien-design.md` (lễ, sự kiện).
@@ -323,7 +323,7 @@ Anh chọn cách A cho cả ba. **(anh chọn)**
 - **Số của tháng:**
   - `startDay` khi `dayOfMonth(day) === 1`: đặt `month = { from: day, served: total.served, lost: total.lost }`.
   - Khách mỗi ngày = `(total.served − month.served) / (day − month.from + 1)`.
-  - Phần bỏ về = `lost / (served + lost)` của tháng; tháng không có khách nào thì 0.
+  - Phần bỏ về = `lost / (served + lost)` của tháng. Tháng không có khách nào thì mục bỏ về được 0 điểm, không phải 20, để tiệm chưa làm gì không tự lên 2 sao. **(em quyết lúc viết kế hoạch)**
   - Thẻ Hạng tiệm dùng đúng các công thức này với số tới lúc mở thẻ.
 - **Chấm tháng** ở khối hết ngày trong `step`, sau `recordDay`, trước khi phát `dayEnded`, khi `day >= RANK_FROM_DAY` và `dayOfMonth(day) === DAYS_PER_MONTH`. **(em đề xuất)**
   1. Tính 5 mục từ `rating(reviews)`, `beauty()`, `services.length` và số của tháng.
