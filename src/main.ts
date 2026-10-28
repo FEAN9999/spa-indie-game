@@ -24,6 +24,7 @@ import { StaffScene } from './scenes/StaffScene'
 import { SteamScene } from './scenes/SteamScene'
 import { StoneScene } from './scenes/StoneScene'
 import { SummaryScene } from './scenes/SummaryScene'
+import { WardrobeScene } from './scenes/WardrobeScene'
 
 async function start() {
   // Canvas text never re-renders after a late font load, so load both weights, Vietnamese glyphs included, first.
@@ -42,7 +43,7 @@ async function start() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // all sound is made by src/audio, so Phaser never opens its own AudioContext
     audio: { noAudio: true },
-    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, QuestsScene, InspectScene, RankScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, QuestsScene, InspectScene, RankScene, WardrobeScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }

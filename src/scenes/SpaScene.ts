@@ -16,6 +16,7 @@ import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
+import type { OutfitId } from '../sim/outfits'
 import { ITEMS } from '../sim/items'
 import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
@@ -31,6 +32,7 @@ import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { BADGE_TEXT } from '../view/badges'
+import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
@@ -326,6 +328,14 @@ export class SpaScene extends Phaser.Scene {
     this.owner = this.buildOwner()
   }
 
+  /** Puts an outfit on the owner, draws her in it and saves. */
+  private wear(id: OutfitId): void {
+    if (!this.sim.wearOutfit(id)) return
+    this.rebuildOwner()
+    this.queueToast(t('outfitWornToast', { name: t(OUTFIT_NAME[id]) }))
+    this.session.saveNow()
+  }
+
   /** Opens the owner card over the shop; `after` runs once it closes. */
   openOwnerCard(mode: OwnerMode, after: () => void): void {
     this.modal = true
@@ -334,6 +344,8 @@ export class SpaScene extends Phaser.Scene {
       look: { ...this.sim.ownerLook },
       name: this.sim.shopName,
       outfit: this.sim.ownerOutfit,
+      sim: this.sim,
+      onWear: id => this.wear(id),
       onSave: (look, name) => {
         this.sim.setProfile(look, name)
         this.rebuildOwner()
@@ -452,6 +464,7 @@ export class SpaScene extends Phaser.Scene {
     const data: QuestsData = {
       sim,
       intro,
+      onWear: id => this.wear(id),
       onClose: () => {
         this.modal = false
         this.session.saveNow()

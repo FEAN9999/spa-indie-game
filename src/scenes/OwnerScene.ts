@@ -3,6 +3,7 @@ import { PART_ANCHORS } from '../art/chibi'
 import { C, HAIR, OWNER_SHIRT, SKIN, ownerColors } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, OWNER_LOOK_COUNTS } from '../config'
+import type { SpaSim } from '../sim/spa'
 import { SHOP_NAME_MAX, suggestShopName } from '../sim/profile'
 import type { OutfitId } from '../sim/outfits'
 import type { Facing, Look } from '../sim/types'
@@ -11,6 +12,7 @@ import { CharacterView } from '../view/CharacterView'
 import { nameInput } from '../view/dom'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
+import type { WardrobeData } from './WardrobeScene'
 
 export type OwnerMode = 'new' | 'upgrade' | 'edit'
 
@@ -20,7 +22,11 @@ export interface OwnerData {
   name: string
   /** The outfit the preview wears; a new shop is in the bà ba. */
   outfit: OutfitId
+  /** The edit card opens the wardrobe from it. */
+  sim?: SpaSim
   onSave: (look: Look, name: string) => void
+  /** Puts an outfit on the owner, from the wardrobe; Hủy does not undo it. */
+  onWear: (id: OutfitId) => void
   onClose: () => void
 }
 
@@ -42,6 +48,10 @@ const TILE_HEAD_SCALE = 1.15
 const SWATCH_R = 42
 const BUTTON_Y = 1885
 const BUTTON_H = 150
+const WARDROBE_X = 790
+const WARDROBE_Y = 640
+const WARDROBE_W = 230
+const WARDROBE_H = 96
 
 /** The option rows by the y of their choices; each label sits 85 px above its swatches, 100 above the taller hair tiles. */
 const ROWS: { key: keyof Look; label: StringKey; y: number; colors?: number[] }[] = [
@@ -65,6 +75,7 @@ export class OwnerScene extends Phaser.Scene {
   private tileHeads: Phaser.GameObjects.Image[] = []
   private tileHair: Phaser.GameObjects.Image[] = []
   private nameBox!: HTMLInputElement
+  private nameDom!: Phaser.GameObjects.DOMElement
 
   constructor() {
     super('OwnerScene')
@@ -102,7 +113,9 @@ export class OwnerScene extends Phaser.Scene {
     // the name sits high on the card, clear of the iPhone keyboard
     this.label(NAME_Y - 100, 'shopNameLabel')
     const idea = suggestShopName(Math.random, name)
-    this.nameBox = nameInput(this, ROW_LEFT + 300, NAME_Y, { value: mode === 'new' ? idea : name, placeholder: idea, maxLength: SHOP_NAME_MAX }).input
+    const box = nameInput(this, ROW_LEFT + 300, NAME_Y, { value: mode === 'new' ? idea : name, placeholder: idea, maxLength: SHOP_NAME_MAX })
+    this.nameBox = box.input
+    this.nameDom = box.dom
     this.add.circle(DICE_X, NAME_Y, 60, hex(C.cream)).setStrokeStyle(4, hex(C.ink))
     this.add.image(DICE_X, NAME_Y, 'icon-dice').setScale(1.25)
     this.add
@@ -141,7 +154,26 @@ export class OwnerScene extends Phaser.Scene {
       addButton(this, MID + 190, BUTTON_Y, 350, BUTTON_H, t('save'), 'primary', () => this.save(this.look, this.typedName()))
     }
 
+    if (mode === 'edit' && this.params.sim) addButton(this, WARDROBE_X, WARDROBE_Y, WARDROBE_W, WARDROBE_H, t('wardrobe'), 'plain', () => this.openWardrobe(), 40)
+
     this.refresh()
+  }
+
+  /** The wardrobe over this card. The name box is HTML and would show through its cover, so it hides until Xong. */
+  private openWardrobe(): void {
+    const sim = this.params.sim
+    if (!sim) return
+    this.nameDom.setVisible(false)
+    const data: WardrobeData = {
+      sim,
+      onWear: id => {
+        this.params.outfit = id
+        this.params.onWear(id)
+        this.refresh()
+      },
+      onClose: () => this.nameDom.setVisible(true),
+    }
+    this.scene.launch('WardrobeScene', data)
   }
 
   update(_time: number, delta: number) {

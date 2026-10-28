@@ -6,6 +6,7 @@ import { BADGE_IDS, badgeProgress, type BadgeId } from '../sim/badges'
 import { daysLeftInMonth, monthOf, yearOf } from '../sim/calendar'
 import { FESTIVALS } from '../sim/festivals'
 import { progressOf, type Quest } from '../sim/quests'
+import { OUTFIT_IDS, type OutfitId } from '../sim/outfits'
 import { standings, yearSoFar } from '../sim/rank'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
@@ -18,11 +19,14 @@ import { judgeDayOf, partRows, starsLine, totalLine, yearRows } from '../view/ra
 import { addPartRow, starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
+import type { WardrobeData } from './WardrobeScene'
 
 export interface QuestsData {
   sim: SpaSim
   /** The first time the panel opens. */
   intro: boolean
+  /** Puts an outfit on the owner, from the wardrobe. */
+  onWear: (id: OutfitId) => void
   onClose: () => void
 }
 
@@ -37,6 +41,8 @@ const TAB_X = { quests: 220, badges: 540, rank: 860 } as const
 const LEFT = 90
 const RIGHT = 990
 const DAY_HEAD_Y = 545
+const WARDROBE_W = 330
+const WARDROBE_H = 70
 const DAY_ROW_TOP = 590
 const DAY_ROW_STEP = 212
 const DAY_ROW_H = 192
@@ -167,6 +173,12 @@ export class QuestsScene extends Phaser.Scene {
     this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
   }
 
+  /** The wardrobe on top of this panel, which waits underneath until Xong. */
+  private openWardrobe(): void {
+    const data: WardrobeData = { sim: this.params.sim, onWear: this.params.onWear, onClose: () => {} }
+    this.scene.launch('WardrobeScene', data)
+  }
+
   private openTab(tab: Tab): void {
     this.tab = tab
     this.show()
@@ -208,6 +220,7 @@ export class QuestsScene extends Phaser.Scene {
     const shop = sim.badgeShop()
     const has = (id: BadgeId) => sim.badges[id] !== undefined
     this.keep(this.label(LEFT, DAY_HEAD_Y, t('badgesCount', { n: BADGE_IDS.filter(has).length, total: BADGE_IDS.length }), 40))
+    this.keep(addButton(this, RIGHT - WARDROBE_W / 2, DAY_HEAD_Y, WARDROBE_W, WARDROBE_H, t('wardrobeButton', { open: sim.unlockedOutfits().length, total: OUTFIT_IDS.length }), 'plain', () => this.openWardrobe(), 32))
     BADGE_IDS.forEach((id, i) => {
       const cx = GRID_X + (i % GRID_COLS) * GRID_DX
       const cy = GRID_Y + Math.floor(i / GRID_COLS) * GRID_DY
