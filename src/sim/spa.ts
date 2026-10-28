@@ -2,6 +2,8 @@ import {
   JOLLY_TIP,
   ANGRY_REVIEW,
   ARRIVE_MS,
+  DAY_END_MIN,
+  DAY_MINUTES,
   EXIT_MS,
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
@@ -11,6 +13,7 @@ import {
   OWNER_SPEED,
   OWNER_START,
   PATIENCE_MS,
+  QUEST_MIN_LEFT_MIN,
   RATING_WINDOW,
   RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
@@ -26,6 +29,7 @@ import {
 import { t } from '../strings/vi'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, KINDS, type CustomerKind } from './customers'
+import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
@@ -35,17 +39,18 @@ import { floorOf, towerOf } from './floors'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
-import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULARS, type GuestBook, type RegularId } from './regulars'
+import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, type GuestBook, type RegularId } from './regulars'
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
-import { emptyProgress, recordDay, type Counts, type Progress } from './quests'
+import { closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
-import { greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
+import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
+import { isUnlocked } from './unlocks'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
@@ -376,14 +381,6 @@ export class SpaSim {
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
-    this.count(t => {
-      t.served++
-      t.earned += price + tip
-      t.tips += tip
-      t.services[c.service]++
-      if (technician) t.staff++
-      else if (stars === 3) t.owner3++
-    })
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && technician?.trait === 'calm' ? 'normal' : spec.grading))
     // a VIP has her own page in the book, not a place among the kinds served
@@ -391,12 +388,11 @@ export class SpaSim {
       const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
       this.emit({ type: 'vipServed', customerId: c.id, vip: c.vip, stars, photo: r.photo, board: r.board })
     } else noteServed(this.book, c.kind)
+    let hearts = 0
     if (c.regular) {
       const r = addVisit(this.book, c.regular, stars, technician === null, this.day)
-      if (r.hearts) {
-        this.count(t => t.hearts++)
-        this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
-      }
+      hearts = r.hearts
+      if (r.hearts) this.emit({ type: 'heart', customerId: c.id, regular: c.regular, hearts: r.hearts, member: r.member })
       if (r.gift) {
         if (r.gift.kind === 'money') {
           this.money += r.gift.amount
@@ -414,6 +410,16 @@ export class SpaSim {
         }
       }
     }
+    // counted last, so a quest this visit finishes is told after everything else it brought
+    this.count(t => {
+      t.served++
+      t.earned += price + tip
+      t.tips += tip
+      t.services[c.service]++
+      if (technician) t.staff++
+      else if (stars === 3) t.owner3++
+      if (hearts) t.hearts++
+    })
     c.mood = stars >= 2 ? 'happy' : 'ok'
     station.customerId = null
     c.stationId = null
@@ -552,6 +558,7 @@ export class SpaSim {
 
     const serving = sim.customers.find(c => c.id === d.servingCustomerId)
     if (serving && serving.stationId !== null) sim.emit({ type: 'serviceReady', customerId: serving.id, stationId: serving.stationId })
+    sim.catchUpQuests()
     if (sim.dayOver) sim.emit({ type: 'dayEnded', stats: { ...sim.stats } })
     return sim
   }
@@ -568,6 +575,77 @@ export class SpaSim {
     planDay(this.book, this.day, this.rng)
     clearStale(this.vip, this.day)
     this.progress.dayStart = structuredClone(this.progress.total)
+    if (!this.questsOpen()) return
+    const rng = this.questRng()
+    rollDay(this.progress, this.day, this.questShop(), 1, rng)
+    if (this.progress.monthFrom === monthStart(this.day)) return
+    rollMonth(this.progress, this.day, this.questShop(), daysLeftInMonth(this.day), rng)
+    if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day) })
+  }
+
+  /** Whether the quest button is open today. */
+  questsOpen(): boolean {
+    return isUnlocked('quests', this.day)
+  }
+
+  /** What the shop has right now that decides which quests it can be given. */
+  questShop(): QuestShop {
+    const unfinished = REGULAR_IDS.map(id => this.book.regulars[id]).filter(r => r.met && r.hearts < 5)
+    return {
+      available: this.availableServices(),
+      technicians: this.staff.filter(s => s.role === 'technician' && !s.leaving).length,
+      heartable: unfinished.length > 0,
+      heartDue: unfinished.some(r => r.visitAt !== null),
+      canStudy: this.staff.some(s => !s.leaving && courses(s, this.services).length > 0),
+    }
+  }
+
+  /** Swaps daily quest `i` for another, sized to what is left of the day; once a day, never a finished one, never after closing. */
+  swapQuest(i: number): 'swaps' | 'done' | 'closed' | null {
+    if (this.dayOver) return 'closed'
+    return swap(this.progress, i, this.questShop(), (DAY_END_MIN - this.clock.minutes) / DAY_MINUTES, this.questRng(101))
+  }
+
+  /** The quest button's red dot: new quests this morning, and the panel not opened since; never with its "Mới". */
+  questsDot(): boolean {
+    const p = this.progress
+    return this.questsOpen() && this.hintDone('openQuests') && p.seenDay !== this.day && (p.daily.length > 0 || p.monthly !== null)
+  }
+
+  markQuestsSeen(): void {
+    this.progress.seenDay = this.day
+  }
+
+  /** Quests draw from a stream of their own, so the shop's draws stay as they were. */
+  private questRng(salt = 0): Rng {
+    return createRng(this.day * 4241 + this.nextId + salt)
+  }
+
+  /**
+   * Quests that are not today's (an older shop, or one saved before quests) are given now, sized to what is left of the day and the month.
+   * None while the summary is up; no daily ones with under QUEST_MIN_LEFT_MIN left.
+   */
+  private catchUpQuests(): void {
+    const p = this.progress
+    if (!this.questsOpen() || this.dayOver) return
+    const left = DAY_END_MIN - this.clock.minutes
+    const rng = this.questRng()
+    if (p.questDay !== this.day) {
+      if (left >= QUEST_MIN_LEFT_MIN) rollDay(p, this.day, this.questShop(), left / DAY_MINUTES, rng)
+      else Object.assign(p, { daily: [], swaps: 0, questDay: this.day })
+    }
+    const daysLeft = daysLeftInMonth(this.day) - 1 + left / DAY_MINUTES
+    if (p.monthFrom !== monthStart(this.day) && daysLeft >= QUEST_MIN_LEFT_MIN / DAY_MINUTES) rollMonth(p, this.day, this.questShop(), daysLeft, rng)
+  }
+
+  /** Pays each finished quest into the till and the day, and tells the view. */
+  private payQuests(done: Quest[]): void {
+    for (const q of done) {
+      this.money += q.reward
+      this.stats.quests += q.reward
+      if (q.period === 'day') this.progress.life.dailies++
+      this.emit({ type: 'questDone', quest: { ...q } })
+    }
   }
 
   /** Free and at once: the new person stands on the door tile. Not while money is negative or the role is full (staff who are leaving do not count). */
@@ -833,6 +911,7 @@ export class SpaSim {
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
       this.dayOver = true
       payWages(this.crew)
+      this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats)
       // tomorrow's VIP, drawn from a stream of her own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
@@ -1016,9 +1095,10 @@ export class SpaSim {
     this.emit({ type: 'toast', key: SERVICES[id].busy as Extract<SimEvent, { type: 'toast' }>['key'] })
   }
 
-  /** Moves the running counts; every count goes through here. */
+  /** Moves the running counts, then pays any quest they finish; every count goes through here. */
   private count(apply: (t: Counts) => void): void {
     apply(this.progress.total)
+    this.payQuests(settle(this.progress))
   }
 
   private emit(e: SimEvent): void {

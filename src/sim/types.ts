@@ -1,6 +1,7 @@
 import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
 import type { ItemKind } from './items'
+import type { Quest } from './quests'
 import type { Ingredient, RecipeId } from './recipes'
 import type { RegularGift, RegularId } from './regulars'
 import type { VipId } from './vips'
@@ -11,7 +12,7 @@ import type { Course } from './staff'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -157,4 +158,8 @@ export type SimEvent =
   | { type: 'floorOpened'; floor: number }
   /** An older shop had furniture on the new stairs spot: `count` items went, `refund` came back, `gifts` of them went back to the guest book, and `rebuy` is the bed or seat item there was no room left for. */
   | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
+  /** A quest was finished and its reward paid; `quest` is a copy as it stood then. */
+  | { type: 'questDone'; quest: Quest }
+  /** A new month began with a new monthly quest. */
+  | { type: 'monthStarted'; month: number }
   | { type: 'dayEnded'; stats: DayStats }

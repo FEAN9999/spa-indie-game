@@ -30,6 +30,17 @@ export const startService = (sim: SpaSim, opts: SpawnOptions = KNOWN): Customer 
   return c
 }
 
+/** The owner serves one customer with `stars`; returns what they paid and the events that came with it. */
+export function ownerServes(sim: SpaSim, stars: 1 | 2 | 3, opts?: SpawnOptions): { amount: number; tip: number; events: SimEvent[] } {
+  const c = startService(sim, opts)
+  sim.drainEvents()
+  sim.completeService(c.id, stars)
+  const events = sim.drainEvents()
+  const paid = events.find(e => e.type === 'paid')
+  if (paid?.type !== 'paid') throw new Error('no payment')
+  return { amount: paid.amount, tip: paid.tip, events }
+}
+
 /** One customer waiting, a second walking to a seat, the owner on the way to fetch the first. */
 export function busyShop(): SpaSim {
   const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })

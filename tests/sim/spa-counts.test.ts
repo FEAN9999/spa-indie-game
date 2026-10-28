@@ -2,19 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil, hireStaff, seatAndWait, startService } from './helpers'
+import { advanceUntil, hireStaff, ownerServes, seatAndWait } from './helpers'
 
 const fresh = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
-
-/** The owner serves one customer with `stars`; returns what they paid. */
-function ownerServes(sim: SpaSim, stars: 1 | 2 | 3, opts?: Parameters<typeof startService>[1]): { amount: number; tip: number } {
-  const c = startService(sim, opts)
-  sim.drainEvents()
-  sim.completeService(c.id, stars)
-  const paid = sim.drainEvents().find(e => e.type === 'paid')
-  if (paid?.type !== 'paid') throw new Error('no payment')
-  return paid
-}
 
 describe('counting as things happen', () => {
   it('counts an owner service done with three stars', () => {
