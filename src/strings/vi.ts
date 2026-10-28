@@ -162,6 +162,7 @@ export const vi = {
   itemRegularsBoard: 'Bảng ảnh khách quen',
   itemPhotoSinger: 'Ảnh ký: Mây Chiều', itemPhotoMiss: 'Ảnh ký: Ngân Sa', itemPhotoStar: 'Ảnh ký: Bích Câu', itemPhotoChef: 'Ảnh ký: Tám Lửa', itemGoldBoard: 'Bảng vàng',
   itemMaiBranch: 'Cành mai', itemHeartFrame: 'Khung tim', itemRoseVase: 'Bình hoa hồng', itemStarLantern: 'Đèn ông sao', itemFlowerBasket: 'Lẵng hoa', itemXmasTree: 'Cây thông',
+  itemCertificate: 'Giấy khen',
   itemTeaChest: 'Tủ chè',
   itemJar: 'Chum sứ xanh trắng',
   itemBambooBench: 'Ghế chờ tre',

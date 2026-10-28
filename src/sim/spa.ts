@@ -5,6 +5,7 @@ import {
   DAY_END_MIN,
   DAY_MINUTES,
   EXIT_MS,
+  EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
   FESTIVAL_PATIENCE,
   FESTIVAL_PRICE,
@@ -14,6 +15,7 @@ import {
   HEART_AT,
   HOT_ARRIVAL,
   HOT_DAYS,
+  INSPECT_BEAUTY,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -50,7 +52,7 @@ import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, type GuestBook, type RegularId } from './regulars'
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
-import { closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
+import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
 import { dueKol, emptyEventBook, hotOn, KOL_LOOK, planEvent, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
@@ -512,6 +514,34 @@ export class SpaSim {
     const desk = this.receptionSpot()
     const byDesk = floor.find(t => this.grid.cells[t.y][t.x] === 'floor' && !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
     return byDesk ?? floor[0]
+  }
+
+  /** An event's reward: EVENT_REWARD_FACTOR plain daily quests' worth. */
+  private eventReward(): number {
+    return EVENT_REWARD_FACTOR * baseReward(averageDay(this.progress.recent))
+  }
+
+  /**
+   * The inspector's three checks: no stock item running low, nobody gone since the morning (the noWalk quest's count),
+   * and beauty from INSPECT_BEAUTY. All three pay an event's reward, and the first pass brings the Giấy khen. Nothing is ever taken.
+   */
+  private inspect(): void {
+    const book = this.eventBook
+    book.inspected = true
+    const lowItem = this.lowStock()[0]
+    const lost = this.stats.angry + this.stats.walkedAway
+    const beauty = this.beauty()
+    const checks = { stock: lowItem === undefined, calm: lost === 0, tidy: beauty >= INSPECT_BEAUTY }
+    const pass = checks.stock && checks.calm && checks.tidy
+    const reward = pass ? this.eventReward() : 0
+    const cert = pass && !book.certGiven
+    this.money += reward
+    this.stats.quests += reward
+    if (cert) {
+      book.certGiven = true
+      this.book.gifts.push('certificate')
+    }
+    this.emit({ type: 'inspected', checks, low: lowItem ? { item: lowItem, count: this.stock[lowItem] } : null, lost, beauty, reward, cert })
   }
 
   /** Customers who want `service` and have not reached a bed yet. */
@@ -1048,6 +1078,9 @@ export class SpaSim {
       // so does Mi Mi
       if (dueKol(this.eventBook, this.day, this.clock.minutes)) this.spawnCustomer({ kol: true })
     }
+    // the inspector looks round once, at the first step at or after the planned minute
+    const plan = this.eventBook.plan
+    if (!this.eventBook.inspected && plan?.kind === 'inspect' && plan.day === this.day && this.clock.minutes >= plan.minute) this.inspect()
 
     moveAlong(this.owner, OWNER_SPEED, dt)
     for (const s of this.staff) moveAlong(s, staffWalkSpeed(s), dt)

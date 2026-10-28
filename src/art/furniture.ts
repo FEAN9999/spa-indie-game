@@ -620,6 +620,16 @@ const xmasTree = keepsake(
     `<path d="${starPath(0, -130, 17, 7)}" fill="${C.mustard}" ${ks}/>`,
 )
 
+// giấy khen: a framed certificate on a stand, a red heading bar, two lines of writing and a red seal
+const certificate = keepsake(
+  `<path d="M-24,0 L-12,-40 M24,0 L12,-40" stroke="${C.woodDark}" stroke-width="6" stroke-linecap="round"/>` +
+    `<rect x="-50" y="-122" width="100" height="86" rx="6" fill="${C.woodLight}" ${ks}/>` +
+    `<rect x="-40" y="-112" width="80" height="66" rx="3" fill="${C.paper}" stroke="${C.lantern}" stroke-width="3"/>` +
+    `<rect x="-24" y="-104" width="48" height="9" rx="3" fill="${C.lantern}"/>` +
+    `<path d="M-28,-82 H24 M-28,-68 H10" stroke="${C.wallDark}" stroke-width="3" stroke-linecap="round"/>` +
+    `<circle cx="26" cy="-60" r="8" fill="${C.lantern}" ${ks3}/>`,
+)
+
 // lều xông: one round striped dome seen from the front at three-quarters; seven wedges from the knob along the front of the base, alternating cream and terracotta
 const TENT_APEX: [number, number] = [1, 0.8]
 const TENT_BASE = { cx: 1, cy: 1.75, rx: 0.92, ry: 0.72 }
@@ -667,6 +677,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-starLantern': { w: 1, h: 1.9, body: starLantern },
   'decor-flowerBasket': { w: 1, h: 1.9, body: flowerBasket },
   'decor-xmasTree': { w: 1, h: 1.9, body: xmasTree },
+  'decor-certificate': { w: 1, h: 1.9, body: certificate },
   'decor-tea': { w: 2, h: 0.9, body: tea },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
   'decor-planter': { w: 3, h: 1.1, body: planter },

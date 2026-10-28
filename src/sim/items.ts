@@ -1,4 +1,4 @@
-import { KEEPSAKE_BEAUTY } from '../config'
+import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY } from '../config'
 import type { StringKey } from '../strings/vi'
 import { SPA_LAYOUT_1A } from './layout'
 import type { Tile } from './types'
@@ -10,6 +10,7 @@ export type ItemKind =
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
   | 'photoSinger' | 'photoMiss' | 'photoStar' | 'photoChef' | 'goldBoard'
   | 'maiBranch' | 'heartFrame' | 'roseVase' | 'starLantern' | 'flowerBasket' | 'xmasTree'
+  | 'certificate'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor'
 export type SetId = 'saigon' | 'bamboo'
@@ -64,6 +65,7 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   starLantern: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemStarLantern' },
   flowerBasket: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemFlowerBasket' },
   xmasTree: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemXmasTree' },
+  certificate: { w: 1, h: 1, price: 0, beauty: CERTIFICATE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemCertificate' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]

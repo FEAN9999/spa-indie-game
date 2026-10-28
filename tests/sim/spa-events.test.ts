@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS } from '../../src/config'
+import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK } from '../../src/config'
+import { averageDay, baseReward } from '../../src/sim/quests'
 import { KOL_LOOK } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -177,5 +178,71 @@ describe('Mi Mi', () => {
   it('waits no longer on a hot day or in a festival', () => {
     const patience = (sim: SpaSim) => sim.spawnCustomer({ kol: true }).patienceMaxMs
     expect(patience(on(13, s => (s.eventBook.hotUntil = 14)))).toBe(patience(on(13)))
+  })
+})
+
+describe('the inspector', () => {
+  /** A shop on day 12 that the inspector visits today, with decor enough to be tidy. */
+  const inspectDay = (prep: (sim: SpaSim) => void = () => {}) => {
+    const sim = on(12)
+    sim.eventBook.plan = { kind: 'inspect', day: 12, minute: 900 }
+    let id = 900
+    while (sim.beauty() < INSPECT_BEAUTY) sim.items.push({ id: id++, kind: 'goldBoard', x: 0, y: 0, flip: false })
+    prep(sim)
+    return sim
+  }
+  /** Steps the shop from 14:59 past 15:00 and returns the inspections it made. */
+  const toThree = (sim: SpaSim) => {
+    sim.clock.minutes = 899
+    const events: SimEvent[] = []
+    advanceUntil(sim, () => sim.clock.minutes >= 899.5, 400_000, events)
+    expect(ofType(events, 'inspected')).toEqual([])
+    advanceUntil(sim, () => sim.clock.minutes >= 905, 400_000, events)
+    return ofType([...events, ...sim.drainEvents()], 'inspected')
+  }
+
+  it('inspects once, at the first step at or after 15:00, and pays twice a daily reward when all three pass', () => {
+    const sim = inspectDay()
+    const money = sim.money
+    const reward = 2 * baseReward(averageDay(sim.progress.recent))
+    const [e, ...more] = toThree(sim)
+    expect(more).toEqual([])
+    expect(e).toMatchObject({ checks: { stock: true, calm: true, tidy: true }, low: null, lost: 0, reward, cert: true })
+    expect(e.beauty).toBe(sim.beauty())
+    expect(sim.money).toBe(money + reward)
+    expect(sim.stats.quests).toBe(reward)
+    expect(sim.book.gifts).toEqual(['certificate'])
+    expect(sim.eventBook).toMatchObject({ inspected: true, certGiven: true })
+  })
+
+  it('gives the Giấy khen only on the first pass', () => {
+    const sim = inspectDay(s => (s.eventBook.certGiven = true))
+    const [e] = toThree(sim)
+    expect(e.cert).toBe(false)
+    expect(e.reward).toBeGreaterThan(0)
+    expect(sim.book.gifts).toEqual([])
+  })
+
+  it('fails a check and pays nothing', () => {
+    const low = inspectDay(s => (s.stock.towel = LOW_STOCK - 2))
+    const lost = inspectDay(s => (s.stats.walkedAway = 1))
+    const plain = inspectDay(s => (s.items = s.items.filter(i => i.id < 900)))
+    const results = [low, lost, plain].map(sim => {
+      const money = sim.money
+      const [e] = toThree(sim)
+      expect(sim.money).toBe(money)
+      expect(sim.book.gifts).toEqual([])
+      expect(e).toMatchObject({ reward: 0, cert: false })
+      return e
+    })
+    expect(results[0]).toMatchObject({ checks: { stock: false, calm: true, tidy: true }, low: { item: 'towel', count: LOW_STOCK - 2 } })
+    expect(results[1]).toMatchObject({ checks: { stock: true, calm: false, tidy: true }, lost: 1 })
+    expect(results[2]).toMatchObject({ checks: { stock: true, calm: true, tidy: false } })
+  })
+
+  it('inspects nothing on another day', () => {
+    const sim = inspectDay(s => (s.eventBook.plan = { kind: 'inspect', day: 13, minute: 900 }))
+    expect(toThree(sim)).toEqual([])
+    expect(sim.eventBook.inspected).toBe(false)
   })
 })

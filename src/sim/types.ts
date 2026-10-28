@@ -179,6 +179,16 @@ export type SimEvent =
   | { type: 'kolPosted'; customerId: number }
   /** Mi Mi left below 3 stars or walked out; nothing is lost. */
   | { type: 'kolLeft'; customerId: number }
+  /** The inspector looked round: each check, the first low item, how many left, the beauty, and what it paid. */
+  | {
+      type: 'inspected'
+      checks: { stock: boolean; calm: boolean; tidy: boolean }
+      low: { item: StockItem; count: number } | null
+      lost: number
+      beauty: number
+      reward: number
+      cert: boolean
+    }
   /** A new month began with a new monthly quest. */
   /** `ended`: the festival whose quest the month just over left unfinished. */
   | { type: 'monthStarted'; month: number; ended: FestivalId | null }
