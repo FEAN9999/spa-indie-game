@@ -49,16 +49,17 @@ describe('giving quests', () => {
   })
 
   it('gives a new monthly quest on the first day of a month, of another kind, and says so', () => {
+    // months 4 and 5, which have no festival, so both quests come from the plain pool
     const sim = day8()
+    sim.day = 11
     sim.startDay()
-    expect(sim.progress.monthFrom).toBe(7)
+    expect(sim.progress.monthFrom).toBe(10)
     const before = sim.progress.monthly!.kind
     sim.drainEvents()
     sim.startDay()
-    expect(sim.day).toBe(10)
-    // the month before was 8/3, whose festival quest was left unfinished
-    expect(sim.drainEvents()).toContainEqual({ type: 'monthStarted', month: 4, ended: 'march8' })
-    expect(sim.progress.monthFrom).toBe(10)
+    expect(sim.day).toBe(13)
+    expect(sim.drainEvents()).toContainEqual({ type: 'monthStarted', month: 5, ended: null })
+    expect(sim.progress.monthFrom).toBe(13)
     expect(sim.progress.monthly!.kind).not.toBe(before)
   })
 
