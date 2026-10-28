@@ -51,3 +51,30 @@ export function hireStaff(sim: SpaSim, role: StaffRole, stats: StaffStats = { sk
   if (problem) throw new Error(`cannot hire: ${problem}`)
   return sim.staff[sim.staff.length - 1]
 }
+
+/**
+ * Ten days of a shop with one technician and nobody else serving: who came each day and who applied the next morning.
+ * Compared against a log made before a change, it checks that new rules leave the shop's draws alone.
+ */
+export function runLog(days = 10): { day: number; arrivals: string[]; candidates: string[] }[] {
+  const sim = new SpaSim({ rng: createRng(2024) })
+  sim.profileDone = true
+  hireStaff(sim, 'technician')
+  const log: { day: number; arrivals: string[]; candidates: string[] }[] = []
+  for (let d = 0; d < days; d++) {
+    const arrivals: string[] = []
+    for (let t = 0; !sim.dayOver; t += 100) {
+      if (t > 400_000) throw new Error('day did not end')
+      sim.advance(100)
+      for (const e of sim.drainEvents()) {
+        if (e.type !== 'customerArrived') continue
+        const c = sim.customers.find(x => x.id === e.id)!
+        arrivals.push(`${c.id}:${c.kind}:${c.service}:${c.regular ?? ''}:${c.vip ?? ''}`)
+      }
+    }
+    const day = sim.day
+    sim.startDay()
+    log.push({ day, arrivals, candidates: sim.candidates.map(c => `${c.name}:${c.role}`) })
+  }
+  return log
+}

@@ -1,0 +1,216 @@
+[
+  {
+    "day": 1,
+    "arrivals": [
+      "1:office:shampoo::",
+      "2:office:shampoo::",
+      "3:student:shampoo::",
+      "4:student:shampoo::",
+      "5:student:shampoo::",
+      "6:student:shampoo::",
+      "7:student:shampoo::",
+      "8:student:shampoo::",
+      "9:student:shampoo::",
+      "10:student:shampoo::"
+    ],
+    "candidates": []
+  },
+  {
+    "day": 2,
+    "arrivals": [
+      "11:student:shampoo::",
+      "12:office:shampoo::",
+      "13:student:shampoo::",
+      "14:student:shampoo::",
+      "15:student:shampoo::",
+      "16:office:shampoo::",
+      "17:student:shampoo::",
+      "18:office:shampoo::",
+      "19:student:shampoo::",
+      "20:office:shampoo::",
+      "21:office:shampoo::",
+      "22:office:shampoo::",
+      "23:student:shampoo::",
+      "24:student:shampoo::",
+      "25:office:shampoo::",
+      "26:student:shampoo::",
+      "27:student:shampoo::",
+      "28:student:shampoo::",
+      "29:office:shampoo::",
+      "30:student:shampoo::",
+      "31:office:shampoo::"
+    ],
+    "candidates": [
+      "Bảo:technician",
+      "Hoa:technician",
+      "Khang:technician"
+    ]
+  },
+  {
+    "day": 3,
+    "arrivals": [
+      "32:office:shampoo::",
+      "33:picky:shampoo::",
+      "34:picky:shampoo::",
+      "35:office:shampoo::",
+      "36:student:shampoo::",
+      "37:picky:shampoo::",
+      "38:office:shampoo::",
+      "39:office:shampoo::",
+      "40:student:shampoo::",
+      "41:student:shampoo::",
+      "42:picky:shampoo::",
+      "43:student:shampoo::",
+      "44:office:shampoo::",
+      "45:student:shampoo::"
+    ],
+    "candidates": [
+      "Mai:technician",
+      "Trang:technician",
+      "Duy:technician"
+    ]
+  },
+  {
+    "day": 4,
+    "arrivals": [
+      "46:student:shampoo::",
+      "47:picky:shampoo::",
+      "48:office:shampoo::",
+      "49:student:shampoo::",
+      "50:picky:shampoo::",
+      "51:office:shampoo::",
+      "52:elder:shampoo::",
+      "53:office:shampoo::",
+      "54:office:shampoo::",
+      "55:elder:shampoo::",
+      "56:picky:shampoo::"
+    ],
+    "candidates": [
+      "Tùng:technician",
+      "Ngọc:technician",
+      "Phúc:technician"
+    ]
+  },
+  {
+    "day": 5,
+    "arrivals": [
+      "57:student:shampoo::",
+      "58:picky:shampoo::",
+      "59:office:shampoo::",
+      "60:office:shampoo::",
+      "61:student:shampoo::",
+      "62:office:shampoo::",
+      "63:student:shampoo::",
+      "64:student:shampoo::",
+      "65:student:shampoo::",
+      "66:student:shampoo::",
+      "67:office:shampoo::",
+      "68:office:shampoo::",
+      "69:office:shampoo::"
+    ],
+    "candidates": [
+      "An:technician",
+      "Nam:technician",
+      "Cúc:technician"
+    ]
+  },
+  {
+    "day": 6,
+    "arrivals": [
+      "70:picky:shampoo::",
+      "71:picky:shampoo::",
+      "72:office:shampoo::",
+      "73:student:shampoo::",
+      "74:office:shampoo::",
+      "75:student:shampoo::",
+      "76:student:shampoo::",
+      "77:office:shampoo::",
+      "78:elder:shampoo::",
+      "79:student:shampoo::",
+      "80:elder:shampoo::",
+      "81:student:shampoo::"
+    ],
+    "candidates": [
+      "Hương:technician",
+      "Trang:technician",
+      "Sơn:technician"
+    ]
+  },
+  {
+    "day": 7,
+    "arrivals": [
+      "82:office:shampoo::",
+      "83:student:shampoo::",
+      "84:elder:shampoo::",
+      "85:office:shampoo:hanh:",
+      "86:elder:shampoo::",
+      "87:student:shampoo::",
+      "88:office:shampoo::",
+      "89:celeb:shampoo::",
+      "90:celeb:shampoo::",
+      "91:picky:shampoo::",
+      "92:office:shampoo::"
+    ],
+    "candidates": [
+      "Yến:technician",
+      "Sơn:technician",
+      "Trang:technician"
+    ]
+  },
+  {
+    "day": 8,
+    "arrivals": [
+      "93:student:shampoo::",
+      "94:elder:shampoo::",
+      "95:picky:shampoo::",
+      "96:student:shampoo::",
+      "97:office:shampoo::",
+      "98:office:shampoo::",
+      "99:student:shampoo::",
+      "100:elder:shampoo::",
+      "101:office:shampoo::",
+      "102:picky:shampoo::"
+    ],
+    "candidates": [
+      "An:technician",
+      "Minh:technician",
+      "Tâm:receptionist"
+    ]
+  },
+  {
+    "day": 9,
+    "arrivals": [
+      "103:picky:shampoo::",
+      "104:student:shampoo::",
+      "105:elder:shampoo::",
+      "106:office:shampoo::",
+      "107:elder:shampoo::",
+      "108:office:shampoo:hanh:",
+      "109:student:shampoo:vy:",
+      "110:student:shampoo::"
+    ],
+    "candidates": [
+      "Hoa:technician",
+      "Hùng:receptionist",
+      "Tùng:technician"
+    ]
+  },
+  {
+    "day": 10,
+    "arrivals": [
+      "111:student:shampoo::",
+      "112:celeb:shampoo::",
+      "113:office:shampoo:hanh:",
+      "114:picky:shampoo::",
+      "115:student:shampoo::",
+      "116:student:shampoo::",
+      "117:elder:shampoo::",
+      "118:office:shampoo::"
+    ],
+    "candidates": [
+      "Phúc:technician",
+      "Tùng:receptionist",
+      "Quân:technician"
+    ]
+  }
+]
