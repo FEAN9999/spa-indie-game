@@ -1,8 +1,8 @@
-# Đợt 4 lô A: chuỗi và Bãi biển (save v22) Implementation Plan
+# Đợt 4 lô A: chuỗi và Bãi biển (save v23) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** A shop at 3★ gets a fifth button, Chuỗi. It opens a map where the owner buys a beach branch for 5.000.000 đ and can walk into it. The branch has its own room, surfboard, tourists and staff, and keeps running while she is elsewhere, on one clock and one purse. Every evening's summary adds a chain block. Save version 22.
+**Goal:** A shop at 3★ gets a fifth button, Chuỗi. It opens a map where the owner buys a beach branch for 5.000.000 đ and can walk into it. The branch has its own room, surfboard, tourists and staff, and keeps running while she is elsewhere, on one clock and one purse. Every evening's summary adds a chain block. Save version 23.
 
 **Architecture:**
 - **A branch is a `SpaSim` with `place` set.** It has its own rng and shares the main shop's purse. `src/sim/places.ts` holds the place data and the pure price rule.
@@ -19,7 +19,7 @@
 **Spec:** `docs/superpowers/specs/2026-10-28-dot-4-chuoi-spa-design.md`. Lô A covers:
 - §5 (the bans);
 - §7.1–7.3, the beach in §7.4, §7.5–7.8 and §7.11;
-- §8.1–8.5, the tourist in §8.6 and v22 in §8.9;
+- §8.1–8.5, the tourist in §8.6 and v23 in §8.9;
 - §9 lô A and §10.
 
 **Visual reference:**
@@ -64,12 +64,12 @@
   - **An absent shop with no technician gets no customers.** Nobody walks out unfairly.
   - **Old saves open with nothing lost.**
   - **Text never overflows or overlaps** at iPhone width.
-- **Save v22:**
+- **Save v23:**
   - `SaveData.place: PlaceId | null`.
   - `SaveData.chain: { at: PlaceId | null; told: boolean; branches: SaveData[] } | null`.
     - Only the main shop has a chain; a branch has `chain: null`.
     - `told` means the "Mở chuỗi spa" card has been shown.
-  - A v21 or older save gets `place: null` and `chain: { at: null, told: false, branches: [] }`.
+  - A v22 or older save gets `place: null` and `chain: { at: null, told: false, branches: [] }`.
 - **Sounds:** opening a branch plays `levelUp`; switching shops plays `chime`. No new sounds.
 - **Copy, verbatim:**
   - **Names:**
@@ -483,7 +483,7 @@
 - [ ] **Step 4: Check.** `tsc` and `vitest` are green.
 - [ ] **Step 5: Commit:** "Add the chain: one clock and one purse for the main shop and its branches, opening and switching, and the main shop's cards kept while the owner is away"
 
-### Task 4: Save v22
+### Task 4: Save v23
 
 **Files:**
 - Create: `tests/fixtures/save-v21.json`
@@ -509,7 +509,7 @@
     - an away book with 3 profits;
     - a numeric `savedAt`.
   - It is never edited afterwards.
-- [ ] **Step 2: Write the failing save tests** in `tests/sim/save.test.ts`, in `describe('save version 22')`:
+- [ ] **Step 2: Write the failing save tests** in `tests/sim/save.test.ts`, in `describe('save version 23')`:
   - **The v21 fixture:**
     - It parses with `place: null` and `chain: { at: null, told: false, branches: [] }`.
     - It keeps day 36, 3★ and `savedAt`.
@@ -534,7 +534,7 @@
   - **A broken branch:** a branch whose item sits on a wall (`SpaSim.fromSave` throws `SaveError`) is dropped, and the main shop loads.
   - **The saved shape:** `toSave()` has `place: null`. Its branches have `place: 'beach'` and `chain: null`.
 - [ ] **Step 4: Implement.**
-  - `SAVE_VERSION = 22`, and `parseVersioned` also accepts 21.
+  - `SAVE_VERSION = 23`, and `parseVersioned` also accepts 21 and 22.
   - **Split `parseSave`:**
     - The present body becomes the private `parseShop(raw)`.
     - `parseSave` then forces `place = null` and sets `chain = repairChain(raw.chain, data)` with the rules tested above.

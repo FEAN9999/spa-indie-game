@@ -20,9 +20,9 @@ Cách đọc giống các spec trước:
 - **Chi nhánh là tiệm thật, vào chơi được.** Các tiệm vắng chủ vẫn mở cửa và do nhân viên chạy. Em đề xuất cách này, anh giao em quyết. **(em đề xuất)**
 - **Trước khi làm, em đã xem các game mã nguồn mở** (Mindustry, Unciv, Widelands, Kittens Game, Evolve, Antimatter Dimensions, Trimps). Mục 6 ghi em lấy gì.
 - **Chia ba lô:** **(em đề xuất)**
-  - **Lô A, save v22:** chuỗi, bản đồ, chi nhánh Bãi biển và khách du lịch, các tiệm chạy cùng nhau, tự nhập hàng, tổng kết cả chuỗi, thẻ VIP khi vắng.
-  - **Lô B, save v23:** Phố cổ và Khu cao cấp, khách Tây ba lô và quý bà.
-  - **Lô C, save v24:** chuyển nhân viên giữa các tiệm, tiền khi vắng cho cả chuỗi.
+  - **Lô A, save v23:** chuỗi, bản đồ, chi nhánh Bãi biển và khách du lịch, các tiệm chạy cùng nhau, tự nhập hàng, tổng kết cả chuỗi, thẻ VIP khi vắng.
+  - **Lô B, save v24:** Phố cổ và Khu cao cấp, khách Tây ba lô và quý bà.
+  - **Lô C, save v25:** chuyển nhân viên giữa các tiệm, tiền khi vắng cho cả chuỗi.
 - **Anh duyệt tài liệu này một lần cho cả ba lô.** Sau đó em làm liền một mạch. Xong lô nào, test tự động và phần em tự chơi thử trên trình duyệt đều đạt, thì em tự merge vào master, đẩy lên mạng rồi báo anh. **(giữ cách của Đợt 2 và 3)**
 - Mỗi lô có kế hoạch kỹ thuật riêng, viết ngay trước khi làm lô đó.
 
@@ -308,13 +308,13 @@ Cách đọc giống các spec trước:
 
 ### 8.9 Save và tiệm cũ
 
-- **v22 (lô A):**
+- **v23 (lô A):**
   - `SaveData.place: PlaceId | null`;
   - `SaveData.chain: { at: PlaceId | null; told: boolean; branches: SaveData[] } | null`, chỉ tiệm gốc có;
   - `told` là đã hiện thẻ "Mở chuỗi spa".
-  - Ô lưu v21: `place = null`, `chain = { at: null, told: false, branches: [] }`.
-- **v23 (lô B):** chỉ để ô lưu có kiểu khách mới không bị bản cũ đọc nhầm (bản cũ báo "quá mới").
-- **v24 (lô C):** `Staff.moveTo`, `AwayBook` của chi nhánh (chi nhánh từ v22–v23 nhận sổ trống).
+  - Ô lưu v22 trở về trước: `place = null`, `chain = { at: null, told: false, branches: [] }`.
+- **v24 (lô B):** chỉ để ô lưu có kiểu khách mới không bị bản cũ đọc nhầm (bản cũ báo "quá mới").
+- **v25 (lô C):** `Staff.moveTo`, `AwayBook` của chi nhánh (chi nhánh từ v23–v24 nhận sổ trống).
 - **Sửa ô lưu hỏng:**
   - chi nhánh trùng nơi: giữ cái đầu;
   - chi nhánh lệch ngày hay phút: đặt theo tiệm gốc;
@@ -325,18 +325,18 @@ Cách đọc giống các spec trước:
 
 ## 9. Ba lô
 
-### Lô A: chuỗi và Bãi biển (save v22)
+### Lô A: chuỗi và Bãi biển (save v23)
 - `Chain`, đồng hồ chung, túi tiền chung, tiệm vắng chủ, tự nhập hàng.
 - Nút Chuỗi, thẻ "Mở chuỗi spa", bản đồ, mở chi nhánh, đổi tiệm.
 - Bãi biển: vỏ phòng, ván lướt sóng, khách du lịch.
 - Sáng ở tiệm gốc, thẻ đóng cửa, tổng kết cả chuỗi.
 - Thẻ VIP khi vắng, thẻ sự kiện tiệm gốc chờ chủ về.
 
-### Lô B: Phố cổ và Khu cao cấp (save v23)
+### Lô B: Phố cổ và Khu cao cấp (save v24)
 - Hai vỏ phòng, dây đèn lồng, chậu lan, khách Tây ba lô, quý bà.
 - Ghim mở theo 4★ và 5★.
 
-### Lô C: người và tiền khi vắng (save v24)
+### Lô C: người và tiền khi vắng (save v25)
 - Chuyển tiệm trên thẻ nhân viên.
 - Tiền khi vắng cả chuỗi.
 
