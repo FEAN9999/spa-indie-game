@@ -18,9 +18,15 @@ export class SaveSession {
     private readonly store: SaveStore,
     private readonly current: () => SaveData,
     private readonly reload: () => void,
+    private readonly now: () => number = () => Date.now(),
   ) {
     this.slot = store.currentSlot()
     this.known = store.raw(this.slot)
+  }
+
+  /** False once the session has closed for a reload. */
+  get open(): boolean {
+    return !this.closed
   }
 
   /** The shop in the slot in use, or null; a save that cannot be read is set aside first. Throws SaveTooNewError, leaving the slot alone, for one from a newer version. */
@@ -52,7 +58,7 @@ export class SaveSession {
 
   replaceWith(data: SaveData): void {
     if (this.closed) return
-    this.store.save(this.slot, data)
+    this.store.save(this.slot, this.stamp(data))
     this.leave()
   }
 
@@ -70,9 +76,14 @@ export class SaveSession {
   /** Saves unless another page has written the slot since; false when it has. */
   private write(): boolean {
     if (this.store.raw(this.slot) !== this.known || this.store.isTooNew(this.slot)) return false
-    this.store.save(this.slot, this.current())
+    this.store.save(this.slot, this.stamp(this.current()))
     this.known = this.store.raw(this.slot)
     return true
+  }
+
+  /** The shop as written now: the sim never knows the real time, so it is put on at the write. */
+  private stamp(data: SaveData): SaveData {
+    return { ...data, savedAt: this.now() }
   }
 
   private leave(): void {

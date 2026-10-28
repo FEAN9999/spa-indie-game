@@ -120,4 +120,48 @@ describe('save session', () => {
     session.reloadForUpdate()
     expect([mem.getItem('spa.slot.1'), mem.getItem('spa.slot.1.broken')]).toEqual([raw, null])
   })
+
+  describe('stamps the real time', () => {
+    const stamped = () => {
+      const store = new SaveStore(new MemStorage())
+      const reloads: string[] = []
+      let t = 0
+      const now = () => (t += 1000)
+      const session = new SaveSession(store, () => shop(1), () => reloads.push('reload'), now)
+      return { store, session, reloads }
+    }
+
+    it('saveNow stamps whatever the shop carried', () => {
+      const { store, session } = stamped()
+      session.saveNow()
+      expect(store.load(1)?.savedAt).toBe(1000)
+    })
+
+    it('switching slots stamps the shop it leaves', () => {
+      const { store, session } = stamped()
+      session.switchTo(2)
+      expect(store.load(1)?.savedAt).toBe(1000)
+    })
+
+    it('reloading for an update stamps', () => {
+      const { store, session } = stamped()
+      session.reloadForUpdate()
+      expect(store.load(1)?.savedAt).toBe(1000)
+    })
+
+    it('an imported shop gets the moment it came in, not the one it carried', () => {
+      const { store, session } = stamped()
+      session.replaceWith({ ...shop(5), savedAt: 5 })
+      expect(store.load(1)?.savedAt).toBe(1000)
+    })
+
+    it('is open until a change made elsewhere closes it', () => {
+      const { store, session } = stamped()
+      session.saveNow()
+      expect(session.open).toBe(true)
+      store.save(1, shop(9))
+      session.reloadIfChangedElsewhere()
+      expect(session.open).toBe(false)
+    })
+  })
 })
