@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { badgeTextures } from '../art/badges'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { floorTextures } from '../art/floors'
@@ -34,6 +35,7 @@ export class BootScene extends Phaser.Scene {
       ...furnitureTextures(),
       ...chibiTextures(),
       ...fxTextures(),
+      ...badgeTextures(),
       ...shampooTextures(),
       ...maskTextures(),
       ...massageTextures(),

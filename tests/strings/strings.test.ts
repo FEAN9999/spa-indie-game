@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { RECIPE_TRY_COST } from '../../src/config'
 import { REGULAR_IDS } from '../../src/sim/regulars'
-import { formatMoney } from '../../src/strings/format'
+import { formatCount, formatMoney } from '../../src/strings/format'
 import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
 import { RECIPE_HINT_TEXT, t } from '../../src/strings/vi'
 import { VIP_TEXT } from '../../src/strings/vips'
@@ -12,6 +12,11 @@ describe('strings', () => {
     expect(formatMoney(0)).toBe('0 đ')
     expect(formatMoney(40000)).toBe('40.000 đ')
     expect(formatMoney(1234567)).toBe('1.234.567 đ')
+  })
+
+  it('groups a count by thousands with dots', () => {
+    expect(formatCount(1000)).toBe('1.000')
+    expect(formatCount(63)).toBe('63')
   })
 
   it('fills params into strings', () => {
