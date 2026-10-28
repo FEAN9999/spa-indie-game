@@ -358,12 +358,12 @@ function fetchWaiting(h: CrewHost, s: Staff): boolean {
   const hasRoom = (service: ServiceId) => freeBeds(sim, service) > fetchesOf(service)
   const stockFetches = (item: StockItem) => sim.customers.filter(c => fetched.has(c.id) && STOCK_USES[c.service].includes(item)).length
   const hasStock = (service: ServiceId) => !sim.stockTracked() || STOCK_USES[service].every(item => sim.stock[item] > stockFetches(item))
-  const ownersTurn = (c: Customer) => c.regular !== null && c.heldMs < REGULAR_OWNER_MS
+  const ownersTurn = (c: Customer) => sim.ownerHere && c.regular !== null && c.heldMs < REGULAR_OWNER_MS
   const queue = sim.customers.filter(c => c.state === 'waiting' && c.seat && !fetched.has(c.id) && c.vip === null)
   // a regular in her owner window keeps her place: nobody who came after her takes her service's bed meanwhile
   const heldFor = (c: Customer) => queue.some(r => ownersTurn(r) && r.service === c.service && r.stateMs >= c.stateMs)
   // a VIP's service waits for her: its beds stay free until the owner sends her to one
-  const vipHeld = sim.customers.filter(c => c.vip !== null && c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state)).map(c => c.service)
+  const vipHeld = !sim.ownerHere ? [] : sim.customers.filter(c => c.vip !== null && c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state)).map(c => c.service)
   const urgent = (c: Customer) => c.patienceMs < c.patienceMaxMs / 2
   const next = queue
     .filter(c => !vipHeld.includes(c.service) && !heldFor(c) && hasRoom(c.service) && hasStock(c.service) && !sim.machineDown(c.service))

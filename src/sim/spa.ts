@@ -121,6 +121,9 @@ function moveAlong(m: Mover, speed: number, dtMs: number): void {
   }
 }
 
+/** Where a customer is while the shop has not yet put them on a bed. */
+const WAITING_STATES: CustomerState[] = ['arriving', 'toSeat', 'waiting']
+
 export interface SpaSimOptions {
   rng: Rng
   layout?: string[]
@@ -150,6 +153,8 @@ export class SpaSim {
   /** Tomorrow's or today's event, the hot days and the day's event counts. */
   eventBook: EventBook = emptyEventBook()
   paused = false
+  /** The owner is in this shop; an absent shop runs on its staff. Not saved. */
+  ownerHere = true
   servingCustomerId: number | null = null
   dayOver = false
   shopName = t('defaultShopName')
@@ -234,13 +239,80 @@ export class SpaSim {
     return branch
   }
 
-  advance(ms: number): void {
-    for (let left = ms; left > 0; left -= STEP_MS) this.step(Math.min(STEP_MS, left))
+  /** Runs `ms` of game time in STEP_MS steps; returns the ms it really stepped, which is less when the shop is paused, serving or over. */
+  advance(ms: number): number {
+    let ran = 0
+    for (let left = ms; left > 0; left -= STEP_MS) {
+      const dt = Math.min(STEP_MS, left)
+      if (!this.step(dt)) break
+      ran += dt
+    }
+    return ran
   }
 
-  /** Per-frame entry point; a huge delta (phone was locked) is clamped. */
-  update(dtMs: number): void {
-    this.advance(Math.min(dtMs, MAX_FRAME_MS))
+  /** Per-frame entry point; a huge delta (phone was locked) is clamped. Returns the ms really stepped. */
+  update(dtMs: number): number {
+    return this.advance(Math.min(dtMs, MAX_FRAME_MS))
+  }
+
+  /** True when a technician who is not being let go works here. */
+  hasTechnician(): boolean {
+    return this.staff.some(s => s.role === 'technician' && !s.leaving)
+  }
+
+  /** The customer the owner is walking to a bed, if any. */
+  private walkingToBed(): Customer | undefined {
+    const task = this.owner.task
+    return task?.kind === 'serve' ? this.customers.find(c => c.id === task.customerId && c.state === 'toStation') : undefined
+  }
+
+  /** How many customers would be sent away if the owner left now: none with a technician, else everyone arriving, walking to a seat or waiting, and the one the owner is walking to a bed. */
+  leaversIfOwnerGoes(): number {
+    if (this.hasTechnician()) return 0
+    const toBed = this.walkingToBed()
+    return this.customers.filter(c => c === toBed || WAITING_STATES.includes(c.state)).length
+  }
+
+  /** The owner goes: a walk to a bed is undone, the owner's task ends, and with no technician the shop's customers leave quietly. */
+  ownerLeaves(): void {
+    const walking = this.walkingToBed()
+    if (walking) {
+      const station = this.stations.find(s => s.id === walking.stationId)
+      if (station) station.customerId = null
+      walking.stationId = null
+      if (this.stockTracked()) for (const item of STOCK_USES[walking.service]) this.stock[item]++
+      const seat = this.seats.find(s => s.customerId === null)
+      if (seat) seat.customerId = walking.id
+      this.sendToSeat(walking, seat ? seat.tile : this.standSpot())
+    }
+    this.owner.task = null
+    this.owner.path = []
+    this.ownerHere = false
+    if (!this.hasTechnician()) this.leaveQuietly()
+  }
+
+  /** The owner is back: at the start, facing down, with nothing to do. */
+  ownerArrives(): void {
+    this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    this.ownerHere = true
+  }
+
+  /** Everyone is gone at once and the staff's tasks are repaired; the shop can then end its day. */
+  clearOut(): void {
+    this.customers = []
+    for (const s of this.seats) s.customerId = null
+    for (const s of this.stations) s.customerId = null
+    repairAfterLoad(this.crew)
+  }
+
+  /** Customers not yet in service walk out with no review, no count and no lost visit. */
+  private leaveQuietly(): void {
+    for (const c of this.customers) {
+      if (!WAITING_STATES.includes(c.state)) continue
+      this.freeSeat(c)
+      c.mood = null
+      this.startLeaving(c)
+    }
   }
 
   /** The owner's look and the shop's name, chosen when the shop is made. */
@@ -455,7 +527,7 @@ export class SpaSim {
 
   /** A tap on the shop floor: fetch the waiting customer sitting there, offer a bed on an open bed slot, or walk there. */
   tapTile(t: Tile): void {
-    if (this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
+    if (!this.ownerHere || this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
     const from = this.ownerTile()
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
@@ -1205,12 +1277,13 @@ export class SpaSim {
     m.path = tileEq(from, m.pos) ? route : [from, ...route]
   }
 
-  private step(dt: number): void {
-    if (this.paused || this.dayOver || this.servingCustomerId !== null) return
+  /** One step of `dt` ms; false, having done nothing, when the shop is paused, serving or over. */
+  private step(dt: number): boolean {
+    if (this.paused || this.dayOver || this.servingCustomerId !== null) return false
     const before = this.clock.minutes
     this.clock.advance(dt)
 
-    if (this.autoSpawn && !this.clock.isClosed) {
+    if (this.autoSpawn && !this.clock.isClosed && (this.ownerHere || this.hasTechnician())) {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
         // a regular whose hour has come takes the place of a stranger, but only when a seat is left for her once
@@ -1252,6 +1325,10 @@ export class SpaSim {
     for (const c of [...this.customers]) this.updateCustomer(c, dt)
     this.updateOwnerTask()
     for (const s of this.staff) updateStaff(this.crew, s, dt)
+    if (!this.ownerHere) {
+      if (!this.hasTechnician()) this.leaveQuietly()
+      for (const item of this.lowStock()) if (this.money >= RESTOCK_PRICE[item]) this.restock(item)
+    }
     this.checkBadges()
 
     if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
@@ -1278,6 +1355,7 @@ export class SpaSim {
       }
       this.emit({ type: 'dayEnded', stats: { ...this.stats } })
     }
+    return true
   }
 
   private updateCustomer(c: Customer, dt: number): void {
