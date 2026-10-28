@@ -163,6 +163,7 @@ export class OwnerScene extends Phaser.Scene {
   private openWardrobe(): void {
     const sim = this.params.sim
     if (!sim) return
+    this.nameBox.blur()
     this.nameDom.setVisible(false)
     const data: WardrobeData = {
       sim,

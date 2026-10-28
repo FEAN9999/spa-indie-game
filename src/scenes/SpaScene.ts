@@ -157,6 +157,8 @@ export class SpaScene extends Phaser.Scene {
   private studiedToastMs = 0
   /** The scene time before which a queued toast may not go up, so finished quests follow each other and whatever was said just before. */
   private toastQueueAt = 0
+  /** The wear toast, held while a panel covers the shop; a later wear replaces it. */
+  private heldWearToast: string | null = null
   /** Gold cards waiting to show, in the order they came: new badges and festival cards. */
   private badgeQueue: (BadgeId | GoldCard)[] = []
   /** The scene time the badge banner on screen is gone. */
@@ -190,6 +192,7 @@ export class SpaScene extends Phaser.Scene {
     this.stairsNote = null
     this.inspectNote = null
     this.toastQueueAt = 0
+    this.heldWearToast = null
     this.badgeQueue = []
     this.badgeUntil = 0
     this.foundToast = null
@@ -332,7 +335,7 @@ export class SpaScene extends Phaser.Scene {
   private wear(id: OutfitId): void {
     if (!this.sim.wearOutfit(id)) return
     this.rebuildOwner()
-    this.queueToast(t('outfitWornToast', { name: t(OUTFIT_NAME[id]) }))
+    this.heldWearToast = t('outfitWornToast', { name: t(OUTFIT_NAME[id]) })
     this.session.saveNow()
   }
 
@@ -746,6 +749,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   update(time: number, delta: number) {
     if (this.tooNew) return
     if (!this.modal) {
+      if (this.heldWearToast && !this.sim.paused) {
+        this.queueToast(this.heldWearToast)
+        this.heldWearToast = null
+      }
       if (!this.holding) this.sim.update(delta)
       const events = this.sim.drainEvents()
       for (const e of events) this.handle(e)

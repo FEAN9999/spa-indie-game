@@ -423,7 +423,6 @@ export const vi = {
   newOutfitMore: 'và {n} bộ khác trong Tủ áo',
   newOutfitLater: 'Để sau',
   newOutfitTry: 'Mặc thử',
-  yearTrophyDress: 'Lần đầu nên có thêm cúp vàng (vào Xây dựng) và áo dài Spa của năm.',
   badgeServed100: 'Trăm khách',
   badgeServed100Cond: 'Phục vụ 100 khách.',
   badgeServed1000: 'Nghìn khách',
