@@ -500,9 +500,9 @@ export class SpaSim {
     return receptionSpot(this.crew)
   }
 
-  /** True for a VIP who found every seat taken and waits on her feet by the desk. */
+  /** True for a VIP or Mi Mi who found every seat taken and waits on her feet by the desk. */
   isStanding(c: Customer): boolean {
-    return c.vip !== null && c.seat !== null && !this.seats.some(s => s.customerId === c.id)
+    return (c.vip !== null || c.kol) && c.seat !== null && !this.seats.some(s => s.customerId === c.id)
   }
 
   /**
@@ -962,7 +962,7 @@ export class SpaSim {
     this.emit({ type: 'roomChanged' })
   }
 
-  /** Gives each standing VIP whose spot is now under furniture, or out of the door's reach, a new one; returns them. */
+  /** Gives each standing VIP or Mi Mi whose spot is now under furniture, or out of the door's reach, a new one; returns them. */
   private restandVips(): Customer[] {
     const reached = doorReach(this.grid, this.grid.door)
     const moved = this.customers.filter(c => ['toSeat', 'waiting'].includes(c.state) && this.isStanding(c) && !(isWalkable(this.grid, c.seat!) && reached(c.seat!)))
@@ -1246,9 +1246,12 @@ export class SpaSim {
     c.mood = 'angry'
     this.addReview(c, ANGRY_REVIEW)
     if (c.regular) loseVisit(this.book, c.regular)
-    this.stats.angry++
+    // Mi Mi walking out costs nothing (spec 7.5): no angry customer on the summary, no lost one for the quests or the clean day
     if (c.kol) this.emit({ type: 'kolLeft', customerId: c.id })
-    this.count(t => t.lost++)
+    else {
+      this.stats.angry++
+      this.count(t => t.lost++)
+    }
     this.startLeaving(c)
   }
 

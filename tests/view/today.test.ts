@@ -28,8 +28,13 @@ describe("today's line", () => {
   it("follows Mi Mi's day: booked, here, then gone", () => {
     const sim = on(13, s => (s.eventBook.plan = { kind: 'kol', day: 13, minute: 870 }))
     expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.kol, text: 'KOL Mi Mi hẹn 14:30' })
-    sim.spawnCustomer({ kol: true })
+    const mimi = sim.spawnCustomer({ kol: true })
     expect(todayLine(sim)).toEqual({ icon: EVENT_ICON.kol, text: 'Mi Mi đang ở tiệm' })
+    // gone once she is on her way out
+    for (const state of ['leaving', 'exiting'] as const) {
+      mimi.state = state
+      expect(todayLine(sim), state).toBeNull()
+    }
     sim.customers = []
     expect(todayLine(sim)).toBeNull()
   })

@@ -40,12 +40,12 @@ export function hotCard(): GoldCard {
   return { icon: EVENT_ICON.hot, head: t('hotHead'), name: t('hotName'), line: t('hotLine'), quiet: true }
 }
 
-/** Today's line for an event: the inspection until done, then Mi Mi booked, here, or gone. */
+/** Today's line for an event: the inspection until done, then Mi Mi booked, in the shop, or none once she is on her way out. */
 export function eventLine(sim: SpaSim): TodayLine | null {
   const plan = sim.eventBook.plan?.day === sim.day ? sim.eventBook.plan : null
   if (plan?.kind === 'inspect' && !sim.eventBook.inspected) return { icon: EVENT_ICON.inspect, text: t('todayInspect', { time: clockLabel(plan.minute) }) }
   if (plan?.kind === 'kol') return { icon: EVENT_ICON.kol, text: t('todayKol', { time: clockLabel(plan.minute) }) }
-  if (sim.customers.some(c => c.kol)) return { icon: EVENT_ICON.kol, text: t('todayKolHere') }
+  if (sim.customers.some(c => c.kol && c.state !== 'leaving' && c.state !== 'exiting')) return { icon: EVENT_ICON.kol, text: t('todayKolHere') }
   return null
 }
 

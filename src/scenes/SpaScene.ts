@@ -689,8 +689,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
       if (low.length > 0) this.queueToast(stockLowText(low))
       if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
-      if (this.inspectNote && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
-      this.pumpBadges()
+      // a card opened by this frame's events (a bed slot's) goes first; a badge card waits for whichever card is up, rather than play under it
+      if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
+      if (!this.modal) this.pumpBadges()
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose

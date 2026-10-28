@@ -143,6 +143,8 @@ describe('Mi Mi', () => {
     advanceUntil(sim, () => c.state === 'waiting', undefined, events)
     expect(ofType(events, 'noSeat')).toEqual([])
     expect(sim.stats.walkedAway).toBe(0)
+    // on her feet by the desk, drawn standing and moved like a VIP if her spot is built over
+    expect(sim.isStanding(c)).toBe(true)
   })
 
   it("does not count toward the shop's stars, served or walking out", () => {
@@ -157,6 +159,9 @@ describe('Mi Mi', () => {
     advanceUntil(sim, () => c.mood === 'angry', 400_000, events)
     expect(sim.reviews).toEqual([])
     expect(ofType(events, 'kolLeft')).toEqual([{ type: 'kolLeft', customerId: c.id }])
+    // spec 7.5: her walking out costs nothing, so no angry customer on the summary and no lost one for the quests
+    expect(sim.stats.angry).toBe(0)
+    expect(sim.progress.total.lost).toBe(0)
   })
 
   it('makes the next two days hot with her 3 stars', () => {
