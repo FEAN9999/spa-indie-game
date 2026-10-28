@@ -49,7 +49,7 @@ import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
-import { lockedText } from '../view/starter'
+import { goalCard, lockedText } from '../view/starter'
 import { StaffLayer } from '../view/StaffLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
@@ -1130,6 +1130,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       case 'festivalStarted':
         this.badgeQueue.push(festivalStartCard(e, monthOf(this.sim.day)))
+        return
+      case 'goalDone':
+        if (e.reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
+        this.badgeQueue.push(goalCard(e))
         return
       case 'festivalQuestDone':
         this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)

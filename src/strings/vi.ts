@@ -632,6 +632,7 @@ export const vi = {
   goalStoryServices: 'Tiệm đông rồi, làm thêm món mới cho khách chọn thôi!',
   goalStoryStaff: 'Tiệm đông rồi, thuê người phụ thôi!',
   goalMaskGift: 'Quà khai trương: mở Đắp mặt nạ, tặng 1 giường mặt nạ',
+  goalMaskGiftPaid: 'Quà khai trương: trả lại tiền mở Đắp mặt nạ, tặng 1 giường mặt nạ',
   goalLine: 'Mục tiêu: {goal} ({have}/{need})',
   opensWhenDone: 'Mở khi xong: {goal}',
   hintPlaceGift: 'Đặt giường mặt nạ ở đây',
