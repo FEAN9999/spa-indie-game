@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { FESTIVAL_PATIENCE, HOT_ARRIVAL } from '../../src/config'
+import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS } from '../../src/config'
+import { KOL_LOOK } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil } from './helpers'
+import { advanceUntil, ownerServes, seatAndWait } from './helpers'
 
 const opts = () => ({ rng: createRng(1), autoSpawn: false })
 
@@ -105,5 +106,76 @@ describe('hot days', () => {
     sim.startDay()
     expect(ofType(sim.drainEvents(), 'hotStarted')).toEqual([])
     expect(sim.hotToday()).toBe(true)
+  })
+})
+
+describe('Mi Mi', () => {
+  const kolToday = (sim: SpaSim, minute = 600) => (sim.eventBook.plan = { kind: 'kol', day: sim.day, minute })
+
+  it('walks in at her minute, once, on top of the usual arrivals', () => {
+    const sim = new SpaSim({ rng: createRng(1) })
+    sim.day = 12
+    kolToday(sim)
+    const events: SimEvent[] = []
+    advanceUntil(sim, () => sim.clock.minutes >= 599, 400_000, events)
+    expect(sim.customers.filter(c => c.kol)).toEqual([])
+    advanceUntil(sim, () => sim.clock.minutes >= 640, 400_000, events)
+    const mimi = sim.customers.filter(c => c.kol)
+    expect(mimi).toHaveLength(1)
+    expect(mimi[0]).toMatchObject({ look: KOL_LOOK, kind: 'office', vip: null, regular: null })
+    expect(ofType(events, 'kolArrived')).toEqual([{ type: 'kolArrived', customerId: mimi[0].id }])
+    expect(sim.eventBook.plan).toBeNull()
+    expect(sim.customers.filter(c => !c.kol).length).toBeGreaterThan(0)
+  })
+
+  it('is the only customer flagged as her', () => {
+    const sim = on(12)
+    expect(sim.spawnCustomer().kol).toBe(false)
+    expect(sim.spawnCustomer({ vip: 'chef' }).kol).toBe(false)
+  })
+
+  it('stands like a VIP when every seat is taken', () => {
+    const sim = on(12)
+    for (const s of sim.seats) s.customerId = 999
+    const events: SimEvent[] = []
+    const c = sim.spawnCustomer({ kol: true })
+    advanceUntil(sim, () => c.state === 'waiting', undefined, events)
+    expect(ofType(events, 'noSeat')).toEqual([])
+    expect(sim.stats.walkedAway).toBe(0)
+  })
+
+  it("does not count toward the shop's stars, served or walking out", () => {
+    for (const stars of [3, 1] as const) {
+      const sim = on(12)
+      ownerServes(sim, stars, { kol: true, service: 'shampoo' })
+      expect(sim.reviews).toEqual([])
+    }
+    const sim = on(12)
+    const c = seatAndWait(sim, { kol: true, service: 'shampoo' })
+    const events: SimEvent[] = []
+    advanceUntil(sim, () => c.mood === 'angry', 400_000, events)
+    expect(sim.reviews).toEqual([])
+    expect(ofType(events, 'kolLeft')).toEqual([{ type: 'kolLeft', customerId: c.id }])
+  })
+
+  it('makes the next two days hot with her 3 stars', () => {
+    const sim = on(12)
+    const { events } = ownerServes(sim, 3, { kol: true, service: 'shampoo' })
+    expect(sim.eventBook.hotUntil).toBe(12 + HOT_DAYS)
+    expect(ofType(events, 'kolPosted')).toHaveLength(1)
+    expect(ofType(events, 'kolLeft')).toEqual([])
+  })
+
+  it('only says she left below 3 stars', () => {
+    const sim = on(12)
+    const { events } = ownerServes(sim, 2, { kol: true, service: 'shampoo' })
+    expect(sim.eventBook.hotUntil).toBe(0)
+    expect(ofType(events, 'kolLeft')).toHaveLength(1)
+    expect(ofType(events, 'kolPosted')).toEqual([])
+  })
+
+  it('waits no longer on a hot day or in a festival', () => {
+    const patience = (sim: SpaSim) => sim.spawnCustomer({ kol: true }).patienceMaxMs
+    expect(patience(on(13, s => (s.eventBook.hotUntil = 14)))).toBe(patience(on(13)))
   })
 })

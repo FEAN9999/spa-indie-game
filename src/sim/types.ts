@@ -78,6 +78,8 @@ export interface Customer {
   heldMs: number
   /** Which VIP this is, or null. */
   vip: VipId | null
+  /** True for Mi Mi, the KOL, whose reviews never count toward the shop's stars. */
+  kol: boolean
 }
 
 export type OwnerTask = { kind: 'fetch'; customerId: number } | { kind: 'serve'; customerId: number; stationId: number }
@@ -171,6 +173,12 @@ export type SimEvent =
   | { type: 'eventToday'; plan: EventPlan }
   /** The first of the hot days after Mi Mi's 3 stars; `until` is the last. */
   | { type: 'hotStarted'; until: number }
+  /** Mi Mi walked in. */
+  | { type: 'kolArrived'; customerId: number }
+  /** Mi Mi got 3 stars and will post her video. */
+  | { type: 'kolPosted'; customerId: number }
+  /** Mi Mi left below 3 stars or walked out; nothing is lost. */
+  | { type: 'kolLeft'; customerId: number }
   /** A new month began with a new monthly quest. */
   /** `ended`: the festival whose quest the month just over left unfinished. */
   | { type: 'monthStarted'; month: number; ended: FestivalId | null }

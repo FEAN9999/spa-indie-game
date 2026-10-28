@@ -52,7 +52,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { emptyEventBook, hotOn, planEvent, type EventBook } from './events'
+import { dueKol, emptyEventBook, hotOn, KOL_LOOK, planEvent, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -304,20 +304,22 @@ export class SpaSim {
    * Draws what it is not given, in this order: look, then kind, then service.
    * A regular comes with their own look and kind and asks for their favourite while the shop has it, so draws at most the service.
    * A VIP comes the same way and asks for her own service; her patience is VIP_PATIENCE of the plain one, with nothing for the early days or her kind.
+   * Mi Mi comes in her own look as an office worker, draws only her service, and gets no festival or hot-day patience.
    */
-  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId; vip?: VipId } = {}): Customer {
+  spawnCustomer(opts: { kind?: CustomerKind; service?: ServiceId; regular?: RegularId; vip?: VipId; kol?: boolean } = {}): Customer {
     const greeter = greeterAtDesk(this.crew)
     const greetFactor = greeter ? greeterPatience(greeter) : 1
     const vipSpec = opts.vip && VIPS[opts.vip]
     const spec = opts.regular && REGULARS[opts.regular]
     const state = opts.regular && this.book.regulars[opts.regular]
-    const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : randomLook(this.rng)
-    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : (opts.kind ?? drawKind(this.day, this.rng))
+    const kol = opts.kol === true
+    const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : kol ? { ...KOL_LOOK } : randomLook(this.rng)
+    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng))
     const available = this.availableServices()
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
     // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
     // so a shop with one bed of it gets no queue that sends customers off angry
-    const festive = vipSpec || spec ? null : this.festivalServiceToday()
+    const festive = vipSpec || spec || kol ? null : this.festivalServiceToday()
     const service =
       opts.service ??
       (likes && available.includes(likes)
@@ -328,7 +330,7 @@ export class SpaSim {
     const patience = Math.round(
       vipSpec
         ? PATIENCE_MS * VIP_PATIENCE * greetFactor
-        : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1) * this.eventPatienceFactor(),
+        : PATIENCE_MS * dayEase(this.day).patience * greetFactor * KINDS[kind].patience * (state && isMember(state) ? MEMBER_PATIENCE : 1) * (kol ? 1 : this.eventPatienceFactor()),
     )
     const c: Customer = {
       id: this.nextId++,
@@ -349,6 +351,7 @@ export class SpaSim {
       regular: opts.regular ?? null,
       heldMs: 0,
       vip: opts.vip ?? null,
+      kol,
     }
     this.customers.push(c)
     this.emit({ type: 'customerArrived', id: c.id })
@@ -357,6 +360,10 @@ export class SpaSim {
       state.met = true
       state.visitAt = null
       this.emit({ type: 'regularArrived', customerId: c.id, regular: opts.regular, first })
+    }
+    if (kol) {
+      if (this.eventBook.plan?.kind === 'kol' && this.eventBook.plan.day === this.day) this.eventBook.plan = null
+      this.emit({ type: 'kolArrived', customerId: c.id })
     }
     if (opts.vip) {
       const v = this.vip.vips[opts.vip]
@@ -441,6 +448,13 @@ export class SpaSim {
       const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
       this.emit({ type: 'vipServed', customerId: c.id, vip: c.vip, stars, photo: r.photo, board: r.board })
     } else noteServed(this.book, c.kind)
+    // Mi Mi posts her video after 3 stars, and the shop is hot from the next morning
+    if (c.kol) {
+      if (stars === 3) {
+        this.eventBook.hotUntil = this.day + HOT_DAYS
+        this.emit({ type: 'kolPosted', customerId: c.id })
+      } else this.emit({ type: 'kolLeft', customerId: c.id })
+    }
     let hearts = 0
     if (c.regular) {
       const r = addVisit(this.book, c.regular, stars, technician === null, this.day)
@@ -1031,6 +1045,8 @@ export class SpaSim {
       // a booked VIP comes at her minute, on top of the usual arrivals
       const b = dueVip(this.vip, this.day, this.clock.minutes)
       if (b) this.spawnCustomer({ vip: b.vip })
+      // so does Mi Mi
+      if (dueKol(this.eventBook, this.day, this.clock.minutes)) this.spawnCustomer({ kol: true })
     }
 
     moveAlong(this.owner, OWNER_SPEED, dt)
@@ -1172,7 +1188,7 @@ export class SpaSim {
   /** Sends the customer to the first free seat; with every seat taken a VIP stands by the desk, and anyone else walks out. */
   private seatCustomer(c: Customer): void {
     const seat = this.seats.find(s => s.customerId === null)
-    if (!seat && c.vip === null) {
+    if (!seat && c.vip === null && !c.kol) {
       this.emit({ type: 'noSeat', id: c.id })
       this.stats.walkedAway++
       this.count(t => t.lost++)
@@ -1196,6 +1212,7 @@ export class SpaSim {
     this.addReview(c, ANGRY_REVIEW)
     if (c.regular) loseVisit(this.book, c.regular)
     this.stats.angry++
+    if (c.kol) this.emit({ type: 'kolLeft', customerId: c.id })
     this.count(t => t.lost++)
     this.startLeaving(c)
   }
@@ -1212,6 +1229,8 @@ export class SpaSim {
 
   /** The customer's review, once or twice by their kind; VIP_REVIEWS times from a VIP. */
   private addReview(c: Customer, score: number): void {
+    // Mi Mi's word goes into her video, never into the shop's stars
+    if (c.kol) return
     for (let i = 0; i < (c.vip ? VIP_REVIEWS : KINDS[c.kind].reviews); i++) {
       this.reviews.push(score)
       this.emit({ type: 'review', customerId: c.id, score })
