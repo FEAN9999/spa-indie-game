@@ -56,7 +56,7 @@ export class AwayScene extends Phaser.Scene {
 
   create() {
     const { sim, back, onDone } = this.params
-    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive().setDepth(-2)
     const card = this.add.graphics()
     this.add.text(MID, 410, t('awayKicker'), textStyle(34, '800', C.terracotta)).setOrigin(0.5)
     this.add.text(MID, 480, t('awayTitle', { time: awayTime(back.ms) }), textStyle(60, '800')).setOrigin(0.5)

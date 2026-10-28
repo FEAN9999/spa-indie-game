@@ -1,9 +1,9 @@
+import { C } from '../art/palette'
 import { AWAY_MAX_HOURS } from '../config'
 import type { AwayResult } from '../sim/away'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import type { GoldCard } from './festivals'
-import { C } from '../art/palette'
 
 const MIN = 60_000
 const HOUR = 60 * MIN
