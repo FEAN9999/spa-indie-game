@@ -1,7 +1,7 @@
 # Đợt 3, phần 2: lễ theo tháng và sự kiện ngẫu nhiên
 
 - Ngày: 2026-10-28
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-28, "Ok triển khai đi em")
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 6 (Đợt 3). Đi sau phần 1 `2026-10-28-dot-3-nhiem-vu-design.md` (lịch tháng, nhiệm vụ, huy hiệu), đã lên mạng.
 - Bản phác bấm thử: https://claude.ai/artifact/Mv6UqNrH4C1EQ4ynKeqdzN
 
