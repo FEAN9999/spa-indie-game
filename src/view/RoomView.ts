@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
-import { FLOOR_ROWS, MAP_X, MAP_Y, TILE } from '../config'
+import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { tileRuns, type Grid } from '../sim/grid'
@@ -26,16 +26,19 @@ const ITEM_DEPTH_BIAS = -0.5
 /** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
 const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
 
-/** The rival's sign stands on floor 1's sidewalk right of the door; its centre in tiles, and its board in pixels. */
-const RIVAL_SIGN = { x: 10.92, y: 19.1, w: 300, h: 110, top: -60 }
+/**
+ * The rival's sign stands on floor 1's sidewalk against the right edge, its board clear of today's line in the middle of the same band:
+ * its right edge and board in pixels, its middle row in tiles.
+ */
+const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
 const DARK = { color: 0x1e2440, alpha: 0.48 }
-/** The candles' places in tiles, the same on every floor: on the desk, by the waiting bench, between the first beds, by the stairs. */
+/** The candles' places in tiles, the same on every floor: on the desk, on the tea table under the waiting bench, between the first two beds, by the stairs. */
 const CANDLES = [
   { x: 9.5, y: 13.9 },
-  { x: 3.5, y: 12.6 },
-  { x: 4, y: 3.6 },
+  { x: 4, y: 15.3 },
+  { x: 3.5, y: 3.6 },
   { x: 11.2, y: 11.1 },
 ]
 /** How far over a machine's footprint its off mark sits, in tiles. */
@@ -142,17 +145,22 @@ export class RoomView {
 
   /** The sign: a cream board with the new shop's name over its opening, and two balloons on strings. */
   private rivalSign(): Phaser.GameObjects.Container {
-    const { w, h } = RIVAL_SIGN
+    const { w, h, top } = RIVAL_SIGN
+    // each balloon's string rises from just inside the board's top corner
+    const edge = w / 2
     const v = (x: number, y: number) => new Phaser.Math.Vector2(x, y)
-    const string = (side: number) => new Phaser.Curves.QuadraticBezier(v(128 * side, -30), v(140 * side, -90), v(118 * side, -110)).getPoints(12)
+    const string = (side: number) => new Phaser.Curves.QuadraticBezier(v((edge - 22) * side, top + 30), v((edge - 10) * side, top - 30), v((edge - 32) * side, top - 50)).getPoints(12)
     const g = this.scene.add.graphics().lineStyle(3, hex(C.ink)).strokePoints(string(-1)).strokePoints(string(1))
-    for (const [x, color] of [[-118, C.lotus], [118, C.water]] as const) g.fillStyle(hex(color), 1).fillEllipse(x, -128, 40, 48).lineStyle(3, hex(C.ink)).strokeEllipse(x, -128, 40, 48)
-    g.fillStyle(hex(C.cream), 1).fillRoundedRect(-w / 2, RIVAL_SIGN.top, w, h, 18).lineStyle(4, hex(C.ink)).strokeRoundedRect(-w / 2, RIVAL_SIGN.top, w, h, 18)
-    const name = this.scene.add.text(0, -26, t('rivalSignName'), textStyle(36, '800', C.terracotta)).setOrigin(0.5)
-    const line = this.scene.add.text(0, 18, t('rivalSignLine'), textStyle(24, '600', C.soft)).setOrigin(0.5)
-    const at = { x: MAP_X + RIVAL_SIGN.x * TILE, y: MAP_Y + RIVAL_SIGN.y * TILE }
+    for (const [side, color] of [[-1, C.lotus], [1, C.water]] as const) {
+      g.fillStyle(hex(color), 1).fillEllipse((edge - 32) * side, top - 68, 40, 48).lineStyle(3, hex(C.ink)).strokeEllipse((edge - 32) * side, top - 68, 40, 48)
+    }
+    g.fillStyle(hex(C.cream), 1).fillRoundedRect(-edge, top, w, h, 18).lineStyle(4, hex(C.ink)).strokeRoundedRect(-edge, top, w, h, 18)
+    const name = this.scene.add.text(0, top + 32, t('rivalSignName'), textStyle(36, '800', C.terracotta)).setOrigin(0.5)
+    const line = this.scene.add.text(0, top + 72, t('rivalSignLine'), textStyle(24, '600', C.soft)).setOrigin(0.5)
+    line.setScale(Math.min(1, (w - 28) / line.width))
+    const at = { x: RIVAL_SIGN.right - edge, y: MAP_Y + RIVAL_SIGN.y * TILE }
     // whoever walks the sidewalk passes behind it: its depth is the board's bottom
-    return this.scene.add.container(at.x, at.y, [g, name, line]).setDepth(at.y + RIVAL_SIGN.top + h).setVisible(false)
+    return this.scene.add.container(at.x, at.y, [g, name, line]).setDepth(at.y + top + h).setVisible(false)
   }
 
   /** Hangs the festival's bunting on the walls and its sign on floor 1, or takes them down for null. */
