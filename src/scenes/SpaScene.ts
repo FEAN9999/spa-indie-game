@@ -59,6 +59,7 @@ import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
 import type { GuestBookData } from './GuestBookScene'
 import type { QuestsData } from './QuestsScene'
+import type { StarterData } from './StarterScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
@@ -517,11 +518,23 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('GuestBookScene', data)
   }
 
-  /** The quest panel over the frozen shop, opened only when build mode would be. */
+  /** The quest panel over the frozen shop, opened only when build mode would be; the starter chain's list until the daily quests open. */
   private openQuests(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
     this.modal = true
+    if (!sim.questsOpen()) {
+      sim.markHint('openStarter')
+      const data: StarterData = {
+        sim,
+        onClose: () => {
+          this.modal = false
+          this.session.saveNow()
+        },
+      }
+      this.scene.launch('StarterScene', data)
+      return
+    }
     const intro = !sim.hintDone('openQuests')
     sim.markHint('openQuests')
     sim.markQuestsSeen()

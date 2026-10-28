@@ -1,5 +1,5 @@
 import { C } from '../art/palette'
-import { UNLOCK_DAY } from '../config'
+import { STARTER_REWARD, UNLOCK_DAY } from '../config'
 import type { SpaSim } from '../sim/spa'
 import { currentGoal, goalProgress, STARTER_GOAL_IDS, STARTER_OPENS, starterRunning, type StarterFeature, type StarterGoalId } from '../sim/starter'
 import type { SimEvent } from '../sim/types'
@@ -53,4 +53,30 @@ export function goalCard(e: Extract<SimEvent, { type: 'goalDone' }>): GoldCard {
   if (e.goal === 'serveMore') parts.push(t(e.reward > 0 ? 'goalMaskGiftPaid' : 'goalMaskGift'))
   if (e.opens) parts.push(`${t('goalOpens', { name: t(BUTTON_NAME[e.opens]) })}. ${t(STORY[e.opens])}`)
   return { icon: GOAL_ICON, head: t('goalDoneHead'), name: t(GOAL_NAME[e.goal]), line: parts.join(' · ') }
+}
+
+export interface ChainRow {
+  name: string
+  state: 'done' | 'current' | 'later'
+  have: number
+  need: number
+  /** What the goal gives: its reward, the mask gift, and the button it opens. */
+  detail: string
+}
+
+/** The starter chain as the quest panel lists it before the daily quests open. */
+export function chainRows(sim: SpaSim): ChainRow[] {
+  const shop = sim.starterShop()
+  return STARTER_GOAL_IDS.map((goal, i) => {
+    const state = i < sim.starter.at ? 'done' : i === sim.starter.at ? 'current' : 'later'
+    const { have, need } = goalProgress(goal, shop)
+    const parts: string[] = []
+    if (STARTER_REWARD[goal] > 0) parts.push(`+${formatMoney(STARTER_REWARD[goal])}`)
+    if (goal === 'serveMore') parts.push(t('goalMaskGiftShort'))
+    const opens = STARTER_OPENS[goal]
+    if (opens) parts.push(t('goalOpens', { name: t(BUTTON_NAME[opens]) }))
+    // the last goal opens the daily quests
+    if (i === STARTER_GOAL_IDS.length - 1) parts.push(t('goalOpensDaily'))
+    return { name: t(GOAL_NAME[goal]), state, have: state === 'done' ? need : have, need, detail: parts.join(' · ') }
+  })
 }

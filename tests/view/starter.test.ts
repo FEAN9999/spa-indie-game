@@ -3,7 +3,7 @@ import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { STARTER_GOAL_IDS, type StarterFeature, type StarterGoalId } from '../../src/sim/starter'
 import { EVENT_ICON } from '../../src/view/events'
-import { GOAL_ICON, goalCard, goalLine, lockedText } from '../../src/view/starter'
+import { chainRows, GOAL_ICON, goalCard, goalLine, lockedText } from '../../src/view/starter'
 import { todayLine } from '../../src/view/today'
 
 // the view's lines name textures, and svg.ts imports Phaser for loading textures, which needs a browser
@@ -56,5 +56,27 @@ describe('the goal card', () => {
   it('names the mask gift, or the opening price paid back, and the Dịch vụ button', () => {
     expect(card('serveMore', 0, 'services').line).toBe('Quà khai trương: mở Đắp mặt nạ, tặng 1 giường mặt nạ · Mở nút Dịch vụ. Tiệm đông rồi, làm thêm món mới cho khách chọn thôi!')
     expect(card('serveMore', 200_000, null).line).toBe('+200.000 đ · Quà khai trương: trả lại tiền mở Đắp mặt nạ, tặng 1 giường mặt nạ')
+  })
+})
+
+describe('the starter chain list', () => {
+  it('marks the done goals, the current one with its count, and later ones with what they give', () => {
+    const sim = chainShop()
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('serveMore')
+    sim.progress.total.served = 6
+    const rows = chainRows(sim)
+    expect(rows).toHaveLength(11)
+    expect(rows[0]).toEqual({ name: 'Gội đầu cho Chú Sáu', state: 'done', have: 1, need: 1, detail: '+20.000 đ' })
+    expect(rows[2]).toMatchObject({ state: 'done', detail: '+30.000 đ · Mở nút Xây dựng' })
+    expect(rows[4]).toEqual({ name: 'Phục vụ 10 khách', state: 'current', have: 6, need: 10, detail: 'Quà: Đắp mặt nạ + 1 giường · Mở nút Dịch vụ' })
+    expect(rows[7]).toMatchObject({ state: 'later', detail: '+50.000 đ · Mở nút Nhân viên' })
+    expect(rows[10]).toMatchObject({ state: 'later', detail: '+100.000 đ · Mở nhiệm vụ mỗi ngày' })
+  })
+
+  it('marks every goal done once the chain is', () => {
+    const sim = chainShop()
+    sim.starter.at = STARTER_GOAL_IDS.length
+    sim.starter.doneDay = 1
+    expect(chainRows(sim).every(r => r.state === 'done')).toBe(true)
   })
 })
