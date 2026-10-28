@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { C } from '../../src/art/palette'
 import { DAY_END_MIN } from '../../src/config'
 import { Chain } from '../../src/sim/chain'
+import { PLACE_IDS, type PlaceId } from '../../src/sim/places'
 import { VIP_TEXT } from '../../src/strings/vips'
-import { closingCard, mapSub, noTechCard, pinLabel, pinState, placeName, sheetOf, signedMoney, unlockCard, vipCallCard } from '../../src/view/chain'
+import { closingCard, figureOf, mapSub, noTechCard, pinLabel, pinState, placeName, sheetOf, signedMoney, unlockCard, vipCallCard } from '../../src/view/chain'
 import { hireStaff, starShop } from '../sim/helpers'
 
 /** A 3-star main shop with `money` in the purse and 1.840.000 đ made today; the owner is there. */
@@ -106,10 +107,12 @@ describe('the map pins', () => {
     expect(pinLabel(chain, null)).toBe('+1.840.000 đ hôm nay')
   })
 
-  it('shows the places of the next release as coming soon once the stars are there', () => {
+  it('opens the old town and uptown at 5 stars with the money, and locks uptown at 4', () => {
     const chain = atMain(20_000_000, 5)
-    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['soon', 'Sắp có'])
-    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['soon', 'Sắp có'])
+    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['can', 'Mở được · 8.000.000 đ'])
+    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['can', 'Mở được · 12.000.000 đ'])
+    const four = atMain(20_000_000, 4)
+    expect([pinState(four, 'uptown'), pinLabel(four, 'uptown')]).toEqual(['lock', 'Cần 5★ · 12.000.000 đ'])
   })
 })
 
@@ -186,17 +189,36 @@ describe('the sheet under the map', () => {
     })
   })
 
-  it('locks a place until the main shop has its stars, then says it is coming', () => {
+  it('locks a place until the main shop has its stars, with its own customer and room', () => {
     expect(sheetOf(atMain(), 'oldTown')).toEqual({
       title: 'Phố cổ',
       status: 'Mở khi tiệm gốc đạt 4★ · 8.000.000 đ',
-      rows: ['Giá dịch vụ ×1,2'],
+      rows: ['Khách riêng: Khách Tây ba lô · lượng khách ×1,0', 'Giá dịch vụ ×1,2', '1 tầng, bày sẵn như tiệm ngày đầu, thêm dây đèn lồng Hội An.'],
       button: { text: 'Cần 4★', on: false },
       short: null,
       warn: null,
     })
-    const soon = sheetOf(atMain(20_000_000, 5), 'uptown')
-    expect([soon.status, soon.rows, soon.button]).toEqual(['Sắp có', ['Giá dịch vụ ×1,6'], { text: 'Sắp có', on: false }])
+  })
+
+  it('shows uptown ready to open at 5 stars, short of the price', () => {
+    expect(sheetOf(atMain(10_000_000, 5), 'uptown')).toEqual({
+      title: 'Khu cao cấp',
+      status: 'Mở được · tiệm gốc đang 5★',
+      rows: ['Khách riêng: Quý bà · lượng khách ×0,8', 'Giá dịch vụ ×1,6', '1 tầng, bày sẵn như tiệm ngày đầu, thêm chậu lan hồ điệp.'],
+      button: { text: 'Mở chi nhánh · 12.000.000 đ', on: false },
+      short: 'Còn thiếu 2.000.000 đ',
+      warn: null,
+    })
+  })
+
+  it('pictures each place by its own customer', () => {
+    expect([null, 'beach', 'oldTown', 'uptown'].map(p => figureOf(p as PlaceId | null).kind)).toEqual(['student', 'tourist', 'backpacker', 'lady'])
+  })
+
+  it('counts all four shops on the map at 5 stars', () => {
+    const chain = atMain(40_000_000, 5)
+    for (const p of PLACE_IDS) expect(chain.open(p)).toBeNull()
+    expect(mapSub(chain)).toBe('Tiệm gốc 5★ · 4/4 tiệm')
   })
 })
 

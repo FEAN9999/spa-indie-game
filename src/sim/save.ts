@@ -1,4 +1,4 @@
-import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
 import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind } from './events'
@@ -13,7 +13,7 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
-import { isPlaceId, PLACE_IDS, PLACES_READY, type PlaceId } from './places'
+import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
 import { repairStarter, type StarterBook } from './starter'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
@@ -206,7 +206,7 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
       if (!(e instanceof SaveError)) throw e
     }
   }
-  // the first branch at a place keeps it and a second one there is dropped; one with no place or an unknown one gets the first free ready place, else it is dropped
+  // the first branch at a place keeps it and a second one there is dropped; one with no place or an unknown one gets the first free place the main shop has the stars for, else it is dropped
   const taken = new Set<PlaceId>()
   const lost = new Set<(typeof shops)[number]>()
   for (const s of shops) {
@@ -218,7 +218,7 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
   for (const s of shops) {
     if (lost.has(s)) continue
     if (!s.place) {
-      s.place = PLACES_READY.find(id => !taken.has(id)) ?? null
+      s.place = PLACE_IDS.find(id => !taken.has(id) && PLACES[id].stars <= main.rank.stars) ?? null
       if (s.place) taken.add(s.place)
     }
     if (!s.place) continue

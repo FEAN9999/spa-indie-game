@@ -7,6 +7,7 @@ import { VIP_IDS } from '../../src/sim/vips'
 import { isPast, newStarter, STARTER_GOAL_IDS } from '../../src/sim/starter'
 import type { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
+import v23 from '../fixtures/save-v23.json'
 import { hireStaff, starShop } from './helpers'
 
 /** Runs the chain in 100 ms frames until `pred` holds. */
@@ -65,17 +66,44 @@ describe('opening a branch', () => {
     expect(new Chain(starShop(3, 4_999_999), 7).openProblem('beach')).toBe('money')
     expect(new Chain(starShop(3), 7).openProblem('beach')).toBeNull()
     expect(new Chain(starShop(3), 7).openProblem('oldTown')).toBe('stars')
-    expect(new Chain(starShop(4), 7).openProblem('oldTown')).toBe('soon')
+    expect(new Chain(starShop(4), 7).openProblem('oldTown')).toBeNull()
+    expect(new Chain(starShop(4, 7_999_999), 7).openProblem('oldTown')).toBe('money')
+    expect(new Chain(starShop(4), 7).openProblem('uptown')).toBe('stars')
+    expect(new Chain(starShop(5), 7).openProblem('uptown')).toBeNull()
     expect(withBeach().chain.openProblem('beach')).toBe('open')
   })
 
-  it('keeps the places of the next release shut at 5 stars', () => {
-    const chain = new Chain(starShop(5), 7)
-    expect(chain.openProblem('oldTown')).toBe('soon')
-    expect(chain.openProblem('uptown')).toBe('soon')
-    expect(chain.open('oldTown')).toBe('soon')
-    expect(chain.main.money).toBe(20_000_000)
-    expect(chain.branches).toEqual([])
+  it('opens all three places at 5 stars, each with its own piece', () => {
+    const chain = new Chain(starShop(5, 30_000_000), 7)
+    for (const place of ['uptown', 'beach', 'oldTown'] as const) expect(chain.open(place)).toBeNull()
+    expect(chain.branches.map(b => b.place)).toEqual(['beach', 'oldTown', 'uptown'])
+    expect(chain.main.money).toBe(5_000_000)
+    expect(chain.shop('oldTown')!.items.filter(i => i.kind === 'lanternString')).toHaveLength(1)
+    expect(chain.shop('uptown')!.items.filter(i => i.kind === 'orchid')).toHaveLength(1)
+  })
+
+  it('keeps the owner, one orchid and the purse across a reload at uptown', () => {
+    const chain = new Chain(starShop(5, 30_000_000), 7)
+    expect(chain.open('uptown')).toBeNull()
+    chain.goTo('uptown')
+    const copy = viaJson(chain)
+    expect(copy.at).toBe('uptown')
+    expect(copy.shop('uptown')!.items.filter(i => i.kind === 'orchid')).toHaveLength(1)
+    expect(copy.main.money).toBe(chain.main.money)
+  })
+
+  it('opens the old town for a v23 save and charges it once, with the owner still at the beach', () => {
+    const chain = Chain.fromSave(parseSave(structuredClone(v23)), 8)
+    expect(chain.openProblem('oldTown')).toBeNull()
+    expect(chain.openProblem('uptown')).toBe('stars')
+    const money = chain.main.money
+    expect(chain.open('oldTown')).toBeNull()
+    expect(chain.main.money).toBe(money - 8_000_000)
+    const copy = viaJson(chain)
+    expect(copy.main.money).toBe(money - 8_000_000)
+    expect(copy.branches).toHaveLength(2)
+    expect(copy.shop('oldTown')!.items.filter(i => i.kind === 'lanternString')).toHaveLength(1)
+    expect(copy.at).toBe('beach')
   })
 
   it('charges the price once and leaves the owner where she is', () => {

@@ -1,14 +1,14 @@
 import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, STEP_MS } from '../config'
 import { dayProfit } from './economy'
-import { PLACE_IDS, PLACES_READY, type PlaceId } from './places'
+import { PLACE_IDS, type PlaceId } from './places'
 import { createRng } from './rng'
 import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
 import type { CustomerState, SimEvent } from './types'
 import type { VipId } from './vips'
 
-/** `open`: a branch is there already; `stars`: the main shop's stars are short; `soon`: the place is not open yet; `money`: the purse is short. */
-export type OpenProblem = 'open' | 'stars' | 'soon' | 'money'
+/** `open`: a branch is there already; `stars`: the main shop's stars are short; `money`: the purse is short. */
+export type OpenProblem = 'open' | 'stars' | 'money'
 /** `here`: the owner is there; `notOpen`: no branch is there; `closed`: a branch once the day has closed. */
 export type GoProblem = 'here' | 'notOpen' | 'closed'
 export interface ChainDayRow {
@@ -63,7 +63,6 @@ export class Chain {
   openProblem(place: PlaceId): OpenProblem | null {
     if (this.shop(place)) return 'open'
     if (this.main.rank.stars < PLACES[place].stars) return 'stars'
-    if (!PLACES_READY.includes(place)) return 'soon'
     if (this.main.money < PLACES[place].price) return 'money'
     return null
   }

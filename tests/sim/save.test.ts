@@ -1629,7 +1629,7 @@ describe('save version 23', () => {
     expect(parseSave(raw).chain!.at).toBe('beach')
   })
 
-  it('repairs a branch with no place or an unknown one to the first free ready place', () => {
+  it('repairs a branch with no place or an unknown one to the first free place the main shop has the stars for', () => {
     for (const place of [null, 'moon']) {
       const raw = chainJson()
       raw.chain.branches[0].place = place
@@ -1637,7 +1637,16 @@ describe('save version 23', () => {
     }
   })
 
-  it('drops a branch that is not a shop, and one with no ready place left to take', () => {
+  it('gives a place-less second branch beside the beach in a 4-star main shop the old town', () => {
+    const main = starShop(4, 20_000_000, 5)
+    const chain = new Chain(main, 8)
+    expect(chain.open('beach')).toBeNull()
+    const raw = JSON.parse(JSON.stringify(chain.toSave()))
+    raw.chain.branches.push({ ...structuredClone(raw.chain.branches[0]), place: null })
+    expect(parseSave(raw).chain!.branches.map(b => b.place)).toEqual(['beach', 'oldTown'])
+  })
+
+  it('drops a branch that is not a shop, and one with no place the stars allow', () => {
     const raw = chainJson()
     raw.chain.branches = [5, 'x', null]
     expect(parseSave(raw).chain!.branches).toEqual([])

@@ -3,12 +3,10 @@ import { C, customerColors, ownerColors } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, PLACES } from '../config'
 import type { Chain } from '../sim/chain'
-import type { CustomerKind } from '../sim/customers'
 import type { PlaceId } from '../sim/places'
-import type { Look } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
-import { mapSub, pinLabel, pinState, placeName, sheetOf, type PinState } from '../view/chain'
+import { figureOf, mapSub, pinLabel, pinState, placeName, sheetOf, type PinState } from '../view/chain'
 import { CharacterView } from '../view/CharacterView'
 import { textStyle } from '../view/text'
 import { TOP_BAR } from '../view/topBar'
@@ -49,15 +47,10 @@ const PIN_TAP = { top: 140, h: 240, minW: 100 }
 const GLOW = { dy: 2, rx: 54, ry: 16 }
 /** The owner in the head of the pin she is at, her feet this far under its middle: her head and shoulders show in the window. */
 const OWNER_HEAD = { scale: 0.95, feet: 81 }
-const PIN_FILL: Record<PinState, string> = { here: C.teal, open: C.teal, can: C.mustard, lock: C.cream, soon: C.cream }
+const PIN_FILL: Record<PinState, string> = { here: C.teal, open: C.teal, can: C.mustard, lock: C.cream }
 /** The sheet under the map, from y 1440: a figure in a disc at the left, the words right of it. */
 const SHEET = { y: 1440, discX: 170, discDy: 110, discR: 92, textX: 290, textW: 720, rowsW: 680, titleDy: 30, statusDy: 84, rowsDy: 120, gap: 14 }
-const FIGURE = { scale: 1.3, feet: 80, lock: 2 }
-/** Who stands in the sheet's disc: someone off the street at the main shop, a place's own customer at a branch. The places of the next release show a lock until then. */
-const FIGURE_OF: Partial<Record<PlaceId | 'main', { kind: CustomerKind; look: Look }>> = {
-  main: { kind: 'student', look: { skin: 0, hair: 2, hairStyle: 0, shirt: 1 } },
-  beach: { kind: 'tourist', look: { skin: 1, hair: 1, hairStyle: 0, shirt: 0 } },
-}
+const FIGURE = { scale: 1.3, feet: 80 }
 const WARN = { x: 100, y: 1790, w: 880, h: 60, size: 27 }
 const BUTTON = { y: 1915, w: 640, wide: 720, h: 116, size: 44 }
 const TOAST_Y = 2080
@@ -172,7 +165,7 @@ export class ChainScene extends Phaser.Scene {
   private pin(place: PlaceId | null, x: number, y: number): void {
     const { chain } = this.params
     const state = pinState(chain, place)
-    const off = state === 'lock' || state === 'soon'
+    const off = state === 'lock'
     if (place === this.picked) this.keep(this.add.ellipse(x, y + GLOW.dy, GLOW.rx * 2, GLOW.ry * 2, hex(C.gold), 0.7))
     const outline = pinOutline(x, y)
     const g = this.keep(this.add.graphics()).fillStyle(hex(PIN_FILL[state])).fillPoints(outline, true)
@@ -222,14 +215,13 @@ export class ChainScene extends Phaser.Scene {
     const cx = SHEET.discX
     const cy = y0 + SHEET.discDy
     this.keep(this.add.circle(cx, cy, SHEET.discR, hex(C.sand)).setStrokeStyle(4, hex(C.ink)))
-    const figure = FIGURE_OF[place ?? 'main']
-    if (figure) this.keep(new CharacterView(this, customerColors(figure.look, figure.kind)).container.setPosition(cx, cy + FIGURE.feet).setScale(FIGURE.scale))
-    else this.keep(this.add.image(cx, cy, 'icon-lock').setScale(FIGURE.lock))
+    const figure = figureOf(place)
+    this.keep(new CharacterView(this, customerColors(figure.look, figure.kind)).container.setPosition(cx, cy + FIGURE.feet).setScale(FIGURE.scale))
 
     const left = SHEET.textX
     this.keep(fit(this.add.text(left, y0 + SHEET.titleDy, sheet.title, textStyle(50)).setOrigin(0, 0.5), SHEET.textW))
     const state = pinState(chain, place)
-    const statusColor = state === 'lock' || state === 'soon' ? C.soft : sheet.status === t('sheetResting') ? C.lanternDark : state === 'can' ? C.mustardDark : C.teal
+    const statusColor = state === 'lock' ? C.soft : sheet.status === t('sheetResting') ? C.lanternDark : state === 'can' ? C.mustardDark : C.teal
     this.keep(fit(this.add.text(left, y0 + SHEET.statusDy, sheet.status, textStyle(30, '800', statusColor)).setOrigin(0, 0.5), SHEET.textW))
 
     // the rows wrap, and are drawn smaller when they would run into the line or the button under them
