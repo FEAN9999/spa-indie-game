@@ -11,6 +11,8 @@ import { emptyBook } from '../../src/sim/regulars'
 import { createRng } from '../../src/sim/rng'
 import { SERVICES } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
+import { isPast, newStarter } from '../../src/sim/starter'
+import type { SimEvent } from '../../src/sim/types'
 import { STOCK_ITEMS } from '../../src/sim/stock'
 import { kindRows } from '../../src/view/guestBook'
 import { advanceUntil, hireStaff, ownerServes, starShop } from './helpers'
@@ -177,5 +179,38 @@ describe('a branch at its place', () => {
     expect(seen.length).toBeGreaterThan(0)
     for (const k of seen) expect(Object.keys(PLACE_KINDS.beach)).toContain(k)
     expect(odd).toEqual([])
+  })
+})
+
+describe('the starter chain at a branch', () => {
+  /** A main shop still on the starter chain, as a new shop is; nobody walks in unless `autoSpawn`. */
+  const starterMain = (autoSpawn = false) => {
+    const main = starShop(3, 20_000_000, 1, autoSpawn)
+    main.starter = newStarter()
+    return main
+  }
+
+  it('opens a branch with the chain past, from a main shop still on it', () => {
+    const branch = beachOf(starterMain())
+    expect(isPast(branch.starter)).toBe(true)
+    expect(branch.questsButtonOpen()).toBe(false)
+  })
+
+  it('never runs a goal, a gift or chú Sáu at a branch', () => {
+    const branch = beachOf(starterMain())
+    const events: SimEvent[] = []
+    for (let i = 0; i < 17; i++) events.push(...ownerServes(branch, 3).events)
+    hireStaff(branch, 'technician')
+    events.push(...branch.drainEvents())
+    expect(events.some(e => e.type === 'goalDone')).toBe(false)
+    expect(isPast(branch.starter)).toBe(true)
+    expect(branch.book.gifts).toEqual([])
+    expect(branch.book.regulars.sau.met).toBe(false)
+  })
+
+  it("opens a branch's day with a stranger, never chú Sáu", () => {
+    const branch = beachOf(starterMain(true))
+    advanceUntil(branch, () => branch.customers.length > 0)
+    expect(branch.customers[0].regular).toBeNull()
   })
 })

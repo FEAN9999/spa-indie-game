@@ -851,7 +851,8 @@ export class SpaSim {
     sim.ownerOutfit = d.ownerOutfit
     sim.outfitsSeen = d.outfitsSeen
     sim.away = d.away
-    sim.starter = d.starter
+    // the starter chain is the main shop's: a branch's has always passed
+    sim.starter = d.place === null ? d.starter : pastStarter()
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes

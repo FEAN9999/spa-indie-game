@@ -17,7 +17,7 @@ export interface ChainDayRow {
 }
 
 /** The main shop's events with a card or a reward: kept in order while the owner is away, for when she is back. */
-const HELD: readonly SimEvent['type'][] = ['badge', 'questDone', 'festivalQuestDone', 'inspected', 'kolPosted', 'rivalBeaten', 'heart', 'gift', 'bookPage', 'recipeHint', 'dayEnded']
+const HELD: readonly SimEvent['type'][] = ['badge', 'questDone', 'goalDone', 'festivalQuestDone', 'inspected', 'kolPosted', 'rivalBeaten', 'heart', 'gift', 'bookPage', 'recipeHint', 'dayEnded']
 
 const WAITING: readonly CustomerState[] = ['arriving', 'toSeat', 'waiting']
 

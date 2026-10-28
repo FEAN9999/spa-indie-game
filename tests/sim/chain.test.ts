@@ -4,6 +4,7 @@ import { Chain } from '../../src/sim/chain'
 import { parseSave, SaveError } from '../../src/sim/save'
 import { dayProfit } from '../../src/sim/economy'
 import { VIP_IDS } from '../../src/sim/vips'
+import { isPast, newStarter, STARTER_GOAL_IDS } from '../../src/sim/starter'
 import type { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
 import { hireStaff, starShop } from './helpers'
@@ -417,5 +418,32 @@ describe('saving the chain', () => {
     expect(copy.branches).toEqual([])
     expect(copy.at).toBeNull()
     expect(copy.main.day).toBe(main.day)
+  })
+})
+
+describe("the main shop's starter chain", () => {
+  it('reads a branch from a save with the chain past, whatever the save says', () => {
+    const { chain } = withBeach()
+    const raw = JSON.parse(JSON.stringify(chain.toSave()))
+    raw.chain.branches[0].starter = newStarter()
+    const copy = Chain.fromSave(parseSave(raw), 8)
+    expect(isPast(copy.shop('beach')!.starter)).toBe(true)
+    expect(copy.main.starter).toEqual(chain.main.starter)
+  })
+
+  it('keeps running at the main shop while the owner is at the beach, its goals kept in order for her', () => {
+    const main = starShop()
+    main.starter = { ...newStarter(), at: STARTER_GOAL_IDS.indexOf('serveMany') }
+    main.progress.total.served = 15
+    hireStaff(main, 'technician')
+    const { chain } = atBeach(main)
+    const money = main.money
+    const c = main.spawnCustomer({ kind: 'office', service: 'shampoo' })
+    chainUntil(chain, () => !main.customers.includes(c))
+    const goals = chain.takeHeld().flatMap(e => (e.type === 'goalDone' ? [e.goal] : []))
+    // the technician is already there and massage is open, so the next two follow at once
+    expect(goals).toEqual(['serveMany', 'hireTech', 'openMassage'])
+    expect(main.money).toBeGreaterThan(money)
+    expect(main.drainEvents()).toEqual([])
   })
 })
