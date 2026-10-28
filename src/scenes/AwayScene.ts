@@ -56,6 +56,11 @@ export class AwayScene extends Phaser.Scene {
 
   create() {
     const { sim, back, onDone } = this.params
+    // the page's text boxes draw above the canvas whatever the scene order, so hide them behind the card
+    this.game.domContainer.style.display = 'none'
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.game.domContainer.style.display = ''
+    })
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive().setDepth(-2)
     const card = this.add.graphics()
     this.add.text(MID, 410, t('awayKicker'), textStyle(34, '800', C.terracotta)).setOrigin(0.5)

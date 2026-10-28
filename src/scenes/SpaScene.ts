@@ -267,7 +267,7 @@ export class SpaScene extends Phaser.Scene {
           this.session.saveNow()
         }
       }
-      if (!paid) void this.checkForUpdate()
+      if (!paid && this.heldAway.length === 0 && !this.awayOpen) void this.checkForUpdate()
     })
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       document.removeEventListener('visibilitychange', saveOnHide)

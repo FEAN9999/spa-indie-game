@@ -163,5 +163,12 @@ describe('save session', () => {
       session.reloadIfChangedElsewhere()
       expect(session.open).toBe(false)
     })
+
+    it('a stamped save is its own, so coming back does not close the session', () => {
+      const { session, reloads } = stamped()
+      session.saveNow()
+      session.reloadIfChangedElsewhere()
+      expect([session.open, reloads]).toEqual([true, []])
+    })
   })
 })
