@@ -30,7 +30,7 @@ import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
-import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
+import { GENEROUS_LINES, RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
@@ -1039,6 +1039,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
             { hint: 'star', ms: TOUR_STEP_MS },
           ]
         }
+        return
+      case 'generous':
+        // the extra a beat after the bill's coin, so the two do not stack, with the customer's word for it
+        this.time.delayedCall(600, () => this.floatMoney({ ...e.tile }, e.amount))
+        this.say(e.customerId, GENEROUS_LINES[e.customerId % GENEROUS_LINES.length], BUBBLE_MS.greet)
         return
       case 'review':
         this.showBubble(e.customerId, e.score)

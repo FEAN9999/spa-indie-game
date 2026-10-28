@@ -244,6 +244,9 @@ export const GREET_PATIENCE_BASE = 1.15
 export const GREET_PATIENCE_PER_DOT = 0.02
 export const GREET_TIP_PER_DOT = 0.05
 export const STAFF_TIP_PER_DOT = 0.05
+/** One customer in this many the owner serves with three stars tips GENEROUS_TIP times over; never a VIP or Mi Mi. */
+export const GENEROUS_CHANCE = 1 / 8
+export const GENEROUS_TIP = 5
 
 // Personalities: the numbers behind each good side and the flaws that are only numbers
 export const QUICK_WORK_FACTOR = 0.8

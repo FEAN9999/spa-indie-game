@@ -145,6 +145,7 @@ export type SimEvent =
   | { type: 'customerLeft'; id: number; angry: boolean }
   | { type: 'serviceReady'; customerId: number; stationId: number }
   | { type: 'paid'; customerId: number; amount: number; tip: number; tile: Tile }
+  | { type: 'generous'; customerId: number; amount: number; tile: Tile }
   | { type: 'review'; customerId: number; score: number }
   | { type: 'greeted'; staffId: number; customerId: number }
   | { type: 'levelUp'; staffId: number; level: number }

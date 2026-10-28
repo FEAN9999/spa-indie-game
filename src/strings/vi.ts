@@ -653,3 +653,6 @@ export function t(key: StringKey, params?: Record<string, string | number>): str
   if (!params) return text
   return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in params ? String(params[name]) : match))
 }
+
+/** What a generous customer says as they add to the tip; each fits a speech bubble. */
+export const GENEROUS_LINES: readonly string[] = ['Tay nghề quá trời, giữ hết đi!', 'Đã quá! Bo thêm nè, khỏi thối.', 'Lâu lắm mới thấy sướng vầy, cầm thêm nè!']

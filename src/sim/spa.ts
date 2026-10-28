@@ -13,6 +13,8 @@ import {
   FESTIVAL_SERVICE_CHANCE,
   FIRST_ARRIVAL_MS,
   FLOOR_PRICE,
+  GENEROUS_CHANCE,
+  GENEROUS_TIP,
   HEART_AT,
   HOT_ARRIVAL,
   HOT_DAYS,
@@ -500,6 +502,14 @@ export class SpaSim {
     this.stats.served++
     if (technician === null && !c.vip && !c.kol) this.stats.ownerServed++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
+    // the owner's three stars now and then bring a generous customer, who adds to the tip after the bill until it is GENEROUS_TIP times over;
+    // drawn on a stream of its own so the shop's draws stay as they were
+    if (technician === null && stars === 3 && tip > 0 && !c.vip && !c.kol && createRng(this.day * 5303 + c.id)() < GENEROUS_CHANCE) {
+      const extra = tip * (GENEROUS_TIP - 1)
+      this.money += extra
+      this.stats.tips += extra
+      this.emit({ type: 'generous', customerId: c.id, amount: extra, tile: station.bed })
+    }
     // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
     const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
     this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading))
