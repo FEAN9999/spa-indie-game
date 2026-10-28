@@ -189,6 +189,8 @@ export type SimEvent =
       reward: number
       cert: boolean
     }
+  /** The rival's challenge was met: enough 3-star customers today, with what it paid. */
+  | { type: 'rivalBeaten'; reward: number }
   /** A new month began with a new monthly quest. */
   /** `ended`: the festival whose quest the month just over left unfinished. */
   | { type: 'monthStarted'; month: number; ended: FestivalId | null }

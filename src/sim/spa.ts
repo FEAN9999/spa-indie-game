@@ -27,6 +27,7 @@ import {
   RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
   RESTOCK_PRICE,
+  RIVAL_PICKY_FACTOR,
   STAIRS_MS,
   STARTING_MONEY,
   STEP_MS,
@@ -54,7 +55,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, type EventBook } from './events'
+import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -321,7 +322,7 @@ export class SpaSim {
     const state = opts.regular && this.book.regulars[opts.regular]
     const kol = opts.kol === true
     const look = vipSpec ? { ...vipSpec.look } : spec ? { ...spec.look } : kol ? { ...KOL_LOOK } : randomLook(this.rng)
-    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng))
+    const kind = vipSpec ? VIP_KIND : spec ? spec.kind : kol ? 'office' : (opts.kind ?? drawKind(this.day, this.rng, rivalToday(this.eventBook, this.day) ? RIVAL_PICKY_FACTOR : 1))
     const available = this.availableServices()
     const likes = vipSpec ? vipSpec.service : spec ? spec.likes : null
     // in a festival half the plain customers ask for its service, while fewer wait for it than it has beds,
@@ -449,7 +450,10 @@ export class SpaSim {
     this.stats.tips += tip
     this.stats.served++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
-    this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && technician?.trait === 'calm' ? 'normal' : spec.grading))
+    // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
+    const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
+    this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading))
+    if (stars === 3 && rivalToday(this.eventBook, this.day)) this.rivalScored()
     // a VIP has her own page in the book, not a place among the kinds served
     if (c.vip) {
       const r = scoreVip(this.vip, this.book.gifts, c.vip, stars)
@@ -524,6 +528,21 @@ export class SpaSim {
   /** An event's reward: EVENT_REWARD_FACTOR plain daily quests' worth. */
   private eventReward(): number {
     return EVENT_REWARD_FACTOR * baseReward(averageDay(this.progress.recent))
+  }
+
+  /** The 3-star customers the rival's challenge asks for today; recent days change only at day end, so it holds all day. */
+  rivalTarget(): number {
+    return rivalTarget(this.progress.recent)
+  }
+
+  /** One more 3-star customer on the rival's day; reaching the target pays once, since the count only grows. */
+  private rivalScored(): void {
+    this.eventBook.count++
+    if (this.eventBook.count !== this.rivalTarget()) return
+    const reward = this.eventReward()
+    this.money += reward
+    this.stats.quests += reward
+    this.emit({ type: 'rivalBeaten', reward })
   }
 
   /**

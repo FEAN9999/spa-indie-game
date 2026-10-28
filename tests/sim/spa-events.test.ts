@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK } from '../../src/config'
-import { averageDay, baseReward } from '../../src/sim/quests'
-import { KOL_LOOK } from '../../src/sim/events'
+import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK, RIVAL_TARGET_MIN } from '../../src/config'
+import { averageDay, baseReward, type DayRecord } from '../../src/sim/quests'
+import { parseSave } from '../../src/sim/save'
+import { reviewScore } from '../../src/sim/economy'
+import { KOL_LOOK, rivalTarget } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -267,5 +269,56 @@ describe('the inspector', () => {
     const sim = inspectDay(s => (s.eventBook.plan = { kind: 'inspect', day: 13, minute: 900 }))
     expect(toThree(sim)).toEqual([])
     expect(sim.eventBook.inspected).toBe(false)
+  })
+})
+
+describe("the rival's day", () => {
+  /** A shop on day 13 with the rival opening next door today. */
+  const rivalDay = () => on(13, s => (s.eventBook.plan = { kind: 'rival', day: 13, minute: 0 }))
+
+  it('grades picky customers like normal ones that day only', () => {
+    const rival = rivalDay()
+    ownerServes(rival, 1, { kind: 'picky', service: 'shampoo' })
+    expect(rival.reviews).toEqual([reviewScore(1, 'normal')])
+    const plain = on(13)
+    ownerServes(plain, 1, { kind: 'picky', service: 'shampoo' })
+    expect(plain.reviews).toEqual([reviewScore(1, 'harsh')])
+  })
+
+  it('counts every 3-star customer that day, of any kind, and nothing else', () => {
+    const sim = rivalDay()
+    ownerServes(sim, 3, { kind: 'picky', service: 'shampoo' })
+    ownerServes(sim, 3, { kind: 'office', service: 'shampoo' })
+    ownerServes(sim, 3, { vip: 'singer', service: 'shampoo' })
+    ownerServes(sim, 2, { kind: 'student', service: 'shampoo' })
+    expect(sim.eventBook.count).toBe(3)
+    const plain = on(13)
+    ownerServes(plain, 3, { kind: 'office', service: 'shampoo' })
+    expect(plain.eventBook.count).toBe(0)
+  })
+
+  it('pays the rival reward once, when the count reaches the target', () => {
+    const sim = rivalDay()
+    const target = sim.rivalTarget()
+    const reward = 2 * baseReward(averageDay(sim.progress.recent))
+    sim.eventBook.count = target - 1
+    const quests = sim.stats.quests
+    const { events } = ownerServes(sim, 3, { kind: 'office', service: 'shampoo' })
+    expect(ofType(events, 'rivalBeaten')).toEqual([{ type: 'rivalBeaten', reward }])
+    expect(sim.stats.quests - quests).toBeGreaterThanOrEqual(reward)
+    const again = ownerServes(sim, 3, { kind: 'office', service: 'shampoo' })
+    expect(ofType(again.events, 'rivalBeaten')).toEqual([])
+    const copy = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
+    expect(copy.eventBook.count).toBe(target + 1)
+    expect(ofType(ownerServes(copy, 3, { kind: 'office', service: 'shampoo' }).events, 'rivalBeaten')).toEqual([])
+  })
+
+  it('sets the target from the average day, never under the minimum', () => {
+    const day = (served: number): DayRecord => ({ served, earned: 0, tips: 0, owner3: 0, staff: 0 })
+    expect(rivalTarget([])).toBe(RIVAL_TARGET_MIN)
+    expect(rivalTarget([day(10)])).toBe(RIVAL_TARGET_MIN)
+    expect(rivalTarget([day(25)])).toBe(8)
+    expect(rivalTarget([day(20), day(40)])).toBe(9)
+    expect(rivalDay().rivalTarget()).toBe(rivalTarget(rivalDay().progress.recent))
   })
 })

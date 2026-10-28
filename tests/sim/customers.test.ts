@@ -123,3 +123,16 @@ describe('kinds of customer', () => {
     expect(walkMs('elder')).toBeGreaterThan(walkMs('office'))
   })
 })
+
+describe("the rival's day", () => {
+  it('draws picky customers by their weight times the factor', () => {
+    const picky = (factor: number) => {
+      const rng = createRng(5)
+      return Array.from({ length: 6000 }, () => drawKind(20, rng, factor)).filter(k => k === 'picky').length
+    }
+    // picky weighs 2 of 10 on day 20; doubled it weighs 4 of 12, a share 5/3 of the usual
+    const ratio = picky(2) / picky(1)
+    expect(ratio).toBeGreaterThan(1.5)
+    expect(ratio).toBeLessThan(1.85)
+  })
+})

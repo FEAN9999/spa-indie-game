@@ -36,13 +36,17 @@ export const KINDS: Record<CustomerKind, KindSpec> = {
   celeb: { fromDay: CELEB_FROM_DAY, weight: 0, patience: 0.8, tip: [3, 3, 3], prefers: ['massage', 'mask', 'mud'], grading: 'harsh', reviews: 2, speed: 5, hard: false },
 }
 
-/** The kind of the next customer: from day 6 a few celebrities, otherwise weighted among the kinds whose day has come. */
-export function drawKind(day: number, rng: Rng): CustomerKind {
+/**
+ * The kind of the next customer: from day 6 a few celebrities, otherwise weighted among the kinds whose day has come,
+ * the picky customers' weight times `pickyFactor` (the rival's day).
+ */
+export function drawKind(day: number, rng: Rng, pickyFactor = 1): CustomerKind {
   if (day >= CELEB_FROM_DAY && rng() < CELEB_CHANCE) return 'celeb'
+  const weight = (k: CustomerKind) => KINDS[k].weight * (k === 'picky' ? pickyFactor : 1)
   const met = CUSTOMER_KINDS.filter(k => KINDS[k].fromDay <= day && KINDS[k].weight > 0)
-  let roll = rng() * met.reduce((sum, k) => sum + KINDS[k].weight, 0)
+  let roll = rng() * met.reduce((sum, k) => sum + weight(k), 0)
   for (const k of met) {
-    roll -= KINDS[k].weight
+    roll -= weight(k)
     if (roll < 0) return k
   }
   return met[met.length - 1]
