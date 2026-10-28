@@ -13,6 +13,7 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { isPlaceId, PLACE_IDS, PLACES_READY, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
@@ -20,7 +21,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 21
+export const SAVE_VERSION = 22
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -28,9 +29,20 @@ export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
 export class SaveTooNewError extends SaveError {}
 
+/** The chain of shops, written in the main shop's save: where the owner is, the unlock card, and each branch as a save of its own. */
+export interface ChainSave {
+  at: PlaceId | null
+  told: boolean
+  branches: SaveData[]
+}
+
 /** The whole shop as plain JSON. */
 export interface SaveData {
   v: number
+  /** Where the shop is: null for the main shop. */
+  place: PlaceId | null
+  /** The chain; only the main shop has one, a branch has null. */
+  chain: ChainSave | null
   day: number
   /** How many floors are open; 1 in a save from before floors. */
   floors: number
@@ -169,8 +181,51 @@ function withHalfWages(old: object): SaveData {
   return { ...old, v: SAVE_VERSION, staff: staff.map(half), candidates: candidates.map(half) } as unknown as SaveData
 }
 
-/** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
+/** Checks that `raw` looks like a saved chain of shops: the main shop with its branches; throws SaveError otherwise. */
 export function parseSave(raw: unknown): SaveData {
+  const data = parseShop(raw)
+  // only the main shop has a chain, and it is not at a place
+  data.place = null
+  data.chain = repairChain((raw as Record<string, unknown>).chain, data)
+  return data
+}
+
+/** A branch is a shop at a place; a damaged one is repaired or dropped, never a reason to lose the main shop. */
+function repairChain(raw: unknown, main: SaveData): ChainSave {
+  const c = isObject(raw) ? raw : {}
+  const shops: { data: SaveData; place: PlaceId | null }[] = []
+  for (const b of Array.isArray(c.branches) ? c.branches : []) {
+    if (!isObject(b)) continue
+    try {
+      const data = parseShop(b)
+      shops.push({ data, place: isPlaceId(b.place) ? b.place : null })
+    } catch (e) {
+      if (!(e instanceof SaveError)) throw e
+    }
+  }
+  // the first branch at a place keeps it; one with no place, an unknown one or one already taken gets the first free ready place, else it is dropped
+  const taken = new Set<PlaceId>()
+  for (const s of shops) {
+    if (s.place && !taken.has(s.place)) taken.add(s.place)
+    else s.place = null
+  }
+  const kept: SaveData[] = []
+  for (const s of shops) {
+    if (!s.place) {
+      s.place = PLACES_READY.find(id => !taken.has(id)) ?? null
+      if (s.place) taken.add(s.place)
+    }
+    if (!s.place) continue
+    // one clock and one purse for the chain; no chain inside a branch
+    kept.push({ ...s.data, place: s.place, chain: null, day: main.day, minutes: main.minutes, money: main.money })
+  }
+  kept.sort((a, b) => PLACE_IDS.indexOf(a.place!) - PLACE_IDS.indexOf(b.place!))
+  const at = isPlaceId(c.at) && kept.some(b => b.place === c.at) ? c.at : null
+  return { at, told: c.told === true, branches: kept }
+}
+
+/** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
+function parseShop(raw: unknown): SaveData {
   // read before parseVersioned, whose helpers rewrite `v` for the oldest saves
   // a stored parsed save keeps the flag, with `v` already rewritten, until the sim saves itself again
   const before = isObject(raw) && typeof raw.v === 'number' && raw.v < STAIRS_SAVE_VERSION
@@ -493,7 +548,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

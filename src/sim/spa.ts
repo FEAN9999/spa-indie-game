@@ -747,6 +747,9 @@ export class SpaSim {
   toSave(): SaveData {
     return structuredClone({
       v: SAVE_VERSION,
+      place: this.place,
+      // Chain.toSave fills in the real one
+      chain: this.place === null ? { at: null, told: false, branches: [] } : null,
       day: this.day,
       floors: this.floors,
       minutes: this.clock.minutes,
@@ -788,8 +791,10 @@ export class SpaSim {
 
   /** Rebuilds a saved shop, unpaused; re-announces a pending service or an ended day so the view reopens it. */
   static fromSave(data: SaveData, options: SpaSimOptions): SpaSim {
-    const sim = new SpaSim(options)
     const d = structuredClone(data)
+    // a branch is built on its own room, and knows its place before anything else is read
+    const sim = new SpaSim(d.place === null ? options : { ...options, layout: BRANCH_LAYOUT })
+    sim.place = d.place
     // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
     sim.floors = d.floors
     const shell = parseLayout(sim.shell)

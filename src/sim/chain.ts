@@ -2,6 +2,7 @@ import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, STEP_MS } from
 import { dayProfit } from './economy'
 import { PLACE_IDS, PLACES_READY, type PlaceId } from './places'
 import { createRng } from './rng'
+import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
 import type { SimEvent } from './types'
 import type { VipId } from './vips'
@@ -75,6 +76,33 @@ export class Chain {
     this.branches = PLACE_IDS.flatMap(id => (id === place ? [branch] : this.branches.filter(b => b.place === id)))
     this.sync()
     return null
+  }
+
+  /** Rebuilds a saved chain: the main shop and its branches, each branch drawing from its own stream and sharing the main shop's purse. Nothing is paid again. */
+  static fromSave(data: SaveData, seed: number): Chain {
+    const chain = new Chain(SpaSim.fromSave(data, { rng: createRng(seed) }), seed)
+    const saved = data.chain
+    for (const b of saved?.branches ?? []) {
+      try {
+        const branch = SpaSim.fromSave(b, { rng: createRng(seed + 1 + PLACE_IDS.indexOf(b.place!)) })
+        branch.purse = chain.main.purse
+        chain.branches.push(branch)
+      } catch (e) {
+        if (!(e instanceof SaveError)) throw e
+      }
+    }
+    chain.told = saved?.told === true
+    chain.at = saved && chain.shop(saved.at) ? saved.at : null
+    chain.main.ownerHere = chain.at === null
+    for (const b of chain.branches) b.ownerHere = b.place === chain.at
+    // the events a shop queued while loading are routed like those of a shop the owner is away from; the owner's own shop keeps hers
+    for (const s of [chain.main, ...chain.branches]) if (s !== chain.active()) chain.route(s, s.drainEvents())
+    return chain
+  }
+
+  /** The main shop's save with the chain in it: each branch is a save of its own, at its place. */
+  toSave(): SaveData {
+    return { ...this.main.toSave(), place: null, chain: { at: this.at, told: this.told, branches: this.branches.map(b => b.toSave()) } }
   }
 
   /** Back to the main shop is always allowed; a branch is not once the day has closed. */

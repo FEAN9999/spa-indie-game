@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DAY_END_MIN, MAX_FRAME_MS, REAL_MS_PER_GAME_MIN, STEP_MS } from '../../src/config'
 import { Chain } from '../../src/sim/chain'
+import { parseSave, SaveError } from '../../src/sim/save'
 import { dayProfit } from '../../src/sim/economy'
 import type { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -349,5 +350,59 @@ describe('the end of the day', () => {
       { place: null, profit: dayProfit(main.stats) },
       { place: 'beach', profit: dayProfit(beach.stats) },
     ])
+  })
+})
+
+/** A chain's save written as JSON and read back through parseSave, the way a slot does. */
+const viaJson = (chain: Chain, seed = 8): Chain => Chain.fromSave(parseSave(JSON.parse(JSON.stringify(chain.toSave()))), seed)
+
+describe('saving the chain', () => {
+  it('writes the main shop with no place and each branch with its place and no chain', () => {
+    const { chain } = withBeach()
+    const data = chain.toSave()
+    expect(data.place).toBeNull()
+    expect(data.chain!.branches.map(b => [b.place, b.chain])).toEqual([['beach', null]])
+  })
+
+  it('round-trips a chain with the beach open, the owner there and the card told', () => {
+    const { chain, main, beach } = atBeach()
+    hireStaff(beach, 'technician')
+    beach.stock.mud = 3
+    chain.told = true
+    const money = main.money
+    const copy = viaJson(chain)
+    const back = copy.shop('beach')!
+    expect(copy.at).toBe('beach')
+    expect(copy.told).toBe(true)
+    expect(copy.main.ownerHere).toBe(false)
+    expect(back.ownerHere).toBe(true)
+    expect(back.items).toEqual(beach.items)
+    expect(back.staff).toEqual(beach.staff)
+    expect(back.stock).toEqual(beach.stock)
+    // no second price is charged for the branch
+    expect(copy.main.money).toBe(money)
+    expect(back.purse).toBe(copy.main.purse)
+  })
+
+  it('keeps the main shop day card for the owner when the day ended while she was at the beach', () => {
+    const { chain, main, beach } = atBeach()
+    setMinutes([main, beach], DAY_END_MIN)
+    chain.advance(STEP_MS)
+    expect(main.dayOver).toBe(true)
+    const copy = viaJson(chain)
+    expect(copy.takeHeld().some(e => e.type === 'dayEnded')).toBe(true)
+  })
+
+  it('drops a branch that cannot be loaded and still loads the main shop', () => {
+    const { chain, main } = withBeach()
+    const raw = JSON.parse(JSON.stringify(chain.toSave()))
+    const beach = raw.chain.branches[0]
+    // a wall tile of the room
+    beach.items[0] = { ...beach.items[0], x: 0, y: 0 }
+    expect(() => Chain.fromSave(parseSave(structuredClone(raw)), 8)).not.toThrow(SaveError)
+    const copy = Chain.fromSave(parseSave(structuredClone(raw)), 8)
+    expect(copy.branches).toEqual([])
+    expect(copy.at).toBeNull()
+    expect(copy.main.day).toBe(main.day)
   })
 })
