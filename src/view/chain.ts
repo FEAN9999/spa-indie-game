@@ -1,7 +1,13 @@
 import { C } from '../art/palette'
-import { DAY_END_MIN } from '../config'
+import { DAY_END_MIN, PLACES } from '../config'
+import type { Chain } from '../sim/chain'
 import { clockLabel } from '../sim/clock'
-import type { PlaceId } from '../sim/places'
+import { staffCap } from '../sim/crew'
+import { dayProfit } from '../sim/economy'
+import { PLACE_IDS, type PlaceId } from '../sim/places'
+import type { SpaSim } from '../sim/spa'
+import type { StaffRole } from '../sim/staff'
+import { STOCK_NAME } from '../sim/stock'
 import type { VipId } from '../sim/vips'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
@@ -58,3 +64,104 @@ export const noTechCard = (place: PlaceId): GoldCard => ({
   line: t('noTechLine'),
   quiet: true,
 })
+
+/** The card that opens the chain, once the main shop has the stars for it. */
+export const unlockCard = (): GoldCard => ({
+  icon: { texture: 'icon-chain', disc: C.mustard },
+  head: t('unlockHead'),
+  name: t('unlockName'),
+  line: t('unlockLine'),
+})
+
+/** `here`: the owner is there; `open`: a shop she can go to; `can`: the stars are there to open it; `lock`: the stars are not; `soon`: a place not open yet. */
+export type PinState = 'here' | 'open' | 'can' | 'lock' | 'soon'
+
+/** What the map's sheet says about a place, and what its button does. `short`: the money missing to open; `warn`: who leaves the shop the owner is in if she goes. */
+export interface Sheet {
+  title: string
+  status: string
+  rows: string[]
+  button: { text: string; on: boolean }
+  short: string | null
+  warn: string | null
+}
+
+/** A place's own customers and the piece its room opens with; the places of the next release name theirs then. */
+const PLACE_OWN: Partial<Record<PlaceId, { kind: StringKey; decor: StringKey }>> = { beach: { kind: 'kindTourist', decor: 'decorBeach' } }
+
+/** A factor as the sheet writes it, with one decimal after a comma: "1,2". */
+const factor = (n: number): string => n.toFixed(1).replace('.', ',')
+
+export function pinState(chain: Chain, place: PlaceId | null): PinState {
+  if (place === chain.at) return 'here'
+  if (place === null || chain.shop(place)) return 'open'
+  const problem = chain.openProblem(place)
+  return problem === 'stars' ? 'lock' : problem === 'soon' ? 'soon' : 'can'
+}
+
+/** A shop the owner is away from with no technician gets no customers. */
+const resting = (chain: Chain, place: PlaceId | null): boolean => pinState(chain, place) === 'open' && !chain.shop(place)!.hasTechnician()
+
+/** The small line on a pin's sign, under the place's name. */
+export function pinLabel(chain: Chain, place: PlaceId | null): string {
+  const state = pinState(chain, place)
+  if (place === null || state === 'here' || state === 'open') return resting(chain, place) ? t('pinResting') : t('pinProfit', { profit: signedMoney(dayProfit(chain.shop(place)!.stats)) })
+  const { stars, price } = PLACES[place]
+  if (state === 'lock') return t('pinNeed', { n: stars, price: formatMoney(price) })
+  return state === 'can' ? t('pinCan', { price: formatMoney(price) }) : t('pinSoon')
+}
+
+/** Under the map's title: the main shop's stars and how many of the shops are open. */
+export const mapSub = (chain: Chain): string => t('mapSub', { n: chain.main.rank.stars, k: 1 + chain.branches.length, all: 1 + PLACE_IDS.length })
+
+/** An open shop's day so far, its staff against what it can hire, and what runs low. */
+function dayRows(shop: SpaSim): string[] {
+  const { stats } = shop
+  const count = (role: StaffRole) => shop.staff.filter(s => s.role === role && !s.leaving).length
+  const low = shop.lowStock()
+  return [
+    t('sheetToday', { n: stats.served, m: stats.angry + stats.walkedAway }),
+    t('sheetProfit', { profit: signedMoney(dayProfit(stats)) }),
+    t('sheetStaff', { t: count('technician'), tc: staffCap('technician', shop.floors), r: count('receptionist'), rc: staffCap('receptionist', shop.floors) }),
+    low.length === 0 ? t('sheetStockOk') : t('sheetStockLow', { items: low.map(item => t(STOCK_NAME[item]).toLocaleLowerCase('vi')).join(', ') }),
+  ]
+}
+
+function statusOf(chain: Chain, place: PlaceId | null, state: PinState): string {
+  if (place === null) return t('sheetMain', { n: chain.main.rank.stars })
+  if (state === 'lock') return t('sheetLocked', { n: PLACES[place].stars, price: formatMoney(PLACES[place].price) })
+  if (state === 'can') return t('sheetCan', { n: chain.main.rank.stars })
+  if (state === 'soon') return t('pinSoon')
+  return resting(chain, place) ? t('sheetResting') : t('sheetOpen')
+}
+
+function buttonOf(chain: Chain, place: PlaceId | null, state: PinState): Sheet['button'] {
+  if (state === 'here') return { text: t('sheetHere'), on: false }
+  if (place === null || state === 'open') return chain.goProblem(place) === 'closed' ? { text: t('sheetClosed'), on: false } : { text: t('sheetGo'), on: true }
+  if (state === 'can') return { text: t('sheetOpenButton', { price: formatMoney(PLACES[place].price) }), on: chain.openProblem(place) === null }
+  return state === 'lock' ? { text: t('sheetNeed', { n: PLACES[place].stars }), on: false } : { text: t('pinSoon'), on: false }
+}
+
+/** The sheet for the pin tapped: the place, how it stands, what is known of it, and opening it or going there. */
+export function sheetOf(chain: Chain, place: PlaceId | null): Sheet {
+  const state = pinState(chain, place)
+  const shop = chain.shop(place)
+  const own = place === null ? undefined : PLACE_OWN[place]
+  const rows: string[] = []
+  if (place !== null) {
+    if (own) rows.push(t('sheetKind', { kind: t(own.kind), arrival: factor(PLACES[place].arrival) }))
+    rows.push(t('sheetPrice', { factor: factor(PLACES[place].priceFactor) }))
+  }
+  if (shop) rows.push(...dayRows(shop))
+  else if (own) rows.push(t('sheetRoom', { decor: t(own.decor) }))
+  const short = place !== null && state === 'can' && chain.openProblem(place) === 'money' ? t('problemMoney', { money: formatMoney(PLACES[place].price - chain.main.money) }) : null
+  const leavers = chain.goProblem(place) === null ? chain.leaveCount() : 0
+  return {
+    title: placeName(place),
+    status: statusOf(chain, place, state),
+    rows,
+    button: buttonOf(chain, place, state),
+    short,
+    warn: leavers > 0 ? t('sheetLeave', { place: placeName(chain.at), n: leavers }) : null,
+  }
+}

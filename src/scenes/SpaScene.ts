@@ -36,7 +36,7 @@ import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
-import { closingCard, noTechCard, placeName, vipCallCard, type ChoiceText } from '../view/chain'
+import { closingCard, noTechCard, placeName, unlockCard, vipCallCard, type ChoiceText } from '../view/chain'
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
@@ -60,6 +60,7 @@ import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
+import type { ChainData } from './ChainScene'
 import type { ChoiceData } from './ChoiceScene'
 import type { GuestBookData } from './GuestBookScene'
 import type { QuestsData } from './QuestsScene'
@@ -367,6 +368,8 @@ export class SpaScene extends Phaser.Scene {
 
   /** The owner goes to `place`: the shutter closes over the frozen shop, then the chain switches, saves, and the scene starts again on the shop she is in. */
   private switchShop(place: PlaceId | null): void {
+    // the shop she is in, one not open or a branch after closing time is not gone to
+    if (this.chain.goProblem(place) !== null) return
     // nothing is tapped or played while it closes: a mini-game opened now would be left behind
     this.modal = true
     this.switching = true
@@ -654,9 +657,30 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('GuestBookScene', data)
   }
 
-  /** Marks the chain button as used. Task 8 opens the map from here. */
+  /** The chain's map over the frozen shop, opened only when build mode would be: open a branch there, or go to another shop. */
   private openChainMap(): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
     this.chain.main.markHint('openChain')
+    const data: ChainData = {
+      chain: this.chain,
+      onOpen: place => {
+        if (this.chain.open(place)) return
+        sound.play('levelUp')
+        this.session.saveNow()
+      },
+      // the map goes without its onClose, so the shop stays frozen until the shutter has rolled up over the next one
+      onGo: place => {
+        this.scene.stop('ChainScene')
+        this.switchShop(place)
+      },
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('ChainScene', data)
   }
 
   /** The hand over a bottom-bar button, if the bar has it. */
@@ -1001,6 +1025,12 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
       if (!this.modal) this.pumpBadges()
       if (!this.modal && this.shopFree()) this.showNewOutfits()
+      // once, when the main shop has the stars for a chain: the card that opens it, after whatever cards came first
+      if (this.sim.place === null && this.shopFree() && this.chain.shouldTell()) {
+        this.badgeQueue.push(unlockCard())
+        this.chain.told = true
+        this.session.saveNow()
+      }
       if (this.sim.place !== null) this.callOwner(this.sim.place)
     }
 
@@ -1057,6 +1087,12 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       else this.pointer.show(t('hintStar'), this.hud.starX, TOP_ROW_TIP_Y, 'up')
       step.ms -= delta
       if (step.ms <= 0) this.tour.shift()
+      return
+    }
+
+    // from the card that opens the chain until the map is first opened
+    if (sim.place === null && this.chain.told && !this.chain.main.hintDone('openChain')) {
+      this.pointOnPlate(t('unlockName'), 'chain')
       return
     }
 

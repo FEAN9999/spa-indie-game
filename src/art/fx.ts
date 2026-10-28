@@ -31,6 +31,14 @@ export const SCOOTER_BOX: [number, number, number, number] = [-120, -164, 236, 1
 /** A customer's skin on a badge. */
 const SKIN_TONE = `#${SKIN[1].toString(16)}`
 
+/** Each place's line icon on the chain map, in a 64-unit box round the origin: the main shop, then the places in PLACE_IDS order. */
+const PIN_ICONS = {
+  main: 'M-20,2 L0,-18 L20,2 M-14,-4 V20 H14 V-4 M-5,20 V8 H5 V20',
+  beach: 'M-22,6 q7,-8 14,0 t14,0 t14,0 M-22,16 q7,-8 14,0 t14,0 t14,0 M-6,-4 L4,-22 M4,-22 Q-14,-22 -18,-10 M4,-22 Q20,-18 20,-6',
+  oldTown: 'M0,-24 V-18 M-8,-18 H8 M-8,16 H8 M0,16 V24 M-14,-1 Q-14,-17 0,-17 Q14,-17 14,-1 Q14,15 0,15 Q-14,15 -14,-1Z',
+  uptown: 'M-18,22 V-6 H-6 V22 M-6,22 V-22 H10 V22 M10,22 V2 H20 V22 M-24,22 H24 M0,-14 h4 M0,-6 h4 M0,2 h4',
+}
+
 /** A round 56 px service badge on its own color. */
 const badge = (fill: string, inner: string) => svgDoc([0, 0, 56, 56], 1, `<circle cx="28" cy="28" r="25" fill="${fill}" ${OUTLINE}/>${inner}`)
 
@@ -167,6 +175,13 @@ export function fxTextures(): Record<string, string> {
       1,
       `<g ${ICON}><ellipse cx="32" cy="57" rx="12" ry="4" fill="${C.sand}"/>` +
         `<path d="M32,57 C22,44 15,36 15,25 A17,17 0 1 1 49,25 C49,36 42,44 32,57Z" fill="${C.terracotta}"/><circle cx="32" cy="25" r="7" fill="${C.cream}"/></g>`,
+    ),
+    // in the head of each place's pin on the chain map, from the sketch: the main shop's house, the beach's wave, the old town's lantern, uptown's towers
+    ...Object.fromEntries(
+      Object.entries(PIN_ICONS).map(([place, d]) => [
+        `pin-${place}`,
+        svgDoc([-32, -32, 64, 64], 0.8, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round"/>`),
+      ]),
     ),
     // the owner's scooter on the closing card, from the sketch: standing on the origin, facing right
     'fx-scooter': svgDoc(

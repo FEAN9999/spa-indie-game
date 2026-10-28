@@ -20,6 +20,9 @@ describe('fx art', () => {
 
   it('has the Chuỗi map pin', () => expect(Object.keys(fxTextures())).toContain('icon-chain'))
 
+  it("has an icon for the head of each place's pin on the map", () =>
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['pin-main', 'pin-beach', 'pin-oldTown', 'pin-uptown'])))
+
   it("has the closing card's scooter, standing on its viewBox's origin, in the game colours", () => {
     const scooter = fxTextures()['fx-scooter']
     expect(scooter).toBeDefined()
