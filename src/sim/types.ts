@@ -11,6 +11,7 @@ import type { VipId } from './vips'
 import type { ServiceId } from './services'
 import type { StockItem } from './stock'
 import type { Course } from './staff'
+import type { StarterFeature, StarterGoalId } from './starter'
 
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
@@ -167,6 +168,8 @@ export type SimEvent =
   | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
   /** A quest was finished and its reward paid; `quest` is a copy as it stood then. */
   | { type: 'questDone'; quest: Quest }
+  /** A starter goal is finished and `reward` paid (with the mask's price back when it was bought); `opens` names a button it opened before its day. */
+  | { type: 'goalDone'; goal: StarterGoalId; reward: number; opens: StarterFeature | null }
   /** A festival quest is finished: told with a gold card, not the quest toast; `gift` when its keepsake was given now. */
   | { type: 'festivalQuestDone'; quest: Quest; festival: FestivalId; gift: boolean }
   /** The first day of a festival month, with the festival service the month settled on. */

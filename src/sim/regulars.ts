@@ -83,7 +83,7 @@ export function heartsFor(points: number): number {
 export const isMember = (s: RegularState): boolean => s.hearts >= MEMBER_HEARTS
 export const bookOpen = (b: GuestBook): boolean => REGULAR_IDS.some(id => b.regulars[id].met)
 
-const visitMinute = (rng: Rng) => REGULAR_VISIT_FROM_MIN + Math.floor(rng() * (REGULAR_VISIT_TO_MIN - REGULAR_VISIT_FROM_MIN))
+export const visitMinute = (rng: Rng) => REGULAR_VISIT_FROM_MIN + Math.floor(rng() * (REGULAR_VISIT_TO_MIN - REGULAR_VISIT_FROM_MIN))
 
 /** The morning plan: who comes today and when. Draws nothing before the regulars begin. */
 export function planDay(book: GuestBook, day: number, rng: Rng): void {

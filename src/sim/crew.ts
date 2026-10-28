@@ -1,4 +1,4 @@
-import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS, UNLOCK_DAY } from '../config'
+import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { floorOf } from './floors'
@@ -437,7 +437,7 @@ export function startDay(h: CrewHost): void {
     s.pos = { ...sim.grid.door }
     s.task = { kind: 'late', untilMinute: DAY_START_MIN + LATE_MIN }
   }
-  if (sim.day >= UNLOCK_DAY.staff) refreshCandidates(h)
+  if (sim.featureOpen('staff')) refreshCandidates(h)
 }
 
 /** After a load: a task that names a customer who is no longer there is dropped (a leaver with no task walks out on the next step); stale candidates are replaced. */
@@ -449,7 +449,7 @@ export function repairAfterLoad(h: CrewHost): void {
     if (task?.kind === 'fetch' && c?.state !== 'waiting') s.task = null
     if (task?.kind === 'serve' && (!c || c.stationId !== task.stationId)) s.task = null
   }
-  if (sim.day >= UNLOCK_DAY.staff && sim.candidatesDay !== sim.day) refreshCandidates(h)
+  if (sim.featureOpen('staff') && sim.candidatesDay !== sim.day) refreshCandidates(h)
 }
 
 /** The day is over: everyone still here is paid, and those who were let go leave the payroll. */
