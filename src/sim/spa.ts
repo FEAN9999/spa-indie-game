@@ -28,6 +28,7 @@ import {
   POWER_WARN_MIN,
   QUEST_MIN_LEFT_MIN,
   RATING_WINDOW,
+  REGULARS_FROM_DAY,
   RECIPE_TRY_COST,
   RESTOCK_AMOUNT,
   RESTOCK_PRICE,
@@ -778,9 +779,11 @@ export class SpaSim {
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
     startDay(this.crew)
     planDay(this.book, this.day, this.rng)
-    // chú Sáu, met on a new shop's first day, comes back on its second, at a minute drawn from a stream of its own
+    // chú Sáu, met on a new shop's first day, comes back on its second, at a minute drawn from a stream of its own;
+    // missed then, he waits for the regulars' own days
     const sau = this.book.regulars.sau
-    if (this.day === 2 && sau.met && sau.visitAt === null) sau.visitAt = visitMinute(createRng(this.day * 3301 + this.nextId))
+    if (this.day === 2 && sau.met) sau.visitAt = visitMinute(createRng(this.day * 3301 + this.nextId))
+    else if (this.day < REGULARS_FROM_DAY) sau.visitAt = null
     clearStale(this.vip, this.day)
     const book = this.eventBook
     if (book.plan && book.plan.day < this.day) book.plan = null

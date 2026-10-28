@@ -217,6 +217,9 @@ describe('a new shop runs the starter chain', () => {
     const at = sim.book.regulars.sau.visitAt!
     expect(at).toBeGreaterThanOrEqual(REGULAR_VISIT_FROM_MIN)
     expect(at).toBeLessThan(REGULAR_VISIT_TO_MIN)
+    // missed on day 2 (nobody walks in here), he waits for the regulars' own days
+    endDay(sim)
+    expect(sim.book.regulars.sau.visitAt).toBeNull()
   })
 
   it('brings a plain shop no Chú Sáu on day 2', () => {
