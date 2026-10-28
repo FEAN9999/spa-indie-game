@@ -1,3 +1,4 @@
+import type { BadgeShop } from '../../src/sim/badges'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { noTiers, wageFor, type Staff, type StaffRole, type StaffStats, type Tiers, type TraitId } from '../../src/sim/staff'
@@ -89,3 +90,25 @@ export function runLog(days = 10): { day: number; arrivals: string[]; candidates
   }
   return log
 }
+
+/** A shop snapshot with nothing done yet, for the badge rules. */
+export const zeroShop = (): BadgeShop => ({
+  served: 0,
+  owner3: 0,
+  bestServed: 0,
+  cleanDay: false,
+  members: 0,
+  fullHearts: 0,
+  photos: 0,
+  boardHung: false,
+  services: 0,
+  recipes: 0,
+  floors: 1,
+  beauty: 0,
+  technicians: 0,
+  masterTier: 0,
+  money: 0,
+  bestProfit: 0,
+  dailies: 0,
+  day: 1,
+})

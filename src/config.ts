@@ -319,3 +319,8 @@ export const QUEST_DEFAULT_DAY = { served: 10, earned: 500_000, tips: 50_000, ow
 export const QUEST_FLOOR = { serve: 5, owner3Min: 2, owner3Max: 6, earn: 150_000, tips: 20_000, service: 2, staff: 3, monthOwner3: 4 } as const
 /** A day with at least this many served and nobody walking out is a clean day. */
 export const CLEAN_DAY_MIN_SERVED = 15
+
+/** What each badge with a number in it asks for. */
+export const BADGE_GOALS = { served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
+/** How long the gold banner for a new badge stays on screen. */
+export const BADGE_BANNER_MS = 3000
