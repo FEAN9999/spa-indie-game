@@ -1,7 +1,7 @@
 import { UNLOCK_DAY } from '../config'
 import type { SpaSim } from './spa'
 
-export type Pointer = { hint: 'tapCustomer' | 'patience' | 'regular' | 'vip'; customerId: number } | { hint: 'openBuild' } | { hint: 'openStaff' } | { hint: 'openServices' } | { hint: 'openStock' } | { hint: 'openBook' } | { hint: 'openFloor' }
+export type Pointer = { hint: 'tapCustomer' | 'patience' | 'regular' | 'vip'; customerId: number } | { hint: 'openBuild' } | { hint: 'openStaff' } | { hint: 'openServices' } | { hint: 'openStock' } | { hint: 'openBook' } | { hint: 'openFloor' } | { hint: 'openQuests' }
 
 /** The one hint to show right now, or null. Never blocks input. */
 export function pickHint(sim: SpaSim): Pointer | null {
@@ -29,6 +29,7 @@ export function pickHint(sim: SpaSim): Pointer | null {
   if (sim.day === UNLOCK_DAY.staff && !sim.hintDone('openStaff')) return { hint: 'openStaff' }
   if (sim.day === UNLOCK_DAY.services && !sim.hintDone('openServices')) return { hint: 'openServices' }
   if (sim.day === UNLOCK_DAY.stock && !sim.hintDone('openStock')) return { hint: 'openStock' }
+  if (sim.day === UNLOCK_DAY.quests && !sim.hintDone('openQuests')) return { hint: 'openQuests' }
   if (sim.floors > 1 && !sim.hintDone('openFloor')) return { hint: 'openFloor' }
   return null
 }

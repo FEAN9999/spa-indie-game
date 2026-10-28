@@ -57,6 +57,10 @@ export const C = {
   stoneHot: '#EE8A2E',
   steamBlue: '#9FB8BF',
   deepBrown: '#2B201C',
+  // the quest panel: a finished row, the month's row, and quiet notes
+  tealPale: '#E1F0EA',
+  goldPale: '#FFF2D3',
+  soft: '#7A5E50',
   // rooftop (floor 3) and its pigeon coop
   cloud: '#FFFFFF',
   tank: '#CBD2D6',

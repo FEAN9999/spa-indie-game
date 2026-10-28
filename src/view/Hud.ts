@@ -29,17 +29,19 @@ export const BUILD_PLATE_TOP = { x: navX(0), y: NAV_Y - PLATE_R }
 export const STAFF_PLATE_TOP = { x: navX(1), y: NAV_Y - PLATE_R }
 /** The top of the services button's plate, where the hand points. */
 export const SERVICES_PLATE_TOP = { x: navX(2), y: NAV_Y - PLATE_R }
+/** The top of the quests button's plate, where the hand points. */
+export const QUESTS_PLATE_TOP = { x: navX(3), y: NAV_Y - PLATE_R }
 
 /** The guest-book button, in the top bar's second row. */
 export const BOOK_BUTTON = { x: 870, y: 152 }
 const BOOK_R = 38
 
-/** Each button opens with its feature's day; one without a feature is never locked. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
+/** Each button opens with its feature's day. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
 const NAV: { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }[] = [
   { key: 'navBuild', icon: 'icon-build', feature: 'build', hint: 'openBuild' },
   { key: 'navStaff', icon: 'icon-staff', feature: 'staff', hint: 'openStaff' },
   { key: 'navServices', icon: 'icon-services', feature: 'services', hint: 'openServices', later: { feature: 'stock', hint: 'openStock' } },
-  { key: 'navQuests', icon: 'icon-quests' },
+  { key: 'navQuests', icon: 'icon-quests', feature: 'quests', hint: 'openQuests' },
 ]
 const LOCKED_ALPHA = 0.45
 
@@ -51,7 +53,7 @@ interface NavPlate {
   label: Phaser.GameObjects.Text
   lock: Phaser.GameObjects.Image
   badge: Phaser.GameObjects.Container | null
-  /** The services plate's red dot while something runs low. */
+  /** The red dot: on the services plate while something runs low, on the quests plate while new quests wait. */
   dot: Phaser.GameObjects.Arc | null
 }
 
@@ -76,6 +78,7 @@ export class Hud {
     onStaff: () => void,
     onServices: () => void,
     onBook: () => void,
+    onQuests: () => void,
   ) {
     const add = scene.add
 
@@ -140,8 +143,8 @@ export class Hud {
       // and a red "Mới" on its top-left once it opens, until it is first used
       const badge = n.hint ? this.badge() : null
       if (badge) btn.add(badge)
-      // and, on the services plate, a red dot on the top-right while stock runs low
-      const dot = n.feature === 'services' ? add.circle(44, -44, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
+      // and, on the services and quests plates, a red dot on the top-right
+      const dot = n.feature === 'services' || n.feature === 'quests' ? add.circle(44, -44, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
       if (dot) btn.add(dot)
       const label = add.text(x, 2112, t(n.key), textStyle(34, '600')).setOrigin(0.5).setDepth(DEPTH)
       const feature = n.feature
@@ -151,7 +154,7 @@ export class Hud {
         else if (feature === 'build') onBuild()
         else if (feature === 'staff') onStaff()
         else if (feature === 'services') onServices()
-        else this.toast(t('comingSoon'))
+        else onQuests()
       })
       this.plates.push({ feature, hint: n.hint, later: n.later, icon, label, lock, badge, dot })
     })
@@ -188,7 +191,7 @@ export class Hud {
       const fresh = p.hint !== undefined && !this.sim.hintDone(p.hint)
       const freshLater = p.later !== undefined && isUnlocked(p.later.feature, this.sim.day) && !this.sim.hintDone(p.later.hint)
       p.badge?.setVisible(!locked && (fresh || freshLater))
-      p.dot?.setVisible(!locked && this.sim.lowStock().length > 0)
+      p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0))
     }
   }
 

@@ -104,6 +104,8 @@ export function fxTextures(): Record<string, string> {
       `<g ${ICON}><circle cx="43" cy="22" r="7" fill="${C.mustard}"/><rect x="33" y="31" width="20" height="21" rx="9" fill="${C.mustard}"/>` +
         `<circle cx="23" cy="21" r="8" fill="${C.teal}"/><rect x="12" y="31" width="23" height="23" rx="10" fill="${C.teal}"/></g>`,
     ),
+    // one customer, for the "serve" quests
+    'quest-guest': svgDoc([0, 0, 64, 64], 1, `<g ${ICON}><circle cx="32" cy="21" r="10" fill="${C.lotus}"/><rect x="17" y="34" width="30" height="22" rx="11" fill="${C.lotus}"/></g>`),
     'icon-services': svgDoc(
       [0, 0, 64, 64],
       1,

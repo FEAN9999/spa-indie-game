@@ -244,3 +244,16 @@ describe('the floor hint', () => {
     expect(pickHint(sim)).toBeNull()
   })
 })
+
+describe('the quests hint', () => {
+  it('points at the quests button on day 8 until it is opened', () => {
+    const sim = pastTutorial(UNLOCK_DAY.quests)
+    expect(pickHint(sim)).toEqual({ hint: 'openQuests' })
+    sim.markHint('openQuests')
+    expect(pickHint(sim)).toBeNull()
+  })
+
+  it('gives an old shop on day 9 no hand', () => {
+    expect(pickHint(pastTutorial(UNLOCK_DAY.quests + 1))).toBeNull()
+  })
+})

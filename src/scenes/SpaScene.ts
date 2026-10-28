@@ -30,7 +30,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
-import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
 import type { MiniGameData } from '../view/miniGame'
 import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
@@ -43,6 +43,7 @@ import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import type { BuildData } from './BuildScene'
 import type { GuestBookData } from './GuestBookScene'
+import type { QuestsData } from './QuestsScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
 import type { ServicesData } from './ServicesScene'
@@ -185,7 +186,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = new CharacterView(this, ownerColors(this.sim.ownerLook))
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook())
+    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests())
     this.floorBar = new FloorBar(this, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this)
     this.input.on('pointerup', this.onTap, this)
@@ -398,6 +399,25 @@ export class SpaScene extends Phaser.Scene {
       },
     }
     this.scene.launch('GuestBookScene', data)
+  }
+
+  /** The quest panel over the frozen shop, opened only when build mode would be. */
+  private openQuests(): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
+    const intro = !sim.hintDone('openQuests')
+    sim.markHint('openQuests')
+    sim.markQuestsSeen()
+    const data: QuestsData = {
+      sim,
+      intro,
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('QuestsScene', data)
   }
 
   /** The held stairs note, a toast at a time after any morning toasts. */
@@ -617,6 +637,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
     if (pick?.hint === 'openStock') {
       this.pointer.show(t('hintStock'), SERVICES_PLATE_TOP.x, SERVICES_PLATE_TOP.y, 'down')
+      return
+    }
+    if (pick?.hint === 'openQuests') {
+      this.pointer.show(t('hintQuests'), QUESTS_PLATE_TOP.x, QUESTS_PLATE_TOP.y, 'down')
       return
     }
     if (pick?.hint === 'openBook') {
