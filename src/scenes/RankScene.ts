@@ -46,8 +46,9 @@ export class RankScene extends Phaser.Scene {
   create() {
     const { sim, kind, onDone } = this.params
     const done = () => {
-      onDone()
+      // stop first: onDone may launch this scene again (month card, then year card), and a stop queued after that launch would kill the new card
       this.scene.stop()
+      onDone()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setDepth(-2).setInteractive()
     if (kind === 'month' && sim.rank.last) this.monthCard(sim.rank.last, done)
