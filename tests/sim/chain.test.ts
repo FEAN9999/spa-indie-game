@@ -261,6 +261,33 @@ describe('events of the shops the owner is away from', () => {
     expect(chain.takeHeld()).toEqual([])
   })
 
+  it('calls the owner to a VIP already waiting at the main shop as she leaves it for a branch', () => {
+    const { chain, main } = withBeach()
+    // with no technician a waiting customer leaves with the owner, so there is no one to call her for
+    hireStaff(main, 'technician')
+    main.spawnCustomer({ kind: 'office', service: 'shampoo', vip: VIP_IDS[0] })
+    // her arrival was already shown to the owner at the main shop; only the call on leaving is under test
+    chainUntil(chain, () => main.customers[0]?.state === 'waiting')
+    main.drainEvents()
+    chain.goTo('beach')
+    expect(chain.takeVipCall()).toBe(VIP_IDS[0])
+    expect(chain.takeVipCall()).toBeNull()
+    chain.goTo(null)
+    expect(chain.takeVipCall()).toBeNull()
+  })
+
+  it('raises no call on leaving the main shop with no VIP waiting, and clears calls on the way home', () => {
+    const { chain, main } = withBeach()
+    hireStaff(main, 'technician')
+    main.spawnCustomer({ kind: 'office', service: 'shampoo' })
+    chain.goTo('beach')
+    expect(chain.takeVipCall()).toBeNull()
+    main.spawnCustomer({ kind: 'office', service: 'shampoo', vip: VIP_IDS[0] })
+    chain.advance(STEP_MS)
+    chain.goTo(null)
+    expect(chain.takeVipCall()).toBeNull()
+  })
+
   it('forgets a VIP call once the owner is back at the main shop', () => {
     const { chain, main } = atBeach()
     main.spawnCustomer({ vip: 'singer' })

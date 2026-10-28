@@ -97,7 +97,7 @@ export class Chain {
     chain.at = saved && chain.shop(saved.at) ? saved.at : null
     chain.main.ownerHere = chain.at === null
     // a VIP already waiting at the main shop calls the owner, as one who arrives while she is away does
-    if (chain.at !== null) for (const c of chain.main.customers) if (c.vip !== null && WAITING.includes(c.state)) chain.vipCalls.push(c.vip)
+    if (chain.at !== null) chain.callForWaitingVips()
     for (const b of chain.branches) b.ownerHere = b.place === chain.at
     // the events a shop queued while loading are routed like those of a shop the owner is away from; the owner's own shop keeps hers
     for (const s of [chain.main, ...chain.branches]) if (s !== chain.active()) chain.route(s, s.drainEvents())
@@ -128,8 +128,14 @@ export class Chain {
     this.at = place
     // a VIP call is for an owner who is away from the main shop
     if (place === null) this.vipCalls = []
+    else if (left === this.main) this.callForWaitingVips()
     this.active().ownerArrives()
     return null
+  }
+
+  /** Each VIP waiting at the main shop calls the owner, once. */
+  private callForWaitingVips(): void {
+    for (const c of this.main.customers) if (c.vip !== null && WAITING.includes(c.state) && !this.vipCalls.includes(c.vip)) this.vipCalls.push(c.vip)
   }
 
   /** Per-frame entry point; a huge delta is clamped. */
