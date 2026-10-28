@@ -1,13 +1,21 @@
 import { describe, expect, it } from 'vitest'
 import { decodeSaveCode, encodeSaveCode } from '../../src/save/code'
+import { Chain } from '../../src/sim/chain'
 import { SaveError, type SaveData } from '../../src/sim/save'
 import v1 from '../fixtures/save-v1.json'
-import { busyShop } from '../sim/helpers'
+import { busyShop, starShop } from '../sim/helpers'
 
 describe('save codes', () => {
   it('turns a shop into a code and back', async () => {
     const d = busyShop().toSave()
     expect(await decodeSaveCode(await encodeSaveCode(d))).toEqual(d)
+  })
+
+  it("keeps a chain's branches in the code the pause card exports", async () => {
+    const chain = new Chain(starShop(), 7)
+    chain.open('beach')
+    const back = Chain.fromSave(await decodeSaveCode(await encodeSaveCode(chain.toSave())), 8)
+    expect(back.branches.map(b => b.place)).toEqual(['beach'])
   })
 
   it('makes a code short enough to paste in a chat', async () => {

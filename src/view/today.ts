@@ -13,7 +13,7 @@ export function todayLine(sim: SpaSim): TodayLine | null {
   return eventLine(sim) ?? festivalLine(sim) ?? hotLine(sim)
 }
 
-/** Today's line while the shop is in view: none once the day is over or while a panel covers the shop. */
+/** Today's line while the shop is in view: none once the day is over, while a panel covers the shop, or at a branch, as festivals and events are the main shop's. */
 export function todayShown(sim: SpaSim, covered: boolean): TodayLine | null {
-  return covered || sim.dayOver ? null : todayLine(sim)
+  return covered || sim.dayOver || sim.place !== null ? null : todayLine(sim)
 }

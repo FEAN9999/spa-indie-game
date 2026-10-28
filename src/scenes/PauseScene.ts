@@ -23,6 +23,8 @@ export interface PauseData {
   panel: PausePanel
   onResume: () => void
   onEditProfile: () => void
+  /** The whole chain's save, which the main shop's own save lacks: for save codes. */
+  save: () => SaveData
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -168,7 +170,7 @@ export class PauseScene extends Phaser.Scene {
       },
     })
     this.keep(box.dom)
-    encodeSaveCode(this.params.sim.toSave()).then(code => (box.textarea.value = code))
+    encodeSaveCode(this.params.save()).then(code => (box.textarea.value = code))
     this.button(CARD_TOP + 920, t('back'), 'plain', () => this.showMenu())
     this.card(CARD_TOP + 1050)
   }
@@ -232,7 +234,7 @@ export class PauseScene extends Phaser.Scene {
         y = this.step(n++, y, t(safari ? 'installCopyFirst' : 'installKeepCode'))
         // encoded ahead, so the copy runs straight from the tap as Safari requires
         let code = ''
-        encodeSaveCode(sim.toSave()).then(c => (code = c))
+        encodeSaveCode(this.params.save()).then(c => (code = c))
         this.keep(
           domButton(this, MID, y + 60, t('copySave'), async b => {
             if (await copyText(code, null)) b.textContent = t('copied')

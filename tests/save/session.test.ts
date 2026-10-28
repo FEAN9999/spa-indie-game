@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { SaveSession } from '../../src/save/session'
 import { SaveStore } from '../../src/save/store'
+import { Chain } from '../../src/sim/chain'
 import { SaveTooNewError } from '../../src/sim/save'
 import type { SaveData } from '../../src/sim/save'
+import { starShop } from '../sim/helpers'
 import { MemStorage, shop } from './memStorage'
 
 const setup = () => {
@@ -97,6 +99,18 @@ describe('save session', () => {
     expect([mem.getItem('spa.slot.1'), mem.getItem('spa.slot.1.broken')]).toEqual([null, raw])
     session.saveNow()
     expect([store.load(1)?.money, mem.getItem('spa.slot.1.broken'), reloads]).toEqual([3, raw, []])
+  })
+
+  it("writes a chain's branches, as the spa scene saves it, and a reload opens them where the owner was", () => {
+    const store = new SaveStore(new MemStorage())
+    const chain = new Chain(starShop(), 7)
+    chain.open('beach')
+    chain.goTo('beach')
+    // the main shop alone saves an empty chain
+    expect(chain.main.toSave().chain?.branches).toEqual([])
+    new SaveSession(store, () => chain.toSave(), () => {}).saveNow()
+    const back = Chain.fromSave(new SaveSession(store, () => chain.toSave(), () => {}).load()!, 8)
+    expect([back.branches.map(b => b.place), back.at]).toEqual([['beach'], 'beach'])
   })
 
   it('saves before reloading for a new version, and not after', () => {

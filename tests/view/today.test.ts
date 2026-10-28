@@ -87,4 +87,10 @@ describe("today's line on screen", () => {
     sim.dayOver = true
     expect(todayShown(sim, false)).toBeNull()
   })
+
+  it('never shows at a branch, whose day has no festival or event', () => {
+    const main = on(38)
+    expect(todayShown(main, false)).not.toBeNull()
+    expect(todayShown(SpaSim.newBranch('beach', main, createRng(2)), false)).toBeNull()
+  })
 })

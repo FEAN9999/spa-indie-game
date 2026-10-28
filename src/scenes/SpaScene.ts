@@ -10,6 +10,7 @@ import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
+import { Chain } from '../sim/chain'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
 import { monthOf } from '../sim/calendar'
@@ -19,6 +20,7 @@ import { floorOf } from '../sim/floors'
 import { onBed } from '../sim/grid'
 import type { OutfitId } from '../sim/outfits'
 import { ITEMS } from '../sim/items'
+import type { PlaceId } from '../sim/places'
 import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
@@ -34,6 +36,7 @@ import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
+import { closingCard, noTechCard, placeName, vipCallCard, type ChoiceText } from '../view/chain'
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
@@ -56,6 +59,7 @@ import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
+import type { ChoiceData } from './ChoiceScene'
 import type { GuestBookData } from './GuestBookScene'
 import type { QuestsData } from './QuestsScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
@@ -100,6 +104,8 @@ const TENT_KNOB_TILES = 1.94
 const STEAM_BOB = { px: 8, ms: 1600 }
 /** Hot stones lie across a face-down back, this many tiles over the feet. */
 const STONES_TILES = 0.78
+/** Switching shops: a roll-down shutter with the place's name closes over the shop, then rolls up over the next one. */
+const SHUTTER = { ms: 300, depth: HUD_DEPTH + 200, slat: 72, sign: { w: 640, h: 160, r: 40 } }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene' }
@@ -130,7 +136,17 @@ interface Placement {
   alpha: number
 }
 
+/** What a switch of shops hands the restarted scene: the chain itself, and the main shop's cards waiting for the owner. */
+export interface SpaSceneData {
+  chain: Chain
+  mainCards: { badgeQueue: (BadgeId | GoldCard)[]; inspectNote: Extract<SimEvent, { type: 'inspected' }> | null }
+  arrived: boolean
+}
+
 export class SpaScene extends Phaser.Scene {
+  /** The main shop, its branches, and where the owner is. */
+  chain!: Chain
+  /** The shop the owner is in: `chain.active()`. */
   sim!: SpaSim
   private room!: RoomView
   /** The floor on view, from 1; only showFloor changes it. */
@@ -177,6 +193,8 @@ export class SpaScene extends Phaser.Scene {
   private stairsNote: Extract<SimEvent, { type: 'stairsCleared' }> | null = null
   /** The inspection, held until nothing else is open or being played. */
   private inspectNote: Extract<SimEvent, { type: 'inspected' }> | null = null
+  /** At a branch: the main shop's cards, kept aside untouched until the owner is back there. */
+  private mainCards: SpaSceneData['mainCards'] = { badgeQueue: [], inspectNote: null }
   private patienceHintMs = 0
   private regularHintMs = 0
   private vipHintMs = 0
@@ -190,7 +208,9 @@ export class SpaScene extends Phaser.Scene {
     super('SpaScene')
   }
 
-  create() {
+  create(data?: SpaSceneData) {
+    // a scene started without data gets an empty object; a switch of shops hands over the chain
+    const switched = data?.chain ? data : null
     this.customers = new Map()
     this.pendingService = null
     this.holding = false
@@ -214,16 +234,26 @@ export class SpaScene extends Phaser.Scene {
     this.bubbleSpots = new Map()
     this.queuedLines = new Map()
     this.store = openStore()
-    this.session = new SaveSession(this.store, () => this.sim.toSave(), () => location.reload())
-    let saved: SaveData | null
-    try {
-      saved = this.session.load()
-    } catch (e) {
-      if (!(e instanceof SaveTooNewError)) throw e
-      this.showTooNew()
-      return
+    // the chain's save: the main shop's own leaves its branches out
+    this.session = new SaveSession(this.store, () => this.chain.toSave(), () => location.reload())
+    let saved: SaveData | null = null
+    if (!switched) {
+      try {
+        saved = this.session.load()
+      } catch (e) {
+        if (!(e instanceof SaveTooNewError)) throw e
+        this.showTooNew()
+        return
+      }
     }
-    this.sim = this.openShop(saved)
+    this.chain = switched?.chain ?? this.openChain(saved)
+    this.sim = this.chain.active()
+    this.mainCards = switched?.mainCards ?? { badgeQueue: [], inspectNote: null }
+    // back at the main shop, its cards come out from where they were kept
+    if (this.sim.place === null) {
+      this.badgeQueue = [...this.mainCards.badgeQueue]
+      this.inspectNote = this.mainCards.inspectNote
+    }
     this.room = new RoomView(this, this.sim.grid, this.sim.place)
     this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
@@ -238,7 +268,7 @@ export class SpaScene extends Phaser.Scene {
 
     // a shop is first written once it has an owner; until then the owner card holds it still, so nothing is lost
     const autosave = () => {
-      if (this.sim.profileDone) this.session.saveNow()
+      if (this.chain.main.profileDone) this.session.saveNow()
     }
     this.time.addEvent({ delay: AUTOSAVE_MS, loop: true, callback: autosave })
     let hiddenAt: number | null = null
@@ -255,8 +285,8 @@ export class SpaScene extends Phaser.Scene {
     const stopWatching = onReturn(() => {
       this.session.reloadIfChangedElsewhere()
       let paid = false
-      if (this.session.open && this.sim.profileDone && hiddenAt !== null) {
-        const back = this.sim.comeBack(Date.now() - hiddenAt)
+      if (this.session.open && this.chain.main.profileDone && hiddenAt !== null) {
+        const back = this.chain.main.comeBack(Date.now() - hiddenAt)
         hiddenAt = null
         if (back.paid > 0) {
           paid = true
@@ -275,7 +305,12 @@ export class SpaScene extends Phaser.Scene {
       stopWatching()
     })
 
-    if (!saved) {
+    if (switched) {
+      // a switch of shops neither loads, pays time away nor pauses
+      if (switched.arrived) this.arrive()
+    }
+    // a new shop
+    else if (!saved) {
       this.openOwnerCard('new', () => {
         // a new shop on a phone asks once to be installed, before any progress could be lost
         if (installPlatform(currentInstallEnv()) && !this.store.flag('installCardSeen')) {
@@ -293,7 +328,7 @@ export class SpaScene extends Phaser.Scene {
     }
     // a reopened shop is welcomed back, then waits on the pause card; an ended day reopens its summary by itself
     else {
-      const back = this.sim.comeBack(saved.savedAt === null ? 0 : Date.now() - saved.savedAt)
+      const back = this.chain.main.comeBack(saved.savedAt === null ? 0 : Date.now() - saved.savedAt)
       const pauseUnlessOver = () => {
         if (!this.sim.dayOver) this.pause()
       }
@@ -308,7 +343,87 @@ export class SpaScene extends Phaser.Scene {
         pauseUnlessOver()
       }
     }
-    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, spa: this, store: this.store, session: this.session })
+    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, chain: this.chain, spa: this, store: this.store, session: this.session })
+  }
+
+  /** On arriving by a switch of shops: the shutter rolls up, then the owner is greeted, or told the branch has no technician yet. */
+  private arrive(): void {
+    this.modal = true
+    this.shutter(this.sim.place, false, () => {
+      this.modal = false
+      const place = this.sim.place
+      if (place === null) this.hud.toast(t('backMainToast'))
+      else if (this.sim.hasTechnician()) this.hud.toast(t('arrivedToast', { place: placeName(place) }))
+      else this.badgeQueue.push(noTechCard(place))
+    })
+  }
+
+  /** The owner goes to `place`: the shutter closes over the frozen shop, then the chain switches, saves, and the scene starts again on the shop she is in. */
+  private switchShop(place: PlaceId | null): void {
+    // nothing is tapped or played while it closes: a mini-game opened now would be left behind
+    this.modal = true
+    sound.play('chime')
+    this.shutter(place, true, () => {
+      const mainCards = this.sim.place === null ? { badgeQueue: this.badgeQueue, inspectNote: this.inspectNote } : this.mainCards
+      this.chain.goTo(place)
+      this.session.saveNow()
+      const data: SpaSceneData = { chain: this.chain, mainCards, arrived: true }
+      this.scene.restart(data)
+    })
+  }
+
+  /** The roll-down shutter with the place's name on its sign: down over the shop, or up off it; `then` runs once it has rolled. Taps on it go nowhere. */
+  private shutter(place: PlaceId | null, down: boolean, then: () => void): void {
+    const y = down ? -GAME_H : 0
+    const { sign } = SHUTTER
+    const sheet = this.add.rectangle(0, y, GAME_W, GAME_H, hex(C.wood)).setOrigin(0).setInteractive()
+    const art = this.add.graphics({ y }).lineStyle(6, hex(C.woodDark))
+    for (let s = SHUTTER.slat; s < GAME_H; s += SHUTTER.slat) art.lineBetween(0, s, GAME_W, s)
+    const signX = (GAME_W - sign.w) / 2
+    const signY = (GAME_H - sign.h) / 2
+    art.fillStyle(hex(C.goldPale), 1).fillRoundedRect(signX, signY, sign.w, sign.h, sign.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(signX, signY, sign.w, sign.h, sign.r)
+    const name = this.add.text(GAME_W / 2, y + GAME_H / 2, placeName(place), textStyle(64)).setOrigin(0.5)
+    const parts = [sheet, art, name]
+    for (const p of parts) p.setDepth(SHUTTER.depth)
+    this.tweens.add({
+      targets: parts,
+      y: `${down ? '+' : '-'}=${GAME_H}`,
+      duration: SHUTTER.ms,
+      ease: down ? 'Cubic.easeIn' : 'Cubic.easeOut',
+      onComplete: () => {
+        if (!down) for (const p of parts) p.destroy()
+        then()
+      },
+    })
+  }
+
+  /** A choice card over the frozen shop; the shop is free again once a button is tapped, before what the button does. */
+  private choose(card: ChoiceText, onChoose: (i: number) => void): void {
+    this.modal = true
+    const data: ChoiceData = {
+      card,
+      onChoose: i => {
+        this.modal = false
+        onChoose(i)
+      },
+    }
+    this.scene.launch('ChoiceScene', data)
+  }
+
+  /** At a branch: once the owner is free at closing time, the card that sends her home; before then, a VIP waiting at the main shop, once the shop is free. */
+  private callOwner(place: PlaceId): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused) return
+    if (sim.clock.isClosed) {
+      if (sim.servingCustomerId === null && sim.owner.task?.kind !== 'serve') this.choose(closingCard(place, sim.hasTechnician()), () => this.switchShop(null))
+      return
+    }
+    const vip = this.shopFree() ? this.chain.takeVipCall() : null
+    if (!vip) return
+    // "Về ngay" goes back; "Ở lại" leaves her waiting there as usual
+    this.choose(vipCallCard(vip), i => {
+      if (i === 0) this.switchShop(null)
+    })
   }
 
   /** The welcome-back card over whatever is open; closing it puts `modal` back as it was, so a panel underneath stays frozen. */
@@ -317,7 +432,8 @@ export class SpaScene extends Phaser.Scene {
     this.awayOpen = true
     this.modal = true
     const data: AwayData = {
-      sim: this.sim,
+      // time away is paid by the main shop
+      sim: this.chain.main,
       back,
       onDone: () => {
         this.awayOpen = false
@@ -340,18 +456,18 @@ export class SpaScene extends Phaser.Scene {
     addButton(this, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
   }
 
-  private openShop(saved: SaveData | null): SpaSim {
-    const rng = createRng(Date.now())
+  private openChain(saved: SaveData | null): Chain {
+    const seed = Date.now()
     if (saved) {
       try {
-        return SpaSim.fromSave(saved, { rng })
+        return Chain.fromSave(saved, seed)
       } catch (e) {
         if (!(e instanceof SaveError)) throw e
         // kept for a later version that may read it, instead of being written over by the new shop
         this.session.setAside()
       }
     }
-    return new SpaSim({ rng })
+    return new Chain(new SpaSim({ rng: createRng(seed) }), seed)
   }
 
   /** Coming back to the game moves it to a newer version, unless a service is in progress or the shop has no owner yet. */
@@ -365,7 +481,15 @@ export class SpaScene extends Phaser.Scene {
 
   pause(panel: PausePanel = 'menu'): void {
     this.sim.paused = true
-    const data: PauseData = { sim: this.sim, store: this.store, session: this.session, panel, onResume: () => this.resume(), onEditProfile: () => this.openOwnerCard('edit', () => this.pause()) }
+    const data: PauseData = {
+      sim: this.sim,
+      store: this.store,
+      session: this.session,
+      panel,
+      onResume: () => this.resume(),
+      onEditProfile: () => this.openOwnerCard('edit', () => this.pause()),
+      save: () => this.chain.toSave(),
+    }
     this.scene.launch('PauseScene', data)
   }
 
@@ -391,26 +515,29 @@ export class SpaScene extends Phaser.Scene {
     this.owner = this.buildOwner()
   }
 
-  /** Puts an outfit on the owner, draws her in it and saves. */
+  /** Puts an outfit on the owner, at every shop, draws her in it and saves. */
   private wear(id: OutfitId): void {
-    if (!this.sim.wearOutfit(id)) return
+    if (!this.chain.main.wearOutfit(id)) return
+    this.chain.sync()
     this.rebuildOwner()
     this.heldWearToast = t('outfitWornToast', { name: t(OUTFIT_NAME[id]) })
     this.session.saveNow()
   }
 
-  /** Opens the owner card over the shop; `after` runs once it closes. */
+  /** Opens the owner card over the shop; `after` runs once it closes. The owner and the shop's name are the main shop's, copied to every branch. */
   openOwnerCard(mode: OwnerMode, after: () => void): void {
     this.modal = true
+    const main = this.chain.main
     const data: OwnerData = {
       mode,
-      look: { ...this.sim.ownerLook },
-      name: this.sim.shopName,
-      outfit: this.sim.ownerOutfit,
-      sim: this.sim,
+      look: { ...main.ownerLook },
+      name: main.shopName,
+      outfit: main.ownerOutfit,
+      sim: main,
       onWear: id => this.wear(id),
       onSave: (look, name) => {
-        this.sim.setProfile(look, name)
+        main.setProfile(look, name)
+        this.chain.sync()
         this.rebuildOwner()
         this.session.saveNow()
       },
@@ -491,6 +618,8 @@ export class SpaScene extends Phaser.Scene {
       onClose: () => {
         if (recipesIntro) sim.markHint('recipes')
         this.modal = false
+        // a service the main shop opened is the branches' too
+        this.chain.sync()
         this.session.saveNow()
       },
     }
@@ -677,7 +806,7 @@ export class SpaScene extends Phaser.Scene {
     const begin = () => {
       sound.startOfDay()
       sim.markHint('summary')
-      sim.startDay()
+      this.chain.startDay()
       this.showFloor(1)
       this.session.saveNow()
       this.showMorningBanner()
@@ -840,8 +969,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.queueToast(this.heldWearToast)
         this.heldWearToast = null
       }
-      if (!this.holding) this.sim.update(delta)
-      const events = this.sim.drainEvents()
+      if (!this.holding) this.chain.update(delta)
+      // at the main shop, the cards it kept while the owner was away come first
+      const events = [...(this.sim.place === null ? this.chain.takeHeld() : []), ...this.sim.drainEvents()]
       for (const e of events) this.handle(e)
       // two items can run low on the same customer: one toast, or the first would be destroyed unseen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
@@ -851,6 +981,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
       if (!this.modal) this.pumpBadges()
       if (!this.modal && this.shopFree()) this.showNewOutfits()
+      if (this.sim.place !== null) this.callOwner(this.sim.place)
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose
@@ -883,7 +1014,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
-    this.room.setFestival(festivalOf(this.sim.day))
+    // festivals are the main shop's
+    this.room.setFestival(this.sim.place === null ? festivalOf(this.sim.day) : null)
     this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.hud.update(this.modal)
@@ -1171,6 +1303,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       }
       case 'dayEnded': {
+        // a branch's day ends behind its closing card; the summary is the main shop's, once every branch is done too
+        if (this.sim.place !== null) return
+        this.chain.finishDay()
         this.session.saveNow()
         const data: SummaryData = {
           sim: this.sim,
@@ -1303,7 +1438,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         if (next) {
           // hands its spot to the queued line, which shows even when the customer has gone
           this.queuedLines.delete(id)
-          this.say(id, next.text, next.ms)
+          this.speak(id, next.text, next.ms)
           continue
         }
         b.destroy()
@@ -1316,8 +1451,19 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
   }
 
-  /** A customer's line of speech; a new one replaces the old. */
+  /** Whether the customer has left the shop: a card the main shop kept while the owner was away may name one. */
+  private gone(customerId: number): boolean {
+    return !this.sim.customers.some(c => c.id === customerId)
+  }
+
+  /** A customer's line of speech; a new one replaces the old. A customer who has left says nothing. */
   private say(customerId: number, text: string, ms: number): void {
+    if (this.gone(customerId)) return
+    this.speak(customerId, text, ms)
+  }
+
+  /** Draws the line in the customer's bubble, even once they have gone, where their bubble last was. */
+  private speak(customerId: number, text: string, ms: number): void {
     // a customer not yet drawn is on the street, floor 1
     if ((this.bubbleSpots.get(customerId)?.floor ?? 1) !== this.viewFloor) return
     this.bubbles.get(customerId)?.destroy()
@@ -1329,12 +1475,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   /** Like say, but waits for a live bubble of that customer to finish instead of replacing it. */
   private sayNext(customerId: number, text: string, ms: number): void {
+    if (this.gone(customerId)) return
     if (this.bubbles.has(customerId)) this.queuedLines.set(customerId, { text, ms })
     else this.say(customerId, text, ms)
   }
 
   /** A "+1" with a heart over the customer's head, tweened like floatMoney. */
   private floatHeart(customerId: number): void {
+    if (this.gone(customerId)) return
     const at = this.bubbleSpots.get(customerId)
     if (!at || at.floor !== this.viewFloor) return
     const label = this.add.text(0, 0, '+1', { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)

@@ -199,6 +199,12 @@ export class ServicesScene extends Phaser.Scene {
       return
     }
     const problem = sim.serviceProblem(id)
+    // a branch has what the main shop opened, and opens nothing itself
+    if (problem === 'main') {
+      for (const obj of this.shown.slice(first)) (obj as Phaser.GameObjects.Image).setAlpha(FADED_ALPHA)
+      this.keep(this.add.text(ACTION_X, cy, t('serviceAtMain'), { ...textStyle(30, '800', C.lantern), align: 'center', wordWrap: { width: ACTION_W } }).setOrigin(0.5))
+      return
+    }
     // a recipe row follows the bench, not the debt: the bench opens in debt too
     if (isRecipeService(id) && !sim.benchOpen()) {
       for (const obj of this.shown.slice(first)) (obj as Phaser.GameObjects.Image).setAlpha(FADED_ALPHA)
