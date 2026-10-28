@@ -41,6 +41,7 @@ export const vi = {
   loading: 'Đang tải...',
   defaultShopName: 'Tiệm Spa',
   dayLabel: 'Ngày {day}',
+  monthLabel: 'Tháng {month}',
   hintTapCustomer: 'Chạm vào khách để mời gội đầu',
   hintPatience: 'Khách chờ lâu sẽ bực rồi bỏ về',
   hintMoney: 'Tiền công và tiền tip cộng vào đây',

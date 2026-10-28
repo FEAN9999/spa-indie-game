@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_W, UNLOCK_DAY } from '../config'
+import { monthOf } from '../sim/calendar'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { isUnlocked, type Feature } from '../sim/unlocks'
@@ -78,7 +79,7 @@ export class Hud {
   ) {
     const add = scene.add
 
-    // top bar on two rows: money, star and rating, then the day and time; it ends above the room (MAP_Y 210)
+    // top bar on two rows: money, star and rating, then the day, month and time; it ends above the room (MAP_Y 210)
     add
       .graphics()
       .setDepth(DEPTH)
@@ -168,7 +169,7 @@ export class Hud {
     if (this.money.style.color !== moneyColor) this.money.setColor(moneyColor)
     const r = this.sim.rating()
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
-    this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${this.sim.clock.label()}`)
+    this.dayTime.setText(`${t('dayLabel', { day: this.sim.day })} · ${t('monthLabel', { month: monthOf(this.sim.day) })} · ${this.sim.clock.label()}`)
     this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
     this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)

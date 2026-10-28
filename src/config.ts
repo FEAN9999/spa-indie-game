@@ -14,6 +14,8 @@ export const OWNER_LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 4 } as
 export const DAY_START_MIN = 480
 export const DAY_END_MIN = 1200
 export const REAL_MS_PER_GAME_MIN = 12500 / 60
+/** Game minutes from opening to closing. */
+export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
@@ -179,7 +181,7 @@ export const AUTOSAVE_MS = 10_000
 export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json when the player comes back
 
 /** The day each feature button opens. */
-export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6 } as const
+export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6, quests: 8 } as const
 
 // Floors: the shop is one tall grid of three floors stacked, each this many rows
 export const FLOOR_ROWS = 18
@@ -290,3 +292,30 @@ export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
 export const RECIPE_TRY_COST = 20000
 /** Chance that a regular tells a recipe hint on a visit. */
 export const RECIPE_HINT_CHANCE = 0.5
+
+// Calendar: a fast in-game month, so every month's festival comes round after a few days of play
+export const DAYS_PER_MONTH = 3
+export const MONTHS_PER_YEAR = 12
+
+// Quests: three a day and one a month, sized from the shop's last finished days
+export const QUESTS_PER_DAY = 3
+export const QUEST_SWAPS_PER_DAY = 1
+/** How many finished days the targets are averaged over. */
+export const QUEST_RECENT_DAYS = 3
+/** A target asks for this share of the recent average. */
+export const QUEST_TARGET_SHARE = 0.8
+/** A plain daily reward is this share of the recent average earnings, and at least QUEST_REWARD_MIN. */
+export const QUEST_REWARD_SHARE = 0.05
+export const QUEST_REWARD_MIN = 30_000
+/** "Tự tay làm 3 sao" and "Không để khách nào bỏ về" pay this many times the plain reward. */
+export const QUEST_HARD_FACTOR = 1.5
+/** A monthly quest pays this many times the plain reward for a whole month, less for part of one. */
+export const MONTH_QUEST_REWARD_FACTOR = 5
+/** A shop opened with fewer game minutes than this left in the day gets no daily quests that day. */
+export const QUEST_MIN_LEFT_MIN = 120
+/** What the targets are sized from before the shop has finished a day. */
+export const QUEST_DEFAULT_DAY = { served: 10, earned: 500_000, tips: 50_000, owner3: 3, staff: 4 } as const
+/** The least each target asks for, over a whole day; owner3 is also capped. monthOwner3 is the monthly one's least. */
+export const QUEST_FLOOR = { serve: 5, owner3Min: 2, owner3Max: 6, earn: 150_000, tips: 20_000, service: 2, staff: 3, monthOwner3: 4 } as const
+/** A day with at least this many served and nobody walking out is a clean day. */
+export const CLEAN_DAY_MIN_SERVED = 15
