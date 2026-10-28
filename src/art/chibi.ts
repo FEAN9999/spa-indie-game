@@ -1,3 +1,4 @@
+import { OUTFIT_PARTS } from './outfits'
 import { fillsOnly, linesOnly } from './outline'
 import { C } from './palette'
 import { svgDoc } from './svg'
@@ -8,7 +9,7 @@ import { svgDoc } from './svg'
  */
 export const CHIBI_PX = 2.4 // canvas pixels per chibi unit (character ~122px, about 1.5 tiles tall)
 
-type Part = { viewBox: [number, number, number, number]; body: string }
+export type Part = { viewBox: [number, number, number, number]; body: string }
 
 const W = '#ffffff'
 const SHADE = '#e6e6e6'
@@ -605,6 +606,7 @@ const parts: Record<string, Part> = {
   'hair3-down': hair(bunDown + path(bobDown) + path(bobSideLocks), strandsFront, -18),
   'hair3-up': hair(bunDown + path(bobUp), strandsBack, -18),
   'hair3-side': hair(bunSide + path(bobSide), strandsFront, -18),
+  ...OUTFIT_PARTS,
 }
 
 /** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. Whole names, so `headphones` stays untinted. */
