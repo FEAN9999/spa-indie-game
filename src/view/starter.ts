@@ -1,7 +1,8 @@
 import { C } from '../art/palette'
 import { STARTER_REWARD, UNLOCK_DAY } from '../config'
+import { dayProfit } from '../sim/economy'
 import type { SpaSim } from '../sim/spa'
-import { currentGoal, goalProgress, STARTER_GOAL_IDS, STARTER_OPENS, starterRunning, type StarterFeature, type StarterGoalId } from '../sim/starter'
+import { currentGoal, goalProgress, isPast, STARTER_GOAL_IDS, STARTER_OPENS, starterRunning, type StarterFeature, type StarterGoalId } from '../sim/starter'
 import type { SimEvent } from '../sim/types'
 import type { Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
@@ -79,4 +80,33 @@ export function chainRows(sim: SpaSim): ChainRow[] {
     if (i === STARTER_GOAL_IDS.length - 1) parts.push(t('goalOpensDaily'))
     return { name: t(GOAL_NAME[goal]), state, have: state === 'done' ? need : have, need, detail: parts.join(' · ') }
   })
+}
+
+/**
+ * The summary's lines for the starter chain, before the VIP and event ones: the goal being worked on, the first thing tomorrow brings
+ * (chú Sáu back, a button opening on its day, the daily quests), in teal, then a record the day set. A shop that never ran the chain gets only its record.
+ */
+export function starterNotes(sim: SpaSim): { text: string; booking: boolean }[] {
+  const notes: { text: string; booking: boolean }[] = []
+  if (!isPast(sim.starter)) {
+    const goal = currentGoal(sim.starter)
+    if (goal) notes.push({ text: t('goalLine', { goal: t(GOAL_NAME[goal]), ...goalProgress(goal, sim.starterShop()) }), booking: false })
+    const tomorrow = (f: Feature) => !sim.featureOpen(f) && sim.openDay(f) === sim.day + 1
+    const opens = (['build', 'staff', 'services'] as const).find(tomorrow)
+    const next =
+      sim.day === 1 && sim.book.regulars.sau.met
+        ? t('tomorrowSau')
+        : opens
+          ? t('tomorrowOpens', { name: t(BUTTON_NAME[opens]) })
+          : tomorrow('quests')
+            ? t('starterDailyNext')
+            : null
+    if (next) notes.push({ text: next, booking: true })
+  }
+  const record = sim.progress.life.record
+  if (record?.day === sim.day) {
+    const text = record.kind === 'served' ? t('recordServed', { n: sim.stats.served }) : t('recordProfit', { money: formatMoney(dayProfit(sim.stats)) })
+    notes.push({ text, booking: false })
+  }
+  return notes
 }

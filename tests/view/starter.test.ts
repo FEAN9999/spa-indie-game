@@ -3,7 +3,7 @@ import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { STARTER_GOAL_IDS, type StarterFeature, type StarterGoalId } from '../../src/sim/starter'
 import { EVENT_ICON } from '../../src/view/events'
-import { chainRows, GOAL_ICON, goalCard, goalLine, lockedText } from '../../src/view/starter'
+import { chainRows, GOAL_ICON, goalCard, goalLine, lockedText, starterNotes } from '../../src/view/starter'
 import { todayLine } from '../../src/view/today'
 
 // the view's lines name textures, and svg.ts imports Phaser for loading textures, which needs a browser
@@ -78,5 +78,54 @@ describe('the starter chain list', () => {
     sim.starter.at = STARTER_GOAL_IDS.length
     sim.starter.doneDay = 1
     expect(chainRows(sim).every(r => r.state === 'done')).toBe(true)
+  })
+})
+
+describe('the summary notes of the starter chain', () => {
+  const texts = (sim: SpaSim) => starterNotes(sim).map(n => `${n.booking ? 'teal' : 'ink'}: ${n.text}`)
+
+  it('gives day 1 the goal, then Chú Sáu tomorrow', () => {
+    const sim = chainShop()
+    sim.spawnCustomer({ regular: 'sau' })
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('serveMore')
+    sim.progress.total.served = 6
+    expect(texts(sim)).toEqual(['ink: Mục tiêu: Phục vụ 10 khách (6/10)', 'teal: Ngày mai Chú Sáu ghé lại'])
+  })
+
+  it('names the button its day opens tomorrow', () => {
+    const sim = chainShop()
+    sim.day = 2
+    sim.starter.at = STARTER_GOAL_IDS.indexOf('serveMany')
+    sim.starter.opened = { build: 1, services: 2 }
+    expect(texts(sim)[1]).toBe('teal: Ngày mai mở Nhân viên')
+  })
+
+  it('tells of the daily quests the day the chain is done', () => {
+    const sim = chainShop()
+    sim.day = 4
+    sim.starter = { at: STARTER_GOAL_IDS.length, doneDay: 4, bought: 1, opened: { build: 1, services: 2, staff: 2 }, maskNext: false }
+    expect(texts(sim)).toEqual(['teal: Từ mai có nhiệm vụ mỗi ngày'])
+  })
+
+  it('cheers a record day, served or profit', () => {
+    const sim = chainShop()
+    sim.starter = { at: STARTER_GOAL_IDS.length, doneDay: 1, bought: 1, opened: { build: 1, services: 1, staff: 1 }, maskNext: false }
+    sim.day = 3
+    sim.stats.served = 9
+    sim.progress.life.record = { day: 3, kind: 'served' }
+    expect(texts(sim)).toEqual(['ink: Kỷ lục mới: 9 khách!'])
+    sim.stats.income = 350_000
+    sim.progress.life.record = { day: 3, kind: 'profit' }
+    expect(texts(sim)).toEqual(['ink: Kỷ lục lãi: 350.000 đ!'])
+    sim.progress.life.record = { day: 2, kind: 'profit' }
+    expect(texts(sim)).toEqual([])
+  })
+
+  it('gives a plain shop only its record', () => {
+    const sim = plainShop()
+    sim.day = 2
+    sim.stats.served = 7
+    sim.progress.life.record = { day: 2, kind: 'served' }
+    expect(texts(sim)).toEqual(['ink: Kỷ lục mới: 7 khách!'])
   })
 })

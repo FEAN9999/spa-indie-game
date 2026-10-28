@@ -353,7 +353,8 @@ export class SpaScene extends Phaser.Scene {
         this.session.setAside()
       }
     }
-    return new SpaSim({ rng })
+    // a new shop runs the starter chain
+    return new SpaSim({ rng, starter: true })
   }
 
   /** Coming back to the game moves it to a newer version, unless a service is in progress or the shop has no owner yet. */
