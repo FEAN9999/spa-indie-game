@@ -1,4 +1,5 @@
 import { itemTexture } from '../art/furniture'
+import { BADGE_BANNER_MS, GOLD_CARD_LINE_MS } from '../config'
 import { C } from '../art/palette'
 import { monthStart } from '../sim/calendar'
 import { FESTIVALS, festivalOf, type FestivalId } from '../sim/festivals'
@@ -33,6 +34,14 @@ export function todayLine(sim: SpaSim): { festival: FestivalId; text: string } |
   }
   return { festival, text: t('todayFestivalPlain', { festival: name, service: t(SERVICES[sim.festivalServiceToday()!].name) }) }
 }
+
+/** Today's line while the shop is in view: none once the day is over or while a panel covers the shop. */
+export function todayShown(sim: SpaSim, covered: boolean): ReturnType<typeof todayLine> {
+  return covered || sim.dayOver ? null : todayLine(sim)
+}
+
+/** How long a gold card stays: a badge's time for one line, more for each wrapped line so the longest can be read. */
+export const goldCardMs = (lines: number): number => BADGE_BANNER_MS + GOLD_CARD_LINE_MS * Math.max(0, lines - 1)
 
 /** A gold card under the top bar: a picture in a disc, a small heading, a name and a line that may wrap. */
 export interface GoldCard {

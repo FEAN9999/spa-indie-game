@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { Quest } from '../../src/sim/quests'
-import { festivalDoneCard, festivalStartCard, keepsakeLine, monthToast, todayLine } from '../../src/view/festivals'
+import { BADGE_BANNER_MS, GOLD_CARD_LINE_MS } from '../../src/config'
+import { festivalDoneCard, festivalStartCard, goldCardMs, keepsakeLine, monthToast, todayLine, todayShown } from '../../src/view/festivals'
 
 // the cards name their keepsake's texture, and svg.ts imports Phaser for loading textures, which needs a browser
 vi.mock('phaser', () => ({}))
@@ -41,6 +42,23 @@ describe("today's line", () => {
 })
 
 const tetQuest: Quest = { kind: 'service', period: 'month', service: 'shampoo', target: 6, reward: 300_000, base: 0, state: 'done', festival: 'tet' }
+
+describe("today's line on screen", () => {
+  it('hides while a panel covers the shop and once the day is over', () => {
+    const sim = on(37)
+    expect(todayShown(sim, false)).toEqual(todayLine(sim))
+    expect(todayShown(sim, true)).toBeNull()
+    sim.dayOver = true
+    expect(todayShown(sim, false)).toBeNull()
+  })
+})
+
+describe('how long a gold card stays', () => {
+  it('stays the badge time for one line and longer for each wrapped line', () => {
+    expect(goldCardMs(1)).toBe(BADGE_BANNER_MS)
+    expect(goldCardMs(3)).toBe(BADGE_BANNER_MS + 2 * GOLD_CARD_LINE_MS)
+  })
+})
 
 describe('festival cards', () => {
   it('opens a festival with what it brings', () => {

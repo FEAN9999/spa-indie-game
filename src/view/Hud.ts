@@ -10,7 +10,7 @@ import { isUnlocked, type Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
-import { FESTIVAL_COLORS, todayLine } from './festivals'
+import { FESTIVAL_COLORS, todayShown } from './festivals'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { addToast } from './ui'
 import { clockStar } from './vip'
@@ -180,7 +180,8 @@ export class Hud {
     return this.star.x
   }
 
-  update(): void {
+  /** `covered` is true while a panel is open over the shop. */
+  update(covered: boolean): void {
     this.money.setText(formatMoney(this.sim.money))
     // red while in debt; set only on a change, since a new colour redraws the text
     const moneyColor = this.sim.money < 0 ? C.lantern : C.ink
@@ -197,7 +198,7 @@ export class Hud {
     // an invisible container is not hit-tested, so the book button takes no tap until a regular has come or a VIP is booked
     this.book.setVisible(this.sim.bookShown())
     this.bookBadge.setVisible(!this.sim.hintDone(this.sim.bookHint()))
-    this.updateToday()
+    this.updateToday(covered)
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
       const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
@@ -248,9 +249,9 @@ export class Hud {
     })
   }
 
-  /** Redraws today's line when its words change; it hides under a toast and on the summary. */
-  private updateToday(): void {
-    const line = this.sim.dayOver ? null : todayLine(this.sim)
+  /** Redraws today's line when its words change; it hides under a toast, under a panel and on the summary. */
+  private updateToday(covered: boolean): void {
+    const line = todayShown(this.sim, covered)
     const key = line ? `${line.festival}|${line.text}` : ''
     if (key !== this.todayKey) {
       this.todayKey = key

@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BADGE_BANNER_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { BadgeId } from '../sim/badges'
 import { openStore, type SaveStore } from '../save/store'
@@ -35,7 +35,7 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
 import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
-import { festivalDoneCard, festivalStartCard, monthToast, type GoldCard } from '../view/festivals'
+import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
@@ -468,15 +468,15 @@ export class SpaScene extends Phaser.Scene {
     const next = this.badgeQueue[0]
     if (next === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
     this.badgeQueue.shift()
-    this.badgeUntil = now + BADGE_BANNER_MS
-    this.showCard(next)
+    this.badgeUntil = now + this.showCard(next)
   }
 
   /**
    * A gold card under the top bar: a new badge's medal, "Huy hiệu mới", its name and what it asked, or a festival card's picture and words.
-   * A long heading or name is drawn smaller to fit; a long line wraps and the card grows under it. It plays the level-up sound.
+   * A long heading or name is drawn smaller to fit; a long line wraps and the card grows under it, and stays longer to be read.
+   * It plays the level-up sound and returns how long it stays.
    */
-  private showCard(next: BadgeId | GoldCard): void {
+  private showCard(next: BadgeId | GoldCard): number {
     const card: Omit<GoldCard, 'icon'> =
       typeof next === 'string' ? { head: t('badgeNew'), name: t(BADGE_TEXT[next].name), line: t(BADGE_TEXT[next].cond) } : next
     const fit = (text: Phaser.GameObjects.Text) => text.setScale(Math.min(1, BADGE_CARD.textW / text.width))
@@ -506,14 +506,16 @@ export class SpaScene extends Phaser.Scene {
       .setDepth(HUD_DEPTH + 60)
       .setAlpha(0)
     sound.play('levelUp')
+    const ms = goldCardMs(line.getWrappedText().length)
     this.tweens.chain({
       targets: box,
       tweens: [
         { alpha: 1, duration: BADGE_FADE_MS },
-        { alpha: 0, delay: BADGE_BANNER_MS - 2 * BADGE_FADE_MS, duration: BADGE_FADE_MS },
+        { alpha: 0, delay: ms - 2 * BADGE_FADE_MS, duration: BADGE_FADE_MS },
       ],
       onComplete: () => box.destroy(),
     })
+    return ms
   }
 
   /** The held stairs note, a toast at a time after any morning toasts. */
@@ -694,7 +696,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
     this.room.setFestival(festivalOf(this.sim.day))
-    this.hud.update()
+    this.hud.update(this.modal)
     this.updateFloorBar()
     this.updatePointer(delta)
   }

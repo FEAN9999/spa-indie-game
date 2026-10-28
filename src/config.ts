@@ -324,6 +324,8 @@ export const CLEAN_DAY_MIN_SERVED = 15
 export const BADGE_GOALS = { served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
 /** How long the gold banner for a new badge stays on screen. */
 export const BADGE_BANNER_MS = 3000
+/** A gold card stays this much longer for each line its sentence wraps onto after the first. */
+export const GOLD_CARD_LINE_MS = 1500
 
 /** Festivals start on this day, with the quests, so the first days stay for learning. */
 export const FESTIVAL_FROM_DAY = 8
