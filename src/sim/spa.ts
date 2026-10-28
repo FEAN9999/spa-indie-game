@@ -61,6 +61,7 @@ import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay,
 import { createRng, randomLook, type Rng } from './rng'
 import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
+import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
@@ -134,6 +135,8 @@ export class SpaSim {
   stats: DayStats = emptyStats()
   book: GuestBook = emptyBook()
   vip: VipBook = emptyVipBook()
+  /** The shop's grade, this month's start and the year's scores. */
+  rank: RankBook = emptyRankBook(1, 0, 0)
   /** Tomorrow's or today's event, the hot days and the day's event counts. */
   eventBook: EventBook = emptyEventBook()
   paused = false
@@ -458,7 +461,7 @@ export class SpaSim {
    * Anyone else pays FESTIVAL_PRICE times the price for the festival service, and tips on that.
    */
   private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
-    const plain = SERVICES[c.service].price
+    const plain = rankPrice(SERVICES[c.service].price, this.rank.stars)
     const base = !c.vip && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
     const price = c.vip ? plain * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
@@ -606,6 +609,13 @@ export class SpaSim {
     return ratingOf(this.reviews)
   }
 
+  /** The month so far, graded part by part, for the tab. */
+  rankNow(): { input: RankInput; parts: number[]; total: number } {
+    const input = monthInput(this.rank, this.day, this.rating(), this.beauty(), this.services.length, this.progress.total)
+    const parts = rankParts(input)
+    return { input, parts, total: parts.reduce((a, b) => a + b, 0) }
+  }
+
   drainEvents(): SimEvent[] {
     const out = this.events
     this.events = []
@@ -739,6 +749,7 @@ export class SpaSim {
     book.count = 0
     book.inspected = false
     this.progress.dayStart = structuredClone(this.progress.total)
+    if (dayOfMonth(this.day) === 1) this.rank.month = { from: this.day, served: this.progress.total.served, lost: this.progress.total.lost }
     this.checkBadges()
     if (this.questsOpen()) {
       const rng = this.questRng()
@@ -1151,6 +1162,16 @@ export class SpaSim {
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
+      if (isJudgeDay(this.day)) {
+        this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
+        if (isYearEnd(this.day)) {
+          const year = judgeYear(this.rank, this.day)
+          if (year) {
+            this.money += year.reward
+            this.book.gifts.push(...year.gifts)
+          }
+        }
+      }
       // tomorrow's VIP, then tomorrow's event on any other day, each drawn from a stream of its own so the shop's draws stay as they were
       const technicians = this.staff.filter(s => s.role === 'technician' && !s.leaving).length
       planBooking(this.vip, this.day, technicians, this.availableServices(), createRng(this.day * 7919 + this.nextId))
