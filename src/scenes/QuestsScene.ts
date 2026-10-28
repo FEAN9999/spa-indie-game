@@ -137,7 +137,9 @@ export class QuestsScene extends Phaser.Scene {
     )
     const icon = this.add.image(DISC_X, cy, questIcon(q))
     row.add(icon.setScale(ICON_W / Math.max(icon.width, icon.height)))
-    const title = this.add.text(TEXT_X, top + TITLE_TOP, questTitle(q), { ...textStyle(36), wordWrap: { width: TITLE_WRAP } })
+    const title = this.add.text(TEXT_X, top + TITLE_TOP, questTitle(q), monthly ? { ...textStyle(36), wordWrap: { width: TITLE_WRAP } } : textStyle(36))
+    // a day's row has room for one line, so a long title (a big money target) is drawn smaller instead
+    if (!monthly) title.setScale(Math.min(1, TITLE_WRAP / title.width))
     row.add(title)
     row.add(this.add.text(REWARD_X, top + REWARD_Y, '+' + formatMoney(q.reward), textStyle(30, '800', C.mustardDark)).setOrigin(0.5))
 
@@ -172,11 +174,11 @@ export class QuestsScene extends Phaser.Scene {
       .strokeRoundedRect(-SIDE_W / 2, -SIDE_H / 2, SIDE_W, SIDE_H, SIDE_H / 2)
       .lineStyle(7, hex(C.paper))
       .beginPath()
-      .moveTo(-47, 0)
-      .lineTo(-35, 12)
-      .lineTo(-13, -12)
+      .moveTo(-58, 0)
+      .lineTo(-46, 12)
+      .lineTo(-24, -12)
       .strokePath()
-    const text = this.add.text(30, 0, t('questStamp'), textStyle(30, '800', C.paper)).setOrigin(0.5)
+    const text = this.add.text(19, 0, t('questStamp'), textStyle(30, '800', C.paper)).setOrigin(0.5)
     return this.add.container(SIDE_X, y, [g, text])
   }
 
