@@ -16,7 +16,7 @@ import type { StarterFeature, StarterGoalId } from './starter'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests', 'openStarter'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {

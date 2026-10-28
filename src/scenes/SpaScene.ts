@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -49,6 +49,7 @@ import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
+import { lockedText } from '../view/starter'
 import { StaffLayer } from '../view/StaffLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
@@ -796,8 +797,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   /** A tap on an open bed slot: once building is open and the money is there, a card over the frozen shop asks before buying. */
   private offerBed(slot: Tile): void {
     const price = ITEMS.bed.price
-    if (!isUnlocked('build', this.sim.day)) {
-      this.hud.toast(t('unlocksOn', { day: UNLOCK_DAY.build }))
+    if (!this.sim.featureOpen('build')) {
+      this.hud.toast(lockedText(this.sim, 'build'))
       return
     }
     if (this.sim.money < price) {
@@ -911,6 +912,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     const pick = pickHint(sim)
     if (pick?.hint === 'openBuild') {
       this.pointer.show(t('hintBuild'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
+      return
+    }
+    if (pick?.hint === 'placeGift') {
+      this.pointer.show(t('hintPlaceGift'), BUILD_PLATE_TOP.x, BUILD_PLATE_TOP.y, 'down')
       return
     }
     if (pick?.hint === 'openFloor') {

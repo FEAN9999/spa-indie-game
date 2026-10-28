@@ -1,15 +1,16 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
-import { GAME_W, UNLOCK_DAY } from '../config'
+import { GAME_W } from '../config'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
-import { isUnlocked, type Feature } from '../sim/unlocks'
+import type { Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { textStyle } from './text'
 import { todayShown } from './today'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
+import { lockedText } from './starter'
 import { addToast } from './ui'
 import { clockStar } from './vip'
 
@@ -163,7 +164,7 @@ export class Hud {
       const feature = n.feature
       btn.setSize(130, 130).setInteractive().on('pointerup', () => {
         sound.play('tap')
-        if (feature && !isUnlocked(feature, this.sim.day)) this.toast(t('unlocksOn', { day: UNLOCK_DAY[feature] }))
+        if (feature && !this.isOpen(feature)) this.toast(lockedText(this.sim, feature))
         else if (feature === 'build') onBuild()
         else if (feature === 'staff') onStaff()
         else if (feature === 'services') onServices()
@@ -199,15 +200,22 @@ export class Hud {
     this.updateToday(covered)
     // checked every frame, so a new day opens its buttons at once
     for (const p of this.plates) {
-      const locked = p.feature !== undefined && !isUnlocked(p.feature, this.sim.day)
+      const locked = p.feature !== undefined && !this.isOpen(p.feature)
       p.icon.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.label.setAlpha(locked ? LOCKED_ALPHA : 1)
       p.lock.setVisible(locked)
-      const fresh = p.hint !== undefined && !this.sim.hintDone(p.hint)
-      const freshLater = p.later !== undefined && isUnlocked(p.later.feature, this.sim.day) && !this.sim.hintDone(p.later.hint)
+      // the quest button shows the starter chain until the daily quests open, with a Mới of its own
+      const hint = p.feature === 'quests' && !this.sim.questsOpen() ? 'openStarter' : p.hint
+      const fresh = hint !== undefined && !this.sim.hintDone(hint)
+      const freshLater = p.later !== undefined && this.sim.featureOpen(p.later.feature) && !this.sim.hintDone(p.later.hint)
       p.badge?.setVisible(!locked && (fresh || freshLater))
       p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0))
     }
+  }
+
+  /** Whether a button takes a tap: the quest button from the first day of a shop on the starter chain. */
+  private isOpen(f: Feature): boolean {
+    return f === 'quests' ? this.sim.questsButtonOpen() : this.sim.featureOpen(f)
   }
 
   /** A lantern-red pill with "Mới", centred where the lock sits mirrored. */
