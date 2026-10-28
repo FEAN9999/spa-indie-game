@@ -404,3 +404,12 @@ export const RIVAL_YEAR_STEP = 4
 export const RIVAL_SCORE_MAX = 86
 /** What the year's first to fifth place is paid. */
 export const YEAR_REWARD = [3_000_000, 1_000_000, 500_000, 0, 0]
+
+/** A shop closed for less than this earns nothing. */
+export const AWAY_MIN_MS = 10 * 60_000
+/** Time away counts for at most this many hours. */
+export const AWAY_MAX_HOURS = 8
+/** Each hour away pays this share of a day's profit. */
+export const AWAY_DAY_SHARE = 0.25
+/** The pay is worked from the mean profit of this many finished days. */
+export const AWAY_PROFIT_DAYS = 3

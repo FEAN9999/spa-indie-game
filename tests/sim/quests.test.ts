@@ -208,7 +208,7 @@ describe('recording a day', () => {
   it('leaves a busy day out of the recent days, but not out of the bests', () => {
     const p = emptyProgress()
     p.total.served = 30
-    const stats = { served: 30, angry: 0, walkedAway: 0, income: 900_000, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0 }
+    const stats = { served: 30, angry: 0, walkedAway: 0, income: 900_000, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 }
     recordDay(p, stats, true)
     expect(p.recent).toEqual([])
     expect(p.life.bestServed).toBe(30)

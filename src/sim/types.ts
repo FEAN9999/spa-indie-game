@@ -120,6 +120,8 @@ export interface DayStats {
   gifts: number
   /** Quest rewards paid today. */
   quests: number
+  /** Ordinary customers the owner served today, not counting VIPs and Mi Mi. */
+  ownerServed: number
 }
 
 export type SimEvent =

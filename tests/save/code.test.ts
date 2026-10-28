@@ -32,6 +32,6 @@ describe('save codes', () => {
 
   it('reads a code made before owners and names', async () => {
     const d = await decodeSaveCode(await encodeSaveCode(v1 as unknown as SaveData))
-    expect([d.v, d.shopName, d.profileDone, d.money]).toEqual([20, 'Tiệm Spa', false, v1.money])
+    expect([d.v, d.shopName, d.profileDone, d.money]).toEqual([21, 'Tiệm Spa', false, v1.money])
   })
 })

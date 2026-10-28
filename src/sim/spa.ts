@@ -36,6 +36,8 @@ import {
   STARTING_MONEY,
   STEP_MS,
   UNLOCK_DAY,
+  AWAY_MAX_HOURS,
+  AWAY_MIN_MS,
   VIP_PATIENCE,
   VIP_PRICE_FACTOR,
   VIP_REVIEWS,
@@ -48,7 +50,7 @@ import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
 import { emptyFestivalBook, festivalOf, festivalService, FESTIVALS, type FestivalBook } from './festivals'
 import { DayClock } from './clock'
 import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWages, receptionSpot, repairAfterLoad, startDay, staffGoal, study, studyProblem, updateStaff, type CrewHost } from './crew'
-import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
+import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
@@ -61,6 +63,7 @@ import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay,
 import { createRng, randomLook, type Rng } from './rng'
 import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
+import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -82,7 +85,7 @@ export type StudyProblem = 'money' | 'booked' | 'course'
 /** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
 export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
-const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0 })
+const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. A step onto another floor is a climb: they stand on the foot for STAIRS_MS, then appear on the other foot. */
 function moveAlong(m: Mover, speed: number, dtMs: number): void {
@@ -149,6 +152,8 @@ export class SpaSim {
   ownerOutfit: OutfitId = 'baba'
   /** The outfits the shop has been told about, in wardrobe order. */
   outfitsSeen: OutfitId[] = ['baba']
+  /** What the shop needs to pay itself while closed. */
+  away: AwayBook = emptyAwayBook()
   profileDone = false
   hints: HintId[] = []
   staff: Staff[] = []
@@ -478,6 +483,7 @@ export class SpaSim {
     this.stats.income += price
     this.stats.tips += tip
     this.stats.served++
+    if (technician === null && !c.vip && !c.kol) this.stats.ownerServed++
     this.emit({ type: 'paid', customerId: c.id, amount: price, tip, tile: station.bed })
     // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
     const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
@@ -665,6 +671,8 @@ export class SpaSim {
       rank: this.rank,
       ownerOutfit: this.ownerOutfit,
       outfitsSeen: this.outfitsSeen,
+      away: this.away,
+      savedAt: null,
     })
   }
 
@@ -696,6 +704,7 @@ export class SpaSim {
     sim.rank = d.rank
     sim.ownerOutfit = d.ownerOutfit
     sim.outfitsSeen = d.outfitsSeen
+    sim.away = d.away
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -823,6 +832,18 @@ export class SpaSim {
   /** The outfits the shop has, from its badges and Spa của năm wins; never stored, so nothing is ever taken away. */
   unlockedOutfits(): OutfitId[] {
     return unlockedOutfits(Object.keys(this.badges).length, this.rank.wins)
+  }
+
+  /**
+   * The owner is back after `ms` away: the staff's pay goes into money and nothing else moves.
+   * `tip` is true once per shop, when time away earned nothing because the last day did not qualify, from the day staff can be hired.
+   */
+  comeBack(ms: number): AwayResult {
+    const paid = awayPay(this.away, ms)
+    this.money += paid
+    const tip = ms >= AWAY_MIN_MS && !this.away.ok && !this.away.tipSeen && this.day >= UNLOCK_DAY.staff
+    if (tip) this.away.tipSeen = true
+    return { paid, ms, profit: awayMean(this.away), days: this.away.profits.length, capped: ms > AWAY_MAX_HOURS * 3_600_000, tip }
   }
 
   /** Puts an outfit on the owner; false, and no change, for one the shop does not have. */
@@ -1196,6 +1217,7 @@ export class SpaSim {
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
       recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday())
+      closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (isJudgeDay(this.day)) {
         this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
         if (isYearEnd(this.day)) {

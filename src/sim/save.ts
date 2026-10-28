@@ -13,13 +13,14 @@ import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { repairAway, type AwayBook } from './away'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 20
+export const SAVE_VERSION = 21
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -83,6 +84,10 @@ export interface SaveData {
   rank: RankBook
   ownerOutfit: OutfitId
   outfitsSeen: OutfitId[]
+  /** The last finished days' profits and the rest of what the shop needs to pay itself while closed. */
+  away: AwayBook
+  /** The real time of the last write, stamped by the session; null until then. */
+  savedAt: number | null
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -236,6 +241,10 @@ export function parseSave(raw: unknown): SaveData {
   const outfits = repairOutfits(data.ownerOutfit, data.outfitsSeen, Object.keys(data.badges ?? {}).length, data.rank.wins)
   data.ownerOutfit = outfits.ownerOutfit
   data.outfitsSeen = outfits.outfitsSeen
+  // shops saved before version 21 have no away book and have never been paid for time closed
+  data.away = repairAway(data.away)
+  data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
+  data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
   return data
 }
 
@@ -484,7 +493,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
