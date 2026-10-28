@@ -4,8 +4,9 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BADGE_BANNER_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UNLOCK_DAY, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
+import type { BadgeId } from '../sim/badges'
 import { openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { KINDS } from '../sim/customers'
@@ -26,11 +27,13 @@ import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
+import { BADGE_TEXT } from '../view/badges'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { HandPointer } from '../view/HandPointer'
-import { BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { BANNER_MS, BOOK_BUTTON, BUILD_PLATE_TOP, DEPTH as HUD_DEPTH, Hud, QUESTS_PLATE_TOP, SERVICES_PLATE_TOP, STAFF_PLATE_TOP } from '../view/Hud'
+import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
 import { stockLowText } from '../view/stockText'
@@ -73,6 +76,9 @@ const SPEECH_TIP = -CHARACTER_HEIGHT_PX - 70
 const HEART_DX = -64
 /** The toast after another that a toast right now would overwrite. */
 const LATE_TOAST_MS = 2200
+/** The new-badge card under the top bar, from the sketch. */
+const BADGE_CARD = { x: 110, y: 236, w: 860, h: 200, r: 50, medalX: 230, medalY: 336, textX: 330 }
+const BADGE_FADE_MS = 250
 /** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
 const STAR_TWINKLE = 0.04
 const STAR_TWINKLE_MS = 1200
@@ -142,6 +148,12 @@ export class SpaScene extends Phaser.Scene {
   private studiedToastMs = 0
   /** The scene time before which a queued toast may not go up, so finished quests follow each other and whatever was said just before. */
   private toastQueueAt = 0
+  /** New badges waiting for their banner, in the order they came. */
+  private badgeQueue: BadgeId[] = []
+  /** The scene time the badge banner on screen is gone. */
+  private badgeUntil = 0
+  /** An old shop's "already has" toast, held until no summary covers the shop. */
+  private foundToast: string | null = null
   /** What clearing an older shop's stairs spot did, held until no card, summary or mini-game covers the shop, so its toasts are seen. */
   private stairsNote: Extract<SimEvent, { type: 'stairsCleared' }> | null = null
   private patienceHintMs = 0
@@ -166,6 +178,9 @@ export class SpaScene extends Phaser.Scene {
     this.bannerOnResume = false
     this.stairsNote = null
     this.toastQueueAt = 0
+    this.badgeQueue = []
+    this.badgeUntil = 0
+    this.foundToast = null
     this.tour = []
     this.patienceHintMs = 0
     this.regularHintMs = 0
@@ -432,6 +447,54 @@ export class SpaScene extends Phaser.Scene {
     this.time.delayedCall(at - now, () => this.hud.toast(text))
   }
 
+  /**
+   * Sends out the held found toast, and the next badge's banner once the one before it and the morning banner are gone.
+   * Both wait while the summary, the pause card or a mini-game covers the shop, so a day-end badge is seen the next morning.
+   */
+  private pumpBadges(): void {
+    const sim = this.sim
+    if (sim.dayOver || sim.paused || sim.servingCustomerId !== null) return
+    if (this.foundToast) {
+      this.queueToast(this.foundToast)
+      this.foundToast = null
+    }
+    const now = this.time.now
+    const id = this.badgeQueue[0]
+    if (id === undefined || now < Math.max(this.badgeUntil, this.hud.lastBannerAt + BANNER_MS)) return
+    this.badgeQueue.shift()
+    this.badgeUntil = now + BADGE_BANNER_MS
+    this.showBadge(id)
+  }
+
+  /** A gold card under the top bar with the badge's medal, "Huy hiệu mới", its name and what it asked; it plays the level-up sound. */
+  private showBadge(id: BadgeId): void {
+    const bg = this.add
+      .graphics()
+      .fillStyle(hex(C.goldPale), 1)
+      .fillRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, BADGE_CARD.h, BADGE_CARD.r)
+      .lineStyle(5, hex(C.ink))
+      .strokeRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, BADGE_CARD.h, BADGE_CARD.r)
+    const box = this.add
+      .container(0, 0, [
+        bg,
+        addMedal(this, id, BADGE_CARD.medalX, BADGE_CARD.medalY, { got: true, ring: null }),
+        this.add.text(BADGE_CARD.textX, 300, t('badgeNew'), textStyle(32, '800', C.terracotta)).setOrigin(0, 0.5),
+        this.add.text(BADGE_CARD.textX, 352, t(BADGE_TEXT[id].name), textStyle(50)).setOrigin(0, 0.5),
+        this.add.text(BADGE_CARD.textX, 400, t(BADGE_TEXT[id].cond), textStyle(28, '600', C.soft)).setOrigin(0, 0.5),
+      ])
+      .setDepth(HUD_DEPTH + 60)
+      .setAlpha(0)
+    sound.play('levelUp')
+    this.tweens.chain({
+      targets: box,
+      tweens: [
+        { alpha: 1, duration: BADGE_FADE_MS },
+        { alpha: 0, delay: BADGE_BANNER_MS - 2 * BADGE_FADE_MS, duration: BADGE_FADE_MS },
+      ],
+      onComplete: () => box.destroy(),
+    })
+  }
+
   /** The held stairs note, a toast at a time after any morning toasts. */
   private showStairsNote(): void {
     const texts = stairsToasts(this.stairsNote!)
@@ -576,6 +639,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
       if (low.length > 0) this.queueToast(stockLowText(low))
       if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
+      this.pumpBadges()
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose
@@ -841,6 +905,12 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'questDone':
         this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
         this.queueToast(t('questDoneToast', { name: questTitle(e.quest), money: formatMoney(e.quest.reward) }))
+        return
+      case 'badge':
+        this.badgeQueue.push(e.id)
+        return
+      case 'badgesFound':
+        this.foundToast = t('badgesFoundToast', { n: e.n })
         return
       case 'monthStarted': {
         const text = t('monthQuestToast', { month: e.month })

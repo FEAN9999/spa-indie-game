@@ -15,6 +15,8 @@ import { clockStar } from './vip'
 
 export const DEPTH = 10000
 const BANNER_Y = 300
+/** How long the morning banner is on screen, fades included. */
+export const BANNER_MS = 2500
 const BANNER_H = 110
 const BANNER_TEXT_W = 900
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -69,6 +71,8 @@ export class Hud {
   private toastBox: Phaser.GameObjects.Container | null = null
   /** When the last toast went up, in scene time. */
   lastToastAt = -Infinity
+  /** When the morning banner last went up, so a badge banner waits for it to go. */
+  lastBannerAt = -Infinity
   private readonly book: Phaser.GameObjects.Container
   private readonly bookBadge: Phaser.GameObjects.Container
 
@@ -223,11 +227,12 @@ export class Hud {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
     const box = this.scene.add.container(GAME_W / 2, BANNER_Y - 40, [bg, label]).setDepth(DEPTH + 60).setAlpha(0)
+    this.lastBannerAt = this.scene.time.now
     this.scene.tweens.chain({
       targets: box,
       tweens: [
         { y: BANNER_Y, alpha: 1, duration: 250, ease: 'Cubic.easeOut' },
-        { alpha: 0, delay: 2000, duration: 250 },
+        { alpha: 0, delay: BANNER_MS - 500, duration: 250 },
       ],
       onComplete: () => box.destroy(),
     })

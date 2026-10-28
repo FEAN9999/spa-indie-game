@@ -17,6 +17,9 @@ describe('sound cues', () => {
     expect(cueFor({ type: 'roomChanged' })).toBeNull()
     expect(cueFor({ type: 'stockLow', item: 'towel' })).toBeNull()
     expect(cueFor({ type: 'monthStarted', month: 4 })).toBeNull()
+    // the badge banner plays its own sound when it shows, so a queued banner is not heard early
+    expect(cueFor({ type: 'badge', id: 'million' })).toBeNull()
+    expect(cueFor({ type: 'badgesFound', n: 3 })).toBeNull()
   })
   it('throttles each sound on its own', () => {
     const th = new Throttle()
