@@ -9,7 +9,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairFestival, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
@@ -33,7 +33,8 @@ import v12 from '../fixtures/save-v12.json'
 import v13 from '../fixtures/save-v13.json'
 import v14 from '../fixtures/save-v14.json'
 import v15 from '../fixtures/save-v15.json'
-import { advanceUntil, busyShop, hireStaff, seatAndWait, startService } from './helpers'
+import v16 from '../fixtures/save-v16.json'
+import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
@@ -94,12 +95,12 @@ describe('saving the shop', () => {
 describe('save version 2', () => {
   it('opens a shop saved before owners and names as the same shop, with the default owner and no tutorial', () => {
     const data = parseSave(structuredClone(v1))
-    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([16, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
+    expect([data.v, data.shopName, data.ownerLook, data.profileDone]).toEqual([17, 'Tiệm Spa', DEFAULT_OWNER_LOOK, false])
     expect(data.hints).toEqual([...TUTORIAL_HINTS])
     expect(data.customers.map(c => c.patienceMaxMs)).toEqual(v1.customers.map(() => PATIENCE_MS))
     const sim = SpaSim.fromSave(data, opts())
     expect([sim.day, sim.money, sim.customers.length]).toEqual([v1.day, v1.money, v1.customers.length])
-    expect(sim.toSave().v).toBe(16)
+    expect(sim.toSave().v).toBe(17)
   })
 
   it('still reopens the mini-game of an upgraded shop', () => {
@@ -231,11 +232,12 @@ describe('save version 3', () => {
     expect(sim.hintDone('openBuild')).toBe(false)
   })
 
-  it('still leaves alone only saves newer than version 16', () => {
+  it('still leaves alone only saves newer than version 17', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
     expect(parseSave({ ...good, v: 15 }).v).toBe(15)
     expect(parseSave({ ...good, v: 16 }).v).toBe(16)
-    expect(() => parseSave({ ...good, v: 17 })).toThrow(SaveTooNewError)
+    expect(parseSave({ ...good, v: 17 }).v).toBe(17)
+    expect(() => parseSave({ ...good, v: 18 })).toThrow(SaveTooNewError)
   })
 })
 
@@ -475,7 +477,7 @@ describe('save version 6', () => {
     const copy = viaJson(sim)
     expect(copy.stock).toEqual({ shampoo: 3, towel: 7, mask: 40, oil: 0, herbs: 11, mud: 20 })
     expect(copy.stats.restock).toBe(123_000)
-    expect(copy.toSave().v).toBe(16)
+    expect(copy.toSave().v).toBe(17)
   })
 
   it('opens saves of versions 1 to 5 with 20 of each item and nothing spent restocking', () => {
@@ -1019,7 +1021,7 @@ describe('save version 14', () => {
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
     expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
-    expect(saved.v).toBe(16)
+    expect(saved.v).toBe(17)
     expect('clearStairs' in saved).toBe(false)
     expect(saved.floors).toBe(1)
   })
@@ -1105,7 +1107,7 @@ describe('save version 15', () => {
     expect(parsed.progress).toMatchObject({ dayStart: null, daily: [], questDay: 0, monthly: null })
     const sim = open(v14)
     expect(sim.floors).toBe(2)
-    expect(sim.toSave().v).toBe(16)
+    expect(sim.toSave().v).toBe(17)
   })
 
   it('still opens every older save, and still clears the stairs spot of a v13 one', () => {
@@ -1159,7 +1161,7 @@ describe('save version 16', () => {
   it('opens the v15 shop with no badge list, so its first load judges it as an old shop', () => {
     expect(parseSave(structuredClone(v15)).badges).toBeNull()
     expect(parseSave(structuredClone(v14)).badges).toBeNull()
-    expect(open(v15).toSave().v).toBe(16)
+    expect(open(v15).toSave().v).toBe(17)
   })
 
   it('still opens every older save', () => {
@@ -1182,6 +1184,41 @@ describe('save version 16', () => {
 })
 
 describe('save version 17', () => {
+  it('opens the v16 shop with no keepsakes and no festival quests', () => {
+    const sim = open(v16)
+    expect(sim.festival).toEqual({ keepsakes: [] })
+    for (const q of [...sim.progress.daily, sim.progress.monthly!]) expect(q.festival).toBeNull()
+    expect(sim.toSave().v).toBe(17)
+  })
+
+  it('keeps an old month quest through a festival month', () => {
+    const sim = open(v16)
+    expect(sim.day).toBe(38)
+    expect(sim.progress.monthly).toMatchObject({ kind: 'earn', target: 800_000, festival: null })
+    expect(sim.festivalServiceToday()).toBe('shampoo')
+    sim.drainEvents()
+    sim.progress.monthly!.target = 1
+    const events = ownerServes(sim, 3, { kind: 'office', service: 'shampoo' }).events
+    expect(events.some(e => e.type === 'questDone' && e.quest.period === 'month')).toBe(true)
+    expect(events.some(e => e.type === 'festivalQuestDone')).toBe(false)
+  })
+
+  it('keeps only known festivals, once each', () => {
+    expect(repairFestival({ keepsakes: ['tet', 'nope', 'tet', 'noel'] })).toEqual({ keepsakes: ['tet', 'noel'] })
+    expect(repairFestival(undefined)).toEqual({ keepsakes: [] })
+    expect(repairFestival({ keepsakes: 'tet' })).toEqual({ keepsakes: [] })
+  })
+
+  it('keeps the keepsakes through a round trip', () => {
+    const sim = new SpaSim(opts())
+    sim.festival.keepsakes = ['noel', 'tet']
+    expect(viaJson(sim).festival).toEqual({ keepsakes: ['noel', 'tet'] })
+  })
+
+  it('still opens every older save', () => {
+    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16]) expect(() => open(raw)).not.toThrow()
+  })
+
   it('keeps a festival quest through a round trip', () => {
     const sim = new SpaSim(opts())
     sim.day = 36

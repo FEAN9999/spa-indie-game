@@ -1,7 +1,7 @@
 import { CHAT_MS_MAX, DAY_START_MIN, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
-import { FESTIVAL_IDS, type FestivalId } from './festivals'
+import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, type CustomerKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
@@ -16,7 +16,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 16
+export const SAVE_VERSION = 17
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -72,6 +72,8 @@ export interface SaveData {
   progress: Progress
   /** The badges given; null for a shop saved before badges came, judged on its first load. */
   badges: Badges | null
+  /** The festivals whose keepsake the shop has been given. */
+  festival: FestivalBook
 }
 
 const isObject = (x: unknown): x is Record<string, unknown> => typeof x === 'object' && x !== null && !Array.isArray(x)
@@ -213,6 +215,8 @@ export function parseSave(raw: unknown): SaveData {
   data.progress = repairProgress(data.progress)
   // shops saved before version 16 have no badge list yet
   data.badges = repairBadges(data.badges)
+  // shops saved before version 17 have been given no keepsake
+  data.festival = repairFestival(data.festival)
   return data
 }
 
@@ -298,6 +302,12 @@ export function repairBadges(x: unknown): Badges | null {
   return Object.fromEntries(BADGE_IDS.filter(id => Number.isInteger(x[id]) && (x[id] as number) >= 0).map(id => [id, x[id]])) as Badges
 }
 
+/** The known festivals, each once; none when there is no list. */
+export function repairFestival(x: unknown): FestivalBook {
+  const list = isObject(x) && Array.isArray(x.keepsakes) ? x.keepsakes : []
+  return { keepsakes: FESTIVAL_IDS.filter(id => list.includes(id)).sort((a, b) => list.indexOf(a) - list.indexOf(b)) }
+}
+
 /** A well-formed VIP book, field by field; a missing one is empty. A booking more than a day ahead is dropped, or it would block every later one. */
 function repairVipBook(x: unknown, day: number): VipBook {
   const book = emptyVipBook()
@@ -380,7 +390,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

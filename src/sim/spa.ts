@@ -536,6 +536,7 @@ export class SpaSim {
       recipes: this.recipes,
       progress: this.progress,
       badges: this.badges,
+      festival: this.festival,
     })
   }
 
@@ -562,6 +563,7 @@ export class SpaSim {
     sim.recipes = d.recipes
     sim.progress = d.progress
     sim.badges = d.badges ?? {}
+    sim.festival = d.festival
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes

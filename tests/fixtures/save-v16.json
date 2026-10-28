@@ -1,0 +1,450 @@
+{
+  "v": 16,
+  "day": 38,
+  "floors": 1,
+  "minutes": 617.7600000000052,
+  "money": 150000,
+  "reviews": [
+    5
+  ],
+  "stats": {
+    "served": 1,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 40000,
+    "tips": 10000,
+    "wages": 0,
+    "restock": 0,
+    "gifts": 0,
+    "quests": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": null,
+  "owner": {
+    "pos": {
+      "x": 3,
+      "y": 3
+    },
+    "facing": "up",
+    "path": [],
+    "task": null
+  },
+  "customers": [],
+  "items": [
+    {
+      "kind": "bed",
+      "x": 2,
+      "y": 2,
+      "flip": false,
+      "id": 1
+    },
+    {
+      "kind": "bed",
+      "x": 4,
+      "y": 2,
+      "flip": false,
+      "id": 2
+    },
+    {
+      "kind": "cabinet",
+      "x": 9,
+      "y": 2,
+      "flip": false,
+      "id": 3
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 5,
+      "flip": false,
+      "id": 4
+    },
+    {
+      "kind": "shelf",
+      "x": 2,
+      "y": 7,
+      "flip": false,
+      "id": 5
+    },
+    {
+      "kind": "lotus",
+      "x": 9,
+      "y": 7,
+      "flip": false,
+      "id": 6
+    },
+    {
+      "kind": "vase",
+      "x": 11,
+      "y": 11,
+      "flip": false,
+      "id": 7
+    },
+    {
+      "kind": "planter",
+      "x": 2,
+      "y": 12,
+      "flip": false,
+      "id": 8
+    },
+    {
+      "kind": "bench",
+      "x": 2,
+      "y": 13,
+      "flip": false,
+      "id": 9
+    },
+    {
+      "kind": "tea",
+      "x": 3,
+      "y": 15,
+      "flip": false,
+      "id": 10
+    },
+    {
+      "kind": "plant",
+      "x": 1,
+      "y": 16,
+      "flip": false,
+      "id": 11
+    },
+    {
+      "kind": "slippers",
+      "x": 4,
+      "y": 16,
+      "flip": false,
+      "id": 12
+    },
+    {
+      "kind": "plant",
+      "x": 11,
+      "y": 16,
+      "flip": false,
+      "id": 13
+    }
+  ],
+  "nextItemId": 14,
+  "nextId": 2,
+  "untilArrivalMs": 3000,
+  "shopName": "Tiệm Spa",
+  "ownerLook": {
+    "skin": 0,
+    "hair": 0,
+    "hairStyle": 0,
+    "shirt": 0
+  },
+  "profileDone": true,
+  "hints": [
+    "tapCustomer"
+  ],
+  "staff": [],
+  "candidates": [
+    {
+      "name": "Nam",
+      "role": "technician",
+      "look": {
+        "skin": 3,
+        "hair": 2,
+        "hairStyle": 0,
+        "shirt": 4
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 2,
+        "friendly": 2,
+        "stamina": 1
+      },
+      "wage": 30000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 1,
+        "mask": 0,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0
+      },
+      "trait": "quick"
+    },
+    {
+      "name": "An",
+      "role": "technician",
+      "look": {
+        "skin": 0,
+        "hair": 3,
+        "hairStyle": 1,
+        "shirt": 3
+      },
+      "stats": {
+        "skill": 3,
+        "speed": 2,
+        "friendly": 2,
+        "stamina": 3
+      },
+      "wage": 35000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 1,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0
+      },
+      "trait": "diligent"
+    },
+    {
+      "name": "Phúc",
+      "role": "technician",
+      "look": {
+        "skin": 3,
+        "hair": 3,
+        "hairStyle": 2,
+        "shirt": 2
+      },
+      "stats": {
+        "skill": 1,
+        "speed": 1,
+        "friendly": 3,
+        "stamina": 1
+      },
+      "wage": 25000,
+      "rare": false,
+      "tiers": {
+        "shampoo": 0,
+        "mask": 1,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0
+      },
+      "trait": "calm"
+    }
+  ],
+  "candidatesDay": 38,
+  "nextStaffId": 1,
+  "services": [
+    "shampoo"
+  ],
+  "stock": {
+    "shampoo": 19,
+    "towel": 19,
+    "mask": 20,
+    "oil": 20,
+    "herbs": 20,
+    "mud": 20
+  },
+  "book": {
+    "regulars": {
+      "hanh": {
+        "meetDay": 38,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": 726
+      },
+      "vy": {
+        "meetDay": 40,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "sau": {
+        "meetDay": 42,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "khoa": {
+        "meetDay": 44,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "tu": {
+        "meetDay": 46,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "ba": {
+        "meetDay": 48,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "thao": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "lan": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      }
+    },
+    "served": {
+      "student": 0,
+      "office": 1,
+      "picky": 0,
+      "elder": 0,
+      "celeb": 0
+    },
+    "kindsMet": [
+      "office"
+    ],
+    "gifts": [
+      "vyPainting"
+    ],
+    "extraCustomer": false,
+    "extraAt": null,
+    "boardGiven": false
+  },
+  "vip": {
+    "vips": {
+      "singer": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "miss": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "star": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "chef": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      }
+    },
+    "booking": null,
+    "nextDay": 0,
+    "everBooked": false,
+    "boardGiven": false
+  },
+  "recipes": {
+    "steam": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    },
+    "stone": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    },
+    "mud": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    }
+  },
+  "progress": {
+    "total": {
+      "served": 1,
+      "earned": 50000,
+      "tips": 10000,
+      "owner3": 1,
+      "staff": 0,
+      "lost": 0,
+      "hearts": 0,
+      "courses": 0,
+      "services": {
+        "shampoo": 1,
+        "mask": 0,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0
+      }
+    },
+    "dayStart": {
+      "served": 0,
+      "earned": 0,
+      "tips": 0,
+      "owner3": 0,
+      "staff": 0,
+      "lost": 0,
+      "hearts": 0,
+      "courses": 0,
+      "services": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0
+      }
+    },
+    "recent": [],
+    "life": {
+      "dailies": 0,
+      "bestServed": 0,
+      "bestProfit": 0,
+      "cleanDay": false
+    },
+    "questDay": 38,
+    "daily": [
+      {
+        "kind": "earn",
+        "period": "day",
+        "service": null,
+        "target": 400000,
+        "reward": 30000,
+        "base": 0,
+        "state": "open"
+      },
+      {
+        "kind": "serve",
+        "period": "day",
+        "service": null,
+        "target": 8,
+        "reward": 30000,
+        "base": 0,
+        "state": "open"
+      },
+      {
+        "kind": "tips",
+        "period": "day",
+        "service": null,
+        "target": 40000,
+        "reward": 30000,
+        "base": 0,
+        "state": "open"
+      }
+    ],
+    "yesterday": [],
+    "swaps": 1,
+    "monthFrom": 37,
+    "monthly": {
+      "kind": "earn",
+      "period": "month",
+      "service": null,
+      "target": 800000,
+      "reward": 100000,
+      "base": 0,
+      "state": "open"
+    },
+    "lastMonthKind": null,
+    "seenDay": 0
+  },
+  "badges": {
+    "fullYear": 37
+  }
+}
