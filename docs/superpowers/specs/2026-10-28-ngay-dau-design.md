@@ -1,7 +1,7 @@
 # Ngày đầu vui hơn: chuỗi mục tiêu khởi nghiệp
 
 - Ngày: 2026-10-28
-- Trạng thái: chờ chồng yêu duyệt
+- Trạng thái: chồng yêu đã duyệt (2026-10-28)
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 5.14 (dẫn dắt người mới). Làm chen trước Đợt 4 **(em đề xuất)**.
 - Lý do: người chơi thử báo "1, 2 ngày đầu hơi chán, dễ bỏ game".
 - Bản phác 5 màn: https://claude.ai/artifact/1F71FFLDVfR9KodNV7qUP1
