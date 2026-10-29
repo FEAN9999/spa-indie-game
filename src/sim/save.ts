@@ -280,6 +280,8 @@ function parseShop(raw: unknown): SaveData {
   // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
   data.vip = repairVipBook(data.vip, data.day)
   data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
+  // a customer who is not a known idol is an ordinary one
+  data.customers = data.customers.map(c => ({ ...c, idol: IDOL_IDS.includes(c.idol as IdolId) ? c.idol : null }))
   // only Mi Mi is the KOL; everyone saved before version 18 is not
   data.customers = data.customers.map(c => ({ ...c, kol: c.kol === true }))
   // shops saved before version 12 have an empty recipe book; a recipe whose service is open is solved

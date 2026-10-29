@@ -885,8 +885,8 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      // a customer saved before version 18 is not Mi Mi
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
@@ -905,8 +905,8 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      // a customer saved before version 18 is not Mi Mi
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
@@ -1588,7 +1588,8 @@ describe('save version 23', () => {
     const { place, chain, ...rest } = data
     expect(place).toBeNull()
     expect(chain).toEqual({ at: null, told: false, branches: [] })
-    expect(rest).toEqual(withHotFields(v22))
+    // a customer saved before the idols is not an idol
+    expect(rest).toEqual({ ...withHotFields(v22), customers: v22.customers.map(c => ({ ...c, idol: null })) })
     const saved = Chain.fromSave(data, 8).toSave()
     expect([saved.v, saved.place, saved.chain]).toEqual([25, null, { at: null, told: false, branches: [] }])
     expect(saved.starter).toEqual(v22.starter)

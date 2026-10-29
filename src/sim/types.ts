@@ -3,6 +3,7 @@ import type { CustomerKind } from './customers'
 import type { Stars } from './economy'
 import type { EventPlan } from './events'
 import type { FestivalId } from './festivals'
+import type { IdolId } from './idols'
 import type { ItemKind } from './items'
 import type { Quest } from './quests'
 import type { Ingredient, RecipeId } from './recipes'
@@ -79,6 +80,8 @@ export interface Customer {
   heldMs: number
   /** Which VIP this is, or null. */
   vip: VipId | null
+  /** Which idol (star guest) this is, or null. */
+  idol: IdolId | null
   /** True for Mi Mi, the KOL, whose reviews never count toward the shop's stars. */
   kol: boolean
 }
@@ -121,7 +124,7 @@ export interface DayStats {
   gifts: number
   /** Quest rewards paid today. */
   quests: number
-  /** Ordinary customers the owner served today, not counting VIPs and Mi Mi. */
+  /** Ordinary customers the owner served today, not counting VIPs, idols and Mi Mi. */
   ownerServed: number
 }
 
@@ -141,6 +144,10 @@ export type SimEvent =
   | { type: 'vipArrived'; customerId: number; vip: VipId; first: boolean }
   /** A VIP paid; `photo` when this visit brought her signed photo, `board` when it brought the gold board. */
   | { type: 'vipServed'; customerId: number; vip: VipId; stars: Stars; photo: boolean; board: boolean }
+  /** Right after their customerArrived; `first` on their first visit. */
+  | { type: 'idolArrived'; customerId: number; idol: IdolId; first: boolean }
+  /** An idol paid; `photo` when this visit brought their signed photo, `wall` when it brought the star wall. */
+  | { type: 'idolServed'; customerId: number; idol: IdolId; stars: Stars; photo: boolean; wall: boolean }
   | { type: 'noSeat'; id: number }
   | { type: 'customerLeft'; id: number; angry: boolean }
   | { type: 'serviceReady'; customerId: number; stationId: number }
