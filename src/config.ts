@@ -204,6 +204,35 @@ export const FOOT_NEXT_MS = 700
 /** Most mistakes for 3 stars, and rounds passed for 2. */
 export const FOOT_STARS = { mistakes: 1, pass2: 2 }
 
+// Sơn móng game: pick the sample's polish from four bottles, then trace the sample's dotted pattern on five nails.
+// Positions are game pixels on the card; times are in ms.
+export const NAILS_LIMIT_MS = 25000
+export const NAILS_COUNT = 5
+/** The bottles' centres, and how far from one a tap still picks it. */
+export const NAILS_BOTTLE_X = [225, 435, 645, 855]
+export const NAILS_BOTTLE_Y = 930
+export const NAILS_BOTTLE_HIT = { x: 95, y: 130 }
+/** The big nail's centre, and its shape round it: half width, top, where the round top meets the sides, bottom. */
+export const NAILS_NAIL = { x: 540, y: 905 }
+export const NAILS_SHAPE = { hw: 120, top: -165, cap: -45, bottom: 150 }
+/** How far past the nail's edge the finger may go before it smudges. */
+export const NAILS_EDGE_TOL = 8
+/** The dots' drawn radius, how far from the finger's path a dot lights, and their spacing; a picky customer gets the finer ones. */
+export const NAILS_DOT_R = 16
+export const NAILS_DOT_R_HARD = 10
+export const NAILS_REACH = 50
+export const NAILS_REACH_HARD = 34
+export const NAILS_GAP = 46
+export const NAILS_GAP_HARD = 36
+/** The coat after the right pick, the pause after each nail, and the customer's head shake after a wrong pick. */
+export const NAILS_COAT_MS = 500
+export const NAILS_NEXT_MS = 450
+export const NAILS_SHAKE_MS = 600
+/** A good nail: the share of its dots lit, and the most smudges. */
+export const NAILS_GOOD = { lit: 0.8, smudges: 1 }
+/** Most wrong picks and fewest good nails for 2 stars. */
+export const NAILS_STARS = { wrong2: 1, good2: 3 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000 } as const
 export const RESTOCK_AMOUNT = 20
