@@ -46,7 +46,7 @@ const ROW_TOP = 590
 const ROW_H = 290
 const MAX_ROWS = 4
 // with a branch open the working tab gives each row a move line under the stats
-const MOVE_ROW_H = 380
+const MOVE_ROW_H = 390
 const MOVE_MAX_ROWS = 3
 const MOVE_DY = 330
 // the page arrows sit either side of "Xong"
@@ -156,7 +156,7 @@ export class StaffScene extends Phaser.Scene {
     this.shown = []
     const { sim, chain, intro, studyIntro } = this.params
     this.keep(addCard(this, 40, 230, 1000, 1760))
-    this.keep(this.add.text(MID, TITLE_Y, this.params.chain.branches.length ? t('staffTitleAt', { place: placeName(this.params.chain.at) }) : t('staffTitle'), textStyle(60)).setOrigin(0.5))
+    this.keep(this.add.text(MID, TITLE_Y, chain.branches.length ? t('staffTitleAt', { place: placeName(chain.at) }) : t('staffTitle'), textStyle(60)).setOrigin(0.5))
     if (intro || studyIntro) {
       this.keep(this.add.text(MID, INTRO_Y, t(intro ? 'staffIntro' : 'studyIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: intro ? INTRO_WRAP : STUDY_INTRO_WRAP } }).setOrigin(0.5))
     }
@@ -284,10 +284,10 @@ export class StaffScene extends Phaser.Scene {
   /** The move line: a button that asks where, or tomorrow's shop on a mustard strip with a button that cancels. */
   private moveLine(move: NonNullable<Row['move']>, y: number): void {
     if (move.to === undefined) {
-      this.keep(addButton(this, ACTION_X, y, PAIR_W, PAIR_H, t('moveButton'), 'plain', move.open, PAIR_SIZE))
+      this.keep(addButton(this, ROW_LEFT + PAIR_W / 2, y, PAIR_W, PAIR_H, t('moveButton'), 'plain', move.open, PAIR_SIZE))
       return
     }
-    const w = ACTION_X - PAIR_W / 2 - 20 - TEXT_X
+    const w = ACTION_X - PAIR_W / 2 - 20 - ROW_LEFT
     const bg = this.add
       .graphics()
       .fillStyle(hex(C.mustard), 1)
@@ -295,7 +295,7 @@ export class StaffScene extends Phaser.Scene {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(-w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
     const text = this.add.text(0, 0, t('moveTomorrow', { place: placeName(move.to) }), textStyle(32, '600')).setOrigin(0.5)
-    this.keep(this.add.container(TEXT_X + w / 2, y, [bg, text]))
+    this.keep(this.add.container(ROW_LEFT + w / 2, y, [bg, text]))
     this.keep(addButton(this, ACTION_X, y, PAIR_W, PAIR_H, t('moveStay'), 'plain', move.stay, PAIR_SIZE))
   }
 

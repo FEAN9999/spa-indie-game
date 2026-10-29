@@ -2,9 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { Chain } from '../../src/sim/chain'
 import { parseSave } from '../../src/sim/save'
 import v24 from '../fixtures/save-v24.json'
-import { starShop } from './helpers'
+import type { SpaSim } from '../../src/sim/spa'
+import { hireStaff, seatAndWait, starShop } from './helpers'
 
 const TWO_HOURS = 2 * 3_600_000
+
+const runToClose = (s: SpaSim) => {
+  for (let t = 0; !s.dayOver; t += 100) {
+    if (t > 2_000_000) throw new Error('the day never closed')
+    s.advance(100)
+  }
+}
 
 /** A chain with the beach and the old town open, each shop's book set as given. */
 function shops(main: boolean, beach: boolean, oldTown = false) {
@@ -49,11 +57,31 @@ describe('Chain.comeBack', () => {
     expect(none.main.away.tipSeen).toBe(true)
   })
   it('never gives the chain a tip for a branch', () => {
-    const chain = shops(true, false)
+    const chain = shops(false, false)
+    chain.main.away.tipSeen = true
     expect(chain.comeBack(TWO_HOURS).tip).toBe(false)
   })
   it('pays the main shop and the beach of the v24 fixture', () => {
     const chain = Chain.fromSave(parseSave(structuredClone(v24)), 8)
-    expect(chain.comeBack(TWO_HOURS).places).toEqual([null, 'beach'])
+    const money = chain.main.money
+    const r = chain.comeBack(TWO_HOURS)
+    expect(r.places).toEqual([null, 'beach'])
+    expect(r.paid).toBe(250_000)
+    expect(chain.main.money).toBe(money + 250_000)
+  })
+  it('stops paying a branch once it has had a day with no service', () => {
+    const chain = new Chain(starShop(3), 7)
+    expect(chain.open('beach')).toBeNull()
+    const beach = chain.shop('beach')!
+    const tech = hireStaff(beach, 'technician')
+    seatAndWait(beach)
+    runToClose(beach)
+    runToClose(chain.main)
+    expect(chain.move('beach', tech.id, null)).toBeNull()
+    chain.startDay()
+    runToClose(beach)
+    runToClose(chain.main)
+    expect(beach.away.ok).toBe(false)
+    expect(chain.comeBack(TWO_HOURS).places).not.toContain('beach')
   })
 })

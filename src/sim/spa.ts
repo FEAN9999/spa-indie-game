@@ -910,8 +910,11 @@ export class SpaSim {
     // spec 7.3: each day starts with the owner behind the reception desk
     this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
     startDay(this.crew)
-    // a branch has no regulars, quests, rank or events of its own
-    if (this.place !== null) return
+    // a branch has no regulars, quests, rank or events of its own; its day's count still starts here, for its away book
+    if (this.place !== null) {
+      this.progress.dayStart = structuredClone(this.progress.total)
+      return
+    }
     planDay(this.book, this.day, this.rng)
     // chú Sáu, met on a new shop's first day, comes back on its second, at a minute drawn from a stream of its own;
     // missed then, he waits for the regulars' own days
