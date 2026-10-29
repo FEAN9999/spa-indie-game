@@ -69,7 +69,7 @@ const KIND_NAME: Record<MainKind, StringKey> = {
 }
 
 /**
- * The guest book over the frozen shop: the regulars with their hearts, cards and stories, and the five kinds of customer.
+ * The guest book over the frozen shop: the regulars with their hearts, cards and stories, the five kinds of customer, the VIPs and the stars.
  * Every tap stays in this scene, so the shop waits underneath.
  */
 export class GuestBookScene extends Phaser.Scene {
@@ -294,17 +294,17 @@ export class GuestBookScene extends Phaser.Scene {
     const colors = customerColors(IDOLS[row.id].look, VIP_KIND, null, null, false, row.id)
     const mid = x0 + IDOL_CELL_W / 2
     this.keep(addCard(this, x0, y0, IDOL_CELL_W, IDOL_CELL_H - 20))
-    this.figure(mid, y0 + 200, IDOL_SCALE, colors, row.met ? 1 : UNMET_ALPHA)
+    this.figure(mid, y0 + 184, IDOL_SCALE, colors, row.met ? 1 : UNMET_ALPHA)
     if (!row.met) {
-      this.keep(this.add.text(mid, y0 + 240, '???', textStyle(34)).setOrigin(0.5))
+      this.keep(this.add.text(mid, y0 + 224, '???', textStyle(34)).setOrigin(0.5))
       return
     }
-    this.keep(this.add.text(mid, y0 + 240, IDOL_TEXT[row.id].name, { ...textStyle(34), align: 'center', wordWrap: { width: IDOL_CELL_W - 30 } }).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 224, IDOL_TEXT[row.id].name, { ...textStyle(32), align: 'center', wordWrap: { width: IDOL_CELL_W - 30 } }).setOrigin(0.5))
     for (let s = 0; s < 3; s++) {
-      this.keep(this.add.image(mid + (s - 1) * 56, y0 + 290, s < row.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
+      this.keep(this.add.image(mid + (s - 1) * 56, y0 + 274, s < row.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
     }
-    this.keep(this.add.text(mid, y0 + 330, t('vipVisits', { n: row.visits }), textStyle(28, '600')).setOrigin(0.5))
-    this.keep(this.add.text(mid, y0 + 362, t(row.photo ? 'vipPhotoYes' : 'vipPhotoNo'), textStyle(26, '800', row.photo ? C.teal : undefined)).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 314, t('vipVisits', { n: row.visits }), textStyle(28, '600')).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 346, t(row.photo ? 'vipPhotoYes' : 'vipPhotoNo'), textStyle(26, '800', row.photo ? C.teal : undefined)).setOrigin(0.5))
     this.keep(
       this.add
         .rectangle(x0, y0, IDOL_CELL_W, IDOL_CELL_H - 20, 0xffffff, 0)
