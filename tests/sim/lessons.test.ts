@@ -79,6 +79,18 @@ describe('passing', () => {
   })
 })
 
+describe('the beach', () => {
+  it('cannot pay the lesson: main only, no money taken', () => {
+    const chain = new Chain(starShop(3), 11)
+    chain.open('beach')
+    const beach = chain.shop('beach')!
+    const money = beach.money
+    expect(beach.payLesson('scrub')).toBe('main')
+    expect(beach.money).toBe(money)
+    expect(beach.lessonsPaid).toEqual([])
+  })
+})
+
 describe('retry and reload', () => {
   it('keeps paid across a failed lesson and a reload without paying again', () => {
     const chain = new Chain(starShop(3), 11)

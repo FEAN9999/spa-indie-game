@@ -500,13 +500,13 @@ function repairVipBook(x: unknown, day: number): VipBook {
   return book
 }
 
-/** A well-formed recipe book: tries are whole mixes with their right count recomputed, heard are that recipe's hints, and a recipe is solved by an all-right try or an open service. */
 /** The lesson services that are in the list and not open yet, once each. */
 function repairLessons(x: unknown, services: ServiceId[]): LessonService[] {
   const known = Array.isArray(x) ? x : []
   return LESSON_SERVICES.filter(id => known.includes(id) && !services.includes(id))
 }
 
+/** A well-formed recipe book: tries are whole mixes with their right count recomputed, heard are that recipe's hints, and a recipe is solved by an all-right try or an open service. */
 function repairRecipes(x: unknown, services: ServiceId[]): RecipeBook {
   const book = emptyRecipes()
   const saved: Record<string, unknown> = isObject(x) ? x : {}

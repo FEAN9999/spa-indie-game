@@ -92,12 +92,12 @@ export type HireProblem = 'money' | 'full'
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
-/** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
 /** Where a lesson stands: not paid, tuition paid and not yet passed, or learned. */
 export type LessonState = 'no' | 'paid' | 'yes'
 /** What stops a lesson now: not the main shop, too few stars, massage not open, debt, or too little money for the tuition. */
 export type LessonProblem = 'main' | 'stars' | 'order' | 'debt' | 'money'
 
+/** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
 export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 })

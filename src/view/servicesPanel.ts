@@ -1,5 +1,6 @@
 import { LESSON_STARS } from '../config'
-import { SERVICE_IDS, SERVICES, type LessonService } from '../sim/services'
+import { LESSON_SERVICES, SERVICE_IDS, SERVICES, type LessonService } from '../sim/services'
+import { stockItemsFor } from '../sim/stock'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
@@ -18,11 +19,15 @@ export function panelPage<T>(rows: readonly T[], page: number): { rows: T[]; pag
 
 export const rowPage = (index: number): number => Math.floor(index / PANEL_ROWS)
 
-/** Where the panel opens: the stock intro first, then a service to learn (on its page), then low stock. */
+/** Where the panel opens: the stock intro first, then a service to learn, then low stock (on the page of its first item); else a paid lesson's page. */
 export function servicesOpening(sim: SpaSim, stock: boolean, stockIntro: boolean): { tab: Tab; page: number } {
   const learn = sim.learnable()
-  if (stock && (stockIntro || (!learn && sim.lowStock().length > 0))) return { tab: 'stock', page: 0 }
-  return { tab: 'services', page: learn ? rowPage(SERVICE_IDS.indexOf(learn)) : 0 }
+  const low = sim.lowStock()
+  if (stock && (stockIntro || (!learn && low.length > 0))) {
+    return { tab: 'stock', page: low.length > 0 ? rowPage(stockItemsFor(sim.services).indexOf(low[0])) : 0 }
+  }
+  const target = learn ?? LESSON_SERVICES.find(id => sim.lessonState(id) === 'paid')
+  return { tab: 'services', page: target ? rowPage(SERVICE_IDS.indexOf(target)) : 0 }
 }
 
 export type LessonAction =

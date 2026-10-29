@@ -1031,8 +1031,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   update(time: number, delta: number) {
     if (this.tooNew) return
-    // over a panel too, so it does not wait for the panel to close
-    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
+    // over a panel too, so it does not wait for the panel to close; not over a lesson game, which has no serving customer
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)

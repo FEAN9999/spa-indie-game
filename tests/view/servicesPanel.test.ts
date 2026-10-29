@@ -47,6 +47,21 @@ describe('servicesOpening', () => {
     sim.stock.shampoo = 2
     expect(servicesOpening(sim, true, false)).toEqual({ tab: 'stock', page: 0 })
   })
+  it('opens Kho on the page of the first low item', () => {
+    const sim = starShop(3)
+    sim.services = [...SIX]
+    sim.payLesson('scrub')
+    sim.passLesson('scrub')
+    sim.stock.salt = 1
+    expect(servicesOpening(sim, true, false)).toEqual({ tab: 'stock', page: 1 })
+    sim.stock.shampoo = 1
+    expect(servicesOpening(sim, true, false)).toEqual({ tab: 'stock', page: 0 })
+  })
+  it('opens on the page of a paid, unpassed lesson', () => {
+    const sim = starShop(3)
+    sim.payLesson('scrub')
+    expect(servicesOpening(sim, true, false)).toEqual({ tab: 'services', page: 1 })
+  })
   it('the stock intro wins', () => {
     expect(servicesOpening(starShop(3), true, true).tab).toBe('stock')
   })
