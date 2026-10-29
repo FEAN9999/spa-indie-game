@@ -1,7 +1,7 @@
 import { TILE } from '../config'
 import type { ItemKind } from '../sim/items'
 import { silkLantern } from './lantern'
-import { C } from './palette'
+import { C, SKIN } from './palette'
 import { svgDoc } from './svg'
 
 const LINE = 0.05
@@ -497,10 +497,10 @@ const regularsBoard =
 // Gifts from the VIPs
 
 /** A head and shoulders in a `shirt`, centred at x 0.5 in a photo's cream ground. */
-const bust = (shirt: string) =>
+const bust = (shirt: string, skin: string = C.sand) =>
   `<path d="M0.22,1.12 Q0.24,0.84 0.5,0.8 Q0.76,0.84 0.78,1.12Z" fill="${shirt}" ${ink(0.02)}/>` +
-  rect(0.46, 0.72, 0.08, 0.1, C.sand, ink(0.015)) +
-  `<circle cx="0.5" cy="0.6" r="0.15" fill="${C.sand}" ${ink(0.02)}/>`
+  rect(0.46, 0.72, 0.08, 0.1, skin, ink(0.015)) +
+  `<circle cx="0.5" cy="0.6" r="0.15" fill="${skin}" ${ink(0.02)}/>`
 
 /** A signed photo: a gold frame on a small easel, `portrait` on its cream ground and an ink signature across the lower corner. */
 const photo = (portrait: string) =>
@@ -567,6 +567,7 @@ const goldBoard =
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
 // Ngôi sao: the signed photo again, with a small gold star on the top edge of its frame
+const skinHex = (i: number) => `#${SKIN[i].toString(16).padStart(6, '0')}`
 const star5 = (cx: number, cy: number, R: number, r: number, extra = '') => {
   const pts = Array.from({ length: 10 }, (_, i) => {
     const a = -Math.PI / 2 + (i * Math.PI) / 5
@@ -581,67 +582,72 @@ const idolPhoto = (portrait: string) => photo(portrait) + star5(0.5, 0.15, 0.1, 
 const eyes = (y = 0.6) =>
   `<circle cx="0.45" cy="${y}" r="0.015" fill="${C.ink}"/><circle cx="0.55" cy="${y}" r="0.015" fill="${C.ink}"/>`
 
-// Sơn Tùng M-TP: a tall dark quiff swept up off the forehead and a thin gold chain over a teal shirt
+// Sơn Tùng M-TP: a tall dark quiff swept up off the forehead, a black open jacket and a thin gold chain on the lighter shirt inside
 const photoIdolSontung =
-  bust(C.teal) +
+  bust('#E8DCC8', skinHex(0)) +
+  `<path d="M0.22,1.12 Q0.24,0.84 0.44,0.8 L0.5,1.12Z M0.78,1.12 Q0.76,0.84 0.56,0.8 L0.5,1.12Z" fill="#2B2422" ${ink(0.02)}/>` +
   `<path d="M0.36,0.56 Q0.32,0.4 0.46,0.38 Q0.5,0.24 0.64,0.3 Q0.7,0.4 0.64,0.56 Q0.6,0.46 0.5,0.46 Q0.42,0.46 0.36,0.56Z" fill="${C.woodDark}" ${ink(0.02)}/>` +
   eyes() +
   `<path d="M0.4,0.7 Q0.5,0.74 0.6,0.7" stroke="${C.ink}" stroke-width="0.015" fill="none"/>` +
-  `<path d="M0.36,0.84 Q0.5,1 0.64,0.84" stroke="${C.mustard}" stroke-width="0.03" fill="none" stroke-linecap="round"/>`
+  `<path d="M0.42,0.84 Q0.5,0.98 0.58,0.84" stroke="${C.mustard}" stroke-width="0.03" fill="none" stroke-linecap="round"/>`
 
-// Taylor Swift: honey hair falling past the shoulders under straight bangs, red lips, a cobalt dress
+// Taylor Swift: honey hair falling past the shoulders under straight bangs, red lips, a periwinkle dress with white sparkles
 const photoIdolTaylor =
   `<path d="M0.31,0.62 Q0.28,0.38 0.5,0.38 Q0.72,0.38 0.69,0.62 L0.72,0.9 H0.28Z" fill="#E9C46A" ${ink(0.02)}/>` +
-  bust(C.cobalt) +
+  bust('#B7C3EA', skinHex(0)) +
+  [[0.34,1],[0.44,0.92],[0.58,0.97],[0.66,1.06],[0.5,1.07]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="0.02" fill="#fff"/>`).join('') +
   `<path d="M0.34,0.58 Q0.34,0.42 0.5,0.42 Q0.66,0.42 0.66,0.58 Q0.5,0.5 0.34,0.58Z" fill="#E9C46A" ${ink(0.02)}/>` +
   eyes(0.63) +
   `<path d="M0.46,0.7 Q0.5,0.73 0.54,0.7 Q0.5,0.69 0.46,0.7Z" fill="${C.lantern}"/>`
 
 // G-Dragon: bright pink hair swept to one side and a white daisy with a gold heart on a black jacket
 const photoIdolGd =
-  bust(C.ink) +
+  bust(C.ink, skinHex(0)) +
   `<path d="M0.34,0.6 Q0.3,0.4 0.5,0.4 Q0.7,0.4 0.66,0.58 Q0.58,0.48 0.46,0.5 Q0.38,0.54 0.34,0.6Z" fill="#F49AB4" ${ink(0.02)}/>` +
   eyes(0.62) +
   [0, 72, 144, 216, 288].map(a => `<ellipse cx="0.64" cy="0.95" rx="0.03" ry="0.05" fill="#fff" ${ink(0.012)} transform="rotate(${a} 0.64 1)"/>`).join('') +
   `<circle cx="0.64" cy="1" r="0.025" fill="${C.mustard}"/>`
 
-// Jennie: a black bob with straight bangs and a cream bow at the collar of a pink top
+// Jennie: a black bob with straight bangs, a cream bow in her hair at the side and a cream tweed jacket with dark trim
 const photoIdolJennie =
   `<path d="M0.31,0.7 Q0.28,0.38 0.5,0.38 Q0.72,0.38 0.69,0.7 Q0.66,0.52 0.5,0.52 Q0.34,0.52 0.31,0.7Z" fill="${C.ink}"/>` +
-  bust(C.lotus) +
+  bust('#F3E9DA', skinHex(0)) +
+  `<path d="M0.4,0.84 L0.5,1.12 L0.6,0.84" stroke="${C.woodDark}" stroke-width="0.03" fill="none"/>` +
   `<path d="M0.34,0.58 Q0.34,0.42 0.5,0.42 Q0.66,0.42 0.66,0.58 Q0.5,0.5 0.34,0.58Z" fill="${C.ink}"/>` +
   eyes(0.63) +
-  `<path d="M0.5,0.88 L0.4,0.82 L0.4,0.94Z M0.5,0.88 L0.6,0.82 L0.6,0.94Z" fill="${C.cream}" ${ink(0.015)}/>` +
-  `<circle cx="0.5" cy="0.88" r="0.02" fill="${C.cream}" ${ink(0.015)}/>`
+  `<path d="M0.66,0.46 L0.78,0.38 L0.78,0.54Z M0.66,0.46 L0.54,0.38 L0.54,0.54Z" fill="${C.cream}" ${ink(0.015)} transform="translate(0.04 -0.02) scale(0.8)"/>` +
+  `<circle cx="0.7" cy="0.44" r="0.02" fill="${C.cream}" ${ink(0.015)}/>`
 
-// HIEUTHUHAI: a cobalt cap worn backwards, its brim sticking out behind at the side, over a terracotta tee
+// HIEUTHUHAI: a cobalt cap worn backwards, only its crown and strap gap showing, over a cream jersey with a cobalt 2
 const photoIdolHieuthuhai =
-  bust(C.terracotta) +
+  bust('#FBF7EE', skinHex(0)) +
+  `<path d="M0.46,0.88 H0.54 V0.98 H0.46 M0.46,0.93 H0.54 M0.46,0.98 H0.54" stroke="#2D5FA8" stroke-width="0.025" fill="none"/>` +
   `<path d="M0.35,0.56 Q0.35,0.4 0.5,0.4 Q0.65,0.4 0.65,0.56Z" fill="#2D5FA8" ${ink(0.02)}/>` +
-  `<path d="M0.64,0.52 L0.78,0.5 L0.76,0.57 L0.64,0.57Z" fill="#2D5FA8" ${ink(0.02)}/>` +
+  `<path d="M0.42,0.56 Q0.5,0.5 0.58,0.56" stroke="${C.cream}" stroke-width="0.015" fill="none"/>` +
   `<circle cx="0.5" cy="0.4" r="0.015" fill="${C.cream}"/>` +
   eyes(0.63) +
   `<path d="M0.46,0.7 H0.54" stroke="${C.ink}" stroke-width="0.015"/>`
 
 // The Weeknd: a red suit over a white shirt, dark hair swept up and a thick moustache
 const photoIdolWeeknd =
-  bust(C.lanternDark) +
+  bust(C.lanternDark, skinHex(3)) +
   `<path d="M0.46,0.82 L0.5,1 L0.54,0.82Z" fill="#fff" ${ink(0.015)}/>` +
   `<path d="M0.34,0.58 Q0.3,0.36 0.5,0.36 Q0.7,0.36 0.66,0.58 Q0.6,0.46 0.5,0.46 Q0.4,0.46 0.34,0.58Z" fill="${C.ink}"/>` +
   eyes() +
   `<path d="M0.42,0.69 Q0.5,0.65 0.58,0.69 Q0.5,0.72 0.42,0.69Z" fill="${C.ink}"/>`
 
-// Taeyang: a black spiky mohawk down the middle of a head shaved at the sides, in a grey top
+// Taeyang: a black spiky mohawk down the middle of a head shaved at the sides, in a white tank with a silver chain
 const photoIdolTaeyang =
-  bust('#5B5F66') +
+  bust('#F4F1EA', skinHex(1)) +
   `<path d="M0.42,0.47 L0.4,0.3 L0.46,0.38 L0.5,0.24 L0.54,0.38 L0.6,0.3 L0.58,0.47Z" fill="${C.ink}" ${ink(0.015)}/>` +
   `<path d="M0.36,0.55 Q0.36,0.47 0.42,0.46 M0.64,0.55 Q0.64,0.47 0.58,0.46" stroke="#6E5D55" stroke-width="0.03" fill="none"/>` +
   eyes() +
-  `<path d="M0.45,0.7 Q0.5,0.72 0.55,0.7" stroke="${C.ink}" stroke-width="0.015" fill="none"/>`
+  `<path d="M0.45,0.7 Q0.5,0.72 0.55,0.7" stroke="${C.ink}" stroke-width="0.015" fill="none"/>` +
+  `<path d="M0.42,0.84 Q0.5,0.98 0.58,0.84" stroke="#B8BEC6" stroke-width="0.025" fill="none" stroke-linecap="round"/>`
 
 // Justin Bieber: a grey beanie over a brown fringe and a yellow hoodie with its hood behind the neck
 const photoIdolBieber =
-  bust('#F2D16B') +
+  bust('#F2D16B', skinHex(0)) +
   `<path d="M0.28,0.86 Q0.5,0.98 0.72,0.86" stroke="${C.ink}" stroke-width="0.02" fill="none"/>` +
   `<path d="M0.35,0.56 Q0.35,0.42 0.5,0.42 Q0.65,0.42 0.65,0.56 Q0.5,0.52 0.35,0.56Z" fill="#9A5B36" ${ink(0.015)}/>` +
   `<path d="M0.34,0.5 Q0.34,0.34 0.5,0.34 Q0.66,0.34 0.66,0.5Z" fill="#9AA0A6" ${ink(0.02)}/>` +
@@ -650,9 +656,9 @@ const photoIdolBieber =
 
 // Daesung: a big crescent-eyed grin, dark hair and a red bow tie on a dark jacket
 const photoIdolDaesung =
-  bust('#3B3B48') +
+  bust('#3B3B48', skinHex(0)) +
   `<path d="M0.35,0.56 Q0.33,0.4 0.5,0.4 Q0.67,0.4 0.65,0.56 Q0.5,0.48 0.35,0.56Z" fill="${C.ink}"/>` +
-  `<path d="M0.4,0.62 Q0.45,0.57 0.5,0.62 M0.5,0.62 Q0.55,0.57 0.6,0.62" stroke="${C.ink}" stroke-width="0.02" fill="none" stroke-linecap="round"/>` +
+  `<path d="M0.38,0.62 Q0.43,0.57 0.48,0.62 M0.52,0.62 Q0.57,0.57 0.62,0.62" stroke="${C.ink}" stroke-width="0.02" fill="none" stroke-linecap="round"/>` +
   `<path d="M0.42,0.67 Q0.5,0.77 0.58,0.67Z" fill="#fff" ${ink(0.015)}/>` +
   `<path d="M0.5,0.86 L0.4,0.8 L0.4,0.92Z M0.5,0.86 L0.6,0.8 L0.6,0.92Z" fill="${C.lantern}" ${ink(0.015)}/>`
 
