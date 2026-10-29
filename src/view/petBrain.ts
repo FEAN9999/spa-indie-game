@@ -86,7 +86,13 @@ function wander(m: PetMind, world: PetWorld, rng: Rng): void {
   go(m, world, rng, 'wander', t => tileEq(t, spot))
 }
 
-const follow = (m: PetMind, world: PetWorld, rng: Rng) => go(m, world, rng, 'follow', t => manhattan(t, world.owner) === 1)
+/** To the owner's side, where it is seen; above or below only when neither side is free. */
+function follow(m: PetMind, world: PetWorld, rng: Rng): void {
+  const o = world.owner
+  const beside = (t: Tile) => t.y === o.y && Math.abs(t.x - o.x) === 1
+  const sideFree = [-1, 1].some(dx => isWalkable(world.grid, { x: o.x + dx, y: o.y }))
+  go(m, world, rng, 'follow', t => (sideFree ? beside(t) : manhattan(t, o) === 1))
+}
 
 /** Decides what to do next, by kind. */
 function think(m: PetMind, world: PetWorld, rng: Rng): void {

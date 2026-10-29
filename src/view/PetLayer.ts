@@ -116,7 +116,8 @@ export class PetLayer {
     const mind = newMind(pet, world, this.rng)
     if (this.started) mind.pos = { ...world.door }
     const image = this.scene.add.image(0, 0, petKey(pet.breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y)
-    image.setInteractive(this.scene.input.makePixelPerfect())
+    // the whole picture takes the tap: a small pet on the move is hard to hit
+    image.setInteractive()
     const z = this.scene.add.text(0, 0, 'z', textStyle(34, '800', C.soft)).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false)
     const sp: PetSprite = { pet, mind, image, z, hopAt: -Infinity }
     this.sprites.set(pet.id, sp)
