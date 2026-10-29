@@ -335,6 +335,8 @@ export const vi = {
   stoneHot: 'Á! Nóng quá!',
   mudHold: 'Giữ để thêm nước nóng',
   mudTap: 'Giữ vạch nhiệt trong khoảng xanh',
+  scrubTurn: 'Xoay vòng tròn trên vệt muối',
+  scrubBurn: 'Rát quá!',
   mudOk: 'Vừa ấm, khách lim dim',
   mudCold: 'Nguội quá, khách run',
   mudHot: 'Nóng quá, khách nhăn mặt',

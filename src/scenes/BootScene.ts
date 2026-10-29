@@ -9,6 +9,7 @@ import { ingredientTextures } from '../art/ingredients'
 import { mapTexture } from '../art/map'
 import { maskTextures } from '../art/maskArt'
 import { massageTextures } from '../art/massageArt'
+import { scrubTextures } from '../art/scrubArt'
 import { mudTextures } from '../art/mudArt'
 import { oldTownRoomTexture } from '../art/oldTown'
 import { roomTexture } from '../art/room'
@@ -48,6 +49,7 @@ export class BootScene extends Phaser.Scene {
       ...shampooTextures(),
       ...maskTextures(),
       ...massageTextures(),
+      ...scrubTextures(),
       ...ingredientTextures(),
       ...steamTextures(),
       ...stoneTextures(),

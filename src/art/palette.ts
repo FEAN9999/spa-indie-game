@@ -81,6 +81,9 @@ export const C = {
   // the beach branch: sea, its wall and floors, a shell; the chain map's land, beach and river; the tourist's straw hat
   sea: '#6FB3CF',
   seaPale: '#CFE8F0',
+  saltWhite: '#FDFCF8',
+  saltGrey: '#E4EEF0',
+  burnPale: '#FBE3DC',
   scrubSheet: '#DCEFF4',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
