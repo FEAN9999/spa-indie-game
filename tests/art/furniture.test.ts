@@ -68,6 +68,20 @@ describe('furniture art', () => {
     }
   })
 
+  it('draws every bed lying across the floor, as wide as its turned footprint', () => {
+    const beds = ITEM_KINDS.filter(k => ITEMS[k].group === 'bed')
+    expect(beds).toHaveLength(9)
+    for (const kind of beds) {
+      const across = FURNITURE[`${itemTexture(kind)}-turned`]
+      expect(across, kind).toBeDefined()
+      expect(across.w, kind).toBeGreaterThanOrEqual(ITEMS[kind].h)
+      expect(across.w, kind).toBeLessThanOrEqual(ITEMS[kind].h + 0.2)
+      expect(across.h, kind).toBeGreaterThanOrEqual(ITEMS[kind].w)
+      if (kind === 'steamTent') expect(across).toEqual(FURNITURE[itemTexture(kind)])
+      else expect(across.body, kind).not.toBe(FURNITURE[itemTexture(kind)].body)
+    }
+  })
+
   it('keeps one picture for every piece that only mirrors', () => {
     for (const kind of ITEM_KINDS.filter(k => !canTurn(k))) expect(itemTexture(kind, true)).toBe(itemTexture(kind))
   })

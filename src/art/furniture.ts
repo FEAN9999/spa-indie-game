@@ -32,6 +32,24 @@ const bed =
   rect(0.1, 3.52, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 3.52, 0.12, 0.14, C.woodDark, ink(0.025))
 
+// shampoo bed lying across: a basin of water standing on two legs at the head on the left, the bed on its wood frame with a cushion under the head and the folded towel at the foot
+const bedTurned =
+  rect(0.45, 0.35, 2.6, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.53, 0.41, 2.44, 0.75, C.tealLight, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.58, 0.48, 0.3, 0.62, C.cream, `rx="0.12" ${ink(FINE)}`) +
+  rect(2.5, 0.53, 0.36, 0.5, C.terracotta, `rx="0.04" ${ink(FINE)}`) +
+  `<path d="M2.65,0.53 V1.03" stroke="${C.cream}" stroke-width="0.045"/>` +
+  rect(0.45, 1.13, 2.6, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.62, 1.27, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 1.27, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.13, 0.6, 0.08, 0.81, C.woodDark, ink(0.025)) +
+  rect(0.43, 0.6, 0.08, 0.81, C.woodDark, ink(0.025)) +
+  `<path d="M0.05,0.4 Q0.07,0.76 0.32,0.78 Q0.57,0.76 0.59,0.4Z" fill="${C.cream}" ${ink()}/>` +
+  `<path d="M0.08,0.62 Q0.32,0.7 0.56,0.62" stroke="${C.cobalt}" stroke-width="0.05" fill="none"/>` +
+  `<ellipse cx="0.32" cy="0.4" rx="0.27" ry="0.15" fill="${C.cream}" ${ink()}/>` +
+  `<ellipse cx="0.32" cy="0.41" rx="0.2" ry="0.09" fill="${C.water}" ${ink(FINE)}/>` +
+  rect(0.27, 0.18, 0.1, 0.12, C.mustard, `rx="0.03" ${ink(0.025)}`)
+
 // The new beds have no wall basin, but measured from their head tile they match the shampoo bed: a cushion under a
 // lying customer's head, the frame ending where the blanket does, and the same front rail and legs.
 
@@ -51,18 +69,48 @@ const maskBed =
   rect(0.1, 3.27, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 3.27, 0.12, 0.14, C.woodDark, ink(0.025))
 
+// mask chair lying across: the mint recliner on its wood base, its back raised at the head on the left with the neck cushion, and the armrests along both sides of the seat
+const maskBedTurned =
+  rect(0.3, 0.35, 2.75, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(1.16, 0.44, 0.88, 0.7, C.mintTeal, `rx="0.1" ${ink(FINE)}`) +
+  rect(2.08, 0.44, 0.88, 0.7, C.mintTeal, `rx="0.1" ${ink(FINE)}`) +
+  rect(1.3, 0.32, 0.74, 0.16, C.woodLight, `rx="0.07" ${ink(0.04)}`) +
+  rect(1.3, 1.0, 0.74, 0.16, C.woodLight, `rx="0.07" ${ink(0.04)}`) +
+  rect(1.16, 0.44, 0.18, 0.7, C.ink, 'opacity="0.15"') +
+  `<path d="M0.08,1.15 V0.3 Q0.08,0.06 0.32,0.06 L0.98,0.2 Q1.22,0.26 1.22,0.48 V1.15Z" fill="${C.mintTeal}" ${ink()}/>` +
+  rect(0.15, 0.28, 0.1, 0.76, C.mint, 'rx="0.05"') +
+  `<path d="M0.64,0.6 H1.16 M0.64,0.86 H1.16" stroke="${C.tealLight}" stroke-width="${FINE}" stroke-linecap="round"/>` +
+  rect(0.3, 0.36, 0.34, 0.66, C.cream, `rx="0.15" ${ink(FINE)}`) +
+  rect(0.05, 1.13, 3.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 1.27, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 1.27, 0.12, 0.14, C.woodDark, ink(0.025))
+
 // massage bed: a wood table under a cream sheet, with a padded face hole at the head and a rolled towel at the foot
+const faceHole =
+  `<ellipse cx="0.55" cy="0.66" rx="0.3" ry="0.24" fill="${C.sand}" ${ink(FINE)}/>` +
+  `<ellipse cx="0.55" cy="0.66" rx="0.15" ry="0.1" fill="${C.woodDark}" ${ink(FINE)}/>`
 const massageBed =
   rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
   rect(0.14, 0.11, 0.82, 2.72, C.cream, `rx="0.1" ${ink(FINE)}`) +
   `<path d="M0.18,2.66 H0.92" stroke="${C.tileSeam}" stroke-width="0.035"/>` +
-  `<ellipse cx="0.55" cy="0.66" rx="0.3" ry="0.24" fill="${C.sand}" ${ink(FINE)}/>` +
-  `<ellipse cx="0.55" cy="0.66" rx="0.15" ry="0.1" fill="${C.woodDark}" ${ink(FINE)}/>` +
+  faceHole +
   rect(0.2, 2.2, 0.7, 0.24, C.tealLight, `rx="0.12" ${ink(FINE)}`) +
   `<path d="M0.36,2.21 V2.43 M0.74,2.21 V2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
   rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
   rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
+
+// massage bed lying across: the cream sheet along the table, the face hole at the head on the left, the rolled towel at the foot, and the front rail and legs along its near side
+const massageBedTurned =
+  rect(0.05, 0.05, 3.0, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 2.82, 0.75, C.cream, `rx="0.1" ${ink(FINE)}`) +
+  `<path d="M2.66,0.15 V0.83" stroke="${C.tileSeam}" stroke-width="0.035"/>` +
+  `<g transform="translate(0.11 -0.19)">${faceHole}</g>` +
+  rect(2.2, 0.17, 0.24, 0.6, C.tealLight, `rx="0.12" ${ink(FINE)}`) +
+  `<path d="M2.21,0.31 H2.43 M2.21,0.63 H2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
+  rect(0.05, 0.83, 3.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 0.97, 0.12, 0.14, C.woodDark, ink(0.025))
 
 // stone bed: the massage bed with a column of four dark stones down the sheet, the second and fourth glowing warm round the rim
 const STONE = C.stone
@@ -71,6 +119,12 @@ const stoneBed =
   massageBed +
   STONE_YS.filter((_, i) => i % 2).map(y => `<ellipse cx="0.55" cy="${y}" rx="0.185" ry="0.15" fill="${C.mustard}"/>`).join('') +
   STONE_YS.map(y => `<ellipse cx="0.55" cy="${y}" rx="0.15" ry="0.115" fill="${STONE}" ${ink(FINE)}/>`).join('')
+
+// stone bed lying across: the massage bed lying across with the four stones in a row along the sheet, the second and fourth glowing warm
+const stoneBedTurned =
+  massageBedTurned +
+  STONE_YS.filter((_, i) => i % 2).map(x => `<ellipse cx="${x}" cy="0.47" rx="0.185" ry="0.15" fill="${C.mustard}"/>`).join('') +
+  STONE_YS.map(x => `<ellipse cx="${x}" cy="0.47" rx="0.14" ry="0.115" fill="${STONE}" ${ink(FINE)}/>`).join('')
 
 // mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
 const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
@@ -87,23 +141,59 @@ const mudTub =
   `<circle cx="0.84" cy="2.3" r="0.11" fill="${C.clayLight}" ${ink(0.02)}/>` +
   rect(0.6, 0.2, 0.8, 0.32, C.paper, `rx="0.14" ${ink(FINE)}`)
 
+// mud tub lying across: the round tub three tiles long and two deep, its staves showing below the near rim, full of mud, with the head towel at the left
+const mudTubTurned =
+  rect(0.06, 0.36, 2.88, 1.72, C.wood, `rx="0.6" ${ink()}`) +
+  `<g transform="translate(0 -1)">${[[0.5, 3.0], [0.9, 3.04], [1.3, 3.06], [1.7, 3.06], [2.1, 3.04], [2.5, 3.0]].map(([x, bottom]) => tubStave(x, bottom)).join('')}</g>` +
+  rect(0.06, 0.1, 2.88, 1.72, C.woodLight, `rx="0.6" ${ink()}`) +
+  `<path d="M0.9,0.1 V0.32 M1.5,0.1 V0.32 M2.1,0.1 V0.32 M0.9,1.6 V1.82 M1.5,1.6 V1.82 M2.1,1.6 V1.82 M2.7,0.66 H2.94 M2.7,0.96 H2.94 M2.7,1.26 H2.94" ` +
+  `stroke="${C.woodDark}" stroke-width="0.035"/>` +
+  rect(0.3, 0.32, 2.4, 1.28, C.clay, `rx="0.45" ${ink(FINE)}`) +
+  `<path d="M0.66,0.6 Q0.7,0.44 1.1,0.43" stroke="${C.clayLight}" stroke-width="0.035" fill="none" stroke-linecap="round" opacity="0.7"/>` +
+  `<circle cx="1.3" cy="1.22" r="0.09" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  `<circle cx="1.86" cy="0.7" r="0.07" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  `<circle cx="2.32" cy="1.14" r="0.11" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  rect(0.2, 0.68, 0.32, 0.8, C.paper, `rx="0.14" ${ink(FINE)}`)
+
 // salt bed: a massage-style bed in sea colours, with the face cradle at the head and a bowl of salt at the foot
 const waveRow = (y: number) => `M0.2,${y} q0.085,-0.07 0.17,0 t0.17,0 t0.17,0 t0.17,0`
+const saltBowl =
+  `<ellipse cx="0.82" cy="2.86" rx="0.2" ry="0.12" fill="${C.cobalt}" ${ink(FINE)}/>` +
+  `<path d="M0.66,2.84 Q0.82,2.7 0.98,2.84Z" fill="${C.cream}" ${ink(0.02)}/>`
 const scrubBed =
   rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
   rect(0.14, 0.11, 0.82, 2.72, C.scrubSheet, `rx="0.1" ${ink(FINE)}`) +
   `<path d="${waveRow(1.25)} ${waveRow(1.95)}" stroke="${C.sea}" stroke-width="0.035" fill="none"/>` +
-  `<ellipse cx="0.55" cy="0.66" rx="0.3" ry="0.24" fill="${C.sand}" ${ink(FINE)}/>` +
-  `<ellipse cx="0.55" cy="0.66" rx="0.15" ry="0.1" fill="${C.woodDark}" ${ink(FINE)}/>` +
+  faceHole +
   rect(0.2, 2.2, 0.7, 0.24, C.sea, `rx="0.12" ${ink(FINE)}`) +
   `<path d="M0.36,2.21 V2.43 M0.74,2.21 V2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
   rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
   rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
-  `<ellipse cx="0.82" cy="2.86" rx="0.2" ry="0.12" fill="${C.cobalt}" ${ink(FINE)}/>` +
-  `<path d="M0.66,2.84 Q0.82,2.7 0.98,2.84Z" fill="${C.cream}" ${ink(0.02)}/>`
+  saltBowl
+
+// salt bed lying across: the sea-coloured sheet with its waves running across it, the face cradle at the head on the left and the bowl of salt at the foot
+const waveCol = (x: number) => `M${x},0.13 q-0.07,0.085 0,0.17 t0,0.17 t0,0.17 t0,0.17`
+const scrubBedTurned =
+  rect(0.05, 0.05, 3.0, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 2.82, 0.75, C.scrubSheet, `rx="0.1" ${ink(FINE)}`) +
+  `<path d="${waveCol(1.25)} ${waveCol(1.95)}" stroke="${C.sea}" stroke-width="0.035" fill="none"/>` +
+  `<g transform="translate(0.11 -0.19)">${faceHole}</g>` +
+  rect(2.2, 0.17, 0.24, 0.6, C.sea, `rx="0.12" ${ink(FINE)}`) +
+  `<path d="M2.21,0.31 H2.43 M2.21,0.63 H2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
+  rect(0.05, 0.83, 3.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  `<g transform="translate(2 -2)">${saltBowl}</g>`
 
 // foot chair: a padded wooden armchair with teal cushions, a basin of herb water in front of it with two leaves and a lotus petal
+const footBasin =
+  `<ellipse cx="0.55" cy="1.74" rx="0.5" ry="0.4" fill="${C.wood}" ${ink()}/>` +
+  `<path d="M0.08,1.82 Q0.55,2.06 1.02,1.82" stroke="${C.woodDark}" stroke-width="${FINE}" fill="none"/>` +
+  `<ellipse cx="0.55" cy="1.64" rx="0.4" ry="0.26" fill="${C.herb}" ${ink(FINE)}/>` +
+  `<ellipse cx="0.42" cy="1.6" rx="0.08" ry="0.035" fill="${C.leaf}" transform="rotate(-25 0.42 1.6)" ${ink(0.015)}/>` +
+  `<ellipse cx="0.7" cy="1.7" rx="0.08" ry="0.035" fill="${C.leafLight}" transform="rotate(20 0.7 1.7)" ${ink(0.015)}/>` +
+  `<circle cx="0.6" cy="1.55" r="0.035" fill="${C.lotus}"/>`
 const footChair =
   rect(0.1, 0.05, 0.9, 0.62, C.wood, `rx="0.22" ${ink()}`) +
   rect(0.18, 0.12, 0.74, 0.46, C.tealLight, `rx="0.16" ${ink(FINE)}`) +
@@ -111,40 +201,64 @@ const footChair =
   rect(0.16, 0.56, 0.78, 0.5, C.teal, `rx="0.12" ${ink(FINE)}`) +
   rect(0.02, 0.4, 0.16, 0.74, C.woodDark, `rx="0.08" ${ink(FINE)}`) +
   rect(0.92, 0.4, 0.16, 0.74, C.woodDark, `rx="0.08" ${ink(FINE)}`) +
-  `<ellipse cx="0.55" cy="1.74" rx="0.5" ry="0.4" fill="${C.wood}" ${ink()}/>` +
-  `<path d="M0.08,1.82 Q0.55,2.06 1.02,1.82" stroke="${C.woodDark}" stroke-width="${FINE}" fill="none"/>` +
-  `<ellipse cx="0.55" cy="1.64" rx="0.4" ry="0.26" fill="${C.herb}" ${ink(FINE)}/>` +
-  `<ellipse cx="0.42" cy="1.6" rx="0.08" ry="0.035" fill="${C.leaf}" transform="rotate(-25 0.42 1.6)" ${ink(0.015)}/>` +
-  `<ellipse cx="0.7" cy="1.7" rx="0.08" ry="0.035" fill="${C.leafLight}" transform="rotate(20 0.7 1.7)" ${ink(0.015)}/>` +
-  `<circle cx="0.6" cy="1.55" r="0.035" fill="${C.lotus}"/>`
+  footBasin
+
+// foot chair lying across: the armchair seen from its side on the left tile, its back at the left and its seat facing right, and the basin of herb water on the right tile
+const footChairTurned =
+  rect(0.16, 1.0, 0.12, 0.16, C.woodDark, ink(0.025)) +
+  rect(0.84, 1.0, 0.12, 0.16, C.woodDark, ink(0.025)) +
+  rect(0.1, 0.6, 0.92, 0.44, C.wood, `rx="0.14" ${ink()}`) +
+  rect(0.3, 0.65, 0.66, 0.22, C.teal, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.06, 0.05, 0.32, 0.99, C.wood, `rx="0.14" ${ink()}`) +
+  rect(0.24, 0.13, 0.12, 0.76, C.tealLight, `rx="0.06" ${ink(FINE)}`) +
+  rect(0.28, 0.44, 0.76, 0.16, C.woodDark, `rx="0.08" ${ink(FINE)}`) +
+  `<g transform="translate(1 -1)">${footBasin}</g>`
 
 // nail desk: in the lower rows a low table with a hand cushion, a lamp and three bottles, and behind it, over the right-hand column, the customer's padded stool
 const nailBottle = ([x, c]: [number, string]) =>
   `<rect x="${x - 0.055}" y="1.52" width="0.11" height="0.17" rx="0.035" fill="${c}" ${ink(0.022)}/>` +
   `<rect x="${x - 0.03}" y="1.42" width="0.06" height="0.11" fill="${C.deepBrown}" ${ink(0.018)}/>`
-const nailDesk =
+const nailBottles = (
+  [
+    [1.55, C.lantern],
+    [1.71, C.teal],
+    [1.87, C.mustard],
+  ] as [number, string][]
+)
+  .map(nailBottle)
+  .join('')
+const nailStool =
   rect(1.2, 0.62, 0.1, 0.36, C.woodDark, ink(0.025)) +
   rect(1.7, 0.62, 0.1, 0.36, C.woodDark, ink(0.025)) +
   rect(1.1, 0.14, 0.8, 0.56, C.woodLight, `rx="0.2" ${ink()}`) +
-  rect(1.2, 0.22, 0.6, 0.4, C.pinkPale, `rx="0.16" ${ink(FINE)}`) +
+  rect(1.2, 0.22, 0.6, 0.4, C.pinkPale, `rx="0.16" ${ink(FINE)}`)
+const nailLamp =
+  `<ellipse cx="0.3" cy="1.66" rx="0.13" ry="0.07" fill="${C.cream}" ${ink(0.025)}/>` +
+  `<path d="M0.3,1.64 L0.38,1.42" stroke="${C.ink}" stroke-width="0.035"/>` +
+  `<ellipse cx="0.42" cy="1.4" rx="0.15" ry="0.08" fill="${C.mustard}" ${ink(0.025)}/>`
+const nailDesk =
+  nailStool +
   rect(0.2, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
   rect(1.8, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
   rect(0.05, 1.3, 2, 0.82, C.woodLight, `rx="0.1" ${ink()}`) +
   rect(0.05, 2.0, 2, 0.18, C.wood, `rx="0.06" ${ink(0.04)}`) +
   rect(0.72, 1.48, 0.66, 0.32, C.pinkPale, `rx="0.16" ${ink(FINE)}`) +
   `<path d="M0.82,1.64 H1.28" stroke="${C.lotusDark}" stroke-width="0.025" stroke-dasharray="0.06 0.05"/>` +
-  (
-    [
-      [1.55, C.lantern],
-      [1.71, C.teal],
-      [1.87, C.mustard],
-    ] as [number, string][]
-  )
-    .map(nailBottle)
-    .join('') +
-  `<ellipse cx="0.3" cy="1.66" rx="0.13" ry="0.07" fill="${C.cream}" ${ink(0.025)}/>` +
-  `<path d="M0.3,1.64 L0.38,1.42" stroke="${C.ink}" stroke-width="0.035"/>` +
-  `<ellipse cx="0.42" cy="1.4" rx="0.15" ry="0.08" fill="${C.mustard}" ${ink(0.025)}/>`
+  nailBottles +
+  nailLamp
+
+// nail desk lying across: the customer's padded stool on the left tile's top row, and over the right-hand column the low table running up the floor with the hand cushion near its far end, the lamp and three bottles
+const nailDeskTurned =
+  `<g transform="translate(-1 0)">${nailStool}</g>` +
+  rect(1.2, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
+  rect(1.84, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
+  rect(1.92, 0.56, 0.15, 1.6, C.wood, `rx="0.05" ${ink(0.04)}`) +
+  rect(1.1, 0.48, 0.9, 1.64, C.woodLight, `rx="0.1" ${ink()}`) +
+  rect(1.1, 2.0, 0.9, 0.18, C.wood, `rx="0.06" ${ink(0.04)}`) +
+  rect(1.39, 0.66, 0.32, 0.62, C.pinkPale, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M1.55,0.76 V1.18" stroke="${C.lotusDark}" stroke-width="0.025" stroke-dasharray="0.06 0.05"/>` +
+  `<g transform="translate(-0.32 0.3)">${nailBottles}</g>` +
+  `<g transform="translate(1.42 0.02)">${nailLamp}</g>`
 
 const bench =
   WEAVE +
@@ -1108,8 +1222,11 @@ const steamTent =
 /** Furniture sizes in tiles; RoomView anchors each piece at the bottom-centre of the tiles it stands on, and the room parts at the end by their top-left. */
 export const FURNITURE: Record<string, { w: number; h: number; body: string }> = {
   bed: { w: 1.1, h: 3.7, body: bed },
+  'bed-turned': { w: 3.1, h: 1.45, body: bedTurned },
   maskBed: { w: 1.1, h: 3.45, body: maskBed },
+  'maskBed-turned': { w: 3.1, h: 1.45, body: maskBedTurned },
   massageBed: { w: 1.1, h: 3.15, body: massageBed },
+  'massageBed-turned': { w: 3.1, h: 1.15, body: massageBedTurned },
   bench: { w: 3.2, h: 1.35, body: bench },
   'bench-turned': { w: 1.1, h: 3.35, body: benchTurned },
   desk: { w: 3, h: 1.45, body: desk },
@@ -1177,11 +1294,17 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   clayJar: { w: 1, h: 1.45, body: clayJar },
   areca: { w: 1, h: 2, body: areca },
   steamTent: { w: 2, h: 2.6, body: steamTent },
+  'steamTent-turned': { w: 2, h: 2.6, body: steamTent },
   stoneBed: { w: 1.1, h: 3.15, body: stoneBed },
+  'stoneBed-turned': { w: 3.1, h: 1.15, body: stoneBedTurned },
   mudTub: { w: 2, h: 3.15, body: mudTub },
+  'mudTub-turned': { w: 3, h: 2.15, body: mudTubTurned },
   scrubBed: { w: 1.1, h: 3.15, body: scrubBed },
+  'scrubBed-turned': { w: 3.1, h: 1.15, body: scrubBedTurned },
   footChair: { w: 1.1, h: 2.2, body: footChair },
+  'footChair-turned': { w: 2.1, h: 1.2, body: footChairTurned },
   nailDesk: { w: 2.1, h: 2.45, body: nailDesk },
+  'nailDesk-turned': { w: 2.1, h: 2.45, body: nailDeskTurned },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.
