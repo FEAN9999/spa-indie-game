@@ -62,6 +62,17 @@ export function carryTo(item: Item, floor: number): Item {
   return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }
 }
 
+/** The same piece moved the least that puts all of its size within the `cols` columns and the rows of `floor`. */
+export function clampToFloor(item: Item, floor: number, cols: number): Item {
+  const { w, h } = size(item)
+  const top = (floor - 1) * FLOOR_ROWS
+  return {
+    ...item,
+    x: Math.min(Math.max(item.x, 0), cols - w),
+    y: Math.min(Math.max(item.y, top), top + FLOOR_ROWS - h),
+  }
+}
+
 /** Where the power cut's first candle stands: the middle of the desk, in floor-local tiles. */
 export function deskCandle(desk: Item): Vec {
   const { w, h } = size(desk)

@@ -3,17 +3,17 @@ import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, TILE } from '../config'
-import { nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
+import { claimed, nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
-import { footprint, ITEMS, setProgress, workTile, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
+import { footprint, ITEMS, nextFacing, setProgress, size, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { catalogPage, type CatalogEntry } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
-import { carryTo, pills, showPills } from '../view/floors'
+import { carryTo, clampToFloor, pills, showPills } from '../view/floors'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
@@ -310,7 +310,7 @@ export class BuildScene extends Phaser.Scene {
   private hold(held: Held): void {
     this.held = held
     this.pickedOn = this.params.room.floor
-    this.ghost = this.add.image(0, 0, itemTexture(held.item.kind)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(2)
+    this.ghost = this.add.image(0, 0, itemTexture(held.item.kind, held.item.turned)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(2)
     this.drawGhost()
     this.readyAt = performance.now() + SETTLE_MS
     this.showHoldRow()
@@ -319,16 +319,15 @@ export class BuildScene extends Phaser.Scene {
   /** The held piece a little above its tiles, which are teal where it can stand and red where it cannot. */
   private drawGhost(): void {
     const { item, buying } = this.held!
-    const { w, h } = ITEMS[item.kind]
+    const { w, h } = size(item)
     const { room } = this.params
-    this.ghost!.setPosition(MAP_X + (item.x + w / 2) * TILE, room.rowY(item.y + h) - GHOST_LIFT_PX).setFlipX(item.flip)
-    const fits = this.params.sim.canPlace(item.kind, item.x, item.y, item.flip, buying ? undefined : item.id) === null
-    const work = workTile(item)
+    this.ghost!.setTexture(itemTexture(item.kind, item.turned)).setPosition(MAP_X + (item.x + w / 2) * TILE, room.rowY(item.y + h) - GHOST_LIFT_PX).setFlipX(item.flip)
+    const fits = this.params.sim.canPlace(item.kind, item.x, item.y, item.flip, buying ? undefined : item.id, item.turned ?? false) === null
     this.tint.clear().fillStyle(hex(fits ? C.teal : C.lantern), TINT_ALPHA)
-    for (const s of work ? [...footprint(item), work] : footprint(item)) this.tint.fillRect(MAP_X + s.x * TILE, room.rowY(s.y), TILE, TILE)
+    for (const s of claimed(item)) this.tint.fillRect(MAP_X + s.x * TILE, room.rowY(s.y), TILE, TILE)
   }
 
-  /** "Thôi", "Lật", "Bán" for a piece the shop owns, and "Đặt". */
+  /** "Thôi", "Xoay", "Bán" for a piece the shop owns, and "Đặt". */
   private showHoldRow(): void {
     this.clearPanel()
     const { item, buying } = this.held!
@@ -337,12 +336,12 @@ export class BuildScene extends Phaser.Scene {
     const row: { label: string; kind: 'primary' | 'plain'; w: number; onTap: () => void }[] = buying
       ? [
           { label: t('cancel'), kind: 'plain', w: 310, onTap: () => this.cancel() },
-          { label: t('flip'), kind: 'plain', w: 310, onTap: () => this.flip() },
+          { label: t('turn'), kind: 'plain', w: 310, onTap: () => this.turn() },
           { label: t('place'), kind: 'primary', w: 380, onTap: () => this.place() },
         ]
       : [
           { label: t('cancel'), kind: 'plain', w: 180, onTap: () => this.cancel() },
-          { label: t('flip'), kind: 'plain', w: 180, onTap: () => this.flip() },
+          { label: t('turn'), kind: 'plain', w: 180, onTap: () => this.turn() },
           // on a gift, tapping it only says gifts are not sold
           { label: item.gift ? t('sellGiftButton') : t('sell', { money: refund }), kind: 'plain', w: 404, onTap: () => this.sell() },
           { label: t('place'), kind: 'primary', w: 220, onTap: () => this.place() },
@@ -369,9 +368,9 @@ export class BuildScene extends Phaser.Scene {
     this.params.showFloor(floor)
     this.drawGrid()
     const { item, buying } = held
-    const { h } = ITEMS[item.kind]
+    const { h } = size(item)
     const moved = carryTo(item, floor)
-    const fits = (s: Tile) => floorOf(s.y + h - 1) === floor && sim.canPlace(item.kind, s.x, s.y, item.flip, buying ? undefined : item.id) === null
+    const fits = (s: Tile) => floorOf(s.y + h - 1) === floor && sim.canPlace(item.kind, s.x, s.y, item.flip, buying ? undefined : item.id, item.turned ?? false) === null
     const spot = fits(moved) ? moved : nearestSpot(sim.grid, moved, fits) ?? moved
     item.x = spot.x
     item.y = spot.y
@@ -388,9 +387,10 @@ export class BuildScene extends Phaser.Scene {
     this.letGo()
   }
 
-  private flip(): void {
-    const { item } = this.held!
-    item.flip = !item.flip
+  private turn(): void {
+    const { held } = this
+    const { room, sim } = this.params
+    held!.item = clampToFloor(nextFacing(held!.item), room.floor, sim.grid.cols)
     this.drawGhost()
   }
 
@@ -398,10 +398,10 @@ export class BuildScene extends Phaser.Scene {
     const { sim } = this.params
     const { item, buying } = this.held!
     const problem = !buying
-      ? sim.move(item.id, item.x, item.y, item.flip)
+      ? sim.move(item.id, item.x, item.y, item.flip, item.turned ?? false)
       : item.gift
-        ? sim.placeGift(item.kind, item.x, item.y, item.flip)
-        : sim.buy(item.kind, item.x, item.y, item.flip)
+        ? sim.placeGift(item.kind, item.x, item.y, item.flip, item.turned ?? false)
+        : sim.buy(item.kind, item.x, item.y, item.flip, item.turned ?? false)
     if (problem) this.toast(this.problemText(problem, item.kind))
     else {
       sound.play('thud')
@@ -470,11 +470,12 @@ export class BuildScene extends Phaser.Scene {
     }
     const { held } = this
     if (!drag.from || !held) return
-    const { w, h } = ITEMS[held.item.kind]
     const { cols } = this.params.sim.grid
-    const top = (this.params.room.floor - 1) * FLOOR_ROWS
-    const x = Phaser.Math.Clamp(drag.from.x + Math.round((p.x - drag.x) / TILE), 0, cols - w)
-    const y = Phaser.Math.Clamp(drag.from.y + Math.round((p.y - drag.y) / TILE), top, top + FLOOR_ROWS - h)
+    const { x, y } = clampToFloor(
+      { ...held.item, x: drag.from.x + Math.round((p.x - drag.x) / TILE), y: drag.from.y + Math.round((p.y - drag.y) / TILE) },
+      this.params.room.floor,
+      cols,
+    )
     if (x === held.item.x && y === held.item.y) return
     held.item.x = x
     held.item.y = y

@@ -6,7 +6,7 @@ import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { carryTo, retagFloors, followFloor, climbPose, deskCandle, pills, showPills, stairsToasts } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, showPills, stairsToasts } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -157,5 +157,14 @@ describe('stairsToasts', () => {
 
   it('ends with what to buy again', () => {
     expect(stairsToasts({ count: 1, refund: 150_000, gifts: 0, rebuy: 'bench' })).toEqual([refund(1, 150_000), t('stairsRebuy', { item: t('itemBench').toLocaleLowerCase('vi') })])
+  })
+})
+
+describe('clampToFloor', () => {
+  it('keeps a turned piece wholly on the floor in view', () => {
+    const screen: Item = { id: 1, kind: 'screen', x: 3, y: 16, flip: false, turned: true }
+    expect(clampToFloor(screen, 2, 13)).toEqual({ ...screen, y: 18 })
+    expect(clampToFloor({ ...screen, y: 33 }, 2, 13)).toEqual({ ...screen, y: 31 })
+    expect(clampToFloor({ id: 2, kind: 'screen', x: 10, y: 8, flip: false }, 1, 13)).toEqual({ id: 2, kind: 'screen', x: 8, y: 8, flip: false })
   })
 })

@@ -238,7 +238,7 @@ export const vi = {
   prevPage: '‹',
   nextPage: '›',
   done: 'Xong',
-  flip: 'Lật',
+  turn: 'Xoay',
   place: 'Đặt',
   sell: 'Bán · {money}',
   sellGiftButton: 'Bán',
