@@ -21,6 +21,8 @@ export interface MiniGameData {
   hard: boolean
   /** The first game of its kind shows each move with a faint hand. */
   demo: boolean
+  /** The lesson's practice game, whose customer is the teacher. */
+  teacher?: boolean
   onDone: (stars: Stars) => void
 }
 

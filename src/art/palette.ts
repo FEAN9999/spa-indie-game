@@ -36,6 +36,8 @@ export const C = {
   lotusDark: '#E8708A',
   // the pale pink of a nail desk's cushions and the nail badges
   pinkPale: '#F7C6D0',
+  // a small nail before the polish
+  nailBare: '#F6D9D2',
   leaf: '#4E9A6B',
   leafLight: '#5FAE7B',
   water: '#BFE3F2',

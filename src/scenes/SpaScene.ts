@@ -117,6 +117,8 @@ const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
 const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails' }
+/** Services whose customer sits on the station's upper tile instead of lying. */
+const SEATED: readonly ServiceId[] = ['foot', 'nails']
 
 interface CustomerSprite {
   view: CharacterView
@@ -132,7 +134,7 @@ interface CustomerSprite {
   steam: Phaser.GameObjects.Image
   /** On the back while the customer is served on the stone bed. */
   stones: Phaser.GameObjects.Image
-  /** 0 on the floor to 1 on the foot chair's seat, eased as they sit down and get up. */
+  /** 0 on the floor to 1 on the seat of the foot chair or the nail desk, eased as they sit down and get up. */
   lift: number
   bubble: Phaser.GameObjects.Image | null
 }
@@ -1456,8 +1458,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
     // on the bed from arrival until the owner finishes, waiting or being served
     const onStation = c.stationId !== null && c.path.length === 0
-    // in the foot chair they sit with their feet over the basin instead of lying
-    const seated = onStation && c.service === 'foot'
+    // in the foot chair they sit with their feet over the basin, and at the nail desk on the stool behind it, instead of lying
+    const seated = onStation && SEATED.includes(c.service)
     const lying = onStation && !seated
     // a VIP with no seat free stands by the desk, facing down
     const sitting = seated || (c.state === 'waiting' && !this.sim.isStanding(c))

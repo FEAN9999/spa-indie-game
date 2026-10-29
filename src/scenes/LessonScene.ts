@@ -143,6 +143,7 @@ export class LessonScene extends Phaser.Scene {
       kind: 'office',
       extraMs: 0,
       hard: false,
+      teacher: true,
       // the hand shows until one lesson game has ended; a retry plays without it
       demo: !sim.hintDone(LESSON_DEMO[service]),
       onDone: (stars: Stars) => {
