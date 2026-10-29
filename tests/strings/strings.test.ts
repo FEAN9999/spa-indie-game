@@ -21,6 +21,11 @@ describe('strings', () => {
     expect(formatCount(63)).toBe('63')
   })
 
+  it('names the star tab and the hum line', () => {
+    expect(t('tabIdol')).toBe('Ngôi sao')
+    expect(t('idolHums', { song: '♪ Lạc Trôi ♪' })).toBe('Hay ngân nga: ♪ Lạc Trôi ♪')
+  })
+
   it('fills params into strings', () => {
     expect(t('summaryTitle', { day: 3 })).toBe('Tổng kết ngày 3')
     expect(t('newDay')).toBe('Ngày mới')

@@ -363,6 +363,8 @@ export const vi = {
   vipPhotoToast: '{name} tặng ảnh có chữ ký! Xem ở nút Xây dựng',
   vipBoardToast: 'Đủ ảnh VIP! Bảng vàng ở nút Xây dựng',
   tabVip: 'VIP',
+  tabIdol: 'Ngôi sao',
+  idolHums: 'Hay ngân nga: {song}',
   vipVisits: 'Đã ghé: {n}',
   vipPhotoYes: 'Đã tặng ảnh',
   vipPhotoNo: 'Chưa có ảnh',

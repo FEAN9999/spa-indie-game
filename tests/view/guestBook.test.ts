@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { CELEB_FROM_DAY } from '../../src/config'
 import { KINDS, MAIN_KINDS } from '../../src/sim/customers'
 import { REGULAR_IDS, emptyBook } from '../../src/sim/regulars'
+import { IDOL_IDS, emptyIdolBook } from '../../src/sim/idols'
 import { VIP_IDS, emptyVipBook } from '../../src/sim/vips'
+import { IDOL_TEXT } from '../../src/strings/idols'
 import { REGULAR_TEXT } from '../../src/strings/regulars'
 import { VIP_TEXT } from '../../src/strings/vips'
-import { bookTabs, detailLines, firstTab, kindRows, regularRows, toldLines, vipDetailLines, vipRows } from '../../src/view/guestBook'
+import { bookTabs, detailLines, firstTab, idolDetailLines, idolRows, kindRows, regularRows, toldLines, vipDetailLines, vipRows } from '../../src/view/guestBook'
 
 describe('guest book rows', () => {
   it("shows a new shop's book with six soon and two by introduction", () => {
@@ -88,9 +90,40 @@ describe('guest book rows', () => {
 
   it('shows the VIP tab only once a VIP has been booked', () => {
     const vip = emptyVipBook()
-    expect(bookTabs(vip)).toEqual(['regulars', 'kinds'])
+    expect(bookTabs(vip, emptyIdolBook())).toEqual(['regulars', 'kinds'])
     vip.everBooked = true
-    expect(bookTabs(vip)).toEqual(['regulars', 'kinds', 'vip'])
+    expect(bookTabs(vip, emptyIdolBook())).toEqual(['regulars', 'kinds', 'vip'])
+  })
+
+  it('shows the star tab once a star has been booked, last', () => {
+    const vip = emptyVipBook()
+    const idol = emptyIdolBook()
+    idol.everBooked = true
+    expect(bookTabs(vip, idol)).toEqual(['regulars', 'kinds', 'idol'])
+    vip.everBooked = true
+    expect(bookTabs(vip, idol)).toEqual(['regulars', 'kinds', 'vip', 'idol'])
+  })
+
+  it('lists the nine stars in book order, unmet at first', () => {
+    const rows = idolRows(emptyIdolBook())
+    expect(rows.map(r => r.id)).toEqual(IDOL_IDS)
+    for (const r of rows) expect(r).toMatchObject({ met: false, visits: 0, best: 0, photo: false })
+  })
+
+  it("shows a met star's visits, best stars and photo, and a 2-star one without a photo", () => {
+    const idol = emptyIdolBook()
+    idol.idols.taylor = { visits: 2, best: 3, photo: true, thanked: true }
+    idol.idols.gd = { visits: 1, best: 2, photo: false, thanked: false }
+    const rows = idolRows(idol)
+    expect(rows[1]).toEqual({ id: 'taylor', met: true, visits: 2, best: 3, photo: true })
+    expect(rows[2]).toEqual({ id: 'gd', met: true, visits: 1, best: 2, photo: false })
+    expect(rows[0].met).toBe(false)
+  })
+
+  it("shows a star's words only once said", () => {
+    expect(idolDetailLines('jennie', { visits: 0, best: 0, photo: false, thanked: false })).toEqual([])
+    expect(idolDetailLines('jennie', { visits: 1, best: 2, photo: false, thanked: false })).toEqual([IDOL_TEXT.jennie.arrive])
+    expect(idolDetailLines('jennie', { visits: 2, best: 3, photo: true, thanked: true })).toEqual([IDOL_TEXT.jennie.arrive, IDOL_TEXT.jennie.thanks])
   })
 
   it('opens on the VIP tab only when a VIP is all there is to see', () => {

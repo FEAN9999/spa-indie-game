@@ -35,7 +35,7 @@ const TAB_LAYOUT = {
   2: { w: 440, x: [300, 780] },
   3: { w: 300, x: [200, 540, 880] },
 } as const
-const TAB_LABEL: Record<Tab, StringKey> = { regulars: 'tabRegulars', kinds: 'tabKinds', vip: 'tabVip' }
+const TAB_LABEL: Record<Tab, StringKey> = { regulars: 'tabRegulars', kinds: 'tabKinds', vip: 'tabVip', idol: 'tabIdol' }
 const DONE_Y = 1895
 const GRID_TOP = 590
 const CELL_W = 430
@@ -105,7 +105,7 @@ export class GuestBookScene extends Phaser.Scene {
       if (this.params.intro && this.tab === 'regulars') {
         this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
       }
-      const tabs = bookTabs(this.params.sim.vip)
+      const tabs = bookTabs(this.params.sim.vip, this.params.sim.idol)
       const layout = TAB_LAYOUT[tabs.length as 2 | 3]
       tabs.forEach((tab, i) => {
         this.keep(addButton(this, layout.x[i], TAB_Y, layout.w, TAB_H, t(TAB_LABEL[tab]), tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
