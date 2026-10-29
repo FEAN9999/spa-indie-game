@@ -306,6 +306,15 @@ export const VIP_REVIEWS = 3
 export const VIP_PATIENCE = 0.7
 /** The clock's gold star shows from this many game minutes before the booked time. */
 export const VIP_WARN_MIN = 60
+
+/** Days from one star's visit to the day of the next, at least and at most. */
+export const IDOL_GAP_DAYS = [3, 5] as const
+export const IDOL_PRICE_FACTOR = 5
+/** A star is booked no closer than this many game minutes to a VIP's hour. */
+export const IDOL_VIP_APART_MIN = 180
+/** A star hums for HUM_MS out of every HUM_EVERY_MS while walking to or waiting at a seat. */
+export const HUM_EVERY_MS = 10000
+export const HUM_MS = 3000
 /** How long a speech bubble stays, for a greeting and for a story line. */
 export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
 /** What one try at the recipe bench costs. */

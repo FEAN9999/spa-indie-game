@@ -4,7 +4,9 @@ import { REGULAR_IDS } from '../../src/sim/regulars'
 import { formatCount, formatMoney } from '../../src/strings/format'
 import { BUBBLE_MAX_CHARS, GREETINGS, REGULAR_TEXT } from '../../src/strings/regulars'
 import { RECIPE_HINT_TEXT, t } from '../../src/strings/vi'
+import { IDOL_TEXT } from '../../src/strings/idols'
 import { VIP_TEXT } from '../../src/strings/vips'
+import { IDOL_IDS } from '../../src/sim/idols'
 import { VIP_IDS } from '../../src/sim/vips'
 
 describe('strings', () => {
@@ -70,6 +72,15 @@ describe('strings', () => {
         expect(line, id).not.toBe('')
         expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
       }
+    }
+  })
+
+  it('gives every star a name, a role, a song, an arrival line and a thanks within two bubble lines', () => {
+    expect(IDOL_IDS).toEqual(['sontung', 'taylor', 'gd', 'jennie', 'hieuthuhai', 'weeknd', 'taeyang', 'bieber', 'daesung'])
+    for (const id of IDOL_IDS) {
+      const { name, role, song, arrive, thanks } = IDOL_TEXT[id]
+      for (const field of [name, role, song, arrive, thanks]) expect(field, id).not.toBe('')
+      for (const line of [arrive, thanks, `♪ ${song} ♪`]) expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
     }
   })
 
