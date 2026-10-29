@@ -159,7 +159,7 @@ describe('coming back', () => {
     sim.money = 500
     const before = JSON.stringify([sim.stats, sim.progress.total, sim.day])
     const r = sim.comeBack(5 * HOUR + 20 * MIN)
-    expect(r).toEqual({ paid: 1_333_000, ms: 5 * HOUR + 20 * MIN, profit: 1_000_000, days: 3, capped: false, tip: false })
+    expect(r).toEqual({ paid: 1_333_000, places: [null], ms: 5 * HOUR + 20 * MIN, profit: 1_000_000, days: 3, capped: false, tip: false })
     expect(sim.money).toBe(1_333_500)
     expect(JSON.stringify([sim.stats, sim.progress.total, sim.day])).toBe(before)
   })

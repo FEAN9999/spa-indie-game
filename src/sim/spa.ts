@@ -1002,7 +1002,7 @@ export class SpaSim {
     this.money += paid
     const tip = ms >= AWAY_MIN_MS && !this.away.ok && !this.away.tipSeen && this.featureOpen('staff')
     if (tip) this.away.tipSeen = true
-    return { paid, ms, profit: awayMean(this.away), days: this.away.profits.length, capped: ms > AWAY_MAX_HOURS * 3_600_000, tip }
+    return { paid, places: paid > 0 ? [this.place] : [], ms, profit: awayMean(this.away), days: this.away.profits.length, capped: ms > AWAY_MAX_HOURS * 3_600_000, tip }
   }
 
   /** Puts an outfit on the owner; false, and no change, for one the shop does not have. */

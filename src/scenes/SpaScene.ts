@@ -294,7 +294,7 @@ export class SpaScene extends Phaser.Scene {
       this.session.reloadIfChangedElsewhere()
       let paid = false
       if (this.session.open && this.chain.main.profileDone && hiddenAt !== null) {
-        const back = this.chain.main.comeBack(Date.now() - hiddenAt)
+        const back = this.chain.comeBack(Date.now() - hiddenAt)
         hiddenAt = null
         if (back.paid > 0) {
           paid = true
@@ -336,7 +336,7 @@ export class SpaScene extends Phaser.Scene {
     }
     // a reopened shop is welcomed back, then waits on the pause card; an ended day reopens its summary by itself
     else {
-      const back = this.chain.main.comeBack(saved.savedAt === null ? 0 : Date.now() - saved.savedAt)
+      const back = this.chain.comeBack(saved.savedAt === null ? 0 : Date.now() - saved.savedAt)
       const pauseUnlessOver = () => {
         if (!this.sim.dayOver) this.pause()
       }
@@ -448,7 +448,7 @@ export class SpaScene extends Phaser.Scene {
     this.awayOpen = true
     this.modal = true
     const data: AwayData = {
-      // time away is paid by the main shop
+      // the card's figures are the main shop's staff
       sim: this.chain.main,
       back,
       onDone: () => {

@@ -1,4 +1,5 @@
 import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, STEP_MS } from '../config'
+import type { AwayResult } from './away'
 import { staffCap } from './crew'
 import { dayProfit } from './economy'
 import { PLACE_IDS, type PlaceId } from './places'
@@ -258,6 +259,30 @@ export class Chain {
       b.ownerOutfit = this.main.ownerOutfit
       b.shopName = this.main.shopName
       b.profileDone = this.main.profileDone
+    }
+  }
+
+  /**
+   * The owner is back after `ms`: every shop pays its own time away into the one purse.
+   * One paying shop gives its own figures; two or more give the sum of their profits and the main shop's days.
+   * The tip stays the main shop's, and is held back (to be shown another time) when a branch paid.
+   */
+  comeBack(ms: number): AwayResult {
+    const rs = [this.main, ...this.branches].map(s => s.comeBack(ms))
+    const main = rs[0]
+    const paying = rs.filter(r => r.paid > 0)
+    const paid = paying.reduce((a, r) => a + r.paid, 0)
+    const tip = main.tip && paid === 0
+    if (main.tip && !tip) this.main.away.tipSeen = false
+    const only = paying.length === 1 ? paying[0] : null
+    return {
+      paid,
+      places: paying.flatMap(r => r.places),
+      ms: main.ms,
+      profit: only ? only.profit : paying.reduce((a, r) => a + r.profit, 0),
+      days: only ? only.days : main.days,
+      capped: main.capped,
+      tip,
     }
   }
 

@@ -1,3 +1,4 @@
+import type { PlaceId } from './places'
 import { AWAY_DAY_SHARE, AWAY_MAX_HOURS, AWAY_MIN_MS, AWAY_PROFIT_DAYS } from '../config'
 
 /** What a shop needs to pay itself while closed: the last days' profits, whether the last day was the staff's alone, and whether the tip was shown. */
@@ -7,9 +8,10 @@ export interface AwayBook {
   tipSeen: boolean
 }
 
-/** What coming back brings: `profit` is the mean used, `days` how many days it is over, `tip` whether to show the tip card. */
+/** What coming back brings: `places` the shops that paid (the main shop is null), `profit` the mean used, `days` how many days it is over, `tip` whether to show the tip card. */
 export interface AwayResult {
   paid: number
+  places: (PlaceId | null)[]
   ms: number
   profit: number
   days: number
