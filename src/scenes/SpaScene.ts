@@ -49,6 +49,7 @@ import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldC
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
+import { servicesOpening } from '../view/servicesPanel'
 import { stockLowText } from '../view/stockText'
 import { bookingText } from '../view/vip'
 import { RoomView } from '../view/RoomView'
@@ -623,16 +624,21 @@ export class SpaScene extends Phaser.Scene {
     sim.markHint('openServices')
     const stock = isUnlocked('stock', sim.day)
     const stockIntro = stock && !sim.hintDone('openStock')
-    const tab = stock && (stockIntro || sim.lowStock().length > 0) ? 'stock' : 'services'
+    const { tab, page } = servicesOpening(sim, stock, stockIntro)
     if (stock) sim.markHint('openStock')
     const recipesIntro = !intro && tab === 'services' && sim.benchOpen() && !sim.hintDone('recipes')
     const data: ServicesData = {
       sim,
       intro,
       tab,
+      page,
       stockIntro,
       recipesIntro,
-      onChange: () => this.session.saveNow(),
+      // a lesson passed opens its service at every branch, so the save written now already has it
+      onChange: () => {
+        this.chain.sync()
+        this.session.saveNow()
+      },
       onClose: () => {
         if (recipesIntro) sim.markHint('recipes')
         this.modal = false

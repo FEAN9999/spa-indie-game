@@ -2,13 +2,15 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { GAME_H, GAME_W, LOW_STOCK, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../config'
 import { ITEMS } from '../sim/items'
-import { isRecipeService, SERVICE_IDS, SERVICES, type RecipeService, type ServiceId } from '../sim/services'
+import { isLessonService, isRecipeService, SERVICE_IDS, SERVICES, type LessonService, type RecipeService, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { STOCK_NAME, stockItemsFor, stockUsers, type StockItem } from '../sim/stock'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
+import { lessonAction, panelPage, type Tab } from '../view/servicesPanel'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
+import type { LessonData } from './LessonScene'
 import type { RecipeData } from './RecipeScene'
 
 export interface ServicesData {
@@ -17,6 +19,8 @@ export interface ServicesData {
   intro: boolean
   /** The tab to open on; only from day 5, when the stock tab exists. */
   tab: Tab
+  /** The page to open on. */
+  page: number
   /** The first time the stock tab opens: it says what a service uses. */
   stockIntro: boolean
   /** The first time the services tab opens once the recipe bench is there: it says new services are mixed. */
@@ -25,8 +29,6 @@ export interface ServicesData {
   onChange: () => void
   onClose: () => void
 }
-
-export type Tab = 'services' | 'stock'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -57,6 +59,10 @@ const ACTION_X = 825
 const ACTION_W = 310
 const ACTION_H = 110
 const DONE_Y = 1895
+// the page arrows sit either side of "Xong"
+const ARROW_X = 150
+const ARROW_W = 120
+const ARROW_H = 130
 /** The festival service's tag after its name. */
 const TAG_GAP = 14
 const TAG_PAD = 14
@@ -76,6 +82,7 @@ export class ServicesScene extends Phaser.Scene {
   private shown: Phaser.GameObjects.GameObject[] = []
   private toastBox: Phaser.GameObjects.Container | null = null
   private tab: Tab = 'services'
+  private page = 0
 
   constructor() {
     super('ServicesScene')
@@ -84,6 +91,7 @@ export class ServicesScene extends Phaser.Scene {
   init(data: ServicesData) {
     this.params = data
     this.tab = data.sim.stockTracked() ? data.tab : 'services'
+    this.page = data.page
     this.shown = []
     this.toastBox = null
   }
@@ -121,25 +129,37 @@ export class ServicesScene extends Phaser.Scene {
     }
     const top = tabbed ? TABBED_ROW_TOP : ROW_TOP
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
+    const all = this.tab === 'stock' ? stockItemsFor(this.params.sim.services) : SERVICE_IDS
+    const shownPage = panelPage<StockItem | ServiceId>(all, this.page)
+    this.page = shownPage.page
     if (this.tab === 'stock') {
-      const items = stockItemsFor(this.params.sim.services)
-      items.forEach((item, i) => {
+      ;(shownPage.rows as StockItem[]).forEach((item, i) => {
         const y0 = top + i * STOCK_ROW_H
         if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
         this.stockRow(item, y0)
       })
     } else {
-      SERVICE_IDS.forEach((id, i) => {
+      ;(shownPage.rows as ServiceId[]).forEach((id, i) => {
         const y0 = top + i * ROW_H
         if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
         this.row(id, y0)
       })
     }
     this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
+    if (shownPage.pages > 1) {
+      this.keep(addButton(this, ARROW_X, DONE_Y, ARROW_W, ARROW_H, t('prevPage'), 'plain', () => this.turnPage(-1), 64))
+      this.keep(addButton(this, GAME_W - ARROW_X, DONE_Y, ARROW_W, ARROW_H, t('nextPage'), 'plain', () => this.turnPage(1), 64))
+    }
   }
 
   private openTab(tab: Tab): void {
     this.tab = tab
+    this.page = 0
+    this.show()
+  }
+
+  private turnPage(by: number): void {
+    this.page += by
     this.show()
   }
 
@@ -198,6 +218,10 @@ export class ServicesScene extends Phaser.Scene {
       }
       return
     }
+    if (isLessonService(id)) {
+      this.lessonRow(id, cy, first)
+      return
+    }
     const problem = sim.serviceProblem(id)
     // a branch has what the main shop opened, and opens nothing itself
     if (problem === 'main') {
@@ -217,6 +241,47 @@ export class ServicesScene extends Phaser.Scene {
     }
     const button = this.keep(addButton(this, ACTION_X, cy, ACTION_W, ACTION_H, t('serviceOpen', { money: formatMoney(spec.openCost) }), 'primary', () => this.open(id), 32))
     if (problem !== null) button.setAlpha(FADED_ALPHA)
+  }
+
+  /** A lesson service's action column: a note while it cannot be learned, else "Học nghề" with the tuition, or "Học tiếp" once paid. */
+  private lessonRow(id: LessonService, cy: number, first: number): void {
+    const action = lessonAction(this.params.sim, id)
+    if (action.kind === 'note') {
+      for (const obj of this.shown.slice(first)) (obj as Phaser.GameObjects.Image).setAlpha(FADED_ALPHA)
+      this.keep(this.add.text(ACTION_X, cy, action.text, { ...textStyle(30, '800', C.lantern), align: 'center', wordWrap: { width: ACTION_W } }).setOrigin(0.5))
+    } else if (action.kind === 'learn') {
+      const button = this.keep(addButton(this, ACTION_X, cy, ACTION_W, ACTION_H, action.label, 'primary', () => this.learn(id), 32))
+      ;(button.list[1] as Phaser.GameObjects.Text).setAlign('center')
+      if (action.faded) button.setAlpha(FADED_ALPHA)
+    } else if (action.kind === 'goOn') {
+      this.keep(addButton(this, ACTION_X, cy, ACTION_W, ACTION_H, action.label, 'primary', () => this.openLesson(id), 32))
+    }
+  }
+
+  /** The first tap takes the tuition (never twice); a problem says so and takes nothing. */
+  private learn(id: LessonService): void {
+    const { sim } = this.params
+    const problem = sim.payLesson(id)
+    if (problem === 'debt') this.toast(t('serviceDebt'))
+    else if (problem === 'money') this.toast(t('problemMoney', { money: formatMoney(SERVICES[id].openCost - sim.money) }))
+    if (problem) return
+    this.params.onChange()
+    this.openLesson(id)
+  }
+
+  /** The lesson over this panel, which steps aside as for the bench, then redraws with the service's new state. */
+  private openLesson(id: LessonService): void {
+    const data: LessonData = {
+      sim: this.params.sim,
+      service: id,
+      onChange: this.params.onChange,
+      onClose: () => {
+        this.scene.setVisible(true)
+        this.show()
+      },
+    }
+    this.scene.setVisible(false)
+    this.scene.launch('LessonScene', data)
   }
 
   /** A mustard pill centred at x, y. */
