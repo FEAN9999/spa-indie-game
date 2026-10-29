@@ -104,11 +104,11 @@ describe('grid', () => {
   })
 })
 
-describe('stepping onto a turned bed', () => {
-  it('steps onto a turned bed from behind it, and onto a standing bed from its side', () => {
+describe('stepping onto a bed', () => {
+  it('counts a customer as on a turned bed only from the half step in front of or behind it, and on a standing bed from its side', () => {
     const across: Item = { id: 30, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true }
     const grid = buildGrid(shellOf(SPA_LAYOUT_1A), [...DEFAULT_ITEMS, across])
-    expect([onBed(grid, { x: 5, y: 8.4 }), onBed(grid, { x: 5, y: 8.6 }), onBed(grid, { x: 5.6, y: 9 })]).toEqual([false, true, false])
+    expect([onBed(grid, { x: 5, y: 8.4 }), onBed(grid, { x: 5, y: 8.6 })]).toEqual([false, true])
     expect(onBed(grid, { x: 2.5, y: 3 })).toBe(true) // the default shampoo bed at x 2, customer tile (2,3), stepped onto from (3,3)
   })
 })

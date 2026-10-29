@@ -100,7 +100,7 @@ export interface Item {
   flip: boolean
   /** Received as a regular's gift: placed once, movable, never sold. */
   gift?: boolean
-  /** Stood on its side: its footprint is h × w. Saved only when true. */
+  /** Turned a quarter: a long piece stands on its side, a bed lies across the floor; its footprint is h × w. Saved only when true. */
   turned?: boolean
 }
 
