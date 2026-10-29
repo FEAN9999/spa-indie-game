@@ -1,10 +1,9 @@
 import * as Phaser from 'phaser'
 import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
-import { OUTFIT_HAS_HAT, OUTFIT_PANTS } from '../art/outfits'
+import { OUTFIT_HAS_HAT, OUTFIT_PANTS, type DressedId } from '../art/outfits'
 import { PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
 import type { CustomerKind } from '../sim/customers'
-import type { OutfitId } from '../sim/outfits'
 import type { RegularId } from '../sim/regulars'
 import type { VipId } from '../sim/vips'
 import type { Facing } from '../sim/types'
@@ -95,7 +94,7 @@ const VISITOR_WORN: Record<NonNullable<CharacterColors['visitor']>, { key: strin
 }
 
 /** The texture of an outfit's torso or hat from a side: `down`, `side` or `up`. */
-export const outfitKey = (part: 'outfit' | 'outfitHat', id: OutfitId, dir: string) => `${part}-${id}-${dir}`
+export const outfitKey = (part: 'outfit' | 'outfitHat', id: DressedId, dir: string) => `${part}-${id}-${dir}`
 
 /** A chibi built from tinted part textures and animated in code, with its feet at the container origin. */
 export class CharacterView {
@@ -107,7 +106,7 @@ export class CharacterView {
   private readonly arms: Phaser.GameObjects.Image[]
   private readonly body: Phaser.GameObjects.Image
   /** The outfit the owner wears in place of the bà ba, or null in the bà ba. */
-  private readonly outfit: Exclude<OutfitId, 'baba'> | null
+  private readonly outfit: DressedId | null
   /** The sleeves over the arms, which follow them. */
   private sleeves: Phaser.GameObjects.Image[] = []
   private readonly outfitHat: Phaser.GameObjects.Image | null

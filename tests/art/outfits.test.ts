@@ -20,7 +20,7 @@ describe("the owner's outfit art", () => {
   })
 
   it('has a hat from three sides for the nón lá, both khăn vấn and the flower crown only', () => {
-    expect([...OUTFIT_HAS_HAT].sort()).toEqual(['gam', 'lotus', 'mai', 'year'])
+    expect([...OUTFIT_HAS_HAT].sort()).toEqual(['gam', 'lotus', 'mai', 'teacher', 'year'])
     const tex = chibiTextures()
     for (const id of OUTFIT_IDS)
       for (const d of DIRS) {
@@ -28,6 +28,14 @@ describe("the owner's outfit art", () => {
         if (OUTFIT_HAS_HAT.includes(id)) expect(tex[key], key).toBeDefined()
         else expect(tex[key], key).toBeUndefined()
       }
+  })
+
+  it('draws the teacher from three sides with her sleeve and nón lá, outside the wardrobe', () => {
+    const tex = chibiTextures()
+    for (const d of DIRS) for (const key of [`outfit-teacher-${d}`, `outfitHat-teacher-${d}`]) expect(tex[key], key).toBeDefined()
+    expect(tex['sleeve-teacher']).toBeDefined()
+    expect((OUTFIT_IDS as readonly string[]).includes('teacher')).toBe(false)
+    expect(OUTFIT_PANTS.teacher).toBe(0xfbf7ee)
   })
 
   it('draws nothing for the bà ba, which stays the tinted body', () => {
@@ -44,7 +52,7 @@ describe("the owner's outfit art", () => {
   })
 
   it('wears cream trousers with every áo dài', () => {
-    expect(Object.keys(OUTFIT_PANTS).sort()).toEqual([...DRESSED].sort())
+    expect(Object.keys(OUTFIT_PANTS).sort()).toEqual([...DRESSED, 'teacher'].sort())
     for (const id of ['teal', 'lotus', 'tile', 'mai', 'gam', 'year'] as const) expect(OUTFIT_PANTS[id], id).toBe(0xfbf7ee)
   })
 })

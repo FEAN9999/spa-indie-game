@@ -6,7 +6,7 @@ import type { Part } from './chibi'
 // the head's (its centre). Seen from the side they face right, like the face; seen from behind they show
 // no front details. The bà ba has none: it stays the tinted body.
 
-type DressedId = Exclude<OutfitId, 'baba'>
+export type DressedId = Exclude<OutfitId, 'baba'> | 'teacher'
 
 const INK = '#4A2E22'
 const LINE = `stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"`
@@ -26,6 +26,8 @@ const RED = '#D8463A'
 const RED_DARK = '#A8302A'
 const LOTUS = '#F28CA0'
 const MAI = '#F2C14E'
+/** The teacher's purple áo dài. */
+const TEACHER = '#8E6BB0'
 const STRAW = '#E4C77A'
 const STRAW_DARK = '#AE8E48'
 
@@ -174,6 +176,7 @@ const OUTFITS: Record<DressedId, Outfit> = {
     hat: khanVanHat(MAI, GOLD_DARK),
   }),
   gam: aoDai({ cloth: RED_DARK, pattern: 'brocade', trim: GOLD, cuff: GOLD, hat: khanVanHat(RED_DARK, GOLD) }),
+  teacher: aoDai({ cloth: TEACHER, trim: CREAM, hat: NON_LA_HAT }),
   year: aoDai({
     cloth: '#FFF8EC',
     trim: GOLD,
@@ -195,10 +198,11 @@ export const OUTFIT_PANTS: Record<DressedId, number> = {
   mai: 0xfbf7ee,
   gam: 0xfbf7ee,
   year: 0xfbf7ee,
+  teacher: 0xfbf7ee,
 }
 
 /** The outfits worn with a hat over the hair. */
-export const OUTFIT_HAS_HAT: readonly OutfitId[] = (Object.keys(OUTFITS) as DressedId[]).filter(id => OUTFITS[id].hat)
+export const OUTFIT_HAS_HAT: readonly (OutfitId | 'teacher')[] = (Object.keys(OUTFITS) as DressedId[]).filter(id => OUTFITS[id].hat)
 
 const DIRS = ['down', 'side', 'up'] as const
 

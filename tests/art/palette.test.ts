@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
+import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, TEACHER_LOOK, teacherColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
 
 describe('look palettes', () => {
@@ -60,5 +60,11 @@ describe('look palettes', () => {
     expect(customerColors(look, 'office', null, null, true)).toEqual({ ...customerColors(look, 'office'), visitor: 'kol' })
     expect(customerColors(look, 'office').visitor).toBeUndefined()
     expect(inspectorColors()).toMatchObject({ shirt: 0x3d4a66, visitor: 'inspector' })
+  })
+})
+
+describe('the teacher', () => {
+  it('is her look in the teacher dress', () => {
+    expect(teacherColors()).toEqual({ ...lookColors(TEACHER_LOOK), outfit: 'teacher' })
   })
 })

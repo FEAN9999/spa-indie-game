@@ -20,6 +20,8 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
 export const LESSON_STARS = { scrub: 3 } as const
+/** A lesson game is passed at this many stars. */
+export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
 export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000, scrub: 170000 } as const
 export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000 } as const

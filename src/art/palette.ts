@@ -157,7 +157,7 @@ export interface CharacterColors {
   hairStyle: number
   shirt: number
   /** The owner's outfit; the shirt colour counts only in the bà ba, which is also what unset means. */
-  outfit?: OutfitId
+  outfit?: OutfitId | 'teacher'
   apron?: boolean
   /** A customer's kind, which decides what they wear. */
   kind?: CustomerKind
@@ -171,6 +171,14 @@ export interface CharacterColors {
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
+}
+
+/** The teacher of the lessons: dark hair in a bun. */
+export const TEACHER_LOOK: Look = { skin: 1, hair: 0, hairStyle: 3, shirt: 0 }
+
+/** The teacher in her purple áo dài and nón lá. */
+export function teacherColors(): CharacterColors {
+  return { ...lookColors(TEACHER_LOOK), outfit: 'teacher' }
 }
 
 /** A customer's colors: their look, with an elder's hair grey, a backpacker's blond, a lady's hair in a bun, their kind, the regular they are, the VIP they are, and Mi Mi's mark, if any. */
