@@ -12,7 +12,7 @@ import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, ty
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
-import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type MoveTo, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
 import { repairStarter, type StarterBook } from './starter'
@@ -22,7 +22,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 24
+export const SAVE_VERSION = 25
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -259,7 +259,7 @@ function parseShop(raw: unknown): SaveData {
   // every kind of customer is known; a missing or unknown one is an office worker
   data.customers = data.customers.map(c => ({ ...c, kind: CUSTOMER_KINDS.includes(c.kind) ? c.kind : 'office' }))
   // damaged staff data is repaired, never a reason to lose the shop
-  data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing) }))
+  data.staff = data.staff.map(s => ({ ...s, look: repairLook(s.look), task: repairTask(s.task), path: repairPath(s.path), facing: repairFacing(s.facing), moveTo: repairMoveTo(s.moveTo) }))
   data.candidates = data.candidates.map(c => ({ ...c, look: repairLook(c.look) }))
   // tiers and courses are repaired; a record with no tiers (saved before version 10) draws a specialty from one stream, staff then candidates
   const tierRng = createRng(data.day * 1009 + data.nextStaffId)
@@ -557,12 +557,15 @@ function repairStudy(x: unknown, role: StaffRole): Study | null {
 /** A list of whole tiles, or an empty one. */
 const repairPath = (x: unknown): Tile[] => (Array.isArray(x) && x.every(t => isObject(t) && Number.isInteger(t.x) && Number.isInteger(t.y)) ? (x as Tile[]) : [])
 
+/** A place or 'main', else nobody moves. */
+const repairMoveTo = (x: unknown): MoveTo => (x === 'main' || isPlaceId(x) ? x : null)
+
 const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x === 'right' ? x : 'down')
 
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

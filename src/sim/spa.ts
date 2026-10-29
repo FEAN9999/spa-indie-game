@@ -79,7 +79,7 @@ import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
 import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
-import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff } from './staff'
+import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 import type { Feature } from './unlocks'
 
@@ -176,6 +176,8 @@ export class SpaSim {
   profileDone = false
   hints: HintId[] = []
   staff: Staff[] = []
+  /** How many people of the role move here tomorrow; the chain this shop belongs to sets it. */
+  incoming: (role: StaffRole) => number = () => 0
   candidates: Candidate[] = []
   candidatesDay = 0
   /** The services the shop has opened, in opening order; shampoo is built in. */
@@ -1166,6 +1168,11 @@ export class SpaSim {
   /** Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once. */
   fire(id: number): void {
     fire(this.crew, id)
+  }
+
+  /** Takes in someone from another shop of the chain: a new id here, standing on the door tile with nothing to do; the morning places them as usual. */
+  takeIn(s: Staff): void {
+    this.staff.push({ ...s, id: this.nextStaffId++, moveTo: null, task: null, path: [], pos: { ...this.grid.door } })
   }
 
   /** What `study` would refuse with, so a button can be faded beforehand; null if the course can be booked. */

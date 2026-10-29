@@ -27,6 +27,7 @@ import {
 } from '../config'
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
+import type { PlaceId } from './places'
 import { randomLook, type Rng } from './rng'
 import { BASIC_SERVICES, RECIPE_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import type { Facing, Look, Tile, Vec } from './types'
@@ -77,6 +78,9 @@ export type StaffTask =
   /** Stopped for a word after a customer, where they stand. */
   | { kind: 'chat'; leftMs: number }
 
+/** Where a person moves tomorrow: a branch's place, 'main' for the main shop, or null to stay. */
+export type MoveTo = PlaceId | 'main' | null
+
 export interface Staff extends Candidate {
   id: number
   level: number
@@ -90,6 +94,8 @@ export interface Staff extends Candidate {
   sinceRest: number
   leaving: boolean
   study: Study | null
+  /** Moves to another shop of the chain at the next morning. */
+  moveTo: MoveTo
 }
 
 /** Daily wage: 20 000 for all ones, 2 500 more for each dot above that. */

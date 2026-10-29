@@ -96,11 +96,11 @@ export function staffCap(role: StaffRole, floors: number): number {
   return STAFF_CAP[role] + (role === 'technician' ? (floors - 1) * STAFF_PER_FLOOR : 0)
 }
 
-/** What stops the candidate being hired now: money is negative, or the role is full (staff who are leaving do not count); null if nothing. */
+/** What stops the candidate being hired now: money is negative, or the role is full (staff who are leaving do not count, those moving here do); null if nothing. */
 export function hireProblem({ sim }: CrewHost, index: number): HireProblem | null {
   if (sim.money < 0) return 'money'
   const c = sim.candidates[index]
-  return sim.staff.filter(s => s.role === c.role && !s.leaving).length >= staffCap(c.role, sim.floors) ? 'full' : null
+  return sim.staff.filter(s => s.role === c.role && !s.leaving).length + sim.incoming(c.role) >= staffCap(c.role, sim.floors) ? 'full' : null
 }
 
 /** Free and at once: the new person stands on the door tile. */
@@ -129,6 +129,7 @@ export function hire(h: CrewHost, index: number): HireProblem | null {
     sinceRest: 0,
     leaving: false,
     study: null,
+    moveTo: null,
   })
   const s = sim.staff[sim.staff.length - 1]
   const home = homeOf(h, s)
@@ -158,12 +159,13 @@ export function study(h: CrewHost, id: number, course: Course): StudyProblem | n
 
 /**
  * Lets someone go: today's wage is still paid. A technician with a customer finishes that customer first; everyone else walks out at once.
- * After the day has ended the wages are already paid, so they just leave. A course they had booked is refunded.
+ * After the day has ended the wages are already paid, so they just leave. A course they had booked is refunded, and a move they had booked is cancelled.
  */
 export function fire(h: CrewHost, id: number): void {
   const { sim } = h
   const s = sim.staff.find(x => x.id === id)
   if (!s || s.leaving) return
+  s.moveTo = null
   if (s.study) {
     sim.money += s.study.paid
     s.study = null
