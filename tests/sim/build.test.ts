@@ -350,6 +350,14 @@ describe('placeProblem on the tall grid', () => {
     expect(problem('plant', 5, 25, 1)).toBe('overlap')
   })
 
+  it("refuses what would shut a desk's owner spot in", () => {
+    const side = { id: 98, kind: 'plant' as const, x: 8, y: 13, flip: false }
+    const other = { id: 97, kind: 'plant' as const, x: 10, y: 13, flip: false }
+    const seal = (x: number, y: number) => placeProblem(shell, [...others, side, other], { id: 99, kind: 'plant', x, y, flip: false }, { ...extras, floors: 1 })
+    expect(placeProblem(shell, [...others, side], { ...other, id: 99 }, { ...extras, floors: 1 })).toBeNull()
+    expect(seal(9, 12)).toBe('blocksPath')
+  })
+
   it('refuses what would shut the floor-1 foot in', () => {
     expect(problem('plant', 10, 10, 1)).toBe('blocksPath')
   })
