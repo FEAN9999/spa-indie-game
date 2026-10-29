@@ -1,7 +1,7 @@
 # Xoay đồ và mở khoá bình phong, quầy lễ tân
 
 - Ngày: 2026-10-29
-- Trạng thái: chờ chồng yêu duyệt
+- Trạng thái: chồng yêu đã duyệt (2026-10-29)
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`, mục 5.10 (kê đồ theo ô lưới, "xoay được"). Làm nốt phần đã hoãn ở `2026-10-26-step-1b-batches-2-7-design.md` mục 3: xoay 90 độ, và dời bình phong, quầy lễ tân.
 - Lý do: chồng yêu báo "nội thất trong game không xoay được, nội thất mặc định không cho di chuyển hoặc bán".
 
