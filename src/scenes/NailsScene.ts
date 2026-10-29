@@ -3,7 +3,7 @@ import { NAILS_BOX, NAILS_FINGERS, NAILS_LENS } from '../art/nailsArt'
 import { C, customerColors, teacherColors, type CharacterColors } from '../art/palette'
 import { NAILS_BOTTLE_X, NAILS_BOTTLE_Y, NAILS_COAT_MS, NAILS_COUNT, NAILS_LIMIT_MS, NAILS_NAIL, NAILS_SHAKE_MS, NAILS_SHAPE } from '../config'
 import type { Stars } from '../sim/economy'
-import { NailsGame, nailsBottleAt, type NailsPattern, type NailsPhase, type NailsPt } from '../sim/nails'
+import { NailsGame, nailsBottleAt, nailsClosed, type NailsPhase, type NailsPt } from '../sim/nails'
 import { createRng } from '../sim/rng'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
@@ -14,8 +14,6 @@ import { textStyle } from '../view/text'
 const POLISH = [C.lantern, C.lotus, C.teal, C.mustard]
 /** The instruction for each phase; the coat and the pause after a nail already ask for the trace. */
 const WORDS: Partial<Record<NailsPhase, StringKey>> = { pick: 'nailsPick', coat: 'nailsTrace', trace: 'nailsTrace', next: 'nailsTrace' }
-/** Patterns whose line closes, so their last dot joins the first. */
-const CLOSED: readonly NailsPattern[] = ['heart', 'flower']
 /** The customer standing on her sand disc, swinging side to side after a wrong pick. */
 const CUSTOMER = { x: 170, y: 590, r: 92, ink: 4, scale: 1.3, shakePx: 10, shakePerMs: 0.04 }
 /** The cream card she holds the sample in, its point towards her, and the sample nail on it. */
@@ -125,8 +123,8 @@ export class NailsScene extends Phaser.Scene {
   private seenResults = 0
   private demoHand: Phaser.GameObjects.Image | null = null
   private demoMs = 0
-  /** The hand's taps on the bottle end once a pick counts; it shows again on the first nail's dots. */
-  private demoPicked = false
+  /** Whether the sample's bottle was picked: the hand's taps on it end, and the small nails get their coat. */
+  private picked = false
 
   constructor() {
     super('NailsScene')
@@ -147,7 +145,7 @@ export class NailsScene extends Phaser.Scene {
     this.seenResults = 0
     this.demoHand = null
     this.demoMs = 0
-    this.demoPicked = false
+    this.picked = false
 
     const { look, kind, idol } = this.params
     const colors = this.params.teacher ? teacherColors() : customerColors(look, kind, null, null, false, idol ?? null)
@@ -168,12 +166,12 @@ export class NailsScene extends Phaser.Scene {
     if (this.params.demo) this.demoHand = this.add.image(0, 0, 'hand').setOrigin(0.5, 1).setAlpha(DEMO.alpha).setDepth(DEPTH.hand)
     this.moveDemo(0)
 
-    // only a pick that counts, or a touch that lights a dot, puts the demo hand away
+    // only the right pick, or a touch that lights a dot, puts the demo hand away
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
       if (this.revealed) return
       if (this.rules.phase === 'pick') {
         const bottle = nailsBottleAt(p.x, p.y)
-        if (bottle !== null && this.rules.pick(bottle) !== null) this.demoPicked = true
+        if (bottle !== null && this.rules.pick(bottle) === 'right') this.picked = true
       } else if (this.rules.phase === 'trace' && this.rules.down(p.x, p.y).lit > 0) this.hideDemo()
     })
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
@@ -243,7 +241,7 @@ export class NailsScene extends Phaser.Scene {
   private drawHand(): void {
     const g = this.g.clear()
     const { phase, phaseMs, nail, results, litAll } = this.rules
-    const coat = phase === 'pick' ? 0 : phase === 'coat' ? phaseMs / NAILS_COAT_MS : 1
+    const coat = !this.picked ? 0 : phase === 'coat' ? phaseMs / NAILS_COAT_MS : 1
     SMALL_NAILS.forEach((n, i) => {
       const corner = n.w * SMALL.cornerOfW
       g.save().translateCanvas(n.x, n.y).rotateCanvas(n.turn)
@@ -302,7 +300,7 @@ export class NailsScene extends Phaser.Scene {
     g.lineStyle(NAIL.ink, hex(phase === 'trace' && outside ? C.lantern : C.ink)).strokePoints(BIG_NAIL, true)
     g.lineStyle(SHINE.w, hex(C.cream), SHINE.alpha).strokePoints(SHINE_LINE)
     if (phase === 'trace') {
-      g.lineStyle(GUIDE.w, hex(C.cream), GUIDE.alpha).strokePoints(this.dotsAt, CLOSED.includes(this.rules.pattern))
+      g.lineStyle(GUIDE.w, hex(C.cream), GUIDE.alpha).strokePoints(this.dotsAt, nailsClosed(this.rules.pattern))
       this.drawPattern(g, lit, nx, ny, 1)
       const ends = [[this.dotsAt[0], C.teal], [this.dotsAt[this.dotsAt.length - 1], C.mustard]] as const
       for (const [d, c] of ends) g.lineStyle(DOT.ringW, hex(c)).strokeCircle(d.x, d.y, dotR + DOT.ringGap)
@@ -336,7 +334,7 @@ export class NailsScene extends Phaser.Scene {
       })
       return
     }
-    const closed = CLOSED.includes(pattern)
+    const closed = nailsClosed(pattern)
     const joins: [NailsPt, NailsPt][] = []
     dots.forEach((_, i) => {
       const prev = i > 0 ? i - 1 : closed ? dots.length - 1 : -1
@@ -383,7 +381,7 @@ export class NailsScene extends Phaser.Scene {
   private moveDemo(delta: number): void {
     if (!this.demoHand) return
     const { phase, nail, order, colour } = this.rules
-    const picking = phase === 'pick' && !this.demoPicked
+    const picking = phase === 'pick' && !this.picked
     const tracing = phase === 'trace' && nail === 0
     this.demoHand.setVisible(picking || tracing)
     if (!picking && !tracing) {

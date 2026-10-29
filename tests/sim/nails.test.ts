@@ -193,6 +193,7 @@ describe('NailsGame pick', () => {
     g.tick(NAILS_COAT_MS)
     expect(g.pick(1)).toBeNull() // trace
     g.down(abs(g, 8).x, abs(g, 8).y)
+    g.move(abs(g, 1).x, abs(g, 1).y)
     g.up()
     expect(g.phase).toBe('next')
     expect(g.pick(1)).toBeNull()
@@ -218,6 +219,7 @@ describe('NailsGame pick', () => {
     g.down(540, 905)
     g.move(400, 905)
     g.down(abs(g, 8).x, abs(g, 8).y)
+    g.move(abs(g, 1).x, abs(g, 1).y)
     g.up()
     expect(g.phase).toBe('next')
     expect(g.smudges).toBe(1)
@@ -274,7 +276,7 @@ describe('NailsGame trace', () => {
     expect(g.progress()).toBe(1 / 5)
   })
 
-  it('ends a nail on lifting once the last dot is lit', () => {
+  it('keeps tracing after a lift while under 80% of the dots are lit, even with the last one', () => {
     const g = traceReady(SAMPLE)
     g.down(abs(g, 0).x, abs(g, 0).y)
     g.up()
@@ -286,8 +288,31 @@ describe('NailsGame trace', () => {
     expect(h.phase).toBe('trace')
     expect(h.progress()).toBeCloseTo(2 / 9 / 5)
     h.up()
-    expect(h.phase).toBe('next')
-    expect(h.results).toEqual([false])
+    expect(h.phase).toBe('trace')
+    expect(h.results).toEqual([])
+  })
+
+  it('does not end a closed pattern when its start ring also lights the last dot', () => {
+    const g = new NailsGame(listRng(STRIPES), true)
+    g.pick(g.order.indexOf(g.colour))
+    g.tick(NAILS_COAT_MS)
+    g.down(abs(g, 0).x, abs(g, 0).y)
+    expect(g.lit[g.dots.length - 1]).toBe(true)
+    for (let i = 1; i < g.dots.length / 3; i++) g.move(abs(g, i).x, abs(g, i).y)
+    g.up()
+    expect(g.phase).toBe('trace')
+    expect(g.results).toEqual([])
+  })
+
+  it('ends a nail on lifting once the last dot and 80% of the dots are lit', () => {
+    const g = traceReady(SAMPLE)
+    g.down(abs(g, 8).x, abs(g, 8).y)
+    g.move(abs(g, 1).x, abs(g, 1).y)
+    expect(g.lit.filter(Boolean).length).toBeGreaterThanOrEqual(0.8 * g.dots.length)
+    expect(g.lit.every(on => on)).toBe(false)
+    g.up()
+    expect(g.phase).toBe('next')
+    expect(g.results).toEqual([true])
   })
 
   it('moves to a clean next nail after the pause', () => {
@@ -295,6 +320,7 @@ describe('NailsGame trace', () => {
     g.down(540, 905)
     g.move(400, 905)
     g.down(abs(g, 8).x, abs(g, 8).y)
+    g.move(abs(g, 1).x, abs(g, 1).y)
     const lit = [...g.lit]
     g.up()
     expect(g.phase).toBe('next')

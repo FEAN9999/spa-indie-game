@@ -195,6 +195,7 @@ Dòng chỉ dẫn trên thẻ trò chơi **(em đề xuất)**:
 - **Bước 2, tô:** mỗi móng hiện hoa văn bằng nét chấm, phóng to trong một kính lúp phía trên bàn tay. Kéo ngón theo nét chấm để tô.
   - Nét là một hàng chấm to. Ngón chạm tới chấm nào (tính cả đoạn giữa hai lần chạm) thì chấm đó sáng.
   - Móng xong khi sáng hết chấm, hoặc khi nhấc ngón lên sau khi đã tới chấm cuối. Không vậy thì người sót một chấm sẽ kẹt tới hết giờ. **(em đề xuất)**
+  - Nhấc ngón chỉ kết thúc móng khi chấm cuối đã sáng và đã sáng ít nhất 80% số chấm; ít hơn thì tô tiếp. Hình tim và hoa khép kín nên chấm cuối nằm sát chấm đầu, chạm vòng bắt đầu cũng làm chấm cuối sáng.
   - Ngón đi ra ngoài viền móng lúc đang tô là một lần lem (cho lố viền vài điểm ảnh, bản phác dùng 8 trên khung 1080).
   - Một móng **đẹp** khi sáng được ít nhất 80% số chấm và lem nhiều nhất 1 lần.
   - Bản khó có nét mảnh hơn và hoa văn khó hơn (trái tim, hoa).

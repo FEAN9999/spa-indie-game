@@ -2142,7 +2142,7 @@ describe('save version 29', () => {
 
   it('opens 28 and the current version and refuses a newer one', () => {
     expect(parseSave({ ...structuredClone(v28), v: 28 }).v).toBe(28)
-    expect(parseSave({ ...structuredClone(v28), v: SAVE_VERSION }).v).toBe(29)
+    expect(parseSave({ ...structuredClone(v28), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
     expect(() => parseSave({ ...structuredClone(v28), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
   })
 

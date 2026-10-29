@@ -115,9 +115,12 @@ const dotsAlong = (line: NailsPt[], gap: number, closed: boolean): NailsPt[] => 
   return out
 }
 
+/** Whether the pattern's line closes, so its last dot joins the first. */
+export const nailsClosed = (pattern: NailsPattern): boolean => pattern === 'heart' || pattern === 'flower'
+
 /** The pattern's dots round the nail's centre, `gap` apart along its line. */
 export const nailsDots = (pattern: NailsPattern, gap: number): NailsPt[] =>
-  dotsAlong(patternLine(pattern), gap, pattern === 'heart' || pattern === 'flower')
+  dotsAlong(patternLine(pattern), gap, nailsClosed(pattern))
 
 /** Distance from p to the segment a–b. */
 const segDist = (p: NailsPt, a: NailsPt, b: NailsPt): number => {
@@ -137,7 +140,7 @@ export const nailsStars = (wrong: number, good: number): Stars =>
 /**
  * Rules of the Sơn móng game: tap the bottle of the sample's colour, then trace the sample's dotted pattern on five
  * nails in turn. A dot lights when the finger's path, counting the stretch between two touches, comes within reach
- * of it. A nail ends when every dot is lit, or on lifting once its last dot is; each slip past the nail's edge is a
+ * of it. A nail ends when every dot is lit, or on lifting once its last dot and enough of the rest are lit; each slip past the nail's edge is a
  * smudge. The clock runs through the whole game. Positions are game pixels on the card.
  */
 export class NailsGame {
@@ -233,9 +236,9 @@ export class NailsGame {
     return { lit: this.light(from, { x, y }), smudge }
   }
 
-  /** Lifting once the last dot is lit ends the nail. */
+  /** Lifting ends the nail only when its last dot is lit and at least NAILS_GOOD.lit of its dots are. */
   up(): void {
-    if (this.phase === 'trace' && this.last && this.lit[this.lit.length - 1]) this.endNail()
+    if (this.phase === 'trace' && this.last && this.lit[this.lit.length - 1] && this.litCount() / this.dots.length >= NAILS_GOOD.lit) this.endNail()
     this.last = null
     this.outside = false
   }
