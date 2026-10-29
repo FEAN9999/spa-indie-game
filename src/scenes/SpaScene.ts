@@ -1451,8 +1451,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   }
 
   /** Where the heart and the VIP star sit while waiting: level with the service badge, shifted left of it when it shows. */
-  private badgeSide(p: Placement, s: CustomerSprite, badge: boolean): [number, number] {
-    return [p.x + (badge ? HEART_DX : 0), p.y + BADGE_BOTTOM - s.badge.height / 2]
+  private badgeSide(p: Placement, s: CustomerSprite, badge: boolean, dx: number): [number, number] {
+    return [p.x + dx + (badge ? (dx < 0 ? -HEART_DX : HEART_DX) : 0), p.y + BADGE_BOTTOM - s.badge.height / 2]
   }
 
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
@@ -1492,7 +1492,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // face down on the massage and stone beds, face up anywhere else
     // a waiting customer on a seat faces the front of the piece under them, which an upright bench turns sideways
     const seat = c.state === 'waiting' && sitting && !seated ? this.sim.items.find(i => seatTiles(i).some(t => tileEq(t, c.pos))) : undefined
-    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : seat ? seatFacing(seat) : c.state === 'waiting' || seated ? 'down' : p.facing)
+    const facing = seat ? seatFacing(seat) : null
+    // on an upright seat the waiting marks move a tile to the side they face, off the faces of those sitting above
+    const markDx = seat?.turned ? (facing === 'left' ? -TILE : TILE) : 0
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : facing ?? (c.state === 'waiting' || seated ? 'down' : p.facing))
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // only the towel-wrapped head shows over the mud
@@ -1517,7 +1520,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (c.state === 'waiting') {
       const f = Math.max(0, c.patienceMs / c.patienceMaxMs)
       const color = hex(f > 0.5 ? C.green : f > 0.25 ? C.mustard : C.lantern)
-      const x = p.x - 36
+      const x = p.x + markDx - 36
       const y = p.y + PATIENCE_BAR_TOP + 4
       s.bar.fillStyle(hex(C.paper), 1).fillRoundedRect(x - 4, y - 4, 80, 20, 10)
       s.bar.lineStyle(3, hex(C.ink)).strokeRoundedRect(x - 4, y - 4, 80, 20, 10)
@@ -1529,19 +1532,19 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (badge) {
       const key = `svc-${c.service}`
       if (s.badge.texture.key !== key) s.badge.setTexture(key)
-      s.badge.setPosition(p.x, p.y + BADGE_BOTTOM)
+      s.badge.setPosition(p.x + markDx, p.y + BADGE_BOTTOM)
     }
 
     const heart = c.state === 'waiting' && c.regular !== null
     s.heart.setVisible(heart)
-    if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge))
+    if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge, markDx))
 
     const star = ((c.vip !== null || c.idol !== null) && !onStation) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
     s.vipStar.setVisible(star)
     if (star) {
       const waiting = c.state === 'waiting'
       s.vipStar
-        .setPosition(...(waiting ? this.badgeSide(p, s, badge) : ([p.x, p.y + PATIENCE_BAR_TOP] as const)))
+        .setPosition(...(waiting ? this.badgeSide(p, s, badge, markDx) : ([p.x, p.y + PATIENCE_BAR_TOP] as const)))
         .setScale(0.5 + STAR_TWINKLE * Math.sin((time / STAR_TWINKLE_MS) * 2 * Math.PI))
     }
 
