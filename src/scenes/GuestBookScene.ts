@@ -3,14 +3,17 @@ import { C, customerColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
 import type { MainKind } from '../sim/customers'
 import { REGULARS, isMember, type RegularId } from '../sim/regulars'
+import { IDOLS, type IdolId } from '../sim/idols'
 import { SERVICES } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { VIPS, VIP_KIND, type VipId } from '../sim/vips'
+import { IDOL_TEXT } from '../strings/idols'
 import { REGULAR_TEXT } from '../strings/regulars'
 import { VIP_TEXT } from '../strings/vips'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { bookTabs, detailLines, firstTab, kindRows, regularRows, vipDetailLines, vipRows, type KindRow, type RegularRow, type Tab, type VipRow } from '../view/guestBook'
+import { bookTabs, detailLines, firstTab, idolDetailLines, idolRows, kindRows, regularRows, vipDetailLines, vipRows, type IdolRow, type KindRow, type RegularRow, type Tab, type VipRow } from '../view/guestBook'
+import { humText } from '../view/idol'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -21,7 +24,7 @@ export interface GuestBookData {
   onClose: () => void
 }
 
-type Detail = { kind: 'regular'; id: RegularId } | { kind: 'vip'; id: VipId }
+type Detail = { kind: 'regular'; id: RegularId } | { kind: 'vip'; id: VipId } | { kind: 'idol'; id: IdolId }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
@@ -30,12 +33,13 @@ const INTRO_Y = 380
 const INTRO_WRAP = 860
 const TAB_Y = 500
 const TAB_H = 120
-/** Two tabs of 440 across the card, or three of 300 once the VIP tab shows. */
+/** Two tabs of 440 across the card, three of 300 once the VIP or star tab shows, or four of 230 with both; the label shrinks as they narrow. */
 const TAB_LAYOUT = {
-  2: { w: 440, x: [300, 780] },
-  3: { w: 300, x: [200, 540, 880] },
+  2: { w: 440, x: [300, 780], size: 44 },
+  3: { w: 300, x: [200, 540, 880], size: 44 },
+  4: { w: 230, x: [177, 419, 661, 903], size: 34 },
 } as const
-const TAB_LABEL: Record<Tab, StringKey> = { regulars: 'tabRegulars', kinds: 'tabKinds', vip: 'tabVip' }
+const TAB_LABEL: Record<Tab, StringKey> = { regulars: 'tabRegulars', kinds: 'tabKinds', vip: 'tabVip', idol: 'tabIdol' }
 const DONE_Y = 1895
 const GRID_TOP = 590
 const CELL_W = 430
@@ -51,6 +55,10 @@ const STORY_WRAP = 860
 const KIND_ROW_H = 230
 const VIP_CELL_H = 520
 const STAR_SCALE = 0.5
+const IDOL_COL_X = [55, 390, 725] as const
+const IDOL_CELL_W = 300
+const IDOL_CELL_H = 400
+const IDOL_SCALE = 1.2
 
 const KIND_NAME: Record<MainKind, StringKey> = {
   student: 'kindStudent',
@@ -61,7 +69,7 @@ const KIND_NAME: Record<MainKind, StringKey> = {
 }
 
 /**
- * The guest book over the frozen shop: the regulars with their hearts, cards and stories, and the five kinds of customer.
+ * The guest book over the frozen shop: the regulars with their hearts, cards and stories, the five kinds of customer, the VIPs and the stars.
  * Every tap stays in this scene, so the shop waits underneath.
  */
 export class GuestBookScene extends Phaser.Scene {
@@ -69,7 +77,7 @@ export class GuestBookScene extends Phaser.Scene {
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
   private tab: Tab = 'regulars'
-  /** The regular or VIP whose page is open, if any. */
+  /** The regular, VIP or star whose page is open, if any. */
   private detail: Detail | null = null
 
   constructor() {
@@ -101,18 +109,20 @@ export class GuestBookScene extends Phaser.Scene {
     this.keep(this.add.text(MID, TITLE_Y, t('bookTitle'), textStyle(60)).setOrigin(0.5))
     if (this.detail?.kind === 'regular') this.showDetail(this.detail.id)
     else if (this.detail?.kind === 'vip') this.showVipDetail(this.detail.id)
+    else if (this.detail?.kind === 'idol') this.showIdolDetail(this.detail.id)
     else {
       if (this.params.intro && this.tab === 'regulars') {
         this.keep(this.add.text(MID, INTRO_Y, t('bookIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
       }
-      const tabs = bookTabs(this.params.sim.vip)
-      const layout = TAB_LAYOUT[tabs.length as 2 | 3]
+      const tabs = bookTabs(this.params.sim.vip, this.params.sim.idol)
+      const layout = TAB_LAYOUT[tabs.length as 2 | 3 | 4]
       tabs.forEach((tab, i) => {
-        this.keep(addButton(this, layout.x[i], TAB_Y, layout.w, TAB_H, t(TAB_LABEL[tab]), tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), 44))
+        this.keep(addButton(this, layout.x[i], TAB_Y, layout.w, TAB_H, t(TAB_LABEL[tab]), tab === this.tab ? 'primary' : 'plain', () => this.openTab(tab), layout.size))
       })
       if (this.tab === 'regulars') regularRows(this.params.sim.book).forEach((row, i) => this.cell(row, i))
       else if (this.tab === 'kinds') kindRows(this.params.sim.book).forEach((row, i) => this.kindRow(row, i))
-      else vipRows(this.params.sim.vip).forEach((row, i) => this.vipCell(row, i))
+      else if (this.tab === 'vip') vipRows(this.params.sim.vip).forEach((row, i) => this.vipCell(row, i))
+      else idolRows(this.params.sim.idol).forEach((row, i) => this.idolCell(row, i))
     }
     if (this.detail) {
       this.keep(addButton(this, MID, DONE_Y, 560, 130, t('back'), 'primary', () => this.openDetail(null)))
@@ -216,6 +226,28 @@ export class GuestBookScene extends Phaser.Scene {
     }
   }
 
+  /** One star's page: their figure, name, role, service, song and stars, then the lines they have said so far. */
+  private showIdolDetail(id: IdolId): void {
+    const { sim } = this.params
+    const text = IDOL_TEXT[id]
+    const state = sim.idol.idols[id]
+    this.figure(230, 690, DETAIL_SCALE, customerColors(IDOLS[id].look, VIP_KIND, null, null, false, id))
+    const tx = 400
+    this.keep(this.add.text(tx, 450, text.name, { ...textStyle(54), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 515, text.role, { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 575, t('regularLikes', { service: t(SERVICES[IDOLS[id].service].name) }), { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    this.keep(this.add.text(tx, 635, t('idolHums', { song: humText(id) }), { ...textStyle(32, '600'), wordWrap: { width: 600 } }).setOrigin(0, 0.5))
+    for (let s = 0; s < 3; s++) {
+      this.keep(this.add.image(tx + 28 + s * 56, 700, s < state.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
+    }
+    this.keep(this.add.text(tx, 760, t('vipVisits', { n: state.visits }), textStyle(32, '600')).setOrigin(0, 0.5))
+    let y = 850
+    for (const words of idolDetailLines(id, state)) {
+      const line = this.keep(this.add.text(90, y, words, { ...textStyle(32, '600'), wordWrap: { width: STORY_WRAP } }).setOrigin(0, 0))
+      y += line.height + 28
+    }
+  }
+
   private kindRow(row: KindRow, i: number): void {
     const y0 = GRID_TOP + i * KIND_ROW_H
     const cy = y0 + KIND_ROW_H / 2
@@ -252,6 +284,33 @@ export class GuestBookScene extends Phaser.Scene {
         .setOrigin(0)
         .setInteractive()
         .on('pointerup', () => this.openDetail({ kind: 'vip', id: row.id })),
+    )
+  }
+
+  /** One star in the grid, three to a row: their figure, name, stars, visits and photo; in shadow until met, and a met one opens their page when tapped. */
+  private idolCell(row: IdolRow, i: number): void {
+    const x0 = IDOL_COL_X[i % 3]
+    const y0 = GRID_TOP + Math.floor(i / 3) * IDOL_CELL_H
+    const colors = customerColors(IDOLS[row.id].look, VIP_KIND, null, null, false, row.id)
+    const mid = x0 + IDOL_CELL_W / 2
+    this.keep(addCard(this, x0, y0, IDOL_CELL_W, IDOL_CELL_H - 20))
+    this.figure(mid, y0 + 184, IDOL_SCALE, colors, row.met ? 1 : UNMET_ALPHA)
+    if (!row.met) {
+      this.keep(this.add.text(mid, y0 + 224, '???', textStyle(34)).setOrigin(0.5))
+      return
+    }
+    this.keep(this.add.text(mid, y0 + 224, IDOL_TEXT[row.id].name, { ...textStyle(32), align: 'center', wordWrap: { width: IDOL_CELL_W - 30 } }).setOrigin(0.5))
+    for (let s = 0; s < 3; s++) {
+      this.keep(this.add.image(mid + (s - 1) * 56, y0 + 274, s < row.best ? 'star' : 'star-empty').setScale(STAR_SCALE))
+    }
+    this.keep(this.add.text(mid, y0 + 314, t('vipVisits', { n: row.visits }), textStyle(28, '600')).setOrigin(0.5))
+    this.keep(this.add.text(mid, y0 + 346, t(row.photo ? 'vipPhotoYes' : 'vipPhotoNo'), textStyle(26, '800', row.photo ? C.teal : undefined)).setOrigin(0.5))
+    this.keep(
+      this.add
+        .rectangle(x0, y0, IDOL_CELL_W, IDOL_CELL_H - 20, 0xffffff, 0)
+        .setOrigin(0)
+        .setInteractive()
+        .on('pointerup', () => this.openDetail({ kind: 'idol', id: row.id })),
     )
   }
 

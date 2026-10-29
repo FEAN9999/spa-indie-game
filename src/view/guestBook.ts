@@ -1,7 +1,9 @@
 import { KINDS, MAIN_KINDS, type MainKind } from '../sim/customers'
 import { REGULAR_TEXT } from '../strings/regulars'
+import { IDOL_TEXT } from '../strings/idols'
 import { VIP_TEXT } from '../strings/vips'
 import { REGULARS, REGULAR_IDS, bookOpen, isMember, type GuestBook, type RegularId } from '../sim/regulars'
+import { IDOL_IDS, type IdolBook, type IdolId, type IdolState } from '../sim/idols'
 import { VIP_IDS, type VipBook, type VipId, type VipState } from '../sim/vips'
 
 export type RegularRow =
@@ -55,10 +57,37 @@ export const vipDetailLines = (id: VipId, state: VipState): string[] => {
   return state.best === 3 ? [VIP_TEXT[id].arrive, VIP_TEXT[id].thanks] : [VIP_TEXT[id].arrive]
 }
 
-export type Tab = 'regulars' | 'kinds' | 'vip'
+export interface IdolRow {
+  id: IdolId
+  met: boolean
+  visits: number
+  best: number
+  photo: boolean
+}
 
-/** The book's tabs: the VIP tab once a VIP has been booked. */
-export const bookTabs = (vip: VipBook): Tab[] => (vip.everBooked ? ['regulars', 'kinds', 'vip'] : ['regulars', 'kinds'])
+/** One row per star, in book order; a star is met once they have visited. */
+export function idolRows(idol: IdolBook): IdolRow[] {
+  return IDOL_IDS.map(id => {
+    const { visits, best, photo } = idol.idols[id]
+    return { id, met: visits > 0, visits, best, photo }
+  })
+}
+
+/** What a star's detail shows: their words on arriving once they have visited, their thanks once thanked. */
+export const idolDetailLines = (id: IdolId, state: IdolState): string[] => {
+  if (state.visits === 0) return []
+  return state.thanked ? [IDOL_TEXT[id].arrive, IDOL_TEXT[id].thanks] : [IDOL_TEXT[id].arrive]
+}
+
+export type Tab = 'regulars' | 'kinds' | 'vip' | 'idol'
+
+/** The book's tabs: the VIP tab once a VIP has been booked, then the star tab once a star has. */
+export const bookTabs = (vip: VipBook, idol: IdolBook): Tab[] => {
+  const tabs: Tab[] = ['regulars', 'kinds']
+  if (vip.everBooked) tabs.push('vip')
+  if (idol.everBooked) tabs.push('idol')
+  return tabs
+}
 
 /** The tab the book opens on: the VIPs' when a VIP is all there is to see yet. */
 export const firstTab = (book: GuestBook, vip: VipBook): Tab => (!bookOpen(book) && vip.everBooked ? 'vip' : 'regulars')
