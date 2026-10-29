@@ -1,7 +1,8 @@
-import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
-import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind } from './events'
+import { IDOL_IDS, type IdolId } from './idols'
+import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
 import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
@@ -430,6 +431,9 @@ export function repairEvents(x: unknown, day: number): EventBook {
     last: EVENT_KINDS.includes(x.last as EventKind) ? (x.last as EventKind) : null,
     plan,
     hotUntil: repairCount(x.hotUntil),
+    hotDays: Number.isInteger(x.hotDays) && (x.hotDays as number) >= 1 ? (x.hotDays as number) : HOT_DAYS,
+    hotBy: x.hotBy === 'kol' || IDOL_IDS.includes(x.hotBy as IdolId) ? (x.hotBy as HotBy) : 'kol',
+    hotCardDay: repairCount(x.hotCardDay),
     count: repairCount(x.count),
     inspected: repairBool(x.inspected),
     certGiven: repairBool(x.certGiven),

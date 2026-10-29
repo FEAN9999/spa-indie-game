@@ -1276,13 +1276,16 @@ describe('save version 18', () => {
   })
 
   it('repairs a damaged event book field by field', () => {
-    const good = { nextDay: 16, last: 'kol', plan: { kind: 'inspect', day: 14, minute: 900 }, hotUntil: 15, count: 2, inspected: true, certGiven: true }
+    const good = { nextDay: 16, last: 'kol', plan: { kind: 'inspect', day: 14, minute: 900 }, hotUntil: 15, hotDays: 3, hotBy: 'taylor', hotCardDay: 14, count: 2, inspected: true, certGiven: true }
     expect(repairEvents(structuredClone(good), 13)).toEqual(good)
-    expect(repairEvents({ ...good, last: 'party', nextDay: -2, hotUntil: 1.5, count: 'x', inspected: 1, certGiven: 'yes' }, 13)).toEqual({
+    expect(repairEvents({ ...good, last: 'party', nextDay: -2, hotUntil: 1.5, hotDays: 0, hotBy: 'x', hotCardDay: -1, count: 'x', inspected: 1, certGiven: 'yes' }, 13)).toEqual({
       ...good,
       last: null,
       nextDay: 0,
       hotUntil: 0,
+      hotDays: 2,
+      hotBy: 'kol',
+      hotCardDay: 0,
       count: 0,
       inspected: false,
       certGiven: false,
@@ -1553,6 +1556,16 @@ describe('save version 22', () => {
   })
 })
 
+/** An old save's event books (the main shop's and each branch's) with the hot-run fields a read gives them. */
+function withHotFields<T extends object>(raw: T): T {
+  const hot = { hotDays: 2, hotBy: 'kol', hotCardDay: 0 }
+  const r = raw as { events?: object; chain?: { branches: { events?: object }[] } }
+  const out = { ...r }
+  if (r.events) out.events = { ...r.events, ...hot }
+  if (r.chain) out.chain = { ...r.chain, branches: r.chain.branches.map(b => (b.events ? { ...b, events: { ...b.events, ...hot } } : b)) }
+  return out as T
+}
+
 describe('save version 23', () => {
   /** A main shop with the beach open, saved and read back as plain JSON. */
   const chainJson = () => {
@@ -1575,7 +1588,7 @@ describe('save version 23', () => {
     const { place, chain, ...rest } = data
     expect(place).toBeNull()
     expect(chain).toEqual({ at: null, told: false, branches: [] })
-    expect(rest).toEqual(v22)
+    expect(rest).toEqual(withHotFields(v22))
     const saved = Chain.fromSave(data, 8).toSave()
     expect([saved.v, saved.place, saved.chain]).toEqual([25, null, { at: null, told: false, branches: [] }])
     expect(saved.starter).toEqual(v22.starter)
@@ -1718,7 +1731,7 @@ describe('save version 24', () => {
   it('opens the v23 shop with its beach as it was', () => {
     const expected = structuredClone(v23) as unknown as { chain: { branches: { staff: object[] }[] } }
     expected.chain.branches = expected.chain.branches.map(b => ({ ...b, staff: b.staff.map(s => ({ ...s, moveTo: null })) }))
-    expect(parseSave(structuredClone(v23))).toEqual(expected)
+    expect(parseSave(structuredClone(v23))).toEqual(withHotFields(expected))
     const chain = Chain.fromSave(parseSave(structuredClone(v23)), 8)
     expect(chain.at).toBe('beach')
     expect(chain.branches.length).toBe(1)
@@ -1757,7 +1770,7 @@ describe('save version 25', () => {
     const expected = structuredClone(v24) as unknown as Raw
     expected.staff = expected.staff.map(s => ({ ...s, moveTo: null }))
     expected.chain.branches = expected.chain.branches.map(b => ({ ...b, staff: b.staff.map(s => ({ ...s, moveTo: null })) }))
-    expect(parseSave(structuredClone(v24))).toEqual(expected)
+    expect(parseSave(structuredClone(v24))).toEqual(withHotFields(expected))
     const chain = Chain.fromSave(parseSave(structuredClone(v24)), 8)
     expect(chain.at).toBe('beach')
     expect(chain.shop('beach')!.staff.length).toBe(1)

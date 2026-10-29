@@ -17,7 +17,6 @@ import {
   GENEROUS_TIP,
   HEART_AT,
   HOT_ARRIVAL,
-  HOT_DAYS,
   INSPECT_BEAUTY,
   LOW_STOCK,
   MAX_FRAME_MS,
@@ -69,7 +68,7 @@ import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteSer
 import { emptyRecipes, isMix, pickHint, rightCount, sameMix, type Ingredient, type RecipeBook, type RecipeId } from './recipes'
 import { averageDay, baseReward, closeNoWalk, emptyProgress, recordDay, rollDay, rollMonth, settle, swap, type Counts, type Progress, type Quest, type QuestShop } from './quests'
 import { createRng, randomLook, type Rng } from './rng'
-import { dueKol, emptyEventBook, hotOn, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
+import { dueKol, emptyEventBook, hotCardToday, hotOn, makeHot, KOL_LOOK, MACHINES, planEvent, powerOutAt, rivalTarget, rivalToday, type EventBook } from './events'
 import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_KIND, VIPS, type VipBook, type VipId } from './vips'
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
@@ -637,7 +636,7 @@ export class SpaSim {
     // Mi Mi posts her video after 3 stars, and the shop is hot from the next morning
     if (c.kol) {
       if (stars === 3) {
-        this.eventBook.hotUntil = this.day + HOT_DAYS
+        makeHot(this.eventBook, this.day, 'kol')
         this.emit({ type: 'kolPosted', customerId: c.id })
       } else this.emit({ type: 'kolLeft', customerId: c.id })
     }
@@ -945,7 +944,7 @@ export class SpaSim {
     const festival = festivalOf(this.day)
     if (festival && festival !== festivalOf(this.day - 1)) this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
     if (book.plan?.day === this.day) this.emit({ type: 'eventToday', plan: { ...book.plan } })
-    if (this.hotToday() && this.day === book.hotUntil - HOT_DAYS + 1) this.emit({ type: 'hotStarted', until: book.hotUntil })
+    if (hotCardToday(book, this.day)) this.emit({ type: 'hotStarted', until: book.hotUntil })
   }
 
   /** The shop as the badges read it. */

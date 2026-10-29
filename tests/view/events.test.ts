@@ -84,7 +84,7 @@ describe('event cards', () => {
   })
 
   it('tells the first hot morning, quietly, and leaves the festival card loud', () => {
-    expect(hotCard()).toEqual({
+    expect(hotCard('kol')).toEqual({
       icon: EVENT_ICON.hot,
       head: 'Video của Mi Mi lên sóng',
       name: 'Tiệm đang hot!',
@@ -143,5 +143,10 @@ describe('the power cut toasts', () => {
     expect(t('powerOffToast')).toBe('Cúp điện rồi · gội đầu, mặt nạ, massage vẫn làm được')
     expect(t('powerOnToast')).toBe('Có điện lại rồi')
     expect(t('powerWait')).toBe('Đang cúp điện, chờ có điện nhé')
+  })
+
+  it("names the star on a star's hot card and changes nothing else", () => {
+    const kol = hotCard('kol')
+    expect(hotCard('taylor')).toEqual({ ...kol, head: 'Taylor Swift đăng ảnh tiệm mình' })
   })
 })

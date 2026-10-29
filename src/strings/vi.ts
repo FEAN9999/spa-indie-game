@@ -550,6 +550,7 @@ export const vi = {
   eventPowerName: 'Cúp điện {from} – {to}',
   eventPowerLine: 'Máy nghỉ {hours} tiếng. Khách đang chờ không sốt ruột, khách làm tay tip gấp rưỡi.',
   hotHead: 'Video của Mi Mi lên sóng',
+  hotIdolHead: '{name} đăng ảnh tiệm mình',
   hotName: 'Tiệm đang hot!',
   hotLine: 'Hôm nay và ngày mai khách tới đông hơn khoảng 1/4.',
   todayInspect: 'Thanh tra ghé lúc {time}',

@@ -1354,7 +1354,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.badgeQueue.push(eventCard(e.plan, this.sim.rivalTarget()))
         return
       case 'hotStarted':
-        this.badgeQueue.push(hotCard())
+        this.badgeQueue.push(hotCard(this.sim.eventBook.hotBy))
         return
       case 'kolArrived':
         this.queueToast(t('kolArrivedToast'))

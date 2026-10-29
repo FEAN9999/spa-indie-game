@@ -3,7 +3,7 @@ import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK, PO
 import { averageDay, baseReward, type DayRecord } from '../../src/sim/quests'
 import { parseSave } from '../../src/sim/save'
 import { reviewScore } from '../../src/sim/economy'
-import { KOL_LOOK, MACHINES, powerOutAt, rivalTarget } from '../../src/sim/events'
+import { KOL_LOOK, MACHINES, makeHot, powerOutAt, rivalTarget } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -191,6 +191,21 @@ describe('Mi Mi', () => {
     expect(sim.eventBook.hotUntil).toBe(12 + HOT_DAYS)
     expect(ofType(events, 'kolPosted')).toHaveLength(1)
     expect(ofType(events, 'kolLeft')).toEqual([])
+  })
+
+  it("a star's 3 stars on Mi Mi's last hot day keeps every day hot and shows the star's card the next morning", () => {
+    const sim = new SpaSim(opts())
+    sim.profileDone = true
+    sim.eventBook.hotUntil = 14
+    makeHot(sim.eventBook, 14, 'gd')
+    sim.day = 14
+    sim.startDay()
+    expect(ofType(sim.drainEvents(), 'hotStarted')).toEqual([{ type: 'hotStarted', until: 16 }])
+    expect(sim.eventBook.hotBy).toBe('gd')
+    expect(sim.hotToday()).toBe(true)
+    expect(sim.day).toBe(15)
+    sim.day = 16
+    expect(sim.hotToday()).toBe(true)
   })
 
   it('only says she left below 3 stars', () => {

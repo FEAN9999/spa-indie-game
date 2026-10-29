@@ -2,6 +2,7 @@ import { EVENT_FROM_DAY, EVENT_GAP_DAYS, HOT_DAYS, INSPECT_MIN, POWER_FROM_MIN, 
 import { festivalOf } from './festivals'
 import { averageDay, type DayRecord } from './quests'
 import type { Rng } from './rng'
+import type { IdolId } from './idols'
 import type { ServiceId } from './services'
 import type { Look } from './types'
 
@@ -18,6 +19,9 @@ export interface EventPlan {
   minute: number
 }
 
+/** Who makes the shop hot: Mi Mi, or a star. */
+export type HotBy = 'kol' | IdolId
+
 export interface EventBook {
   /** The first day an event may be planned for. */
   nextDay: number
@@ -25,8 +29,14 @@ export interface EventBook {
   last: EventKind | null
   /** The event announced for tomorrow or today; Mi Mi's goes once she walks in. */
   plan: EventPlan | null
-  /** The last hot day after Mi Mi's 3 stars, 0 if none. */
+  /** The last hot day of the current run, 0 if none. */
   hotUntil: number
+  /** How many days the run covers, counted back from hotUntil. */
+  hotDays: number
+  /** Who started or last stretched the run. */
+  hotBy: HotBy
+  /** The morning the hot card shows next: the day after the last 3-star visit that made the shop hot. */
+  hotCardDay: number
   /** Today's count for an event's challenge. */
   count: number
   /** True once today's inspector has looked round. */
@@ -40,6 +50,9 @@ export const emptyEventBook = (nextDay = EVENT_FROM_DAY): EventBook => ({
   last: null,
   plan: null,
   hotUntil: 0,
+  hotDays: HOT_DAYS,
+  hotBy: 'kol',
+  hotCardDay: 0,
   count: 0,
   inspected: false,
   certGiven: false,
@@ -74,8 +87,28 @@ export function dueKol(book: EventBook, day: number, minutes: number): boolean {
   return p !== null && p.kind === 'kol' && p.day === day && p.minute <= minutes
 }
 
-/** True on the HOT_DAYS days that end on hotUntil. */
-export const hotOn = (book: EventBook, day: number): boolean => book.hotUntil > 0 && day > book.hotUntil - HOT_DAYS && day <= book.hotUntil
+/** True on the hotDays days that end on hotUntil. */
+export const hotOn = (book: EventBook, day: number): boolean => book.hotUntil > 0 && day > book.hotUntil - book.hotDays && day <= book.hotUntil
+
+/**
+ * A 3-star visit on `day` makes the shop hot from tomorrow for HOT_DAYS days; if a run is still going (today is its last day
+ * or earlier) it is stretched with no gap. The next morning's card names `by`.
+ */
+export function makeHot(book: EventBook, day: number, by: HotBy): void {
+  if (book.hotUntil > 0 && book.hotUntil >= day) {
+    const start = book.hotUntil - book.hotDays + 1
+    book.hotUntil = Math.max(book.hotUntil, day + HOT_DAYS)
+    book.hotDays = book.hotUntil - start + 1
+  } else {
+    book.hotUntil = day + HOT_DAYS
+    book.hotDays = HOT_DAYS
+  }
+  book.hotBy = by
+  book.hotCardDay = day + 1
+}
+
+/** True on the mornings the hot card shows: a run's first day, and the day after a visit that stretched it. */
+export const hotCardToday = (book: EventBook, day: number): boolean => hotOn(book, day) && (day === book.hotUntil - book.hotDays + 1 || day === book.hotCardDay)
 
 /** Hot days left, today counted; 0 when not hot. */
 export const hotDaysLeft = (book: EventBook, day: number): number => (hotOn(book, day) ? book.hotUntil - day + 1 : 0)

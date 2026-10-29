@@ -1,12 +1,13 @@
 import { C } from '../art/palette'
 import { INSPECT_BEAUTY, LOW_STOCK, POWER_FROM_MIN, POWER_TO_MIN, POWER_WARN_MIN } from '../config'
 import { clockLabel } from '../sim/clock'
-import { hotDaysLeft, MACHINES, type EventKind, type EventPlan } from '../sim/events'
+import { hotDaysLeft, MACHINES, type EventKind, type EventPlan, type HotBy } from '../sim/events'
 import { SERVICES, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { STOCK_NAME } from '../sim/stock'
 import type { SimEvent } from '../sim/types'
 import { formatMoney } from '../strings/format'
+import { IDOL_TEXT } from '../strings/idols'
 import { t, type StringKey } from '../strings/vi'
 import type { GoldCard } from './festivals'
 import type { TodayLine } from './today'
@@ -65,9 +66,10 @@ export function powerWarnText(machines: ServiceId[]): string {
   return t('powerWarnToast', { hours: POWER_WARN_MIN / 60, machines: names.join(', ') })
 }
 
-/** The quiet card on the first hot morning. */
-export function hotCard(): GoldCard {
-  return { icon: EVENT_ICON.hot, head: t('hotHead'), name: t('hotName'), line: t('hotLine'), quiet: true }
+/** The quiet card on a hot morning; Mi Mi's head for her video, a star's name otherwise. */
+export function hotCard(by: HotBy): GoldCard {
+  const head = by === 'kol' ? t('hotHead') : t('hotIdolHead', { name: IDOL_TEXT[by].name })
+  return { icon: EVENT_ICON.hot, head, name: t('hotName'), line: t('hotLine'), quiet: true }
 }
 
 /**
