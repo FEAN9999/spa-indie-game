@@ -47,6 +47,7 @@ import v22 from '../fixtures/save-v22.json'
 import v23 from '../fixtures/save-v23.json'
 import v24 from '../fixtures/save-v24.json'
 import v25 from '../fixtures/save-v25.json'
+import v26 from '../fixtures/save-v26.json'
 import { Chain } from '../../src/sim/chain'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, starShop, startService } from './helpers'
 
@@ -59,17 +60,17 @@ type Shop = { lessonsPaid: unknown; stock: Record<string, number>; staff: { tier
 const withNewKeys = <T extends object>(raw: T): T => {
   const out = structuredClone(raw) as T & Shop & { chain?: { branches: Shop[] } }
   for (const shop of [out, ...(out.chain?.branches ?? [])]) {
-    shop.stock.salt = 20
-    shop.lessonsPaid = []
+    shop.stock.salt ??= 20
+    shop.lessonsPaid ??= []
     for (const p of [...shop.staff, ...shop.candidates]) {
-      p.tiers.scrub = 0
+      p.tiers.scrub ??= 0
       p.tiers.foot = 0
     }
-    shop.progress.total.services.scrub = 0
+    shop.progress.total.services.scrub ??= 0
     shop.progress.total.services.foot = 0
     const start = shop.progress.dayStart as { services: Record<string, number> } | null
     if (start && typeof start === 'object') {
-      start.services.scrub = 0
+      start.services.scrub ??= 0
       start.services.foot = 0
     }
   }
@@ -1861,5 +1862,45 @@ describe('save version 26', () => {
     const sim = busyShop()
     sim.lessonsPaid = ['scrub']
     expect(viaJson(sim).lessonsPaid).toEqual(['scrub'])
+  })
+})
+
+describe('save version 27', () => {
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26 }
+  const paid = (lessonsPaid: unknown, services?: string[]) => {
+    const raw = structuredClone(v26) as unknown as { lessonsPaid: unknown; services: string[] }
+    raw.lessonsPaid = lessonsPaid
+    if (services) raw.services = services
+    return parseSave(raw as never).lessonsPaid
+  }
+
+  it('opens the v26 chain as it was, with scrub kept and foot not learned', () => {
+    expect(parseSave(structuredClone(v26))).toEqual(withNewKeys(v26))
+    const chain = Chain.fromSave(parseSave(structuredClone(v26)), 8)
+    expect(chain.main.services).toContain('scrub')
+    expect(chain.main.services).not.toContain('foot')
+    const tech = chain.main.staff.find(s => s.role === 'technician')!
+    expect(tech.tiers.scrub).toBe(1)
+    expect(tech.study?.course).toBe('scrub')
+    expect(chain.main.items.filter(i => i.kind === 'scrubBed').length).toBe(1)
+    expect(chain.shop('beach')!.staff.length).toBe(1)
+    expect(chain.toSave().v).toBe(SAVE_VERSION)
+  })
+
+  it('opens every older save and saves it as the current version', () => {
+    for (const [name, raw] of Object.entries(fixtures)) {
+      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
+      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
+    }
+  })
+
+  it('opens 26 and the current version and refuses a newer one', () => {
+    expect(parseSave({ ...structuredClone(v26), v: 26 }).v).toBe(26)
+    expect(parseSave({ ...structuredClone(v26), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
+    expect(() => parseSave({ ...structuredClone(v26), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  })
+
+  it('repairs the foot lesson paid', () => {
+    expect([paid(['foot']), paid(['foot', 'scrub'], ['shampoo']), paid(['foot'], ['shampoo', 'foot'])]).toEqual([['foot'], ['scrub', 'foot'], []])
   })
 })
