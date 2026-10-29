@@ -29,7 +29,7 @@ import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
 import type { PlaceId } from './places'
 import { randomLook, type Rng } from './rng'
-import { BASIC_SERVICES, RECIPE_SERVICES, SERVICE_IDS, type ServiceId } from './services'
+import { BASIC_SERVICES, LESSON_SERVICES, RECIPE_SERVICES, SERVICE_IDS, type ServiceId } from './services'
 import type { Facing, Look, Tile, Vec } from './types'
 
 export type StaffRole = 'receptionist' | 'technician'
@@ -128,8 +128,8 @@ export const tuition = (s: Staff, course: Course): number => {
   return s.trait === 'studious' ? Math.round((price * STUDIOUS_TUITION) / 1000) * 1000 : price
 }
 
-/** The services a candidate's specialty is drawn from: every basic service, and the recipe services in `open`. */
-export const candidatePool = (open: readonly ServiceId[]): ServiceId[] => [...BASIC_SERVICES, ...RECIPE_SERVICES.filter(id => open.includes(id))]
+/** The services a candidate's specialty is drawn from: every basic service, then the recipe and lesson services in `open`. */
+export const candidatePool = (open: readonly ServiceId[]): ServiceId[] => [...BASIC_SERVICES, ...RECIPE_SERVICES.filter(id => open.includes(id)), ...LESSON_SERVICES.filter(id => open.includes(id))]
 
 /** A random candidate whose name is not in `taken`, with a specialty in a service the shop can have, given the `open` ones. */
 export function makeCandidate(rng: Rng, taken: string[], open: readonly ServiceId[]): Candidate {

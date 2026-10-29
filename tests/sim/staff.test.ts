@@ -128,6 +128,8 @@ describe('staff tiers', () => {
     expect(candidatePool(['shampoo'])).toEqual(['shampoo', 'mask', 'massage'])
     expect(candidatePool(['shampoo', 'mask', 'massage', 'steam'])).toEqual(['shampoo', 'mask', 'massage', 'steam'])
     expect(candidatePool(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
+    expect(candidatePool(['shampoo', 'scrub'])).toEqual(['shampoo', 'mask', 'massage', 'scrub'])
+    expect(noTiers().scrub).toBe(0)
   })
 
   it('draws a steam specialty only once steam is open', () => {
@@ -157,6 +159,14 @@ describe('courses', () => {
     const s = tech({ shampoo: 3, mask: 1, massage: 0 })
     expect(courses(s, ['shampoo', 'mask'])).toEqual(['mask'])
     expect(courses(s, ['shampoo', 'mask', 'massage'])).toEqual(['mask', 'massage'])
+  })
+
+  it('offers Chà muối biển last once it is open, at the usual price', () => {
+    const s = tech({})
+    const six = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
+    expect(courses(s, [...six, 'scrub']).at(-1)).toBe('scrub')
+    expect(courses(s, [...six])).not.toContain('scrub')
+    expect(tuition({ ...s, trait: 'calm' } as Staff, 'scrub')).toBe(100_000)
   })
 
   it('offers a receptionist Tiếp khách until 5 dots', () => {

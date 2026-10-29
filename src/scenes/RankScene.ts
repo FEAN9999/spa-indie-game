@@ -4,9 +4,10 @@ import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import { monthOf } from '../sim/calendar'
 import type { MonthResult, YearResult } from '../sim/rank'
+import type { ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { t } from '../strings/vi'
-import { monthOutcome, partRows, yearLines } from '../view/rank'
+import { learnLine, monthOutcome, partRows, yearLines } from '../view/rank'
 import { addPartRow, starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
@@ -51,12 +52,12 @@ export class RankScene extends Phaser.Scene {
       onDone()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setDepth(-2).setInteractive()
-    if (kind === 'month' && sim.rank.last) this.monthCard(sim.rank.last, done)
+    if (kind === 'month' && sim.rank.last) this.monthCard(sim.rank.last, sim.services, done)
     else if (kind === 'year' && sim.rank.lastYear) this.yearCard(sim.rank.lastYear, sim.shopName, done)
     else done()
   }
 
-  private monthCard(r: MonthResult, done: () => void): void {
+  private monthCard(r: MonthResult, services: readonly ServiceId[], done: () => void): void {
     const up = r.after > r.before
     addCard(this, 70, 250, 940, 1660)
     fit(this.add.text(MID, 330, t('rankCardKicker', { day: r.day, month: monthOf(r.day) }), textStyle(32, '800', C.terracotta)).setOrigin(0.5), TEXT_W)
@@ -100,9 +101,14 @@ export class RankScene extends Phaser.Scene {
     const { head, sub } = monthOutcome(r)
     this.add.graphics().fillStyle(hex(up ? C.goldPale : C.cream), 1).fillRoundedRect(120, 1330, 840, 300, 44).lineStyle(4, hex(C.ink)).strokeRoundedRect(120, 1330, 840, 300, 44)
     fit(this.add.text(MID, 1395, head, textStyle(50, '800', up ? C.mustardDark : C.ink)).setOrigin(0.5), 760)
-    const body = this.add.text(MID, 1440, sub, { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5, 0)
-    // the sub text lives in the box under the head: never taller than what is left of it
-    if (body.height > 170) body.setScale(170 / body.height)
+    const body = this.add.text(0, 0, sub, { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5, 0)
+    const parts: Phaser.GameObjects.Text[] = [body]
+    const learn = learnLine(r, services)
+    if (learn) parts.push(this.add.text(0, body.height + 8, learn, { ...textStyle(32, '800', C.tealDark), align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5, 0))
+    const lines = this.add.container(MID, 1440, parts)
+    // the sub and the new-service line live in the box under the head: never taller than what is left of it
+    const h = parts[parts.length - 1].y + parts[parts.length - 1].height
+    if (h > 170) lines.setScale(170 / h)
     // the summary's button sits at about the same place: a second tap on it must not close this card before it is seen
     this.time.delayedCall(COUNT_MS, () => addButton(this, MID, 1770, 560, 130, t('openDay', { day: r.day + 1 }), 'primary', done, 46))
   }

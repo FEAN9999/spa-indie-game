@@ -40,6 +40,11 @@ describe('economy', () => {
     expect(serviceArrivalFactor(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])).toBeCloseTo(0.65, 10)
   })
 
+  it('is not changed by Chà muối biển', () => {
+    expect(serviceArrivalFactor(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub'])).toBeCloseTo(0.65, 10)
+    expect(serviceArrivalFactor(['shampoo', 'mask', 'massage', 'scrub'])).toBe(0.8)
+  })
+
   it('draws customers faster as the shop gets prettier, up to a quarter more', () => {
     expect([21, 51, 81, 200].map(beautyArrivalFactor)).toEqual([1, 0.9, 0.8, 0.8])
     expect(beautyArrivalFactor(0)).toBe(1)

@@ -106,7 +106,7 @@ export function monthInput(
   const served = total.served - book.month.served
   const lost = total.lost - book.month.lost
   const days = Math.max(1, day - book.month.from + 1)
-  return { rating, beauty, services, servedPerDay: served / days, lostShare: served + lost > 0 ? lost / (served + lost) : null }
+  return { rating, beauty, services: Math.min(services, RANK_SERVICES_FULL), servedPerDay: served / days, lostShare: served + lost > 0 ? lost / (served + lost) : null }
 }
 
 /** The last day of every month from RANK_FROM_DAY on. */

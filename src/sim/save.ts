@@ -12,7 +12,7 @@ import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } 
 import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, type Life, type Progress, type Quest, type QuestKind } from './quests'
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
-import { BASIC_SERVICES, SERVICE_IDS, type ServiceId } from './services'
+import { BASIC_SERVICES, LESSON_SERVICES, SERVICE_IDS, type LessonService, type ServiceId } from './services'
 import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type MoveTo, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
@@ -23,7 +23,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 26
+export const SAVE_VERSION = 27
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -78,6 +78,8 @@ export interface SaveData {
   nextStaffId: number
   /** The services the shop has opened, in opening order. */
   services: ServiceId[]
+  /** The lesson services whose tuition is paid and whose lesson is not passed yet. */
+  lessonsPaid: LessonService[]
   /** What is left of each item. */
   stock: Record<StockItem, number>
   /** The regulars, what has been served and the gifts received. */
@@ -258,6 +260,7 @@ function parseShop(raw: unknown): SaveData {
   // unknown services are dropped and shampoo is always open; a customer who wants an unknown one wants shampoo
   const known = Array.isArray(data.services) ? data.services : []
   data.services = SERVICE_IDS.filter(id => id === 'shampoo' || known.includes(id))
+  data.lessonsPaid = repairLessons(data.lessonsPaid, data.services)
   data.customers = data.customers.map(c => ({ ...c, service: SERVICE_IDS.includes(c.service) ? c.service : 'shampoo' }))
   // every kind of customer is known; a missing or unknown one is an office worker
   data.customers = data.customers.map(c => ({ ...c, kind: CUSTOMER_KINDS.includes(c.kind) ? c.kind : 'office' }))
@@ -523,6 +526,12 @@ function repairVipBook(x: unknown, day: number): VipBook {
   return book
 }
 
+/** The lesson services that are in the list and not open yet, once each. */
+function repairLessons(x: unknown, services: ServiceId[]): LessonService[] {
+  const known = Array.isArray(x) ? x : []
+  return LESSON_SERVICES.filter(id => known.includes(id) && !services.includes(id))
+}
+
 /** A well-formed recipe book: tries are whole mixes with their right count recomputed, heard are that recipe's hints, and a recipe is solved by an all-right try or an open service. */
 function repairRecipes(x: unknown, services: ServiceId[]): RecipeBook {
   const book = emptyRecipes()
@@ -591,7 +600,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

@@ -19,6 +19,7 @@ import {
   HOT_ARRIVAL,
   IDOL_PRICE_FACTOR,
   INSPECT_BEAUTY,
+  LESSON_STARS,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -78,7 +79,7 @@ import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
-import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
+import { BASIC_SERVICES, isLessonService, LESSON_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
@@ -92,6 +93,11 @@ export type HireProblem = 'money' | 'full'
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
+/** Where a lesson stands: not paid, tuition paid and not yet passed, or learned. */
+export type LessonState = 'no' | 'paid' | 'yes'
+/** What stops a lesson now: not the main shop, too few stars, massage not open, debt, or too little money for the tuition. */
+export type LessonProblem = 'main' | 'stars' | 'order' | 'debt' | 'money'
+
 /** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
 export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
@@ -185,6 +191,8 @@ export class SpaSim {
   candidatesDay = 0
   /** The services the shop has opened, in opening order; shampoo is built in. */
   services: ServiceId[] = ['shampoo']
+  /** The lesson services whose tuition is paid and whose lesson is not passed yet. */
+  lessonsPaid: LessonService[] = []
   /** What is left of each item; only used up from day 5. */
   stock: Record<StockItem, number> = fullStock()
   /** What has been tried and heard for each recipe, and whether it is solved. */
@@ -367,6 +375,7 @@ export class SpaSim {
     if (this.services.includes(id)) return null
     if (this.place !== null) return 'main'
     if (this.money < 0) return 'debt'
+    if (isLessonService(id)) return 'lesson'
     if (isRecipeService(id)) {
       if (!this.benchOpen()) return 'order'
       if (!this.recipes[id].solved) return 'recipe'
@@ -412,6 +421,49 @@ export class SpaSim {
     this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
     this.advanceStarter()
     return null
+  }
+
+  lessonState(id: LessonService): LessonState {
+    if (this.services.includes(id)) return 'yes'
+    return this.lessonsPaid.includes(id) ? 'paid' : 'no'
+  }
+
+  /** What stops the lesson now, or null. Once the tuition is paid the lesson can always go on, whatever the stars. */
+  lessonProblem(id: LessonService): LessonProblem | null {
+    if (this.place !== null) return 'main'
+    if (this.lessonState(id) !== 'no') return null
+    if (this.rank.stars < LESSON_STARS[id]) return 'stars'
+    if (!this.services.includes('massage')) return 'order'
+    if (this.money < 0) return 'debt'
+    return this.money < SERVICES[id].openCost ? 'money' : null
+  }
+
+  /** Takes the tuition once (never in the day's figures). A paid or learned lesson costs nothing. */
+  payLesson(id: LessonService): LessonProblem | null {
+    const problem = this.lessonProblem(id)
+    if (problem) return problem
+    if (this.lessonState(id) === 'no') {
+      this.money -= SERVICES[id].openCost
+      this.lessonsPaid.push(id)
+    }
+    return null
+  }
+
+  /** The lesson is passed: opens the service and puts its bed in the gift box. Throws unless the tuition is paid. */
+  passLesson(id: LessonService): void {
+    if (this.lessonState(id) !== 'paid') throw new Error(`Lesson ${id} is not paid`)
+    this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
+    this.lessonsPaid = this.lessonsPaid.filter(x => x !== id)
+    this.book.gifts.push(SERVICES[id].bed)
+  }
+
+  /** The first lesson the shop could take now (money may still be short); null when there is none. */
+  learnable(): LessonService | null {
+    return LESSON_SERVICES.find(id => {
+      if (this.lessonState(id) !== 'no') return false
+      const p = this.lessonProblem(id)
+      return p === null || p === 'debt' || p === 'money'
+    }) ?? null
   }
 
   /** The services customers can ask for: open, with at least one bed. */
@@ -828,6 +880,7 @@ export class SpaSim {
       candidatesDay: this.candidatesDay,
       nextStaffId: this.nextStaffId,
       services: this.services,
+      lessonsPaid: this.lessonsPaid,
       stock: this.stock,
       book: this.book,
       vip: this.vip,
@@ -865,6 +918,7 @@ export class SpaSim {
     // never hand out an id a damaged save already uses
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
     sim.services = d.services
+    sim.lessonsPaid = d.lessonsPaid
     sim.stock = d.stock
     sim.book = d.book
     sim.vip = d.vip

@@ -34,11 +34,11 @@ export interface KindSpec {
 }
 
 export const KINDS: Record<CustomerKind, KindSpec> = {
-  student: { fromDay: 1, weight: 3, patience: 1, tip: [0.5, 0.5, 0.5], prefers: ['shampoo'], grading: 'easy', reviews: 1, speed: 5, hard: false },
+  student: { fromDay: 1, weight: 3, patience: 1, tip: [0.5, 0.5, 0.5], prefers: ['shampoo', 'scrub'], grading: 'easy', reviews: 1, speed: 5, hard: false },
   office: { fromDay: 1, weight: 3, patience: 0.8, tip: [1, 1, 1], prefers: ['shampoo', 'mask', 'stone'], grading: 'normal', reviews: 1, speed: 5, hard: false },
   picky: { fromDay: 3, weight: 2, patience: 1, tip: [0, 0, 2], prefers: SERVICE_IDS, grading: 'harsh', reviews: 1, speed: 5, hard: true },
   elder: { fromDay: 4, weight: 2, patience: 1.3, tip: [0.8, 0.8, 0.8], prefers: ['massage', 'steam'], grading: 'easy', reviews: 1, speed: 3.5, hard: false },
-  tourist: { fromDay: 1, weight: 0, patience: 0.9, tip: [1.5, 1.5, 1.5], prefers: ['mud', 'stone', 'massage'], grading: 'easy', reviews: 1, speed: 4, hard: false },
+  tourist: { fromDay: 1, weight: 0, patience: 0.9, tip: [1.5, 1.5, 1.5], prefers: ['mud', 'stone', 'massage', 'scrub'], grading: 'easy', reviews: 1, speed: 4, hard: false },
   backpacker: { fromDay: 1, weight: 0, patience: 1.3, tip: [0.5, 1, 2], prefers: ['massage', 'steam', 'shampoo'], grading: 'normal', reviews: 1, speed: 5, hard: false },
   lady: { fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true },
   celeb: { fromDay: CELEB_FROM_DAY, weight: 0, patience: 0.8, tip: [3, 3, 3], prefers: ['massage', 'mask', 'mud'], grading: 'harsh', reviews: 2, speed: 5, hard: false },

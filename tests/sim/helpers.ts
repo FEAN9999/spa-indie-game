@@ -1,6 +1,9 @@
 import type { BadgeShop } from '../../src/sim/badges'
+import { Chain } from '../../src/sim/chain'
+import type { ItemKind } from '../../src/sim/items'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
+import { SERVICE_IDS, type ServiceId } from '../../src/sim/services'
 import { noTiers, wageFor, type Staff, type StaffRole, type StaffStats, type Tiers, type TraitId } from '../../src/sim/staff'
 import type { Customer, SimEvent } from '../../src/sim/types'
 
@@ -123,3 +126,63 @@ export const zeroShop = (): BadgeShop => ({
   dailies: 0,
   day: 1,
 })
+
+/** Buys `kind` at the first tile `canPlace` accepts, scanning rows top to bottom and columns left to right, not flipped. */
+export function placeFirst(sim: SpaSim, kind: ItemKind): void {
+  for (let y = 0; y < 60; y++)
+    for (let x = 0; x < 40; x++)
+      if (sim.canPlace(kind, x, y, false) === null) {
+        const problem = sim.buy(kind, x, y, false)
+        if (problem) throw new Error(`cannot buy ${kind}: ${problem}`)
+        return
+      }
+  throw new Error(`no room for ${kind}`)
+}
+
+const OLD_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud']
+
+/**
+ * Four days of a 3-star chain with the six old services open: who came to each shop, who applied and which quests were given.
+ * Compared against a log made before Chà muối biển, it checks that a shop that has not learned it draws exactly as before.
+ */
+export function sixServiceLog(days = 4, before?: (chain: Chain) => void): { days: { day: number; main: string[]; beach: string[]; candidates: string[]; quests: string[] }[]; next: number } {
+  const rng = createRng(2025)
+  const main = new SpaSim({ rng })
+  main.day = 40
+  main.rank.stars = 3
+  main.profileDone = true
+  main.money = 50_000_000
+  main.services = [...OLD_SERVICES]
+  for (const kind of ['maskBed', 'massageBed', 'steamTent', 'stoneBed', 'mudTub'] as const) placeFirst(main, kind)
+  for (let i = 0; i < 3; i++) hireStaff(main, 'technician')
+  const chain = new Chain(main, 11)
+  chain.open('beach')
+  const beach = chain.shop('beach')!
+  hireStaff(beach, 'technician')
+  before?.(chain)
+  const seen = { main: new Set<number>(), beach: new Set<number>() }
+  const log = (shop: SpaSim, ids: Set<number>, out: string[]) => {
+    for (const c of shop.customers)
+      if (!ids.has(c.id)) {
+        ids.add(c.id)
+        out.push(`${c.id}:${c.kind}:${c.service}:${c.regular ?? ''}:${c.vip ?? ''}:${c.kol}`)
+      }
+  }
+  const out: { day: number; main: string[]; beach: string[]; candidates: string[]; quests: string[] }[] = []
+  for (let d = 0; d < days; d++) {
+    const row = { day: main.day, main: [] as string[], beach: [] as string[], candidates: [] as string[], quests: [] as string[] }
+    for (let t = 0; !main.dayOver; t += 100) {
+      if (t > 400_000) throw new Error('day did not end')
+      chain.advance(100)
+      main.drainEvents()
+      log(main, seen.main, row.main)
+      log(beach, seen.beach, row.beach)
+    }
+    chain.finishDay()
+    chain.startDay()
+    row.candidates = main.candidates.map(c => `${c.name}:${c.role}:${SERVICE_IDS.filter(id => c.tiers[id] > 0).map(id => `${id}${c.tiers[id]}`).join(',')}`)
+    row.quests = main.progress.daily.map(q => `${q.kind}:${q.service}:${q.target}`)
+    out.push(row)
+  }
+  return { days: out, next: rng() }
+}

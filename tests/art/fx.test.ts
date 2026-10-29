@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { fxTextures } from '../../src/art/fx'
 import { C } from '../../src/art/palette'
+import { SERVICE_IDS } from '../../src/sim/services'
 import { STOCK_ITEMS } from '../../src/sim/stock'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
@@ -10,6 +11,11 @@ describe('fx art', () => {
   it('draws an icon for every stock item', () => {
     const fx = fxTextures()
     for (const item of STOCK_ITEMS) expect(fx[`stock-${item}`], item).toBeDefined()
+  })
+
+  it('draws a badge for every service', () => {
+    const fx = fxTextures()
+    for (const id of SERVICE_IDS) expect(fx[`svc-${id}`], id).toBeDefined()
   })
 
   it("has the three event icons: Mi Mi's phone, the inspector's clipboard and the hot days' sparkle", () =>

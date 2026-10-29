@@ -270,6 +270,14 @@ export function fxTextures(): Record<string, string> {
         `<path d="M20.5,32 Q28,36 35.5,32" fill="${C.clay}" stroke="${C.ink}" stroke-width="1.6" stroke-linecap="round"/>` +
         `<circle cx="17" cy="35.4" r="1.8" fill="${C.clayLight}"/><circle cx="39.5" cy="34.6" r="2" fill="${C.clayLight}"/>`,
     ),
+    // a wooden bowl heaped with sea salt, a wave on its side
+    'svc-scrub': badge(
+      C.sea,
+      `<path d="M11,30 H45 Q43,45 28,45 Q13,45 11,30Z" fill="${C.wood}" ${INNER}/>` +
+        `<path d="M16,37 q3,-3 6,0 t6,0 t6,0 t6,0" stroke="${C.cream}" stroke-width="2" fill="none" stroke-linecap="round"/>` +
+        `<path d="M13,30 Q17,17 28,16 Q39,17 43,30Z" fill="${C.cream}" ${INNER}/>` +
+        `<path d="M22,24 l2.2,-3 l2.2,3 l-2.2,3Z M30,21 l2,-2.6 l2,2.6 l-2,2.6Z M33,27 l1.8,-2.4 l1.8,2.4 l-1.8,2.4Z" fill="${C.seaPale}" stroke="${C.ink}" stroke-width="1.2" stroke-linejoin="round"/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -312,6 +320,14 @@ export function fxTextures(): Record<string, string> {
         `<rect x="18" y="14" width="20" height="6" rx="3" fill="${C.terracotta}" ${INNER}/>` +
         `<rect x="19.5" y="27" width="17" height="13" rx="2.5" fill="${C.paper}" ${INNER}/>` +
         `<path d="M23,37 Q23,31 28,31 Q33,31 33,37Z" fill="${C.clay}"/>`,
+    ),
+    // a glass jar of sea salt with a cobalt lid
+    'stock-salt': badge(
+      C.seaPale,
+      `<rect x="18" y="9" width="20" height="8" rx="2.5" fill="${C.cobalt}" ${INNER}/>` +
+        `<rect x="15" y="16" width="26" height="31" rx="7" fill="${C.cream}" ${INNER}/>` +
+        `<path d="M15.5,30 q3,-2.5 6,0 t6,0 t6,0 t6,0" stroke="${C.sea}" stroke-width="2" fill="none"/>` +
+        `<path d="M21,38 l2,-2.6 l2,2.6 l-2,2.6Z M29,36 l2,-2.6 l2,2.6 l-2,2.6Z M25,23 l1.8,-2.4 l1.8,2.4 l-1.8,2.4Z" fill="${C.seaPale}" stroke="${C.ink}" stroke-width="1.1"/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(

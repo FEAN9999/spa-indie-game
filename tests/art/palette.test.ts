@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
+import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, TEACHER_LOOK, teacherColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
 import { IDOL_COLORS } from '../../src/art/idols'
 import { IDOL_IDS, IDOLS } from '../../src/sim/idols'
@@ -73,5 +73,11 @@ describe('look palettes', () => {
       expect(IDOL_COLORS[id].skin, id).toBe(SKIN[IDOLS[id].look.skin])
       expect(IDOL_COLORS[id].hairStyle, id).toBe(IDOLS[id].look.hairStyle)
     }
+  })
+})
+
+describe('the teacher', () => {
+  it('is her look in the teacher dress', () => {
+    expect(teacherColors()).toEqual({ ...lookColors(TEACHER_LOOK), outfit: 'teacher' })
   })
 })

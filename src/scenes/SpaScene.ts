@@ -50,6 +50,7 @@ import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldC
 import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
+import { servicesOpening } from '../view/servicesPanel'
 import { stockLowText } from '../view/stockText'
 import { humNow, humText, todayToasts } from '../view/idol'
 import { RoomView } from '../view/RoomView'
@@ -113,9 +114,9 @@ const STONES_TILES = 0.78
 const SHUTTER = { ms: 300, depth: HUD_DEPTH + 200, slat: 72, sign: { w: 640, h: 160, r: 40 } }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
-const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene' }
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
-const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud' }
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub' }
 
 interface CustomerSprite {
   view: CharacterView
@@ -630,16 +631,21 @@ export class SpaScene extends Phaser.Scene {
     sim.markHint('openServices')
     const stock = isUnlocked('stock', sim.day)
     const stockIntro = stock && !sim.hintDone('openStock')
-    const tab = stock && (stockIntro || sim.lowStock().length > 0) ? 'stock' : 'services'
+    const { tab, page } = servicesOpening(sim, stock, stockIntro)
     if (stock) sim.markHint('openStock')
     const recipesIntro = !intro && tab === 'services' && sim.benchOpen() && !sim.hintDone('recipes')
     const data: ServicesData = {
       sim,
       intro,
       tab,
+      page,
       stockIntro,
       recipesIntro,
-      onChange: () => this.session.saveNow(),
+      // a lesson passed opens its service at every branch, so the save written now already has it
+      onChange: () => {
+        this.chain.sync()
+        this.session.saveNow()
+      },
       onClose: () => {
         if (recipesIntro) sim.markHint('recipes')
         this.modal = false
@@ -1032,8 +1038,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   update(time: number, delta: number) {
     if (this.tooNew) return
-    // over a panel too, so it does not wait for the panel to close
-    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
+    // over a panel too, so it does not wait for the panel to close; not over a lesson game, which has no serving customer
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)
@@ -1473,7 +1479,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
 
     // face down on the massage and stone beds, face up anywhere else
-    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // only the towel-wrapped head shows over the mud

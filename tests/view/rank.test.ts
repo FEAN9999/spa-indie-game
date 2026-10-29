@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { rivalsFor, type MonthResult, type YearResult } from '../../src/sim/rank'
-import { RANK_PART_ICON, judgeDayOf, monthOutcome, partRows, starsLine, totalLine, yearLines } from '../../src/view/rank'
+import { emptyRankBook, monthInput, rivalsFor, type MonthResult, type YearResult } from '../../src/sim/rank'
+import { RANK_PART_ICON, judgeDayOf, learnLine, monthOutcome, partRows, starsLine, totalLine, yearLines } from '../../src/view/rank'
 
 const input = { rating: 4.2, beauty: 40, services: 4, servedPerDay: 14, lostShare: 0.09 }
 
@@ -11,6 +11,10 @@ describe('partRows', () => {
     expect(rows.map(r => r.value)).toEqual(['4,2', '40', '4/6 món', '14 khách', '9%'])
     expect(rows.map(r => r.pts)).toEqual([1, 2, 3, 4, 5])
     expect(rows.map(r => r.icon)).toEqual(RANK_PART_ICON)
+  })
+  it('never reads more than 6/6 món', () => {
+    const i = monthInput(emptyRankBook(13, 100, 5), 15, 4, 30, 7, { served: 145, lost: 10 })
+    expect(partRows(i, [0, 0, 0, 0, 0])[2].value).toBe('6/6 món')
   })
   it('has words for no rating and no customers', () => {
     const rows = partRows({ ...input, rating: null, lostShare: null }, [0, 0, 0, 0, 0])
@@ -82,5 +86,21 @@ describe('yearLines', () => {
     expect(r.rows.map(x => x.name)).toEqual(['Tiệm gội Cô Ba', 'Ngọc Lan Spa', 'Spa Hoa Sen', 'SPA MỚI', 'Spa Của Tôi'])
     expect(r.rows[3]).toEqual({ name: 'SPA MỚI', pts: '74 điểm', me: false })
     expect(r.rows[4].me).toBe(true)
+  })
+})
+
+describe('learnLine', () => {
+  const m = (before: 1 | 2 | 3 | 4 | 5, after: 1 | 2 | 3 | 4 | 5): MonthResult =>
+    ({ day: 9, input, parts: [0, 0, 0, 0, 0], total: 55, before, after, reward: 0 })
+  it('names the service the new star opens', () => {
+    expect(learnLine(m(2, 3), ['massage'])).toBe('Món mới để học: Chà muối biển.')
+  })
+  it('is null for other rises and for keeping', () => {
+    expect(learnLine(m(3, 4), [])).toBeNull()
+    expect(learnLine(m(1, 2), [])).toBeNull()
+    expect(learnLine(m(3, 3), [])).toBeNull()
+  })
+  it('is null when the shop already learned it', () => {
+    expect(learnLine(m(2, 3), ['massage', 'scrub'])).toBeNull()
   })
 })

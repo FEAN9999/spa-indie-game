@@ -82,6 +82,11 @@ export const C = {
   coopStepHigh: '#56331F',
   // the beach branch: sea, its wall and floors, a shell; the chain map's land, beach and river; the tourist's straw hat
   sea: '#6FB3CF',
+  seaPale: '#CFE8F0',
+  saltWhite: '#FDFCF8',
+  saltGrey: '#E4EEF0',
+  burnPale: '#FBE3DC',
+  scrubSheet: '#DCEFF4',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
   seaWall: '#BFD9E2',
@@ -154,7 +159,7 @@ export interface CharacterColors {
   hairStyle: number
   shirt: number
   /** The owner's outfit; the shirt colour counts only in the bà ba, which is also what unset means. */
-  outfit?: OutfitId
+  outfit?: OutfitId | 'teacher'
   apron?: boolean
   /** A customer's kind, which decides what they wear. */
   kind?: CustomerKind
@@ -170,6 +175,14 @@ export interface CharacterColors {
 
 export function lookColors(look: Look): CharacterColors {
   return { skin: SKIN[look.skin], hair: HAIR[look.hair], hairStyle: look.hairStyle, shirt: SHIRT[look.shirt] }
+}
+
+/** The teacher of the lessons: dark hair in a bun. */
+export const TEACHER_LOOK: Look = { skin: 1, hair: 0, hairStyle: 3, shirt: 0 }
+
+/** The teacher in her purple áo dài and nón lá. */
+export function teacherColors(): CharacterColors {
+  return { ...lookColors(TEACHER_LOOK), outfit: 'teacher' }
 }
 
 /**
