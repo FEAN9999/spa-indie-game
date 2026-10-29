@@ -248,7 +248,7 @@ export class Hud {
       const fresh = hint !== undefined && !this.sim.hintDone(hint)
       const freshLater = p.later !== undefined && this.sim.featureOpen(p.later.feature) && !this.sim.hintDone(p.later.hint)
       p.badge?.setVisible(!locked && (fresh || freshLater))
-      p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0))
+      p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0 || this.sim.learnable() !== null))
     }
   }
 

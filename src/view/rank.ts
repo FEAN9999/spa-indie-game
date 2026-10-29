@@ -1,6 +1,7 @@
-import { DAYS_PER_MONTH, RANK_FROM_DAY, RANK_PRICE_STEP, RANK_STAR_AT, RIVAL_YEAR_STEP } from '../config'
+import { DAYS_PER_MONTH, LESSON_STARS, RANK_FROM_DAY, RANK_PRICE_STEP, RANK_STAR_AT, RIVAL_YEAR_STEP } from '../config'
 import { monthStart } from '../sim/calendar'
 import { rivalsFor, starsFor, type MonthResult, type RankInput, type RivalId, type Stars, type YearResult, type YearRow } from '../sim/rank'
+import { LESSON_SERVICES, SERVICES, type ServiceId } from '../sim/services'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 
@@ -49,6 +50,13 @@ export function monthOutcome(r: MonthResult): { head: string; sub: string } {
   const head = t('rankKeepHead', { n: r.after })
   if (r.after === 5) return { head, sub: t('rankKeepTop') }
   return { head, sub: t('rankKeepSub', { left: RANK_STAR_AT[r.after - 1] - r.total, next: r.after + 1 }) }
+}
+
+/** The line naming the lesson service this rise to `r.after` stars opens, unless the shop already has it; null otherwise. */
+export function learnLine(r: MonthResult, services: readonly ServiceId[]): string | null {
+  if (r.after <= r.before) return null
+  const id = LESSON_SERVICES.find(x => LESSON_STARS[x] === r.after && !services.includes(x))
+  return id ? t('rankLearnNew', { name: t(SERVICES[id].name) }) : null
 }
 
 /** A year table's rows as texts: the name (the shop's own for its row), the points and whether it is the shop. */

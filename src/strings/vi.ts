@@ -634,6 +634,7 @@ export const vi = {
   rankTotalTop: 'Tổng {total} điểm',
   rankUpHead: 'Lên {n} sao!',
   rankUpSub: 'Thưởng {money}. Từ mai khách trả thêm {pct}%, biển cạnh cửa đổi theo.',
+  rankLearnNew: 'Món mới để học: {name}.',
   rankUpMore: ' Điểm đủ cao hơn nữa: tháng sau lên tiếp.',
   rankKeepHead: 'Giữ {n} sao',
   rankKeepSub: 'Còn {left} điểm nữa là lên {next} sao. Hạng không bao giờ tụt.',
