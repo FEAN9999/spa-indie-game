@@ -13,6 +13,8 @@ import { ChoiceScene } from './scenes/ChoiceScene'
 import { GuestBookScene } from './scenes/GuestBookScene'
 import { InspectScene } from './scenes/InspectScene'
 import { NewOutfitScene } from './scenes/NewOutfitScene'
+import { LitterScene } from './scenes/LitterScene'
+import { PetNameScene } from './scenes/PetNameScene'
 import { MaskScene } from './scenes/MaskScene'
 import { MassageScene } from './scenes/MassageScene'
 import { MudScene } from './scenes/MudScene'
@@ -52,7 +54,7 @@ async function start() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // all sound is made by src/audio, so Phaser never opens its own AudioContext
     audio: { noAudio: true },
-    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, ChoiceScene, ChainScene, AwayScene, StarterScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, ChoiceScene, ChainScene, AwayScene, StarterScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }

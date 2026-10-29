@@ -206,8 +206,61 @@ function vip(ctx: BaseAudioContext, out: AudioNode, at: number): void {
   }
 }
 
+/** "Meo": one voice that rises then falls, through a band that opens like a mouth and closes again, about 0.5 s. */
+function meow(ctx: BaseAudioContext, out: AudioNode, at: number): void {
+  const end = at + 0.5
+  const voice = ctx.createOscillator()
+  voice.type = 'sawtooth'
+  voice.frequency.setValueAtTime(520, at)
+  voice.frequency.exponentialRampToValueAtTime(820, at + 0.15)
+  voice.frequency.exponentialRampToValueAtTime(480, end)
+  const mouth = ctx.createBiquadFilter()
+  mouth.type = 'bandpass'
+  mouth.Q.value = 2
+  mouth.frequency.setValueAtTime(700, at)
+  mouth.frequency.exponentialRampToValueAtTime(1900, at + 0.14)
+  mouth.frequency.exponentialRampToValueAtTime(750, at + 0.45)
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(0, at)
+  gain.gain.linearRampToValueAtTime(0.35, at + 0.06)
+  gain.gain.linearRampToValueAtTime(0.28, at + 0.3)
+  gain.gain.linearRampToValueAtTime(0, end)
+  voice.connect(mouth).connect(gain).connect(out)
+  voice.start(at)
+  voice.stop(end)
+}
+
+/** One small-dog bark, 0.12 s: a buzzy voice whose pitch and brightness drop fast, with a puff of breath. */
+function bark(ctx: BaseAudioContext, out: AudioNode, at: number, freq: number): void {
+  const end = at + 0.12
+  const voice = ctx.createOscillator()
+  voice.type = 'sawtooth'
+  voice.frequency.setValueAtTime(freq, at)
+  voice.frequency.exponentialRampToValueAtTime(freq * 0.55, end)
+  const muffle = ctx.createBiquadFilter()
+  muffle.type = 'lowpass'
+  muffle.Q.value = 2
+  muffle.frequency.setValueAtTime(2200, at)
+  muffle.frequency.exponentialRampToValueAtTime(800, end)
+  const gain = ctx.createGain()
+  gain.gain.setValueAtTime(0, at)
+  gain.gain.linearRampToValueAtTime(0.28, at + 0.01)
+  gain.gain.linearRampToValueAtTime(0.2, at + 0.06)
+  gain.gain.linearRampToValueAtTime(0, end)
+  voice.connect(muffle).connect(gain).connect(out)
+  voice.start(at)
+  voice.stop(end)
+  hiss(ctx, out, 'bandpass', 1200, 1, at, 0.06, at + 0.04, 0.003)
+}
+
+/** "Gâu gâu": two quick barks 0.1 s apart, the second a little lower. */
+function woof(ctx: BaseAudioContext, out: AudioNode, at: number): void {
+  bark(ctx, out, at, 600)
+  bark(ctx, out, at + 0.22, 550)
+}
+
 type Recipe = (ctx: BaseAudioContext, out: AudioNode, at: number, step: number) => void
-const RECIPES: Record<OneShot, Recipe> = { chime, coin, foam, star, tap, huff, thud, levelUp, vip }
+const RECIPES: Record<OneShot, Recipe> = { chime, coin, foam, star, tap, huff, thud, levelUp, vip, meow, woof }
 
 /** Plays one effect at `at` into `out`; each ends by itself. `step` (0..2) raises the star's pitch. */
 export function playSfx(ctx: BaseAudioContext, out: AudioNode, name: OneShot, at: number, step = 0): void {

@@ -1,6 +1,6 @@
 import type { SimEvent } from '../sim/types'
 
-export type Sfx = 'chime' | 'coin' | 'water' | 'foam' | 'star' | 'tap' | 'huff' | 'thud' | 'levelUp' | 'vip'
+export type Sfx = 'chime' | 'coin' | 'water' | 'foam' | 'star' | 'tap' | 'huff' | 'thud' | 'levelUp' | 'vip' | 'meow' | 'woof'
 export type OneShot = Exclude<Sfx, 'water'>
 
 /** Shortest gap between two plays of the same sound, in ms. 0 means no limit. */
@@ -15,6 +15,8 @@ export const SFX_THROTTLE_MS: Record<Sfx, number> = {
   thud: 80,
   levelUp: 500,
   vip: 500,
+  meow: 300,
+  woof: 300,
 }
 
 /** The sound a shop event makes, or null when it stays quiet. */

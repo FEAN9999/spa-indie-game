@@ -14,6 +14,7 @@ import { nailsTextures } from '../art/nailsArt'
 import { scrubTextures } from '../art/scrubArt'
 import { mudTextures } from '../art/mudArt'
 import { oldTownRoomTexture } from '../art/oldTown'
+import { petTextures } from '../art/pets'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { steamTextures } from '../art/steamArt'
@@ -57,6 +58,7 @@ export class BootScene extends Phaser.Scene {
       ...steamTextures(),
       ...stoneTextures(),
       ...mudTextures(),
+      ...petTextures(),
     })
     this.scene.start('SpaScene')
   }

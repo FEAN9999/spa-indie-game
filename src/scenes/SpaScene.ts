@@ -58,6 +58,7 @@ import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
 import { goalCard, lockedText } from '../view/starter'
 import { StaffLayer } from '../view/StaffLayer'
+import { PetLayer } from '../view/PetLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
@@ -75,6 +76,8 @@ import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { InspectData } from './InspectScene'
 import type { NewOutfitData } from './NewOutfitScene'
+import type { LitterData } from './LitterScene'
+import type { PetNameData } from './PetNameScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -174,6 +177,9 @@ export class SpaScene extends Phaser.Scene {
   private owner!: CharacterView
   private customers = new Map<number, CustomerSprite>()
   private staffLayer!: StaffLayer
+  private pets!: PetLayer
+  /** The day Chú Sáu's litter was put off; it comes back the next day, or the next time the game opens. */
+  private litterLaterDay: number | null = null
   private store!: SaveStore
   private session!: SaveSession
   /** A service that became ready while paused, with the scene it is played in; the mini-game opens on resume. */
@@ -283,6 +289,7 @@ export class SpaScene extends Phaser.Scene {
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
+    this.pets = new PetLayer(this, this.room)
     this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
     this.floorBar = new FloorBar(this, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this)
@@ -601,6 +608,7 @@ export class SpaScene extends Phaser.Scene {
       },
       onClose: () => {
         this.modal = false
+        this.pets.settle(this.sim)
         this.session.saveNow()
       },
       showFloor: floor => this.showFloor(floor),
@@ -883,6 +891,35 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('NewOutfitScene', data)
   }
 
+  /** Chú Sáu's litter: a kitten or a puppy, named, and it walks in from the door; put off, it comes back tomorrow or at the next open. */
+  private showLitter(): void {
+    this.modal = true
+    const later = () => {
+      this.litterLaterDay = this.sim.day
+      this.modal = false
+    }
+    const litter: LitterData = {
+      onLater: later,
+      onPick: breed => {
+        const naming: PetNameData = {
+          breed,
+          price: null,
+          // back to the litter, to pick the other one
+          onCancel: () => this.scene.launch('LitterScene', litter),
+          onDone: name => {
+            const pet = this.sim.takeLitter(breed, name)
+            this.modal = false
+            if (!pet) return
+            this.queueToast(t('petHome', { name: pet.name }))
+            this.session.saveNow()
+          },
+        }
+        this.scene.launch('PetNameScene', naming)
+      },
+    }
+    this.scene.launch('LitterScene', litter)
+  }
+
   /** The judging evening's cards, month then year, each from the results the sim saved (it paid them already, so a reload shows the same and pays nothing); then the next day starts. */
   private showRankCards(): void {
     const { sim } = this
@@ -1066,6 +1103,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
       if (!this.modal) this.pumpBadges()
       if (!this.modal && this.shopFree()) this.showNewOutfits()
+      if (!this.modal && this.shopFree() && this.sim.litterDue() && this.litterLaterDay !== this.sim.day) this.showLitter()
       // once, when the main shop has the stars for a chain: the card that opens it, after whatever cards came first
       if (this.sim.place === null && this.shopFree() && this.chain.shouldTell()) {
         this.badgeQueue.push(unlockCard())
@@ -1104,6 +1142,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
+    this.pets.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
     this.humStars(dt)
     // festivals are the main shop's
@@ -1718,8 +1757,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   }
 
   private onTap(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
-    if (this.holding || over.length > 0) return
+    if (this.holding) return
     if (Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
+    if (over.length > 0) {
+      // a pet takes the tap: a pat, and the owner stays put
+      const pet = this.pets.petAt(over)
+      if (pet !== null && !this.modal && !this.sim.paused && this.sim.servingCustomerId === null) this.pets.pat(pet)
+      return
+    }
     // A seated customer's head covers the tile above the seat, so test the figure before the floor.
     const hit = this.sim.customers.find(c => {
       if (c.state !== 'waiting' || !c.seat || this.floorOfCustomer(c) !== this.viewFloor) return false

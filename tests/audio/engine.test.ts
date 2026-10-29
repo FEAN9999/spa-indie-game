@@ -187,6 +187,19 @@ describe('sound engine on a fake AudioContext', () => {
     expect(players).toHaveBeenCalledTimes(2)
   })
 
+  it('plays the pets\' meow and woof, each voice stopping by itself within half a second', () => {
+    const { s, ctx } = running()
+    s.play('meow')
+    s.play('woof')
+    expect(s.played).toEqual(['meow', 'woof'])
+    const voices = ctx.nodes.filter(n => n.kind === 'oscillator')
+    // one voice for the meow, one for each bark
+    expect(voices).toHaveLength(3)
+    for (const v of voices) expect(v.stoppedAt).toBeGreaterThan(0)
+    for (const v of voices) expect(v.stoppedAt).toBeLessThanOrEqual(0.5)
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
   it('holds one water loop however often it is asked, and stops it', () => {
     const { s, ctx } = running()
     s.water(true)
