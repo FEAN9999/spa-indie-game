@@ -948,7 +948,7 @@ describe('the recipe book', () => {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
       // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : key === 'items' ? withFurniture(raw.items, raw.nextItemId) : key === 'nextItemId' ? raw.nextItemId + 3 : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
