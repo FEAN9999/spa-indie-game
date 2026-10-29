@@ -55,7 +55,7 @@ describe('furniture art', () => {
 
   it('draws an upright picture of its own for every piece that turns', () => {
     const tex = furnitureTextures()
-    const turning = ITEM_KINDS.filter(canTurn)
+    const turning = ITEM_KINDS.filter(k => canTurn(k) && ITEMS[k].group !== 'bed')
     expect(turning).toHaveLength(17)
     for (const kind of turning) {
       const key = itemTexture(kind, true)

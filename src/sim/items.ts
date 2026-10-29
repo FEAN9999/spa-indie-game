@@ -1,7 +1,7 @@
 import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY, MERIT_BEAUTY, TROPHY_BEAUTY } from '../config'
 import type { StringKey } from '../strings/vi'
 import { SPA_LAYOUT_1A } from './layout'
-import type { Facing, Tile } from './types'
+import type { Facing, Tile, Vec } from './types'
 
 export type ItemKind =
   | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers' | 'screen' | 'desk'
@@ -110,10 +110,10 @@ export function size(item: { kind: ItemKind; turned?: boolean }): { w: number; h
   return item.turned ? { w: h, h: w } : { w, h }
 }
 
-/** Whether a piece has a side to stand on: not a square one, and never a bed. */
+/** Whether a piece has a side to stand on: any bed, which then lies across the floor, or any piece that is not square. */
 export function canTurn(kind: ItemKind): boolean {
   const { w, h, group } = ITEMS[kind]
-  return w !== h && group !== 'bed'
+  return group === 'bed' || w !== h
 }
 
 /** The next facing, a new item: turned about its middle tile, then back with `flip` toggled; a piece that cannot turn only mirrors. */
@@ -135,15 +135,44 @@ export function footprint(item: Item): Tile[] {
   return tiles
 }
 
-/** Where the owner stands to serve a bed, beside its second row; only beds of any service have one. */
+/** Where the owner stands to serve a bed, beside its second row, or behind a turned bed's customer; only beds of any service have one. */
 export function workTile(item: Item): Tile | null {
   if (ITEMS[item.kind].group !== 'bed') return null
+  if (item.turned) {
+    const { x, y } = bedTile(item)
+    return { x, y: y - 1 }
+  }
   return { x: item.flip ? item.x - 1 : item.x + ITEMS[item.kind].w, y: item.y + 1 }
 }
 
-/** Where a bed's customer lies: on its second row, on the side next to the work tile. Beds only. */
+/** Where a bed's customer lies: on its second row, on the side next to the work tile; on a turned bed, on its top row, second from the head. Beds only. */
 export function bedTile(item: Item): Tile {
+  if (item.turned) return { x: item.flip ? item.x + size(item).w - 2 : item.x + 1, y: item.y }
   return { x: item.flip ? item.x : item.x + ITEMS[item.kind].w - 1, y: item.y + 1 }
+}
+
+/** The way a bed's head points: up the floor, or left across it when turned, right when flipped. */
+export function headSide(item: Item): Vec {
+  if (!item.turned) return { x: 0, y: -1 }
+  return { x: item.flip ? 1 : -1, y: 0 }
+}
+
+/** The footprint's centre minus the customer tile's centre, in tiles. */
+export function bedCentreOffset(item: Item): Vec {
+  const { w, h } = size(item)
+  const bed = bedTile(item)
+  return { x: item.x + w / 2 - (bed.x + 0.5), y: item.y + h / 2 - (bed.y + 0.5) }
+}
+
+/** The way the owner faces a customer from the work tile: down at a turned bed, else across to it. */
+export function workFacing(s: { bed: Tile; work: Tile }): Facing {
+  if (s.work.y < s.bed.y) return 'down'
+  return s.bed.x < s.work.x ? 'left' : 'right'
+}
+
+/** A piece stood on its side, drawn upright; a turned bed lies across the floor instead. */
+export function isUpright(item: Item): boolean {
+  return item.turned === true && ITEMS[item.kind].group !== 'bed'
 }
 
 /** Where the owner stands behind a desk, beside its end away from the customers; only a desk has one. A turned desk faces right, or left when flipped. */

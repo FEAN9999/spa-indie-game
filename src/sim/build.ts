@@ -64,8 +64,8 @@ export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { d
   const { door, floors } = extras
   const kept = [...items.flatMap(claimed), { x: door.x, y: door.y - 1 }, ...shell.feet]
   if (offFloor(shell, item, floors) || claimed(item).some(t => kept.some(k => tileEq(k, t)))) return 'overlap'
-  // the shampoo basin hangs on the back wall, above the bed's head
-  if (item.kind === 'bed' && shell.cells[item.y - 1]?.[item.x] !== 'wall') return 'bedWall'
+  // the shampoo basin hangs on the back wall, above the bed's head, unless the bed lies across with its standing basin
+  if (item.kind === 'bed' && !item.turned && shell.cells[item.y - 1]?.[item.x] !== 'wall') return 'bedWall'
 
   if (ITEMS[item.kind].group === 'seat' && floorOf(item.y) !== 1) return 'seatFloor'
 

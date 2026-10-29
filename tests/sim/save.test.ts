@@ -51,6 +51,7 @@ import v26 from '../fixtures/save-v26.json'
 import v27 from '../fixtures/save-v27.json'
 import v28 from '../fixtures/save-v28.json'
 import v29 from '../fixtures/save-v29.json'
+import v30 from '../fixtures/save-v30.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -2176,7 +2177,7 @@ describe('save version 29', () => {
     expect('turned' in d.items.find(i => i.id === other[1].id)!).toBe(false)
   })
 
-  it('drops a turned flag from a piece that cannot turn', () => {
+  it('drops a turned flag from a square piece that is not a bed', () => {
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
     const raw = JSON.parse(JSON.stringify(sim.toSave()))
     const bed = raw.items.find((i: { kind: string }) => i.kind === 'bed')
@@ -2185,7 +2186,7 @@ describe('save version 29', () => {
     for (const i of [bed, decor, bench]) i.turned = true
     const d = parseSave(raw)
     const turned = (id: number) => 'turned' in d.items.find(i => i.id === id)!
-    expect([turned(bed.id), turned(decor.id), turned(bench.id)]).toEqual([false, false, true])
+    expect([turned(bed.id), turned(decor.id), turned(bench.id)]).toEqual([true, false, true])
   })
 })
 
@@ -2241,5 +2242,21 @@ describe('the screens and the desk in an older shop', () => {
     const sim = open(v13)
     expect(sim.items.some(i => i.id === 14 || i.id === 15)).toBe(false)
     expect(sim.items.find(i => i.kind === 'desk')).toMatchObject({ x: 8, y: 14 })
+  })
+})
+
+describe('save version 31', () => {
+  it('is 31, and opens a v30 chain with nothing changed but the version', () => {
+    expect(SAVE_VERSION).toBe(31)
+    const data = parseSave(structuredClone(v30))
+    expect(data).toEqual(withNewKeys(v30)) // like every older save, it keeps its own v until the shop saves again
+    expect(data.chain!.branches).toHaveLength(1)
+    expect(open(v30).toSave().v).toBe(31)
+  })
+  it('keeps the cabinet turned, and a turned bed', () => {
+    const raw = structuredClone(v30) as unknown as { items: { id: number; kind: string; x: number; y: number; flip: boolean; turned?: boolean }[] }
+    expect(parseSave(structuredClone(raw)).items.find(i => i.id === 3)!.turned).toBe(true)
+    raw.items.push({ id: 40, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true })
+    expect(parseSave(raw).items.find(i => i.id === 40)!.turned).toBe(true)
   })
 })

@@ -215,6 +215,21 @@ describe('technicians at work', () => {
     expect(tech.task).toBeNull()
   })
 
+  it('serves on a bed lying across the floor, from the work tile behind it', () => {
+    const sim = dayThree()
+    sim.money = 2_000_000
+    expect(sim.buy('bed', 4, 9, false, true)).toBeNull()
+    for (const s of sim.stations) if (s.id !== 17) s.customerId = 999
+    const [a] = seated(sim, 1)
+    const tech = hireStaff(sim, 'technician')
+    const ev: SimEvent[] = []
+    advanceUntil(sim, () => a.state === 'inService', 60_000, ev)
+    expect(a.stationId).toBe(17)
+    expect([tileOf(a), tileOf(tech)]).toEqual([{ x: 5, y: 9 }, { x: 5, y: 8 }])
+    advanceUntil(sim, () => ev.some(e => e.type === 'paid'), 120_000, ev)
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id }))
+  })
+
   it('pays a tip that matches the review stars', () => {
     const sim = dayThree()
     const [a] = seated(sim, 1)

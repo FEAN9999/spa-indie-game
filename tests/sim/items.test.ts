@@ -4,7 +4,7 @@ import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { IDOLS, IDOL_IDS } from '../../src/sim/idols'
 import { claimed } from '../../src/sim/build'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, deskSpot, footprint, nextFacing, seatFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, type ItemKind, beautyOf, bedCentreOffset, bedTile, canTurn, deskSpot, footprint, headSide, isUpright, nextFacing, seatFacing, size, setProgress, shellOf, workFacing, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { t } from '../../src/strings/vi'
 
@@ -241,11 +241,37 @@ describe('facings', () => {
     expect(footprint(nextFacing(tea))).toEqual([{ x: 3, y: 9 }, { x: 3, y: 10 }])
     expect(nextFacing(nextFacing(tea))).toEqual({ ...tea, flip: true })
   })
-  it('only mirrors square pieces and beds', () => {
-    expect(ITEM_KINDS.filter(canTurn).sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'desk', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'screen', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
+  it('only mirrors square pieces that are not beds', () => {
+    expect(ITEM_KINDS.filter(canTurn).filter(k => ITEMS[k].group !== 'bed').sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'desk', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'screen', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
     const plant: Item = { id: 3, kind: 'plant', x: 1, y: 16, flip: false }
     expect(nextFacing(plant)).toEqual({ ...plant, flip: true })
+  })
+  it('turns a bed about its middle tile, then back', () => {
     const bed: Item = { id: 4, kind: 'bed', x: 2, y: 2, flip: false }
-    expect(nextFacing(bed)).toEqual({ ...bed, flip: true })
+    const turned = nextFacing(bed)
+    expect(turned).toMatchObject({ turned: true, flip: false })
+    expect(nextFacing(turned)).toEqual({ ...bed, flip: true })
+  })
+  it('turns every bed four ways, the customer second from the head and the work tile behind', () => {
+    const at = (kind: ItemKind, turned: boolean, flip: boolean): Item => ({ id: 1, kind, x: 4, y: 8, flip, ...(turned && { turned }) })
+    const tiles = (i: Item) => [bedTile(i), workTile(i), headSide(i)]
+    expect(tiles(at('bed', false, false))).toEqual([{ x: 4, y: 9 }, { x: 5, y: 9 }, { x: 0, y: -1 }])
+    expect(tiles(at('bed', true, false))).toEqual([{ x: 5, y: 8 }, { x: 5, y: 7 }, { x: -1, y: 0 }])
+    expect(tiles(at('bed', true, true))).toEqual([{ x: 5, y: 8 }, { x: 5, y: 7 }, { x: 1, y: 0 }])
+    expect(tiles(at('footChair', true, false))).toEqual([{ x: 5, y: 8 }, { x: 5, y: 7 }, { x: -1, y: 0 }])
+    expect(tiles(at('footChair', true, true))).toEqual([{ x: 4, y: 8 }, { x: 4, y: 7 }, { x: 1, y: 0 }])
+    expect(tiles(at('nailDesk', true, true))).toEqual([{ x: 4, y: 8 }, { x: 4, y: 7 }, { x: 1, y: 0 }])
+    expect(footprint(at('mudTub', true, false))).toHaveLength(6)
+    expect(size(at('mudTub', true, false))).toEqual({ w: 3, h: 2 })
+    expect(bedCentreOffset(at('mudTub', false, false))).toEqual({ x: -0.5, y: 0 })
+    expect(bedCentreOffset(at('mudTub', false, true))).toEqual({ x: 0.5, y: 0 })
+    expect(bedCentreOffset(at('mudTub', true, false))).toEqual({ x: 0, y: 0.5 })
+    expect(bedCentreOffset(at('steamTent', false, false))).toEqual({ x: -0.5, y: -0.5 })
+    expect(bedCentreOffset(at('steamTent', true, false))).toEqual({ x: -0.5, y: 0.5 })
+    expect(workFacing({ bed: { x: 5, y: 8 }, work: { x: 5, y: 7 } })).toBe('down')
+    expect(workFacing({ bed: { x: 4, y: 9 }, work: { x: 5, y: 9 } })).toBe('left')
+    expect(workFacing({ bed: { x: 4, y: 9 }, work: { x: 3, y: 9 } })).toBe('right')
+    expect(ITEM_KINDS.filter(k => ITEMS[k].group === 'bed').every(canTurn)).toBe(true)
+    expect([isUpright(at('bed', true, false)), isUpright({ id: 2, kind: 'bench', x: 2, y: 9, flip: false, turned: true })]).toEqual([false, true])
   })
 })

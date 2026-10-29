@@ -4,7 +4,7 @@ import { C } from '../art/palette'
 import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
-import { size, workTile, type Item } from '../sim/items'
+import { isUpright, size, workTile, type Item } from '../sim/items'
 import type { PlaceId } from '../sim/places'
 import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
@@ -270,7 +270,7 @@ export class RoomView {
       if (s.body.texture.key !== key) s.body.setTexture(key)
       s.turned = item.turned === true
       // an upright piece draws on its top row's depth, so whoever stands on its lower rows is in front of it
-      const depth = item.turned ? this.rowY(item.y + 1) : bottom
+      const depth = isUpright(item) ? this.rowY(item.y + 1) : bottom
       s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
       if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY((floorOf(item.y) - 1) * FLOOR_ROWS))

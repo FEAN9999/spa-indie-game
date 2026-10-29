@@ -156,9 +156,10 @@ export function bedSlotAt(grid: Grid, t: Tile): Tile | undefined {
   return grid.bedSlots.find(s => s.x === t.x && t.y >= s.y - 1 && t.y <= s.y + 2)
 }
 
-/** True on a bed's middle tile and while stepping on or off it from either side. */
+/** True on a bed's middle tile and while stepping on or off it from either side; from behind, when its work tile is above it (a turned bed). */
 export function onBed(grid: Grid, p: Vec): boolean {
-  return grid.beds.some(b => Math.abs(p.x - b.x) < 1 && Math.abs(p.y - b.y) < 0.5)
+  return grid.beds.some(b =>
+    grid.cells[b.y - 1]?.[b.x] === 'work' ? Math.abs(p.x - b.x) < 0.5 && Math.abs(p.y - b.y) < 0.5 : Math.abs(p.x - b.x) < 1 && Math.abs(p.y - b.y) < 0.5)
 }
 
 export function tileEq(a: Tile, b: Tile): boolean {

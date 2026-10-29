@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { offFloor } from '../../src/sim/build'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout } from '../../src/sim/grid'
 import { towerOf } from '../../src/sim/floors'
-import { shellOf } from '../../src/sim/items'
+import { DEFAULT_ITEMS, shellOf, type Item } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -101,6 +101,15 @@ describe('grid', () => {
     expect(beside(seat)).toBe(false)
     expect(beside({ x: seat.x, y: seat.y + 2 })).toBe(false)
     expect(beside({ x: 0, y: 0 })).toBe(false)
+  })
+})
+
+describe('stepping onto a turned bed', () => {
+  it('steps onto a turned bed from behind it, and onto a standing bed from its side', () => {
+    const across: Item = { id: 30, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true }
+    const grid = buildGrid(shellOf(SPA_LAYOUT_1A), [...DEFAULT_ITEMS, across])
+    expect([onBed(grid, { x: 5, y: 8.4 }), onBed(grid, { x: 5, y: 8.6 }), onBed(grid, { x: 5.6, y: 9 })]).toEqual([false, true, false])
+    expect(onBed(grid, { x: 2.5, y: 3 })).toBe(true) // the default shampoo bed at x 2, customer tile (2,3), stepped onto from (3,3)
   })
 })
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { nearestSpot, placeProblem, PROBLEM_TEXT } from '../../src/sim/build'
 import { towerOf } from '../../src/sim/floors'
 import { isWalkable, manhattan, parseLayout, tileEq } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, shellOf, type ItemKind } from '../../src/sim/items'
+import { DEFAULT_ITEMS, shellOf, type Item, type ItemKind } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -61,6 +61,18 @@ describe('building the shop', () => {
     expect(c.stationId).toBe(17)
     expect(c.pos).toEqual({ x: 6, y: 3 })
     expect(sim.ownerTile()).toEqual({ x: 7, y: 3 })
+  })
+
+  it('buys a bed lying across the floor and serves on it, from the work tile behind it', () => {
+    const sim = shop()
+    expect(sim.buy('bed', 4, 9, false, true)).toBeNull()
+    expect(sim.stations.find(s => s.id === 17)).toMatchObject({ bed: { x: 5, y: 9 }, work: { x: 5, y: 8 } })
+    const c = serveOnNewBed(sim)
+    expect(c.pos).toEqual({ x: 5, y: 9 })
+    expect(sim.ownerTile()).toEqual({ x: 5, y: 8 })
+    sim.drainEvents()
+    sim.completeService(c.id, 3)
+    expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', customerId: c.id }))
   })
 
   it('refuses a bed away from the back wall, but a mask or massage bed may stand there', () => {
@@ -375,5 +387,28 @@ describe('placeProblem on the tall grid', () => {
     expect(at(2, 20)).toBeNull()
     expect(at(6, 9)).toBeNull()
     expect(at(10, 10)).toBe('blocksPath')
+  })
+})
+
+describe('turned beds', () => {
+  const extras = { door: { x: 6, y: 17 }, floors: 1 }
+  it('places a turned shampoo bed mid-room, never against the back wall, and keeps the wall rule for a standing one', () => {
+    const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
+    const bed = (x: number, y: number, turned: boolean): Item => ({ id: 30, kind: 'bed', x, y, flip: false, ...(turned && { turned }) })
+    expect(placeProblem(shell, DEFAULT_ITEMS, bed(4, 9, true), extras)).toBeNull()
+    expect(placeProblem(shell, DEFAULT_ITEMS, bed(6, 2, true), extras)).toBe('overlap')
+    expect(placeProblem(shell, DEFAULT_ITEMS, bed(4, 9, false), extras)).toBe('bedWall')
+  })
+  it('refuses a turned bed whose work tile is walled in', () => {
+    const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
+    const bed: Item = { id: 30, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true }
+    expect(placeProblem(shell, DEFAULT_ITEMS, bed, extras)).toBeNull()
+    const walls: Item[] = [[4, 8], [6, 8], [5, 7]].map(([x, y], i) => ({ id: 40 + i, kind: 'plant', x, y, flip: false }))
+    expect(placeProblem(shell, [...DEFAULT_ITEMS, ...walls], bed, extras)).toBe('blocksPath')
+  })
+  it('places a turned bed on an open floor 2', () => {
+    const tall = parseLayout(towerOf(shellOf(SPA_LAYOUT_1A)))
+    const bed: Item = { id: 30, kind: 'massageBed', x: 4, y: 24, flip: false, turned: true }
+    expect(placeProblem(tall, DEFAULT_ITEMS, bed, { door: tall.door, floors: 2 })).toBeNull()
   })
 })
