@@ -9,6 +9,7 @@ export type ItemKind =
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
   | 'photoSinger' | 'photoMiss' | 'photoStar' | 'photoChef' | 'goldBoard'
+  | 'photoIdolSontung' | 'photoIdolTaylor' | 'photoIdolGd' | 'photoIdolJennie' | 'photoIdolHieuthuhai' | 'photoIdolWeeknd' | 'photoIdolTaeyang' | 'photoIdolBieber' | 'photoIdolDaesung' | 'starWall'
   | 'maiBranch' | 'heartFrame' | 'roseVase' | 'starLantern' | 'flowerBasket' | 'xmasTree'
   | 'certificate' | 'trophy' | 'merit' | 'surfboard' | 'lanternString' | 'orchid'
 
@@ -59,6 +60,16 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   photoStar: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoStar' },
   photoChef: { w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemPhotoChef' },
   goldBoard: { w: 2, h: 1, price: 0, beauty: 7, group: 'decor', giftOnly: true, name: 'itemGoldBoard' },
+  photoIdolSontung: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolSontung' },
+  photoIdolTaylor: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolTaylor' },
+  photoIdolGd: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolGd' },
+  photoIdolJennie: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolJennie' },
+  photoIdolHieuthuhai: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolHieuthuhai' },
+  photoIdolWeeknd: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolWeeknd' },
+  photoIdolTaeyang: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolTaeyang' },
+  photoIdolBieber: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolBieber' },
+  photoIdolDaesung: { w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemPhotoIdolDaesung' },
+  starWall: { w: 2, h: 1, price: 0, beauty: 9, group: 'decor', giftOnly: true, name: 'itemStarWall' },
   maiBranch: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemMaiBranch' },
   heartFrame: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemHeartFrame' },
   roseVase: { w: 1, h: 1, price: 0, beauty: KEEPSAKE_BEAUTY, group: 'decor', giftOnly: true, name: 'itemRoseVase' },

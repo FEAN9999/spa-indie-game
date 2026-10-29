@@ -166,6 +166,8 @@ export const vi = {
   itemSilkScreen: 'Bình phong lụa',
   itemRegularsBoard: 'Bảng ảnh khách quen',
   itemPhotoSinger: 'Ảnh ký: Mây Chiều', itemPhotoMiss: 'Ảnh ký: Ngân Sa', itemPhotoStar: 'Ảnh ký: Bích Câu', itemPhotoChef: 'Ảnh ký: Tám Lửa', itemGoldBoard: 'Bảng vàng',
+  itemPhotoIdolSontung: 'Ảnh ký tên Sơn Tùng M-TP', itemPhotoIdolTaylor: 'Ảnh ký tên Taylor Swift', itemPhotoIdolGd: 'Ảnh ký tên G-Dragon', itemPhotoIdolJennie: 'Ảnh ký tên Jennie', itemPhotoIdolHieuthuhai: 'Ảnh ký tên HIEUTHUHAI', itemPhotoIdolWeeknd: 'Ảnh ký tên The Weeknd', itemPhotoIdolTaeyang: 'Ảnh ký tên Taeyang', itemPhotoIdolBieber: 'Ảnh ký tên Justin Bieber', itemPhotoIdolDaesung: 'Ảnh ký tên Daesung',
+  itemStarWall: 'Tường ngôi sao',
   itemMaiBranch: 'Cành mai', itemHeartFrame: 'Khung tim', itemRoseVase: 'Bình hoa hồng', itemStarLantern: 'Đèn ông sao', itemFlowerBasket: 'Lẵng hoa', itemXmasTree: 'Cây thông',
   itemCertificate: 'Giấy khen',
   itemTrophy: 'Cúp vàng',
