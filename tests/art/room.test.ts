@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { C } from '../../src/art/palette'
 import { roomTexture } from '../../src/art/room'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { shellOf } from '../../src/sim/items'
+import { DEFAULT_ITEMS, shellOf } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
@@ -17,7 +17,7 @@ describe('room art', () => {
   })
 
   it('draws the same room whatever furniture stands in it', () => {
-    expect(roomTexture(parseLayout(SPA_LAYOUT_1A))).toBe(roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])))
+    expect(roomTexture(parseLayout(SPA_LAYOUT_1A))).toBe(roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), DEFAULT_ITEMS)))
   })
 })
 

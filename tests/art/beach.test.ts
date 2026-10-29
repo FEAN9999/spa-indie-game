@@ -3,8 +3,7 @@ import { beachRoomTexture } from '../../src/art/beach'
 import { mapTexture } from '../../src/art/map'
 import { C } from '../../src/art/palette'
 import { roomTexture } from '../../src/art/room'
-import { buildGrid } from '../../src/sim/grid'
-import { shellOf } from '../../src/sim/items'
+import { parseLayout } from '../../src/sim/grid'
 import { BRANCH_LAYOUT } from '../../src/sim/places'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
@@ -17,7 +16,7 @@ const inGameColours = (svg: string) => {
 }
 
 describe('beach art', () => {
-  const grid = buildGrid(shellOf(BRANCH_LAYOUT), [])
+  const grid = parseLayout(BRANCH_LAYOUT)
 
   it('sizes the beach room like the main room, and draws it its own way', () => {
     const beach = beachRoomTexture(grid)

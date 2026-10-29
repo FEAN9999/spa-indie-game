@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { CHAT_MS_MAX, DAY_START_MIN, LATE_MIN, PATIENCE_MS, RATING_WINDOW, SERVICE_PRICE } from '../../src/config'
 import { tipFor } from '../../src/sim/economy'
 import { placeProblem } from '../../src/sim/build'
-import { FLOOR_PRICE, OWNER_START } from '../../src/config'
+import { FLOOR_PRICE } from '../../src/config'
 import { DEFAULT_ITEMS } from '../../src/sim/items'
 import { parseLayout } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
@@ -243,24 +243,24 @@ describe('save version 3', () => {
 
   it('keeps bought furniture across a save', () => {
     const sim = busyShop()
-    sim.items.push({ id: 14, kind: 'plant', x: 6, y: 9, flip: false })
+    sim.items.push({ id: 17, kind: 'plant', x: 6, y: 9, flip: false })
     const copy = viaJson(sim)
-    expect(copy.items).toContainEqual({ id: 14, kind: 'plant', x: 6, y: 9, flip: false })
+    expect(copy.items).toContainEqual({ id: 17, kind: 'plant', x: 6, y: 9, flip: false })
     expect(copy.grid.cells[9][6]).toBe('plant')
   })
 
   it('rejects furniture that is not furniture', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    const plant = { id: 14, kind: 'plant', x: 6, y: 9, flip: false }
+    const plant = { id: 17, kind: 'plant', x: 6, y: 9, flip: false }
     for (const items of [[{ id: 1, kind: 'sofa', x: 1, y: 1, flip: false }], [plant, plant], [{ ...plant, x: 6.5 }], [{ ...plant, flip: 1 }], null])
       expect(() => parseSave({ ...good, items })).toThrow('items are not furniture')
   })
 
   it('rejects furniture off the floor, so the shop is set aside instead of crashing', () => {
     const good = JSON.parse(JSON.stringify(busyShop().toSave()))
-    const plant = (x: number, y: number) => ({ id: 14, kind: 'plant', x, y, flip: false })
-    // a wall, the door, the screen, the desk, off each edge, and a flipped bed whose work tile is in the wall
-    const strays = [plant(0, 5), plant(6, 17), plant(3, 6), plant(9, 14), plant(-1, 9), plant(13, 9), plant(6, -1), plant(6, 18), { id: 14, kind: 'bed', x: 1, y: 2, flip: true }]
+    const plant = (x: number, y: number) => ({ id: 17, kind: 'plant', x, y, flip: false })
+    // a wall, the door, off each edge, and a flipped bed whose work tile is in the wall
+    const strays = [plant(0, 5), plant(6, 17), plant(-1, 9), plant(13, 9), plant(6, -1), plant(6, 18), { id: 17, kind: 'bed', x: 1, y: 2, flip: true }]
     for (const stray of strays) expect(() => SpaSim.fromSave(parseSave({ ...good, items: [...good.items, stray] }), opts())).toThrow(SaveError)
     // overlapping furniture is not checked on load
     expect(() => SpaSim.fromSave(parseSave({ ...good, items: [...good.items, plant(3, 13)] }), opts())).not.toThrow()
@@ -1121,7 +1121,7 @@ describe('save version 14', () => {
     const bed = sim.items.find(i => i.kind === 'bed')!
     expect(bed.id).toBe(100)
     const others = sim.items.filter(i => i !== bed)
-    expect(placeProblem(parseLayout(towerOf(shellOf(SPA_LAYOUT_1A))), others, bed, { door: sim.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
+    expect(placeProblem(parseLayout(towerOf(shellOf(SPA_LAYOUT_1A))), others, bed, { door: sim.grid.door, floors: 1 })).toBeNull()
     expect(sim.money).toBe(raw.money)
     expect(stairsEvents(sim)).toEqual([])
     expect(sim.customers[0].state).toBe('leaving')

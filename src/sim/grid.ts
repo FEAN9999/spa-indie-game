@@ -132,6 +132,12 @@ export function buildGrid(shell: string[] | Grid, items: Item[], floors = 1): Gr
     } else if (item.kind === 'plant') {
       set('plant')
       grid.plants.push(...tiles)
+    } else if (item.kind === 'desk') {
+      set('desk')
+      grid.desks.push(...tiles)
+    } else if (item.kind === 'screen') {
+      set('decor')
+      grid.decor.screen.push(...tiles)
     } else {
       set('decor')
     }

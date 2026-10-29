@@ -4,8 +4,7 @@ import { oldTownRoomTexture } from '../../src/art/oldTown'
 import { C } from '../../src/art/palette'
 import { roomTexture } from '../../src/art/room'
 import { uptownRoomTexture } from '../../src/art/uptown'
-import { buildGrid } from '../../src/sim/grid'
-import { shellOf } from '../../src/sim/items'
+import { parseLayout } from '../../src/sim/grid'
 import { BRANCH_LAYOUT } from '../../src/sim/places'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
@@ -18,7 +17,7 @@ describe.each([
   ['the old town', oldTownRoomTexture],
   ['the uptown', uptownRoomTexture],
 ])('%s room', (_, draw) => {
-  const grid = buildGrid(shellOf(BRANCH_LAYOUT), [])
+  const grid = parseLayout(BRANCH_LAYOUT)
 
   it('is sized like the main room, and drawn its own way', () => {
     const room = draw(grid)
@@ -33,6 +32,6 @@ describe.each([
 })
 
 it('draws the two places differently', () => {
-  const grid = buildGrid(shellOf(BRANCH_LAYOUT), [])
+  const grid = parseLayout(BRANCH_LAYOUT)
   expect(oldTownRoomTexture(grid)).not.toBe(uptownRoomTexture(grid))
 })

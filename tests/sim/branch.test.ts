@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CANDIDATES_PER_DAY, HOT_DAYS, OWNER_START, PLACE_KINDS, STOCK_START } from '../../src/config'
+import { CANDIDATES_PER_DAY, HOT_DAYS, PLACE_KINDS, STOCK_START } from '../../src/config'
 import { placeProblem } from '../../src/sim/build'
 import { drawKind, MAIN_KINDS } from '../../src/sim/customers'
 import { festivalOf } from '../../src/sim/festivals'
@@ -139,7 +139,7 @@ describe("a branch's own decor", () => {
     const pieces = branch.items.filter(i => i.kind === kind)
     expect(pieces).toEqual([{ id: expect.any(Number), kind, x: 11, y: 10, flip: false, gift: true }])
     const others = branch.items.filter(i => i.kind !== kind)
-    expect(placeProblem(branch.shellGrid(), others, pieces[0], { door: branch.grid.door, ownerStart: OWNER_START, floors: 1 })).toBeNull()
+    expect(placeProblem(branch.shellGrid(), others, pieces[0], { door: branch.grid.door, floors: 1 })).toBeNull()
     expect(isWalkable(branch.grid, { x: 11, y: 10 })).toBe(false)
     expect(branch.beauty()).toBe(beautyOf(others) + 3)
   })

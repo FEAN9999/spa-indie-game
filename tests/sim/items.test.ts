@@ -2,14 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { KEEPSAKE_BEAUTY } from '../../src/config'
 import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { IDOLS, IDOL_IDS } from '../../src/sim/idols'
+import { claimed } from '../../src/sim/build'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, footprint, nextFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, deskSpot, footprint, nextFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { t } from '../../src/strings/vi'
 
 describe('items', () => {
+  it("makes the screens and the desk the default shop's last items", () => {
+    const n = DEFAULT_ITEMS.length
+    expect(DEFAULT_ITEMS.slice(-3)).toEqual([
+      { id: n - 2, kind: 'screen', x: 1, y: 6, flip: false },
+      { id: n - 1, kind: 'screen', x: 7, y: 6, flip: false },
+      { id: n, kind: 'desk', x: 8, y: 14, flip: false },
+    ])
+    expect(DEFAULT_ITEMS.slice(0, -3).map(i => i.kind)).toEqual(['bed', 'bed', 'cabinet', 'plant', 'shelf', 'lotus', 'vase', 'planter', 'bench', 'tea', 'plant', 'slippers', 'plant'])
+    const shell = shellOf(SPA_LAYOUT_1A)
+    expect([shell[6], shell[14]]).toEqual(['#...........#', '#...........#'])
+  })
+  it('keeps the tile behind a desk for the owner', () => {
+    const desk: Item = { id: 1, kind: 'desk', x: 8, y: 14, flip: false }
+    expect(deskSpot(desk)).toEqual({ x: 9, y: 13 })
+    expect(deskSpot({ ...desk, x: 4, y: 9, turned: true })).toEqual({ x: 3, y: 10 })
+    expect(deskSpot({ ...desk, x: 4, y: 9, turned: true, flip: true })).toEqual({ x: 5, y: 10 })
+    expect(deskSpot({ id: 2, kind: 'bench', x: 2, y: 13, flip: false })).toBeNull()
+    expect(claimed(desk)).toContainEqual({ x: 9, y: 13 })
+  })
   it('reads the furniture of the default shop', () => {
-    expect(DEFAULT_ITEMS).toHaveLength(13)
+    expect(DEFAULT_ITEMS).toHaveLength(16)
     const at = (kind: string) => DEFAULT_ITEMS.filter(i => i.kind === kind).map(i => [i.id, i.x, i.y, i.flip])
     expect(at('bed')).toEqual([[1, 2, 2, false], [2, 4, 2, false]])
     expect(at('cabinet')).toEqual([[3, 9, 2, false]])
@@ -21,7 +41,7 @@ describe('items', () => {
     expect(at('bench').map(p => [p[1], p[2]])).toEqual([[2, 13]])
     expect(at('tea').map(p => [p[1], p[2]])).toEqual([[3, 15]])
     expect(at('slippers').map(p => [p[1], p[2]])).toEqual([[4, 16]])
-    expect(DEFAULT_ITEMS.map(i => i.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+    expect(DEFAULT_ITEMS.map(i => i.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16])
   })
 
   it('builds the same grid the old layout gave', () => {
@@ -217,7 +237,7 @@ describe('facings', () => {
     expect(nextFacing(nextFacing(tea))).toEqual({ ...tea, flip: true })
   })
   it('only mirrors square pieces and beds', () => {
-    expect(ITEM_KINDS.filter(canTurn).sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
+    expect(ITEM_KINDS.filter(canTurn).sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'desk', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'screen', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
     const plant: Item = { id: 3, kind: 'plant', x: 1, y: 16, flip: false }
     expect(nextFacing(plant)).toEqual({ ...plant, flip: true })
     const bed: Item = { id: 4, kind: 'bed', x: 2, y: 2, flip: false }

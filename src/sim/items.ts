@@ -4,7 +4,7 @@ import { SPA_LAYOUT_1A } from './layout'
 import type { Tile } from './types'
 
 export type ItemKind =
-  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers'
+  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers' | 'screen' | 'desk'
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
@@ -43,6 +43,8 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   tea: { w: 2, h: 1, price: 60000, beauty: 2, group: 'decor', name: 'itemTea' },
   planter: { w: 3, h: 1, price: 60000, beauty: 2, group: 'decor', name: 'itemPlanter' },
   slippers: { w: 2, h: 1, price: 50000, beauty: 1, group: 'decor', name: 'itemSlippers' },
+  screen: { w: 5, h: 1, price: 200_000, beauty: 0, group: 'decor', name: 'itemScreen' },
+  desk: { w: 3, h: 1, price: 400_000, beauty: 0, group: 'decor', name: 'itemDesk' },
   shelf: { w: 3, h: 1, price: 120000, beauty: 3, group: 'decor', set: 'saigon', name: 'itemShelf' },
   cabinet: { w: 3, h: 1, price: 150000, beauty: 3, group: 'decor', set: 'saigon', name: 'itemCabinet' },
   lotus: { w: 2, h: 1, price: 150000, beauty: 4, group: 'decor', set: 'saigon', name: 'itemLotus' },
@@ -144,13 +146,20 @@ export function bedTile(item: Item): Tile {
   return { x: item.flip ? item.x : item.x + ITEMS[item.kind].w - 1, y: item.y + 1 }
 }
 
+/** Where the owner stands behind a desk, beside its end away from the customers; only a desk has one. A turned desk faces right, or left when flipped. */
+export function deskSpot(item: Item): Tile | null {
+  if (item.kind !== 'desk') return null
+  if (!item.turned) return { x: item.x + 1, y: item.y - 1 }
+  return { x: item.flip ? item.x + 1 : item.x - 1, y: item.y + 1 }
+}
+
 export function seatTiles(item: Item): Tile[] {
   return ITEMS[item.kind].group === 'seat' ? footprint(item) : []
 }
 
 /** Layout characters that stand for a movable item, besides the bed chars. */
 const RUN_KINDS: Record<string, ItemKind> = {
-  S: 'bench', P: 'plant', K: 'cabinet', L: 'shelf', O: 'lotus', V: 'vase', T: 'tea', G: 'slippers', Y: 'planter',
+  S: 'bench', P: 'plant', K: 'cabinet', L: 'shelf', O: 'lotus', V: 'vase', T: 'tea', G: 'slippers', Y: 'planter', H: 'screen', R: 'desk',
 }
 const ITEM_CHARS = new Set(['B', 'C', 'W', 'E', ...Object.keys(RUN_KINDS)])
 
@@ -182,7 +191,9 @@ export function itemsFromLayout(rows: string[]): Item[] {
       }
     }
   })
-  return items.map((it, i) => ({ ...it, id: i + 1 }))
+  // the screens and the desk come last, so the pieces that were always furniture keep their ids
+  const fixed = (it: Omit<Item, 'id'>) => it.kind === 'screen' || it.kind === 'desk'
+  return [...items.filter(it => !fixed(it)), ...items.filter(fixed)].map((it, i) => ({ ...it, id: i + 1 }))
 }
 
 /** How many of a set's 6 kinds the shop holds. */
@@ -200,7 +211,7 @@ export function beautyOf(items: Item[]): number {
   }, 0)
 }
 
-/** The layout with every item char blanked out, leaving walls, door, screen and desk. */
+/** The layout with every item char blanked out, leaving walls, door and stairs. */
 export function shellOf(rows: string[]): string[] {
   return rows.map(r => [...r].map(ch => (ITEM_CHARS.has(ch) ? '.' : ch)).join(''))
 }

@@ -1,12 +1,12 @@
 import type { StringKey } from '../strings/vi'
 import { buildGrid, inBounds, isWalkable, tileEq, type Grid } from './grid'
-import { footprint, ITEMS, workTile, type Item } from './items'
+import { deskSpot, footprint, ITEMS, workTile, type Item } from './items'
 import { floorOf } from './floors'
 import { DIRS, neighbours } from './path'
 import type { Tile } from './types'
 
 /** Why a piece of furniture cannot be bought, put down, moved or sold; a `gift` is never sold, and is put down only while it waits in the guest book. */
-export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'seatFloor' | 'money' | 'gift'
+export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'lastDesk' | 'seatFloor' | 'deskFloor' | 'money' | 'gift'
 
 /** What the player is told for each problem; `money` takes the missing amount as {money}. */
 export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
@@ -16,18 +16,20 @@ export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
   busy: 'problemBusy',
   lastBed: 'problemLastBed',
   lastSeat: 'problemLastSeat',
+  lastDesk: 'problemLastDesk',
   seatFloor: 'problemSeatFloor',
+  deskFloor: 'problemDeskFloor',
   money: 'problemMoney',
   gift: 'giftNoSell',
 }
 
-/** The tiles an item keeps for itself: its footprint and a bed's work tile. */
+/** The tiles an item keeps for itself: its footprint, a bed's work tile and a desk's spot. */
 export function claimed(item: Item): Tile[] {
-  const work = workTile(item)
-  return work ? [...footprint(item), work] : footprint(item)
+  const extra = workTile(item) ?? deskSpot(item)
+  return extra ? [...footprint(item), extra] : footprint(item)
 }
 
-/** True when part of the item, or a bed's work tile, is off the grid, on a floor not open yet, or on something fixed: a wall, the door, the stairs, the screen or the desk. */
+/** True when part of the item, a bed's work tile or a desk's spot, is off the grid, on a floor not open yet, or on something fixed: a wall, the door or the stairs. */
 export function offFloor(shell: Grid, item: Item, floors: number): boolean {
   return claimed(item).some(t => !inBounds(shell, t) || floorOf(t.y) > floors || shell.cells[t.y][t.x] !== 'floor')
 }
@@ -55,23 +57,26 @@ export function doorReach(grid: Grid, door: Tile): (t: Tile) => boolean {
 
 /**
  * Why `item` cannot stand where it says, or null; `items` is the rest of the shop, without it.
- * Nothing covers the tile inside the door or the owner's start, and every bed and seat stays in reach of the door, and so does a walkable tile beside each open floor's stairs foot (the stairs themselves would otherwise let a shut-in upper foot count as reached).
+ * Nothing covers the tile inside the door, and every bed and seat stays in reach of the door, and so does every desk's spot, which is kept free, and so does a walkable tile beside each open floor's stairs foot (the stairs themselves would otherwise let a shut-in upper foot count as reached).
  * A foot the door did not reach without `item` either, as in an older shop built before the stairs, is left as it is.
  */
-export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; ownerStart: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'blocksPath' | null {
-  const { door, ownerStart, floors } = extras
-  const kept = [...items.flatMap(claimed), { x: door.x, y: door.y - 1 }, ownerStart, ...shell.feet]
+export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'deskFloor' | 'blocksPath' | null {
+  const { door, floors } = extras
+  const kept = [...items.flatMap(claimed), { x: door.x, y: door.y - 1 }, ...shell.feet]
   if (offFloor(shell, item, floors) || claimed(item).some(t => kept.some(k => tileEq(k, t)))) return 'overlap'
   // the shampoo basin hangs on the back wall, above the bed's head
   if (item.kind === 'bed' && shell.cells[item.y - 1]?.[item.x] !== 'wall') return 'bedWall'
 
   if (ITEMS[item.kind].group === 'seat' && floorOf(item.y) !== 1) return 'seatFloor'
 
-  const grid = buildGrid(shell, [...items, item], floors)
+  if (item.kind === 'desk' && floorOf(item.y) !== 1) return 'deskFloor'
+
+  const all = [...items, item]
+  const grid = buildGrid(shell, all, floors)
   const reached = doorReach(grid, door)
   const beside = (reach: (t: Tile) => boolean) => (seat: Tile) => DIRS.some(d => reach({ x: seat.x + d.x, y: seat.y + d.y }))
   const reachedBeside = beside(reached)
-  if (!(grid.works.every(reached) && grid.seats.every(reachedBeside) && reached(ownerStart))) return 'blocksPath'
+  if (!(grid.works.every(reached) && grid.seats.every(reachedBeside) && all.every(i => { const spot = deskSpot(i); return !spot || reached(spot) }))) return 'blocksPath'
   const feet = shell.feet.slice(0, floors)
   if (feet.every(reachedBeside)) return null
   const before = beside(doorReach(buildGrid(shell, items, floors), door))

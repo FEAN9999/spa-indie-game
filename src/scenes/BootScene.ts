@@ -21,8 +21,7 @@ import { stoneTextures } from '../art/stoneArt'
 import { loadSvgTextures } from '../art/svg'
 import { uptownRoomTexture } from '../art/uptown'
 import { GAME_H, GAME_W } from '../config'
-import { buildGrid } from '../sim/grid'
-import { shellOf } from '../sim/items'
+import { parseLayout } from '../sim/grid'
 import { SPA_LAYOUT_1A } from '../sim/layout'
 import { BRANCH_LAYOUT } from '../sim/places'
 import { t } from '../strings/vi'
@@ -38,10 +37,10 @@ export class BootScene extends Phaser.Scene {
       .text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600'))
       .setOrigin(0.5)
     await loadSvgTextures(this, {
-      room: roomTexture(buildGrid(shellOf(SPA_LAYOUT_1A), [])),
-      'room-beach': beachRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
-      'room-oldTown': oldTownRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
-      'room-uptown': uptownRoomTexture(buildGrid(shellOf(BRANCH_LAYOUT), [])),
+      room: roomTexture(parseLayout(SPA_LAYOUT_1A)),
+      'room-beach': beachRoomTexture(parseLayout(BRANCH_LAYOUT)),
+      'room-oldTown': oldTownRoomTexture(parseLayout(BRANCH_LAYOUT)),
+      'room-uptown': uptownRoomTexture(parseLayout(BRANCH_LAYOUT)),
       'chain-map': mapTexture(),
       ...floorTextures(),
       ...furnitureTextures(),

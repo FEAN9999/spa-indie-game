@@ -30,15 +30,15 @@ describe('build mode catalogue', () => {
     expect(kinds(catalogPage('bed', 0, ['shampoo', 'mask', 'massage', 'steam'], []))).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent'])
   })
 
-  it('shows the decor four at a time, the tea chest and the jar on the third page', () => {
-    expect(catalogPage('decor', 0, ['shampoo'], []).pages).toBe(4)
-    expect(kinds(catalogPage('decor', 2, ['shampoo'], []))).toEqual(['teaChest', 'jar', 'bambooTea', 'bambooShelf'])
-    expect(kinds(catalogPage('decor', 3, ['shampoo'], []))).toEqual(['bambooLamp', 'clayJar', 'areca'])
+  it('shows the decor four at a time, the lotus to the jar on the third page', () => {
+    expect(catalogPage('decor', 0, ['shampoo'], []).pages).toBe(5)
+    expect(kinds(catalogPage('decor', 2, ['shampoo'], []))).toEqual(['lotus', 'vase', 'teaChest', 'jar'])
+    expect(kinds(catalogPage('decor', 4, ['shampoo'], []))).toEqual(['areca'])
   })
 
   it('turns past either end to the other', () => {
-    expect(catalogPage('decor', -1, ['shampoo'], [])).toEqual(catalogPage('decor', 3, ['shampoo'], []))
-    expect(catalogPage('decor', 4, ['shampoo'], [])).toEqual(catalogPage('decor', 0, ['shampoo'], []))
+    expect(catalogPage('decor', -1, ['shampoo'], [])).toEqual(catalogPage('decor', 4, ['shampoo'], []))
+    expect(catalogPage('decor', 5, ['shampoo'], [])).toEqual(catalogPage('decor', 0, ['shampoo'], []))
   })
 
   it('lists the stone bed only once Đá nóng is open, and the mud tub only once Tắm bùn is', () => {
@@ -107,7 +107,7 @@ describe('build mode catalogue', () => {
       { kind: 'tea', gift: false },
     ])
     expect(first.pages).toBe(5)
-    expect(kinds(catalogPage('decor', 4, ['shampoo'], gifts))).toEqual(['areca'])
+    expect(kinds(catalogPage('decor', 4, ['shampoo'], gifts))).toEqual(['bambooLamp', 'clayJar', 'areca'])
 
     const all = ['shampoo', 'mask', 'massage'] as const
     for (const g of ['bed', 'seat', 'decor'] as ItemGroup[]) {

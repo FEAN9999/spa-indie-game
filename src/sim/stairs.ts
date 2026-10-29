@@ -1,4 +1,3 @@
-import { OWNER_START } from '../config'
 import { claimed, nearestSpot, placeProblem } from './build'
 import { tileEq, type Grid } from './grid'
 import { ITEMS, type Item, type ItemKind } from './items'
@@ -32,7 +31,7 @@ export function clearStairs(d: SaveData, shell: Grid): StairsNote {
   for (const item of touched) {
     const needed = classOf(item) !== null && !kept.some(i => classOf(i) === classOf(item))
     const fits = (t: { x: number; y: number }): Item | null =>
-      [item.flip, !item.flip].map(flip => ({ ...item, x: t.x, y: t.y, flip })).find(c => placeProblem(shell, kept, c, { door: shell.door, ownerStart: OWNER_START, floors: 1 }) === null) ?? null
+      [item.flip, !item.flip].map(flip => ({ ...item, x: t.x, y: t.y, flip })).find(c => placeProblem(shell, kept, c, { door: shell.door, floors: 1 }) === null) ?? null
     const spotFor = needed ? nearestSpot(shell, inside, t => fits(t) !== null) : null
     if (spotFor) {
       kept = [...kept, fits(spotFor)!]

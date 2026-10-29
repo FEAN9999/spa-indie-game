@@ -1307,7 +1307,7 @@ export class SpaSim {
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number, turned = false): BuildProblem | null {
     const others = this.items.filter(i => i.id !== movingId)
     const item = { id: movingId ?? this.nextItemId, kind, x, y, flip, ...(turned && { turned }) }
-    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START, floors: this.floors })
+    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, floors: this.floors })
   }
 
   buy(kind: ItemKind, x: number, y: number, flip: boolean, turned = false): BuildProblem | null {
@@ -1349,13 +1349,14 @@ export class SpaSim {
     return null
   }
 
-  /** Refunds half the price; the shop always keeps one shampoo bed and one seat, and never sells a gift. */
+  /** Refunds half the price; the shop always keeps one shampoo bed, one seat and one desk, and never sells a gift. */
   sell(id: number): BuildProblem | null {
     const { kind, gift } = this.itemById(id)
     if (gift) return 'gift'
     if (this.isBusy(id)) return 'busy'
     if (kind === 'bed' && this.items.filter(i => i.kind === 'bed').length === 1) return 'lastBed'
     if (ITEMS[kind].group === 'seat' && this.items.filter(i => ITEMS[i.kind].group === 'seat').length === 1) return 'lastSeat'
+    if (kind === 'desk' && this.items.filter(i => i.kind === 'desk').length === 1) return 'lastDesk'
     this.money += Math.floor(ITEMS[kind].price / 2)
     this.items = this.items.filter(i => i.id !== id)
     this.changeRoom()

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { nearestSpot, placeProblem, PROBLEM_TEXT } from '../../src/sim/build'
-import { OWNER_START } from '../../src/config'
 import { towerOf } from '../../src/sim/floors'
 import { isWalkable, manhattan, parseLayout, tileEq } from '../../src/sim/grid'
 import { DEFAULT_ITEMS, shellOf, type ItemKind } from '../../src/sim/items'
@@ -20,7 +19,7 @@ const idOf = (sim: SpaSim, kind: ItemKind) => sim.items.find(i => i.kind === kin
 
 /** Fills every bed but the new one, fetches the next customer and plays until they lie down. */
 const serveOnNewBed = (sim: SpaSim) => {
-  for (const s of sim.stations) if (s.id !== 14) s.customerId = 999
+  for (const s of sim.stations) if (s.id !== 17) s.customerId = 999
   const c = seatAndWait(sim)
   sim.tapTile(c.seat!)
   advanceUntil(sim, () => c.state === 'inService')
@@ -28,14 +27,38 @@ const serveOnNewBed = (sim: SpaSim) => {
 }
 
 describe('building the shop', () => {
+  it('moves, turns, sells and buys back a screen', () => {
+    const sim = shop()
+    const screen = idOf(sim, 'screen')
+    expect(sim.move(screen, 9, 8, false, true)).toBeNull()
+    expect(sim.sell(screen)).toBeNull()
+    expect(sim.money).toBe(2_000_000 + 100_000)
+    expect(sim.buy('screen', 1, 6, false)).toBeNull()
+    expect(sim.money).toBe(2_000_000 + 100_000 - 200_000)
+  })
+  it('keeps the desk on floor 1, its spot free, and one desk in the shop', () => {
+    const sim = shop()
+    sim.money = 10_000_000
+    const desk = idOf(sim, 'desk')
+    expect(sim.canPlace('plant', 9, 13, false)).toBe('overlap')
+    expect(sim.canPlace('desk', 6, 2, false)).toBe('overlap') // its spot (7,1) is the back wall
+    expect(sim.sell(desk)).toBe('lastDesk')
+    sim.floors = 2
+    expect(sim.canPlace('desk', 4, 28, false)).toBe('deskFloor')
+    expect(sim.buy('desk', 4, 10, false)).toBeNull()
+    expect(sim.sell(desk)).toBeNull()
+    expect(sim.money).toBe(10_000_000 - 400_000 + 200_000)
+    expect(t(PROBLEM_TEXT.lastDesk)).toBe('Tiệm cần ít nhất một quầy lễ tân')
+    expect(t(PROBLEM_TEXT.deskFloor)).toBe('Quầy lễ tân chỉ đặt ở tầng 1')
+  })
   it('buys a bed by the back wall and serves on it', () => {
     const sim = shop()
     expect(sim.buy('bed', 6, 2, false)).toBeNull()
     expect(sim.money).toBe(2_000_000 - 300_000)
-    expect(sim.stations.map(s => s.id)).toEqual([1, 2, 14])
+    expect(sim.stations.map(s => s.id)).toEqual([1, 2, 17])
     expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
     const c = serveOnNewBed(sim)
-    expect(c.stationId).toBe(14)
+    expect(c.stationId).toBe(17)
     expect(c.pos).toEqual({ x: 6, y: 3 })
     expect(sim.ownerTile()).toEqual({ x: 7, y: 3 })
   })
@@ -70,7 +93,7 @@ describe('building the shop', () => {
   it('flips a bed to work from its left', () => {
     const sim = shop()
     expect(sim.buy('bed', 8, 2, true)).toBeNull()
-    expect(sim.stations.find(s => s.id === 14)!.work).toEqual({ x: 7, y: 3 })
+    expect(sim.stations.find(s => s.id === 17)!.work).toEqual({ x: 7, y: 3 })
     const c = serveOnNewBed(sim)
     expect(c.pos).toEqual({ x: 8, y: 3 })
     expect(sim.ownerTile()).toEqual({ x: 7, y: 3 })
@@ -121,7 +144,7 @@ describe('building the shop', () => {
     expect(sim.canPlace('teaChest', 6, 9, false)).toBeNull()
     expect(sim.buy('teaChest', 6, 9, false)).toBe('money')
     expect(sim.money).toBe(100_000)
-    expect(sim.items).toHaveLength(13)
+    expect(sim.items).toHaveLength(16)
     expect(sim.drainEvents()).toEqual([])
     expect(sim.sell(idOf(sim, 'lotus'))).toBeNull()
     expect(sim.money).toBe(175_000)
@@ -192,7 +215,9 @@ describe('building the shop', () => {
       busy: 'Đang có khách',
       lastBed: 'Tiệm cần ít nhất một giường gội',
       lastSeat: 'Tiệm cần ít nhất một ghế chờ',
+      lastDesk: 'Tiệm cần ít nhất một quầy lễ tân',
       seatFloor: 'Ghế chờ chỉ đặt ở tầng 1',
+      deskFloor: 'Quầy lễ tân chỉ đặt ở tầng 1',
       money: 'Còn thiếu 200.000 đ',
       gift: 'Quà không bán được',
     })
@@ -234,11 +259,11 @@ describe('gift furniture', () => {
     expect(sim.book.gifts).toEqual(['vase'])
     expect(sim.placeGift('vase', 6, 9, false)).toBeNull()
     expect(sim.money).toBe(2_000_000)
-    expect(sim.items.at(-1)).toEqual({ id: 14, kind: 'vase', x: 6, y: 9, flip: false, gift: true })
+    expect(sim.items.at(-1)).toEqual({ id: 17, kind: 'vase', x: 6, y: 9, flip: false, gift: true })
     expect(sim.book.gifts).toEqual([])
     expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
     expect(sim.placeGift('vase', 7, 11, false)).toBe('gift')
-    expect(sim.items).toHaveLength(14)
+    expect(sim.items).toHaveLength(17)
   })
 
   it('takes only the oldest of the same gift off the list', () => {
@@ -309,7 +334,7 @@ describe('where a new piece starts', () => {
 describe('placeProblem on the tall grid', () => {
   const shell = parseLayout(towerOf(shellOf(SPA_LAYOUT_1A)))
   const others = DEFAULT_ITEMS
-  const extras = { door: shell.door, ownerStart: OWNER_START }
+  const extras = { door: shell.door }
   const problem = (kind: ItemKind, x: number, y: number, floors: number, flip = false) =>
     placeProblem(shell, others, { id: 99, kind, x, y, flip }, { ...extras, floors })
 
