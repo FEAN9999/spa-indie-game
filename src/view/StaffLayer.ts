@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C, staffColors } from '../art/palette'
 import { TILE } from '../config'
+import { workFacing } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Staff } from '../sim/staff'
 import type { SimEvent } from '../sim/types'
@@ -140,10 +141,10 @@ export class StaffLayer {
       this.celebrate(sim, s.id, pending)
     }
     const still = s.path.length === 0
-    // at work: face the bed beside the work tile, as the owner does
+    // at work: face the bed beside the work tile, or down at a turned bed in front of it, as the owner does
     const station = task?.kind === 'serve' && still ? sim.stations.find(x => x.id === task.stationId) : undefined
     const atWork = station !== undefined && s.pos.x === station.work.x && s.pos.y === station.work.y
-    sp.view.setFacing(atWork ? (station.bed.x < station.work.x ? 'left' : 'right') : s.facing)
+    sp.view.setFacing(atWork ? workFacing(station) : s.facing)
     sp.view.setPose(still ? 'stand' : 'walk')
     sp.view.container.setPosition(at.x, at.y).setDepth(at.y)
     sp.view.update(dt)

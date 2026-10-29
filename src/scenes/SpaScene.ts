@@ -17,9 +17,9 @@ import { monthOf } from '../sim/calendar'
 import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
-import { onBed, tileEq } from '../sim/grid'
+import { onBed, tileEq, tileOf } from '../sim/grid'
 import type { OutfitId } from '../sim/outfits'
-import { ITEMS, seatFacing, seatTiles } from '../sim/items'
+import { bedCentreOffset, bedTile, headSide, ITEMS, seatFacing, seatTiles, size, workFacing } from '../sim/items'
 import type { PlaceId } from '../sim/places'
 import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
@@ -28,7 +28,7 @@ import { SERVICES, type ServiceId } from '../sim/services'
 import { SpaSim } from '../sim/spa'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
-import type { Customer, Facing, HintId, SimEvent, Tile } from '../sim/types'
+import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types'
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
@@ -53,6 +53,7 @@ import { questTitle } from '../view/quests'
 import { servicesOpening } from '../view/servicesPanel'
 import { stockLowText } from '../view/stockText'
 import { humNow, humText, todayToasts } from '../view/idol'
+import { lieAngle, liePoint } from '../view/lying'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
 import { goalCard, lockedText } from '../view/starter'
@@ -117,8 +118,10 @@ const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
 const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails' }
-/** Services whose customer sits on the station's upper tile instead of lying. */
+/** Services whose customer sits on the station's tile toward its head instead of lying. */
 const SEATED: readonly ServiceId[] = ['foot', 'nails']
+/** The way the head of a piece standing up the floor lies from its bed tile: a bed's head, a foot chair's or nail desk's seat. */
+const UP: Vec = { x: 0, y: -1 }
 
 interface CustomerSprite {
   view: CharacterView
@@ -136,6 +139,8 @@ interface CustomerSprite {
   stones: Phaser.GameObjects.Image
   /** 0 on the floor to 1 on the seat of the foot chair or the nail desk, eased as they sit down and get up. */
   lift: number
+  /** The way the lift takes them: toward the head of the foot chair or nail desk they last sat at, up the floor, or left or right on a turned one; kept while they step down. */
+  liftSide: Vec
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -928,7 +933,7 @@ export class SpaScene extends Phaser.Scene {
   /** The top-centre tile of every machine bed, for its off mark while the power is out. */
   private machineBeds(): Tile[] {
     const kinds = MACHINES.map(id => SERVICES[id].bed)
-    return this.sim.items.filter(i => kinds.includes(i.kind)).map(i => ({ x: i.x + ITEMS[i.kind].w / 2, y: i.y }))
+    return this.sim.items.filter(i => kinds.includes(i.kind)).map(i => ({ x: i.x + size(i).w / 2, y: i.y }))
   }
 
   /** The floor a customer is shown on: the street, where arrivals and leavers walk, counts as floor 1. */
@@ -1083,10 +1088,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // on the stairs, the owner rises toward the next floor and fades
     const climb = climbPose(o)
     if (climb) at.y -= climb.lift * TILE
-    // serving: face the bed beside the work tile
+    // serving: face the bed beside the work tile, or down at a turned bed in front of it
     const task = o.task
     const station = task?.kind === 'serve' && o.path.length === 0 ? this.sim.stations.find(s => s.id === task.stationId) : undefined
-    this.owner.setFacing(station ? (station.bed.x < station.work.x ? 'left' : 'right') : o.facing)
+    this.owner.setFacing(station ? workFacing(station) : o.facing)
     this.owner.setPose(o.path.length > 0 ? 'walk' : 'stand')
     this.owner.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(climb?.alpha ?? 1).setVisible(this.room.onFloor(o.pos.y))
     this.owner.update(dt)
@@ -1447,6 +1452,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       stones: this.add.image(0, 0, 'fx-stones').setVisible(false),
       bubble: null,
       lift: 0,
+      liftSide: UP,
     })
   }
 
@@ -1480,14 +1486,26 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       p.y -= climb.lift * TILE
       p.alpha = climb.alpha
     }
-    // lying in a mud tub, the customer is drawn half a tile towards its other column, the side the tent's steam takes, so the head sits in its middle
-    const tub = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'mud') : undefined
-    if (tub) p.x += tub.work.x > tub.bed.x ? -TILE / 2 : TILE / 2
-    // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
-    const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
-    // the chair's seat is its upper tile, one above the bed tile they stand on; they rise onto it and step down rather than hop
+    // the bed, foot chair or nail desk they are at: its head is where a lying head goes and where the seat is
+    const piece = onStation ? this.sim.items.find(i => i.id === c.stationId) : undefined
+    const head = piece ? headSide(piece) : UP
+    // lying in a mud tub, the customer is drawn to its middle: half a tile towards its other column, the side the tent's steam takes, or half a tile down in a turned one
+    const tub = lying && piece?.kind === 'mudTub' ? piece : undefined
+    if (tub) {
+      const off = bedCentreOffset(tub)
+      p.x += off.x * TILE
+      p.y += off.y * TILE
+    }
+    // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower;
+    // a turned bed's anchor is its own bottom row, so they draw just over that, still under whoever stands in front of it
+    const on = !street && onBed(this.sim.grid, c.pos)
+    const across = on ? this.sim.items.find(i => i.turned && ITEMS[i.kind].group === 'bed' && tileEq(bedTile(i), tileOf(c.pos))) : undefined
+    const depth = across ? this.room.rowY(across.y + size(across).h) + 1 : on ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
+    // the chair's seat is its tile toward its head, one above the bed tile they stand on, or beside it on a turned one; they rise onto it and step down rather than hop
     s.lift = Math.min(1, Math.max(0, s.lift + ((seated ? 1 : -1) * dt) / FOOT_SEAT_MS))
-    p.y -= TILE * s.lift
+    if (seated) s.liftSide = head
+    p.x += TILE * s.lift * s.liftSide.x
+    p.y += TILE * s.lift * s.liftSide.y
 
     // face down on the massage and stone beds, face up anywhere else
     // a waiting customer on a seat faces the front of the piece under them, which an upright bench turns sideways
@@ -1497,26 +1515,34 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     const side = facing === 'left' ? -1 : 1
     const wall = (dx: number) => (this.sim.grid.cells[c.pos.y]?.[c.pos.x + dx] ?? 'wall') === 'wall'
     const markDx = seat?.turned ? (wall(side) ? -side : side) * TILE : 0
-    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : facing ?? (c.state === 'waiting' || seated ? 'down' : p.facing))
+    // seated, they face away from the piece's head: down, or right on a turned piece whose head is on the left, left on one whose head is on the right
+    const away: Facing = head.x < 0 ? 'right' : head.x > 0 ? 'left' : 'down'
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : facing ?? (seated ? away : c.state === 'waiting' ? 'down' : p.facing))
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // only the towel-wrapped head shows over the mud
     s.view.setTowel(tub !== undefined)
     // lying in a steam tent, the customer is out of sight and the tent steams
-    const tent = lying ? this.sim.stations.find(st => st.id === c.stationId && st.service === 'steam') : undefined
-    s.view.container.setPosition(p.x, p.y).setDepth(depth).setAlpha(p.alpha).setVisible(!tent)
+    const tent = lying && piece?.kind === 'steamTent' ? piece : undefined
+    // lying on a turned bed, the figure, with its mask, towel and blanket, turns about the bed tile's centre so the head lies toward the bed's head
+    const lie = lying ? head : UP
+    const at = liePoint(p, 0, lie)
+    s.view.container.setPosition(at.x, at.y).setRotation(lieAngle(lie)).setDepth(depth).setAlpha(p.alpha).setVisible(!tent)
     s.view.update(dt)
     s.steam.setVisible(tent !== undefined)
     if (tent) {
-      // the bed tile is the tent's half beside the work tile
-      const centreX = p.x + (tent.work.x > tent.bed.x ? -TILE / 2 : TILE / 2)
+      // the bed tile is the tent's half beside the work tile, or its upper half once turned: the steam rises from the tent's middle, over its bottom edge
+      const off = bedCentreOffset(tent)
       const bob = STEAM_BOB.px * Math.sin((time / STEAM_BOB.ms) * 2 * Math.PI)
-      s.steam.setPosition(centreX, p.y - TENT_KNOB_TILES * TILE + bob).setDepth(depth)
+      s.steam.setPosition(p.x + off.x * TILE, p.y + (off.y + 0.5) * TILE - TENT_KNOB_TILES * TILE + bob).setDepth(depth)
     }
-    // served on the stone bed, the customer has hot stones along the back; a hair deeper, as an equal depth can sort them under the customer
+    // served on the stone bed, the customer has hot stones along the back, turned with them; a hair deeper, as an equal depth can sort them under the customer
     const stones = c.service === 'stone' && c.state === 'inService'
     s.stones.setVisible(stones)
-    if (stones) s.stones.setPosition(p.x, p.y - STONES_TILES * TILE).setDepth(depth + 0.5)
+    if (stones) {
+      const back = liePoint(p, STONES_TILES * TILE, lie)
+      s.stones.setPosition(back.x, back.y).setRotation(lieAngle(lie)).setDepth(depth + 0.5)
+    }
 
     s.bar.clear()
     if (c.state === 'waiting') {
