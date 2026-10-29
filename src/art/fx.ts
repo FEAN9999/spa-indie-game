@@ -287,6 +287,15 @@ export function fxTextures(): Record<string, string> {
         `<ellipse cx="28" cy="31" rx="17" ry="4" fill="${C.herb}" ${INNER}/>` +
         `<ellipse cx="38" cy="30.5" rx="4" ry="1.8" fill="${C.leaf}" transform="rotate(-20 38 30.5)"/>`,
     ),
+    // a bottle of red polish beside a painted nail
+    'svc-nails': badge(
+      C.pinkPale,
+      `<rect x="16" y="9" width="11" height="12" rx="2.5" fill="${C.deepBrown}" ${INNER}/>` +
+        `<rect x="12" y="20" width="19" height="25" rx="6" fill="${C.lantern}" ${INNER}/>` +
+        `<path d="M16.5,25 V39" stroke="${C.cream}" stroke-width="2.6" stroke-linecap="round" opacity=".8"/>` +
+        `<path d="M35,46 V33 Q35,24 41,24 Q47,24 47,33 V46" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<path d="M37.2,36 V30.5 Q37.2,27 41,27 Q44.8,27 44.8,30.5 V36Z" fill="${C.lantern}" ${INNER}/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -337,6 +346,15 @@ export function fxTextures(): Record<string, string> {
         `<rect x="15" y="16" width="26" height="31" rx="7" fill="${C.cream}" ${INNER}/>` +
         `<path d="M15.5,30 q3,-2.5 6,0 t6,0 t6,0 t6,0" stroke="${C.sea}" stroke-width="2" fill="none"/>` +
         `<path d="M21,38 l2,-2.6 l2,2.6 l-2,2.6Z M29,36 l2,-2.6 l2,2.6 l-2,2.6Z M25,23 l1.8,-2.4 l1.8,2.4 l-1.8,2.4Z" fill="${C.seaPale}" stroke="${C.ink}" stroke-width="1.1"/>`,
+    ),
+    // two bottles of polish, red and teal
+    'stock-polish': badge(
+      C.pinkPale,
+      `<rect x="14" y="11" width="9" height="11" rx="2" fill="${C.deepBrown}" ${INNER}/>` +
+        `<rect x="11" y="21" width="15" height="24" rx="5" fill="${C.lantern}" ${INNER}/>` +
+        `<rect x="33" y="13" width="9" height="11" rx="2" fill="${C.deepBrown}" ${INNER}/>` +
+        `<rect x="30" y="23" width="15" height="22" rx="5" fill="${C.teal}" ${INNER}/>` +
+        `<path d="M14.5,26 V38 M33.5,28 V38" stroke="${C.cream}" stroke-width="2.2" stroke-linecap="round" opacity=".8"/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(

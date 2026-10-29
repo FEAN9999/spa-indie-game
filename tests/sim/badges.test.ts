@@ -30,6 +30,7 @@ describe('Đủ món', () => {
   it('asks for six services and any six count', () => {
     expect(BADGES.allServices.goal).toBe(6)
     expect(badgeProgress('allServices', { ...zeroShop(), services: 7 })).toEqual([6, 6])
+    expect(badgeProgress('allServices', { ...zeroShop(), services: 9 })).toEqual([6, 6])
   })
 })
 

@@ -19,12 +19,12 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
-export const LESSON_STARS = { scrub: 3, foot: 4 } as const
+export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000, scrub: 170000, foot: 190000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000, foot: 850000 } as const
+export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000, scrub: 170000, foot: 190000, nails: 220000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000, foot: 850000, nails: 1000000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -205,7 +205,7 @@ export const FOOT_NEXT_MS = 700
 export const FOOT_STARS = { mistakes: 1, pass2: 2 }
 
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 

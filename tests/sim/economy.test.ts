@@ -50,6 +50,11 @@ describe('economy', () => {
     expect(serviceArrivalFactor([...six, 'scrub', 'foot'])).toBe(serviceArrivalFactor([...six]))
   })
 
+  it('is not changed by Sơn móng', () => {
+    const six = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
+    expect(serviceArrivalFactor([...six, 'scrub', 'foot', 'nails'])).toBe(serviceArrivalFactor([...six]))
+  })
+
   it('draws customers faster as the shop gets prettier, up to a quarter more', () => {
     expect([21, 51, 81, 200].map(beautyArrivalFactor)).toEqual([1, 0.9, 0.8, 0.8])
     expect(beautyArrivalFactor(0)).toBe(1)

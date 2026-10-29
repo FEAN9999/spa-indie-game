@@ -28,12 +28,16 @@ describe('updates', () => {
   })
 
   it('never reloads while a service is in progress or in dev', () => {
-    expect(shouldReload('a', 'b', false)).toBe(true)
-    expect([shouldReload('a', 'a', false), shouldReload('a', null, false), shouldReload('a', 'b', true), shouldReload('dev', 'b', false)]).toEqual([
+    expect(shouldReload('a', 'b', false, false)).toBe(true)
+    expect([shouldReload('a', 'a', false, false), shouldReload('a', null, false, false), shouldReload('a', 'b', true, false), shouldReload('dev', 'b', false, false)]).toEqual([
       false,
       false,
       false,
       false,
     ])
+  })
+
+  it('never reloads in the middle of a lesson', () => {
+    expect(shouldReload('a', 'b', false, true)).toBe(false)
   })
 })

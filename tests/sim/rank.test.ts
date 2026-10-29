@@ -56,6 +56,7 @@ describe('the calendar of judging', () => {
     const i = monthInput(emptyRankBook(13, 100, 5), 15, 4, 30, 7, { served: 145, lost: 10 })
     expect(i.services).toBe(6)
     expect(rankParts(i)[2]).toBe(20)
+    expect(monthInput(emptyRankBook(13, 100, 5), 15, 4, 30, 9, { served: 145, lost: 10 }).services).toBe(6)
   })
 })
 

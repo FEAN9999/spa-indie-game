@@ -13,19 +13,20 @@ describe('panelPage', () => {
     const p0 = panelPage(SERVICE_IDS, 0)
     expect(p0.pages).toBe(2)
     expect(p0.rows).toEqual(SIX)
-    expect(panelPage(SERVICE_IDS, 1).rows).toEqual(['scrub', 'foot'])
+    expect(panelPage(SERVICE_IDS, 1).rows).toEqual(['scrub', 'foot', 'nails'])
   })
   it('wraps the page both ways', () => {
     expect(panelPage(SERVICE_IDS, 2).page).toBe(0)
     expect(panelPage(SERVICE_IDS, 2).rows).toEqual(SIX)
     expect(panelPage(SERVICE_IDS, -1).page).toBe(1)
-    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['scrub', 'foot'])
+    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['scrub', 'foot', 'nails'])
   })
   it('keeps six rows on one page', () => {
     expect(panelPage(SIX, 0).pages).toBe(1)
   })
   it('pages the stock list: salt on the second page once scrub is open', () => {
     expect(panelPage(stockItemsFor([...SIX, 'scrub']), 1).rows).toEqual(['salt'])
+    expect(panelPage(stockItemsFor([...SIX, 'scrub', 'nails']), 1).rows).toEqual(['salt', 'polish'])
     expect(panelPage(stockItemsFor(SIX), 0).pages).toBe(1)
   })
   it('rowPage', () => {
@@ -89,6 +90,11 @@ describe('lessonAction', () => {
     expect(lessonAction(starShop(3), 'foot')).toEqual({ kind: 'note', text: 'Đạt 4★' })
     expect(lessonAction(starShop(4), 'foot')).toEqual({ kind: 'learn', label: 'Học nghề\n850.000 đ', faded: false })
     expect(servicesOpening(starShop(4), true, false)).toEqual({ tab: 'services', page: 1 })
+  })
+  it('offers the Sơn móng lesson at 5 stars', () => {
+    expect(lessonAction(starShop(4), 'nails')).toEqual({ kind: 'note', text: 'Đạt 5★' })
+    expect(lessonAction(starShop(5), 'nails')).toEqual({ kind: 'learn', label: 'Học nghề\n1.000.000 đ', faded: false })
+    expect(servicesOpening(starShop(5), true, false)).toEqual({ tab: 'services', page: 1 })
   })
   it('goes on once paid, also after a reload', () => {
     const chain = new Chain(starShop(3), 11)

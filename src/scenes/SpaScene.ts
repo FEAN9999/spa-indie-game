@@ -114,9 +114,9 @@ const STONES_TILES = 0.78
 const SHUTTER = { ms: 300, depth: HUD_DEPTH + 200, slat: 72, sign: { w: 640, h: 160, r: 40 } }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
-const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene' }
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
-const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot' }
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails' }
 
 interface CustomerSprite {
   view: CharacterView
@@ -497,12 +497,12 @@ export class SpaScene extends Phaser.Scene {
     return new Chain(new SpaSim({ rng: createRng(seed), starter: true }), seed)
   }
 
-  /** Coming back to the game moves it to a newer version, unless a service is in progress or the shop has no owner yet. */
+  /** Coming back to the game moves it to a newer version, unless a service or a lesson is in progress or the shop has no owner yet. */
   private async checkForUpdate(): Promise<void> {
-    if (BUILD_ID === 'dev' || !this.sim.profileDone || this.sim.servingCustomerId !== null) return
+    if (BUILD_ID === 'dev' || !this.sim.profileDone || this.sim.servingCustomerId !== null || this.scene.isActive('LessonScene')) return
     this.holding = true
     const latest = await latestVersion(UPDATE_WAIT_MS)
-    if (shouldReload(BUILD_ID, latest, this.sim.servingCustomerId !== null)) this.session.reloadForUpdate()
+    if (shouldReload(BUILD_ID, latest, this.sim.servingCustomerId !== null, this.scene.isActive('LessonScene'))) this.session.reloadForUpdate()
     else this.holding = false
   }
 
@@ -1041,7 +1041,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   update(time: number, delta: number) {
     if (this.tooNew) return
     // over a panel too, so it does not wait for the panel to close; not over a lesson game, which has no serving customer
-    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.scene.isActive('FootScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.scene.isActive('FootScene') && !this.scene.isActive('NailsScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)

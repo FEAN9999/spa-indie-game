@@ -52,6 +52,12 @@ describe('kinds of customer', () => {
     expect([...KINDS.picky.prefers]).toEqual(SERVICE_IDS)
   })
 
+  it('has office workers, celebrities and ladies like Sơn móng', () => {
+    expect([...KINDS.office.prefers]).toEqual(['shampoo', 'mask', 'stone', 'nails'])
+    expect([...KINDS.celeb.prefers]).toEqual(['massage', 'mask', 'mud', 'nails'])
+    expect([...KINDS.lady.prefers]).toEqual(['mask', 'mud', 'stone', 'nails'])
+  })
+
   it('has students and tourists like Chà muối biển too', () => {
     expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub'])
     expect([...KINDS.tourist.prefers]).toEqual(['mud', 'stone', 'massage', 'scrub'])
@@ -151,6 +157,6 @@ describe("the rival's day", () => {
 describe('the backpacker and the lady', () => {
   it('are the two place-only kinds', () => {
     expect(KINDS.backpacker).toEqual({ fromDay: 1, weight: 0, patience: 1.3, tip: [0.5, 1, 2], prefers: ['massage', 'steam', 'shampoo', 'foot'], grading: 'normal', reviews: 1, speed: 5, hard: false })
-    expect(KINDS.lady).toEqual({ fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true })
+    expect(KINDS.lady).toEqual({ fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone', 'nails'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true })
   })
 })

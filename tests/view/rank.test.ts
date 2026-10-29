@@ -99,8 +99,11 @@ describe('learnLine', () => {
     expect(learnLine(m(3, 4), ['massage'])).toBe('Món mới để học: Ngâm chân thảo mộc.')
     expect(learnLine(m(3, 4), ['massage', 'foot'])).toBeNull()
   })
+  it('names Sơn móng at 5 stars, unless learned', () => {
+    expect(learnLine(m(4, 5), ['massage'])).toBe('Món mới để học: Sơn móng.')
+    expect(learnLine(m(4, 5), ['massage', 'nails'])).toBeNull()
+  })
   it('is null for other rises and for keeping', () => {
-    expect(learnLine(m(4, 5), [])).toBeNull()
     expect(learnLine(m(1, 2), [])).toBeNull()
     expect(learnLine(m(3, 3), [])).toBeNull()
   })

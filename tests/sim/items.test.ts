@@ -180,3 +180,17 @@ describe('the foot chair', () => {
     expect(ITEM_KINDS.indexOf('footChair')).toBe(ITEM_KINDS.indexOf('scrubBed') + 1)
   })
 })
+
+describe('the nail desk', () => {
+  it('is a 2×2 bed listed right after the foot chair', () => {
+    expect(ITEMS.nailDesk).toEqual({ w: 2, h: 2, price: 750_000, beauty: 0, group: 'bed', name: 'itemNailDesk' })
+    expect(ITEM_KINDS.indexOf('nailDesk')).toBe(ITEM_KINDS.indexOf('footChair') + 1)
+  })
+
+  it('has its bed tile in the lower row beside the work tile', () => {
+    const desk = { id: 1, kind: 'nailDesk', x: 4, y: 6, flip: false } as const
+    expect([bedTile(desk), workTile(desk)]).toEqual([{ x: 5, y: 7 }, { x: 6, y: 7 }])
+    const flipped = { ...desk, flip: true }
+    expect([bedTile(flipped), workTile(flipped)]).toEqual([{ x: 4, y: 7 }, { x: 3, y: 7 }])
+  })
+})

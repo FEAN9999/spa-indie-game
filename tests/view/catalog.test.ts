@@ -73,9 +73,19 @@ describe('build mode catalogue', () => {
     expect(beds([...six])).not.toContain('footChair')
   })
 
+  it('lists the nail desk only once Sơn móng is open', () => {
+    const six = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
+    const beds = (open: ServiceId[]) => {
+      const { pages } = catalogPage('bed', 0, open, [])
+      return Array.from({ length: pages }, (_, p) => kinds(catalogPage('bed', p, open, []))).flat()
+    }
+    expect(beds([...six, 'nails'])).toContain('nailDesk')
+    expect(beds([...six])).not.toContain('nailDesk')
+  })
+
   it('offers every kind but the gifts exactly once', () => {
     const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
-      const all = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot'] as const
+      const all = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails'] as const
       const { pages } = catalogPage(g, 0, [...all], [])
       return Array.from({ length: pages }, (_, p) => kinds(catalogPage(g, p, [...all], []))).flat()
     })

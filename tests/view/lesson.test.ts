@@ -17,6 +17,11 @@ describe('lesson texts', () => {
     expect(lessonHowTo('foot')).toEqual(['Nhìn các huyệt sáng lên lần lượt.', 'Rồi bấm lại đúng thứ tự đó.'])
     expect(lessonPassLine('foot')).toBe('Tiệm đã có Ngâm chân thảo mộc. Quà: một Ghế ngâm chân trong hộp quà.')
   })
+  it('texts the Sơn móng lesson', () => {
+    expect(lessonTitle('nails')).toBe('Học Sơn móng')
+    expect(lessonHowTo('nails')).toEqual(['Chọn lọ sơn đúng màu thẻ mẫu.', 'Kéo ngón theo nét chấm, đừng lem ra ngoài móng.'])
+    expect(lessonPassLine('nails')).toBe('Tiệm đã có Sơn móng. Quà: một Bàn làm móng trong hộp quà.')
+  })
   it('passes at 2 stars', () => {
     expect(LESSON_PASS_STARS).toBe(2)
   })

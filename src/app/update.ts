@@ -22,9 +22,9 @@ export async function latestVersion(timeoutMs: number, fetchFn: typeof fetch = f
   }
 }
 
-/** Reload into a newer version, but never in dev and never in the middle of a service. */
-export function shouldReload(running: string, latest: string | null, serving: boolean): boolean {
-  return running !== 'dev' && latest !== null && latest !== running && !serving
+/** Reload into a newer version, but never in dev, never in the middle of a service or a lesson. */
+export function shouldReload(running: string, latest: string | null, serving: boolean, lesson: boolean): boolean {
+  return running !== 'dev' && latest !== null && latest !== running && !serving && !lesson
 }
 
 /** Calls `cb` each time the player comes back to the game; returns the unsubscribe. */

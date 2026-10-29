@@ -116,6 +116,34 @@ const footChair =
   `<ellipse cx="0.7" cy="1.7" rx="0.08" ry="0.035" fill="${C.leafLight}" transform="rotate(20 0.7 1.7)" ${ink(0.015)}/>` +
   `<circle cx="0.6" cy="1.55" r="0.035" fill="${C.lotus}"/>`
 
+// nail desk: in the lower rows a low table with a hand cushion, a lamp and three bottles, and behind it, over the right-hand column, the customer's padded stool
+const nailBottle = ([x, c]: [number, string]) =>
+  `<rect x="${x - 0.055}" y="1.52" width="0.11" height="0.17" rx="0.035" fill="${c}" ${ink(0.022)}/>` +
+  `<rect x="${x - 0.03}" y="1.42" width="0.06" height="0.11" fill="${C.deepBrown}" ${ink(0.018)}/>`
+const nailDesk =
+  rect(1.2, 0.62, 0.1, 0.36, C.woodDark, ink(0.025)) +
+  rect(1.7, 0.62, 0.1, 0.36, C.woodDark, ink(0.025)) +
+  rect(1.1, 0.14, 0.8, 0.56, C.woodLight, `rx="0.2" ${ink()}`) +
+  rect(1.2, 0.22, 0.6, 0.4, C.pinkPale, `rx="0.16" ${ink(FINE)}`) +
+  rect(0.2, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
+  rect(1.8, 2.0, 0.1, 0.4, C.woodDark, ink(0.025)) +
+  rect(0.05, 1.3, 2, 0.82, C.woodLight, `rx="0.1" ${ink()}`) +
+  rect(0.05, 2.0, 2, 0.18, C.wood, `rx="0.06" ${ink(0.04)}`) +
+  rect(0.72, 1.48, 0.66, 0.32, C.pinkPale, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M0.82,1.64 H1.28" stroke="${C.lotusDark}" stroke-width="0.025" stroke-dasharray="0.06 0.05"/>` +
+  (
+    [
+      [1.55, C.lantern],
+      [1.71, C.teal],
+      [1.87, C.mustard],
+    ] as [number, string][]
+  )
+    .map(nailBottle)
+    .join('') +
+  `<ellipse cx="0.3" cy="1.66" rx="0.13" ry="0.07" fill="${C.cream}" ${ink(0.025)}/>` +
+  `<path d="M0.3,1.64 L0.38,1.42" stroke="${C.ink}" stroke-width="0.035"/>` +
+  `<ellipse cx="0.42" cy="1.4" rx="0.15" ry="0.08" fill="${C.mustard}" ${ink(0.025)}/>`
+
 const bench =
   WEAVE +
   rect(0.1, 0.05, 3.0, 0.3, C.wood, `rx="0.08" ${ink()}`) +
@@ -898,6 +926,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   mudTub: { w: 2, h: 3.15, body: mudTub },
   scrubBed: { w: 1.1, h: 3.15, body: scrubBed },
   footChair: { w: 1.1, h: 2.2, body: footChair },
+  nailDesk: { w: 2.1, h: 2.45, body: nailDesk },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

@@ -2,7 +2,7 @@ import { ITEMS } from '../sim/items'
 import { SERVICES, type LessonService } from '../sim/services'
 import { t, type StringKey } from '../strings/vi'
 
-const HOW_TO: Record<LessonService, readonly [StringKey, StringKey]> = { scrub: ['learnHowScrub1', 'learnHowScrub2'], foot: ['learnHowFoot1', 'learnHowFoot2'] }
+const HOW_TO: Record<LessonService, readonly [StringKey, StringKey]> = { scrub: ['learnHowScrub1', 'learnHowScrub2'], foot: ['learnHowFoot1', 'learnHowFoot2'], nails: ['learnHowNails1', 'learnHowNails2'] }
 
 /** "Học Chà muối biển". */
 export const lessonTitle = (id: LessonService): string => t('learnTitle', { name: t(SERVICES[id].name) })

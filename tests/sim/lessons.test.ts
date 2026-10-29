@@ -257,3 +257,74 @@ describe('Ngâm chân thảo mộc', () => {
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
+
+describe('Sơn móng', () => {
+  it('needs 5 stars, massage open and 1.000.000 đ', () => {
+    expect(starShop(4).lessonProblem('nails')).toBe('stars')
+    expect(starShop(5).lessonProblem('nails')).toBeNull()
+    expect(starShop(5, 999_999).lessonProblem('nails')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Bàn làm móng and starts the polish at 20', () => {
+    const sim = starShop(5)
+    const money = sim.money
+    expect(sim.payLesson('nails')).toBeNull()
+    expect(money - sim.money).toBe(1_000_000)
+    sim.passLesson('nails')
+    expect(sim.book.gifts.filter(g => g === 'nailDesk')).toHaveLength(1)
+    expect(sim.stock.polish).toBe(20)
+  })
+
+  it('is learned in any order with Chà muối biển and Ngâm chân', () => {
+    const sim = starShop(5)
+    expect(sim.learnable()).toBe('scrub')
+    sim.payLesson('nails')
+    sim.passLesson('nails')
+    expect(sim.services).toEqual(['shampoo', 'mask', 'massage', 'nails'])
+    expect(sim.learnable()).toBe('scrub')
+    sim.payLesson('scrub')
+    sim.passLesson('scrub')
+    sim.payLesson('foot')
+    sim.passLesson('foot')
+    expect(sim.services.slice(-3)).toEqual(['scrub', 'foot', 'nails'])
+  })
+
+  it('opens at the uptown branch only with its desk there, and never brings more customers', () => {
+    const chain = new Chain(starShop(5), 11)
+    chain.open('uptown')
+    const uptown = chain.shop('uptown')!
+    chain.main.payLesson('nails')
+    chain.main.passLesson('nails')
+    chain.sync()
+    const rng = createRng(5)
+    for (let i = 0; i < 300; i++) expect(drawService('lady', uptown.availableServices(), rng)).not.toBe('nails')
+    const before = serviceArrivalFactor(uptown.availableServices())
+    placeFirst(uptown, 'nailDesk')
+    let seen = false
+    for (let i = 0; i < 300; i++) if (drawService('lady', uptown.availableServices(), rng) === 'nails') seen = true
+    expect(seen).toBe(true)
+    expect(serviceArrivalFactor(uptown.availableServices())).toBe(before)
+    placeFirst(chain.main, 'nailDesk')
+    let office = false
+    for (let i = 0; i < 300; i++) if (drawService('office', chain.main.availableServices(), rng) === 'nails') office = true
+    expect(office).toBe(true)
+  })
+
+  it('is served by staff for the ranked price, using polish and a towel', () => {
+    const main = starShop(5)
+    main.payLesson('nails')
+    main.passLesson('nails')
+    placeFirst(main, 'nailDesk')
+    hireStaff(main, 'technician', undefined, {})
+    const polish = main.stock.polish
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'office', service: 'nails' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(220_000, 5))
+    expect(main.stock.polish).toBe(polish - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})
