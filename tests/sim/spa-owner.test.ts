@@ -196,6 +196,16 @@ describe('SpaSim owner and service', () => {
       expect(sim.ownerStart()).toEqual({ x: 5, y: 9 })
     })
 
+    it('puts the receptionist at the top end of an upright desk, never straight above or below the owner', () => {
+      for (const flip of [false, true]) {
+        const sim = shop()
+        const desk = sim.items.find(i => i.kind === 'desk')!.id
+        expect(sim.move(desk, 4, 9, flip, true)).toBeNull()
+        expect(sim.ownerStart()).toEqual({ x: flip ? 5 : 3, y: 10 })
+        expect(sim.receptionSpot()).toEqual({ x: 4, y: 8 })
+      }
+    })
+
     it('sends the receptionist to the moved desk, facing it', () => {
       const sim = shop()
       const r = hireStaff(sim, 'receptionist')
@@ -207,7 +217,7 @@ describe('SpaSim owner and service', () => {
       expect(tileEq(spot, { x: 3, y: 10 })).toBe(false)
       expect(sim.grid.desks.some(d => manhattan(d, spot) === 1)).toBe(true)
       advanceUntil(sim, () => tileEq(tileOf(r.pos), sim.receptionSpot()) && r.path.length === 0)
-      expect(r.facing).toBe('right')
+      expect(r.facing).toBe('down') // she stands above the desk's top end, which is below her
     })
   })
 })

@@ -3,7 +3,7 @@ import { flood } from './build'
 import type { Stars } from './economy'
 import { floorOf } from './floors'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
-import { footprint } from './items'
+import { deskSpot, footprint } from './items'
 import { findPath } from './path'
 import type { Rng } from './rng'
 import type { HireProblem, SpaSim, StudyProblem } from './spa'
@@ -33,18 +33,18 @@ function groundFloor({ sim }: CrewHost): Tile[] {
   return tiles
 }
 
-/** Where the receptionist stands: the first floor tile beside the desk, nearest the desk's spot; the spot itself if there is none. */
+/** Where the receptionist stands: the first floor tile beside a desk, nearest the owner's start, but not on it or one tile straight above or below it, where she would hide behind the owner; an upright desk's top end first; the owner's start itself if there is none. */
 export function receptionSpot(h: CrewHost): Tile {
   const { sim } = h
-  const spot = groundFloor(h).find(
-    t => !tileEq(t, sim.ownerStart()) && sim.grid.desks.some(d => manhattan(d, t) === 1),
-  )
-  return spot ?? sim.ownerStart()
+  const start = sim.ownerStart()
+  const spots = groundFloor(h).filter(t => !(t.x === start.x && Math.abs(t.y - start.y) <= 1) && sim.grid.desks.some(d => manhattan(d, t) === 1))
+  const upright = sim.items.find(i => i.kind === 'desk' && i.turned && tileEq(deskSpot(i)!, start))
+  return (upright && spots.find(t => t.x === upright.x && t.y === upright.y - 1)) || spots[0] || start
 }
 
 /**
  * Where a hired person waits: the receptionist at the desk; each technician in turn on the floor nearest the owner's start
- * that is not on, or one tile straight above or below, the owner's start, the desk spot or an earlier technician's home,
+ * that is not on, or one tile straight above or below, the owner's start, the receptionist's spot or an earlier technician's home,
  * since the lower of two people one tile apart hides the upper one.
  */
 export function homeOf(h: CrewHost, s: Staff): Tile {
