@@ -1528,7 +1528,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     s.heart.setVisible(heart)
     if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge))
 
-    const star = ((c.vip !== null || c.idol !== null) && !lying) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
+    const star = ((c.vip !== null || c.idol !== null) && !onStation) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
     s.vipStar.setVisible(star)
     if (star) {
       const waiting = c.state === 'waiting'
