@@ -1304,19 +1304,19 @@ export class SpaSim {
   }
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
-  canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number): BuildProblem | null {
+  canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number, turned = false): BuildProblem | null {
     const others = this.items.filter(i => i.id !== movingId)
-    const item = { id: movingId ?? this.nextItemId, kind, x, y, flip }
+    const item = { id: movingId ?? this.nextItemId, kind, x, y, flip, ...(turned && { turned }) }
     return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, ownerStart: OWNER_START, floors: this.floors })
   }
 
-  buy(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
+  buy(kind: ItemKind, x: number, y: number, flip: boolean, turned = false): BuildProblem | null {
     const price = ITEMS[kind].price
     if (this.money < price) return 'money'
-    const problem = this.canPlace(kind, x, y, flip)
+    const problem = this.canPlace(kind, x, y, flip, undefined, turned)
     if (problem) return problem
     this.money -= price
-    this.items.push({ id: this.nextItemId++, kind, x, y, flip })
+    this.items.push({ id: this.nextItemId++, kind, x, y, flip, ...(turned && { turned }) })
     if (starterRunning(this.starter) && ITEMS[kind].group !== 'bed') this.starter.bought++
     this.changeRoom()
     this.advanceStarter()
@@ -1324,12 +1324,12 @@ export class SpaSim {
   }
 
   /** Puts down the oldest waiting gift of `kind`, free; it stays a gift, so it can be moved but never sold. */
-  placeGift(kind: ItemKind, x: number, y: number, flip: boolean): BuildProblem | null {
+  placeGift(kind: ItemKind, x: number, y: number, flip: boolean, turned = false): BuildProblem | null {
     const waiting = this.book.gifts.indexOf(kind)
     if (waiting < 0) return 'gift'
-    const problem = this.canPlace(kind, x, y, flip)
+    const problem = this.canPlace(kind, x, y, flip, undefined, turned)
     if (problem) return problem
-    this.items.push({ id: this.nextItemId++, kind, x, y, flip, gift: true })
+    this.items.push({ id: this.nextItemId++, kind, x, y, flip, ...(turned && { turned }), gift: true })
     this.book.gifts.splice(waiting, 1)
     this.changeRoom()
     this.advanceStarter()
@@ -1337,12 +1337,14 @@ export class SpaSim {
   }
 
   /** Free; the item keeps its id, so a bed keeps its station. */
-  move(id: number, x: number, y: number, flip: boolean): BuildProblem | null {
+  move(id: number, x: number, y: number, flip: boolean, turned = false): BuildProblem | null {
     const item = this.itemById(id)
     if (this.isBusy(id)) return 'busy'
-    const problem = this.canPlace(item.kind, x, y, flip, id)
+    const problem = this.canPlace(item.kind, x, y, flip, id, turned)
     if (problem) return problem
     Object.assign(item, { x, y, flip })
+    if (turned) item.turned = true
+    else delete item.turned
     this.changeRoom()
     return null
   }

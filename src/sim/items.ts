@@ -98,10 +98,36 @@ export interface Item {
   flip: boolean
   /** Received as a regular's gift: placed once, movable, never sold. */
   gift?: boolean
+  /** Stood on its side: its footprint is h × w. Saved only when true. */
+  turned?: boolean
+}
+
+/** The footprint's width and height, swapped when the piece is turned. */
+export function size(item: { kind: ItemKind; turned?: boolean }): { w: number; h: number } {
+  const { w, h } = ITEMS[item.kind]
+  return item.turned ? { w: h, h: w } : { w, h }
+}
+
+/** Whether a piece has a side to stand on: not a square one, and never a bed. */
+export function canTurn(kind: ItemKind): boolean {
+  const { w, h, group } = ITEMS[kind]
+  return w !== h && group !== 'bed'
+}
+
+/** The next facing, a new item: turned about its middle tile, then back with `flip` toggled; a piece that cannot turn only mirrors. */
+export function nextFacing(item: Item): Item {
+  if (!canTurn(item.kind)) return { ...item, flip: !item.flip }
+  const { w, h } = size(item)
+  const next: Item = { ...item, flip: item.turned ? !item.flip : item.flip, turned: !item.turned }
+  const { w: nw, h: nh } = size(next)
+  next.x = item.x + Math.floor(w / 2) - Math.floor(nw / 2)
+  next.y = item.y + Math.floor(h / 2) - Math.floor(nh / 2)
+  if (!next.turned) delete next.turned
+  return next
 }
 
 export function footprint(item: Item): Tile[] {
-  const { w, h } = ITEMS[item.kind]
+  const { w, h } = size(item)
   const tiles: Tile[] = []
   for (let dy = 0; dy < h; dy++) for (let dx = 0; dx < w; dx++) tiles.push({ x: item.x + dx, y: item.y + dy })
   return tiles

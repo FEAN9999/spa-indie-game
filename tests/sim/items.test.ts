@@ -3,7 +3,7 @@ import { KEEPSAKE_BEAUTY } from '../../src/config'
 import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { IDOLS, IDOL_IDS } from '../../src/sim/idols'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, bedTile, footprint, setProgress, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, footprint, nextFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { t } from '../../src/strings/vi'
 
@@ -192,5 +192,35 @@ describe('the nail desk', () => {
     expect([bedTile(desk), workTile(desk)]).toEqual([{ x: 5, y: 7 }, { x: 6, y: 7 }])
     const flipped = { ...desk, flip: true }
     expect([bedTile(flipped), workTile(flipped)]).toEqual([{ x: 4, y: 7 }, { x: 3, y: 7 }])
+  })
+})
+
+describe('facings', () => {
+  const bench: Item = { id: 1, kind: 'bench', x: 2, y: 13, flip: false }
+  it('stands a turned piece on its side', () => {
+    expect(size({ kind: 'bench', turned: true })).toEqual({ w: 1, h: 3 })
+    expect(footprint({ ...bench, x: 3, y: 12, turned: true })).toEqual([{ x: 3, y: 12 }, { x: 3, y: 13 }, { x: 3, y: 14 }])
+  })
+  it('turns a long piece through four facings about its middle tile', () => {
+    const a = nextFacing(bench)
+    expect(a).toEqual({ ...bench, x: 3, y: 12, turned: true })
+    const b = nextFacing(a)
+    expect(b).toEqual({ ...bench, flip: true })
+    expect('turned' in b).toBe(false)
+    const c = nextFacing(b)
+    expect(c).toEqual({ ...bench, x: 3, y: 12, flip: true, turned: true })
+    expect(nextFacing(c)).toEqual(bench)
+  })
+  it('turns a two-tile piece back onto its own tiles', () => {
+    const tea: Item = { id: 2, kind: 'tea', x: 2, y: 10, flip: false }
+    expect(footprint(nextFacing(tea))).toEqual([{ x: 3, y: 9 }, { x: 3, y: 10 }])
+    expect(nextFacing(nextFacing(tea))).toEqual({ ...tea, flip: true })
+  })
+  it('only mirrors square pieces and beds', () => {
+    expect(ITEM_KINDS.filter(canTurn).sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
+    const plant: Item = { id: 3, kind: 'plant', x: 1, y: 16, flip: false }
+    expect(nextFacing(plant)).toEqual({ ...plant, flip: true })
+    const bed: Item = { id: 4, kind: 'bed', x: 2, y: 2, flip: false }
+    expect(nextFacing(bed)).toEqual({ ...bed, flip: true })
   })
 })

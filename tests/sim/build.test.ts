@@ -208,6 +208,21 @@ describe('building the shop', () => {
     expect(sim.drainEvents()).toEqual([])
     expect(sim.owner.path).toEqual([])
   })
+
+  it('places, moves and keeps a turned piece, whose seats stand upright', () => {
+    const sim = shop()
+    const bench = idOf(sim, 'bench')
+    expect(sim.move(bench, 4, 9, false, true)).toBeNull()
+    expect(sim.items.find(i => i.id === bench)).toEqual({ id: bench, kind: 'bench', x: 4, y: 9, flip: false, turned: true })
+    expect(sim.grid.seats).toEqual([{ x: 4, y: 9 }, { x: 4, y: 10 }, { x: 4, y: 11 }])
+    expect(sim.buy('shelf', 2, 9, false, true)).toBeNull()
+    expect(sim.items.at(-1)).toMatchObject({ kind: 'shelf', x: 2, y: 9, turned: true })
+    expect(sim.move(bench, 2, 13, false)).toBeNull()
+    expect('turned' in sim.items.find(i => i.id === bench)!).toBe(false)
+    sim.book.gifts.push('silkScreen')
+    expect(sim.placeGift('silkScreen', 6, 9, false, true)).toBeNull()
+    expect(sim.items.at(-1)).toMatchObject({ kind: 'silkScreen', turned: true, gift: true })
+  })
 })
 
 describe('gift furniture', () => {

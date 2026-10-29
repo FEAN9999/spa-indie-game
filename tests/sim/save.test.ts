@@ -2153,4 +2153,18 @@ describe('save version 29', () => {
   it('reads the polish stock and repairs a bad one', () => {
     expect([polish(7), polish(-1)]).toEqual([7, 20])
   })
+
+  it('keeps a turned piece and drops a turned flag that is not true', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const bench = sim.items.find(i => i.kind === 'bench')!.id
+    expect(sim.move(bench, 4, 9, false, true)).toBeNull()
+    const raw = JSON.parse(JSON.stringify(sim.toSave()))
+    expect(parseSave(raw).items.find(i => i.id === bench)!.turned).toBe(true)
+    const other = raw.items.filter((i: { id: number }) => i.id !== bench)
+    other[0].turned = false
+    other[1].turned = 'yes'
+    const d = parseSave(raw)
+    expect('turned' in d.items.find(i => i.id === other[0].id)!).toBe(false)
+    expect('turned' in d.items.find(i => i.id === other[1].id)!).toBe(false)
+  })
 })
