@@ -1452,9 +1452,12 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
     // on the bed from arrival until the owner finishes, waiting or being served
-    const lying = c.stationId !== null && c.path.length === 0
+    const onStation = c.stationId !== null && c.path.length === 0
+    // in the foot chair they sit with their feet over the basin instead of lying
+    const seated = onStation && c.service === 'foot'
+    const lying = onStation && !seated
     // a VIP with no seat free stands by the desk, facing down
-    const sitting = c.state === 'waiting' && !this.sim.isStanding(c)
+    const sitting = seated || (c.state === 'waiting' && !this.sim.isStanding(c))
     const street = this.streetPlacement(c)
     const floor = street ? 1 : floorOf(c.pos.y)
     if (floor !== this.viewFloor) {
@@ -1477,9 +1480,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (tub) p.x += tub.work.x > tub.bed.x ? -TILE / 2 : TILE / 2
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
+    // the chair's seat is its upper tile, one above the bed tile they stand on
+    if (seated) p.y -= TILE
 
     // face down on the massage and stone beds, face up anywhere else
-    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : c.state === 'waiting' ? 'down' : p.facing)
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : c.state === 'waiting' || seated ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // only the towel-wrapped head shows over the mud

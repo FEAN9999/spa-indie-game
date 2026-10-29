@@ -89,6 +89,7 @@ export const C = {
   scrubSheet: '#DCEFF4',
   herb: '#7FA86A',
   herbDark: '#5E8A4C',
+  wrongPink: '#F4B3A8',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
   seaWall: '#BFD9E2',

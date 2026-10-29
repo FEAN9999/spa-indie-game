@@ -23,6 +23,7 @@ import { RankScene } from './scenes/RankScene'
 import { LessonScene } from './scenes/LessonScene'
 import { RecipeScene } from './scenes/RecipeScene'
 import { ScrubScene } from './scenes/ScrubScene'
+import { FootScene } from './scenes/FootScene'
 import { ShampooScene } from './scenes/ShampooScene'
 import { SpaScene } from './scenes/SpaScene'
 import { StarterScene } from './scenes/StarterScene'
@@ -50,7 +51,7 @@ async function start() {
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     // all sound is made by src/audio, so Phaser never opens its own AudioContext
     audio: { noAudio: true },
-    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, ChoiceScene, ChainScene, AwayScene, StarterScene],
+    scene: [BootScene, SpaScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, ChoiceScene, ChainScene, AwayScene, StarterScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }
