@@ -5,7 +5,7 @@ import { emptyIdolBook, IDOL_IDS, type IdolBook, type IdolId } from './idols'
 import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
-import { DEFAULT_ITEMS, ITEM_KINDS, type Item, type ItemKind } from './items'
+import { DEFAULT_ITEMS, ITEM_KINDS, canTurn, type Item, type ItemKind } from './items'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
@@ -242,8 +242,10 @@ function withScreensAndDesk(raw: unknown): unknown {
   if (!isObject(raw) || typeof raw.v !== 'number' || raw.v < 3 || raw.v >= FURNISHED_SAVE_VERSION) return raw
   if (!isNumber(raw.nextItemId) || !isItems(raw.items)) return raw
   if (raw.items.some(i => i.kind === 'screen' || i.kind === 'desk')) return raw
-  const added = DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: (raw.nextItemId as number) + i }))
-  return { ...raw, items: [...raw.items, ...added], nextItemId: (raw.nextItemId as number) + added.length }
+  // a damaged save may count its ids short, so the new ones start past every one it holds
+  const first = Math.max(raw.nextItemId, ...raw.items.map(i => i.id + 1))
+  const added = DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: first + i }))
+  return { ...raw, items: [...raw.items, ...added], nextItemId: first + added.length }
 }
 
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
@@ -303,7 +305,7 @@ function parseShop(raw: unknown): SaveData {
   data.customers = data.customers.map(c => ({ ...c, kol: c.kol === true }))
   // shops saved before version 12 have an empty recipe book; a recipe whose service is open is solved
   data.recipes = repairRecipes(data.recipes, data.services)
-  data.items = data.items.map(({ gift, turned, ...i }) => ({ ...i, ...(typeof gift === 'boolean' && { gift }), ...(turned === true && { turned }) }))
+  data.items = data.items.map(({ gift, turned, ...i }) => ({ ...i, ...(typeof gift === 'boolean' && { gift }), ...(turned === true && canTurn(i.kind) && { turned }) }))
   data.stats = { ...data.stats, gifts: isNumber(data.stats.gifts) ? data.stats.gifts : 0, quests: isNumber(data.stats.quests) ? data.stats.quests : 0 }
   climb(data.owner)
   data.customers.forEach(climb)

@@ -2175,6 +2175,18 @@ describe('save version 29', () => {
     expect('turned' in d.items.find(i => i.id === other[0].id)!).toBe(false)
     expect('turned' in d.items.find(i => i.id === other[1].id)!).toBe(false)
   })
+
+  it('drops a turned flag from a piece that cannot turn', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    const raw = JSON.parse(JSON.stringify(sim.toSave()))
+    const bed = raw.items.find((i: { kind: string }) => i.kind === 'bed')
+    const decor = raw.items.find((i: { kind: string }) => i.kind === 'plant')
+    const bench = raw.items.find((i: { kind: string }) => i.kind === 'bench')
+    for (const i of [bed, decor, bench]) i.turned = true
+    const d = parseSave(raw)
+    const turned = (id: number) => 'turned' in d.items.find(i => i.id === id)!
+    expect([turned(bed.id), turned(decor.id), turned(bench.id)]).toEqual([false, false, true])
+  })
 })
 
 describe('the screens and the desk in an older shop', () => {
@@ -2202,7 +2214,20 @@ describe('the screens and the desk in an older shop', () => {
     const again = parseSave(parseSave(structuredClone(v29)))
     const count = (items: { kind: string }[], kind: string) => items.filter(i => i.kind === kind).length
     expect([count(again.items, 'desk'), count(again.items, 'screen'), again.nextItemId]).toEqual([1, 2, 18])
+    expect(again.chain!.branches).toHaveLength(1)
     for (const b of again.chain!.branches) expect([count(b.items, 'desk'), count(b.items, 'screen')]).toEqual([1, 2])
+  })
+  it('numbers them past every existing id when nextItemId is stale', () => {
+    const raw = structuredClone(v29) as { nextItemId: number }
+    raw.nextItemId = 5
+    const d = parseSave(raw)
+    const ids = d.items.map(i => i.id)
+    expect(new Set(ids).size).toBe(ids.length)
+    const old = Math.max(...v29.items.map(i => i.id))
+    const added = d.items.filter(i => i.kind === 'screen' || i.kind === 'desk')
+    expect(added).toHaveLength(3)
+    for (const i of added) expect(i.id).toBeGreaterThan(old)
+    expect(d.nextItemId).toBeGreaterThan(Math.max(...ids))
   })
   it('adds them once to a shop rebuilt from the default furniture', () => {
     for (const raw of [v1, v2]) expect(parseSave(structuredClone(raw)).items.filter(i => i.kind === 'desk')).toHaveLength(1)
