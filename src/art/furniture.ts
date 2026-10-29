@@ -1,5 +1,5 @@
 import { TILE } from '../config'
-import type { ItemKind } from '../sim/items'
+import { canTurn, type ItemKind } from '../sim/items'
 import { silkLantern } from './lantern'
 import { C, SKIN } from './palette'
 import { svgDoc } from './svg'
@@ -9,6 +9,8 @@ const FINE = 0.03
 const ink = (w = LINE) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
 const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" ${extra}/>`
+/** Rounds a computed coordinate so the SVG stays short. */
+const f = (v: number) => +v.toFixed(3)
 
 const WEAVE =
   `<defs><pattern id="weave" width="0.16" height="0.16" patternUnits="userSpaceOnUse">` +
@@ -156,23 +158,55 @@ const bench =
   rect(0.3, 1.08, 0.1, 0.22, C.woodDark, ink(0.025)) +
   rect(2.8, 1.08, 0.1, 0.22, C.woodDark, ink(0.025))
 
+// bench turned: its back down the left, the three cushions down the woven seat, its seat rail down the right and its arms across both ends
+const benchTurned =
+  WEAVE +
+  rect(0.22, 3.08, 0.1, 0.22, C.woodDark, ink(0.025)) +
+  rect(0.8, 3.08, 0.1, 0.22, C.woodDark, ink(0.025)) +
+  rect(0.24, 0.2, 0.74, 2.8, 'url(#weave)', `rx="0.1" ${ink()}`) +
+  [0, 1, 2].map(i => rect(0.34, f(0.3 + i * 0.9), 0.54, 0.78, C.terracotta, `rx="0.14" ${ink(FINE)}`)).join('') +
+  rect(0.88, 0.16, 0.16, 2.9, C.wood, `rx="0.06" ${ink(0.04)}`) +
+  rect(0.05, 0.05, 0.26, 3.0, C.wood, `rx="0.08" ${ink()}`) +
+  `<path d="M0.18,0.2 V2.9" stroke="${C.woodDark}" stroke-width="${FINE}"/>` +
+  rect(0.03, 0.03, 1.04, 0.18, C.woodDark, `rx="0.08" ${ink(0.04)}`) +
+  rect(0.03, 2.93, 1.04, 0.18, C.woodDark, `rx="0.08" ${ink(0.04)}`)
+
+// the counter's lotus vase, appointment book and brass bell, where they stand on the lying desk
+const deskVase =
+  `<g ${ink(FINE)}>` +
+  `<path d="M0.45,0.39 Q0.27,0.3 0.33,0.15 Q0.45,0.26 0.45,0.39Z M0.45,0.39 Q0.63,0.3 0.57,0.15 Q0.45,0.26 0.45,0.39Z" fill="${C.lotus}"/>` +
+  `<path d="M0.45,0.39 Q0.38,0.22 0.45,0.06 Q0.52,0.22 0.45,0.39Z" fill="${C.lotusDark}"/>` +
+  `<path d="M0.33,0.64 Q0.29,0.48 0.37,0.39 H0.53 Q0.61,0.48 0.57,0.64Z" fill="${C.cream}"/></g>` +
+  `<path d="M0.32,0.53 H0.58" stroke="${C.cobalt}" stroke-width="0.035"/>`
+const deskBook =
+  rect(1.15, 0.42, 0.62, 0.32, C.cream, `rx="0.03" ${ink(FINE)}`) +
+  `<path d="M1.23,0.53 H1.68 M1.23,0.63 H1.6" stroke="${C.terracotta}" stroke-width="0.025"/>`
+const deskBell =
+  `<path d="M2.27,0.64 A0.18,0.18 0 0 1 2.63,0.64Z" fill="${C.mustard}" ${ink(FINE)}/>` +
+  rect(2.22, 0.62, 0.46, 0.07, C.mustardDark, `rx="0.03" ${ink(0.025)}`) +
+  `<circle cx="2.45" cy="0.42" r="0.04" fill="${C.mustardDark}" ${ink(0.02)}/>`
+
 // counter with a lotus vase, the appointment book and a brass bell; things on top rise above the counter
 const desk =
   rect(0.05, 0.3, 2.9, 0.5, C.wood, `rx="0.1" ${ink()}`) +
   `<path d="M0.15,0.42 H2.85" stroke="${C.woodLight}" stroke-width="0.045" stroke-linecap="round"/>` +
   rect(0.1, 0.74, 2.8, 0.66, C.woodDark, `rx="0.08" ${ink()}`) +
   [0, 1, 2].map(i => rect(0.25 + i * 0.9, 0.86, 0.7, 0.42, 'none', `rx="0.06" stroke="${C.wood}" stroke-width="0.035"`)).join('') +
-  `<g ${ink(FINE)}>` +
-  `<path d="M0.45,0.39 Q0.27,0.3 0.33,0.15 Q0.45,0.26 0.45,0.39Z M0.45,0.39 Q0.63,0.3 0.57,0.15 Q0.45,0.26 0.45,0.39Z" fill="${C.lotus}"/>` +
-  `<path d="M0.45,0.39 Q0.38,0.22 0.45,0.06 Q0.52,0.22 0.45,0.39Z" fill="${C.lotusDark}"/>` +
-  `<path d="M0.33,0.64 Q0.29,0.48 0.37,0.39 H0.53 Q0.61,0.48 0.57,0.64Z" fill="${C.cream}"/></g>` +
-  `<path d="M0.32,0.53 H0.58" stroke="${C.cobalt}" stroke-width="0.035"/>` +
-  `<g transform="rotate(-5 1.46 0.58)">` +
-  rect(1.15, 0.42, 0.62, 0.32, C.cream, `rx="0.03" ${ink(FINE)}`) +
-  `<path d="M1.23,0.53 H1.68 M1.23,0.63 H1.6" stroke="${C.terracotta}" stroke-width="0.025"/></g>` +
-  `<path d="M2.27,0.64 A0.18,0.18 0 0 1 2.63,0.64Z" fill="${C.mustard}" ${ink(FINE)}/>` +
-  rect(2.22, 0.62, 0.46, 0.07, C.mustardDark, `rx="0.03" ${ink(0.025)}`) +
-  `<circle cx="2.45" cy="0.42" r="0.04" fill="${C.mustardDark}" ${ink(0.02)}/>`
+  deskVase +
+  `<g transform="rotate(-5 1.46 0.58)">${deskBook}</g>` +
+  deskBell
+
+// desk turned: the counter top running up with the vase at the far end, the book and the bell, its plain end to the front and its panelled front over the right rim
+const deskTurned =
+  rect(0.84, 0.6, 0.19, 2.78, C.woodDark, `rx="0.06" ${ink(0.04)}`) +
+  `<path d="M0.97,0.8 V1.5 M0.97,1.7 V2.4 M0.97,2.6 V3.2" stroke="${C.wood}" stroke-width="0.035" stroke-linecap="round"/>` +
+  rect(0.05, 0.3, 0.88, 2.48, C.wood, `rx="0.1" ${ink()}`) +
+  `<path d="M0.17,0.42 V2.66" stroke="${C.woodLight}" stroke-width="0.045" stroke-linecap="round"/>` +
+  rect(0.09, 2.72, 0.8, 0.66, C.woodDark, `rx="0.08" ${ink()}`) +
+  rect(0.2, 2.84, 0.58, 0.42, 'none', `rx="0.06" stroke="${C.wood}" stroke-width="0.035"`) +
+  `<g transform="translate(0.04 0.24)">${deskVase}</g>` +
+  `<g transform="translate(-0.97 1.02) rotate(84 1.46 0.58)">${deskBook}</g>` +
+  `<g transform="translate(-1.96 1.76)">${deskBell}</g>`
 
 const plant =
   `<g ${ink(0.035)}>` +
@@ -192,6 +226,17 @@ const screen =
   rect(0.02, 0.05, 0.17, 1.2, C.wood, `rx="0.05" ${ink(0.04)}`) +
   rect(4.81, 0.05, 0.17, 1.2, C.wood, `rx="0.05" ${ink(0.04)}`)
 
+// rattan screen turned: its top rail running up from the far post with the posts' tops at the thirds, a sliver of weave over the right rim and the near post to the front
+const screenTurned =
+  WEAVE +
+  rect(0.55, 0.22, 0.3, 4.9, 'url(#weave)', ink(FINE)) +
+  rect(0.8, 0.22, 0.07, 4.9, C.woodDark, ink(0.025)) +
+  [1.48, 2.82].map(y => rect(0.55, y, 0.32, 0.12, C.wood, ink(FINE))).join('') +
+  rect(0.4, 0.12, 0.17, 4.05, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  [1.46, 2.8].map(y => rect(0.39, y, 0.19, 0.16, C.wood, ink(FINE))).join('') +
+  rect(0.38, 0.04, 0.21, 0.2, C.wood, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.38, 4.05, 0.21, 1.2, C.wood, `rx="0.05" ${ink(0.04)}`)
+
 const TOWELS = [C.cream, C.tealLight, C.cream, C.terracotta]
 const cabinet =
   rect(0.05, 0.05, 2.9, 0.42, C.woodLight, `rx="0.06" ${ink()}`) +
@@ -201,6 +246,17 @@ const cabinet =
   rect(0.22, 0.57, 1.22, 0.76, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="0.035"`) +
   rect(1.56, 0.57, 1.22, 0.76, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="0.035"`) +
   `<circle cx="1.38" cy="0.95" r="0.05" fill="${C.mustard}" ${ink(0.02)}/><circle cx="1.62" cy="0.95" r="0.05" fill="${C.mustard}" ${ink(0.02)}/>`
+
+// cabinet turned: towels rolled across its top, its plain end to the front, and its doors' edge with the two knobs over the right rim
+const cabinetTurned =
+  rect(0.84, 0.12, 0.19, 3.32, C.wood, `rx="0.05" ${ink()}`) +
+  `<path d="M0.96,0.5 V1.62 M0.96,1.9 V3.1" stroke="${C.woodDark}" stroke-width="0.035"/>` +
+  `<circle cx="0.99" cy="1.68" r="0.05" fill="${C.mustard}" ${ink(0.02)}/><circle cx="0.99" cy="1.84" r="0.05" fill="${C.mustard}" ${ink(0.02)}/>` +
+  rect(0.05, 0.05, 0.86, 2.44, C.woodLight, `rx="0.06" ${ink()}`) +
+  TOWELS.map((fill, i) => rect(0.18, f(0.2 + i * 0.58), 0.6, 0.32, fill, `rx="0.16" ${ink(FINE)}`)).join('') +
+  `<path d="M0.34,0.21 V0.51 M0.34,1.37 V1.67" stroke="${C.terracotta}" stroke-width="0.035"/>` +
+  rect(0.08, 2.45, 0.8, 1.0, C.wood, `rx="0.06" ${ink()}`) +
+  rect(0.2, 2.57, 0.56, 0.76, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="0.035"`)
 
 const bottle = (x: number, fill: string, top = 0.18) =>
   rect(x - 0.05, top - 0.08, 0.1, 0.1, C.cream, ink(0.025)) + rect(x - 0.1, top, 0.2, 0.6 - top, fill, `rx="0.07" ${ink(FINE)}`)
@@ -217,7 +273,23 @@ const shelf =
   rect(0.15, 0.74, 2.7, 0.5, C.wood, `rx="0.05" ${ink(0.04)}`) +
   [0, 1, 2].map(i => rect(0.27 + i * 0.88, 0.83, 0.7, 0.32, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="${FINE}"`)).join('')
 
+// shelf turned: its bottles in two files along its top with the jar between them, its plain end to the front and its drawers' edge over the right rim
+const shelfTurned =
+  rect(0.84, 0.62, 0.17, 2.6, C.wood, `rx="0.05" ${ink(0.04)}`) +
+  `<path d="M0.95,1.42 V1.52 M0.95,2.3 V2.4" stroke="${C.woodDark}" stroke-width="${FINE}"/>` +
+  rect(0.08, 0.55, 0.84, 2.22, C.woodLight, `rx="0.05" ${ink(0.04)}`) +
+  `<g transform="translate(0 0.4)">${bottle(0.3, C.cobalt)}${bottle(0.68, C.tealLight, 0.24)}</g>` +
+  rect(0.29, 1.25, 0.42, 0.3, C.cream, `rx="0.08" ${ink(FINE)}`) +
+  `<path d="M0.3,1.4 H0.7" stroke="${C.cobalt}" stroke-width="0.04"/>` +
+  `<g transform="translate(0 1.4)">${bottle(0.3, C.terracotta)}${bottle(0.68, C.mustard)}</g>` +
+  `<g transform="translate(0 1.9)">${bottle(0.3, C.cobalt, 0.24)}${bottle(0.68, C.tealLight)}</g>` +
+  rect(0.12, 2.74, 0.76, 0.5, C.wood, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.22, 2.83, 0.56, 0.32, 'none', `rx="0.04" stroke="${C.woodDark}" stroke-width="${FINE}"`)
+
 // blue-and-white porcelain basin with lily pads and a lotus
+const lotusFlower =
+  `<path d="M1.05,0.48 Q0.85,0.43 0.85,0.26 Q0.98,0.32 1.05,0.48Z M1.05,0.48 Q1.25,0.43 1.25,0.26 Q1.12,0.32 1.05,0.48Z" fill="${C.lotus}"/>` +
+  `<path d="M1.05,0.48 Q0.96,0.3 1.05,0.13 Q1.14,0.3 1.05,0.48Z" fill="${C.lotusDark}"/>`
 const lotus =
   `<path d="M0.15,0.5 V0.75 A0.85,0.3 0 0 0 1.85,0.75 V0.5Z" fill="${C.cobalt}" ${ink(0.04)}/>` +
   `<path d="M0.15,0.63 A0.85,0.3 0 0 0 1.85,0.63" stroke="${C.cream}" stroke-width="0.05" fill="none"/>` +
@@ -225,8 +297,17 @@ const lotus =
   `<ellipse cx="1" cy="0.5" rx="0.7" ry="0.22" fill="${C.waterDeep}" ${ink(0.025)}/>` +
   `<g ${ink(0.02)}>` +
   `<ellipse cx="0.62" cy="0.48" rx="0.15" ry="0.09" fill="${C.leaf}"/><ellipse cx="1.4" cy="0.56" rx="0.13" ry="0.08" fill="${C.leafLight}"/>` +
-  `<path d="M1.05,0.48 Q0.85,0.43 0.85,0.26 Q0.98,0.32 1.05,0.48Z M1.05,0.48 Q1.25,0.43 1.25,0.26 Q1.12,0.32 1.05,0.48Z" fill="${C.lotus}"/>` +
-  `<path d="M1.05,0.48 Q0.96,0.3 1.05,0.13 Q1.14,0.3 1.05,0.48Z" fill="${C.lotusDark}"/></g>`
+  lotusFlower + `</g>`
+
+// lotus basin turned: the oval basin long up the floor with its blue side round the near end, lily pads and the lotus on its water
+const lotusTurned =
+  `<path d="M0.1,0.95 V1.2 A0.45,0.8 0 0 0 1,1.2 V0.95Z" fill="${C.cobalt}" ${ink(0.04)}/>` +
+  `<path d="M0.1,1.08 A0.45,0.8 0 0 0 1,1.08" stroke="${C.cream}" stroke-width="0.05" fill="none"/>` +
+  `<ellipse cx="0.55" cy="0.95" rx="0.45" ry="0.8" fill="${C.cream}" ${ink(0.04)}/>` +
+  `<ellipse cx="0.55" cy="0.95" rx="0.36" ry="0.66" fill="${C.waterDeep}" ${ink(0.025)}/>` +
+  `<g ${ink(0.02)}>` +
+  `<ellipse cx="0.48" cy="0.55" rx="0.15" ry="0.09" fill="${C.leaf}"/><ellipse cx="0.64" cy="1.35" rx="0.13" ry="0.08" fill="${C.leafLight}"/>` +
+  `<g transform="translate(-0.5 0.5)">${lotusFlower}</g></g>`
 
 const BLOSSOMS: [number, number][] = [
   [0.12, 0.72], [0.22, 0.86], [0.82, 0.55], [0.7, 0.72], [0.88, 1.0], [0.5, 0.2], [0.45, 0.46], [0.33, 0.96],
@@ -237,15 +318,26 @@ const vase =
   `<path d="M0.3,1.85 Q0.18,1.55 0.35,1.32 V1.22 H0.65 V1.32 Q0.82,1.55 0.7,1.85Z" fill="${C.cream}" ${ink(0.04)}/>` +
   `<path d="M0.24,1.6 H0.76" stroke="${C.cobalt}" stroke-width="0.06"/>`
 
-const tea =
-  rect(0.1, 0.35, 1.8, 0.35, C.wood, `rx="0.08" ${ink(0.04)}`) +
-  rect(0.15, 0.66, 1.7, 0.18, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+const teapot =
   `<path d="M0.85,0.36 Q0.98,0.31 1.0,0.2" stroke="${C.ink}" stroke-width="0.045" fill="none" stroke-linecap="round"/>` +
   `<ellipse cx="0.65" cy="0.38" rx="0.22" ry="0.15" fill="${C.cream}" ${ink(FINE)}/>` +
   `<path d="M0.47,0.42 H0.83" stroke="${C.cobalt}" stroke-width="0.03"/>` +
-  `<circle cx="0.65" cy="0.21" r="0.05" fill="${C.cobalt}" ${ink(0.02)}/>` +
+  `<circle cx="0.65" cy="0.21" r="0.05" fill="${C.cobalt}" ${ink(0.02)}/>`
+const tea =
+  rect(0.1, 0.35, 1.8, 0.35, C.wood, `rx="0.08" ${ink(0.04)}`) +
+  rect(0.15, 0.66, 1.7, 0.18, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  teapot +
   `<ellipse cx="1.25" cy="0.46" rx="0.09" ry="0.06" fill="${C.cream}" ${ink(0.025)}/>` +
   `<ellipse cx="1.5" cy="0.46" rx="0.09" ry="0.06" fill="${C.cream}" ${ink(0.025)}/>`
+
+// tea table turned: the teapot at the far end and two cups along its top, its end apron to the front and its front apron over the right rim
+const teaTurned =
+  rect(0.86, 0.28, 0.15, 1.64, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  rect(0.08, 0.2, 0.86, 1.6, C.wood, `rx="0.08" ${ink(0.04)}`) +
+  rect(0.12, 1.74, 0.78, 0.18, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  `<g transform="translate(-0.14 0.32)">${teapot}</g>` +
+  `<ellipse cx="0.5" cy="1.16" rx="0.09" ry="0.06" fill="${C.cream}" ${ink(0.025)}/>` +
+  `<ellipse cx="0.5" cy="1.42" rx="0.09" ry="0.06" fill="${C.cream}" ${ink(0.025)}/>`
 
 const SLIPPERS: [number, string][] = [[0.35, C.tealLight], [0.85, C.terracotta], [1.35, C.mustard]]
 const slippers =
@@ -257,11 +349,31 @@ const slippers =
     `<ellipse cx="${x + 0.17}" cy="0.36" rx="0.08" ry="0.13" fill="${fill}" ${ink(0.02)}/>`,
   ).join('')
 
+// slipper rack turned: three pairs side by side along its top, its end to the front and its side over the right rim
+const slippersTurned =
+  rect(0.86, 0.32, 0.15, 1.62, C.wood, `rx="0.04" ${ink(0.035)}`) +
+  `<path d="M0.95,0.4 V1.88" stroke="${C.woodDark}" stroke-width="${FINE}"/>` +
+  rect(0.1, 0.24, 0.82, 1.42, C.woodLight, `rx="0.04" ${ink(0.035)}`) +
+  SLIPPERS.map(([, fill], i) =>
+    `<ellipse cx="0.5" cy="${f(0.44 + i * 0.44)}" rx="0.13" ry="0.08" fill="${fill}" ${ink(0.02)}/>` +
+    `<ellipse cx="0.5" cy="${f(0.61 + i * 0.44)}" rx="0.13" ry="0.08" fill="${fill}" ${ink(0.02)}/>`,
+  ).join('') +
+  rect(0.14, 1.63, 0.74, 0.32, C.wood, `rx="0.04" ${ink(0.035)}`) +
+  `<path d="M0.14,1.79 H0.88" stroke="${C.woodDark}" stroke-width="${FINE}"/>`
+
 // low planter behind the waiting bench
 const planter =
   [0, 1, 2, 3, 4, 5].map(i => `<circle cx="${0.3 + i * 0.48}" cy="0.4" r="0.22" fill="${i % 2 ? C.leafLight : C.leaf}" ${ink(FINE)}/>`).join('') +
   rect(0.08, 0.55, 2.84, 0.5, C.terracotta, `rx="0.06" ${ink(0.045)}`) +
   rect(0.04, 0.48, 2.92, 0.12, C.woodDark, `rx="0.05" ${ink(0.035)}`)
+
+// planter turned: six shrubs down its length inside its dark rim, its terracotta end to the front and its side over the right rim
+const planterTurned =
+  rect(0.86, 0.5, 0.16, 2.54, C.terracotta, `rx="0.06" ${ink(0.045)}`) +
+  rect(0.06, 0.44, 0.88, 2.2, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  [0, 1, 2, 3, 4, 5].map(i => `<circle cx="${i % 2 ? 0.62 : 0.4}" cy="${f(0.6 + i * 0.37)}" r="0.24" fill="${i % 2 ? C.leafLight : C.leaf}" ${ink(FINE)}/>`).join('') +
+  rect(0.1, 2.56, 0.8, 0.49, C.terracotta, `rx="0.06" ${ink(0.045)}`) +
+  rect(0.06, 2.49, 0.88, 0.12, C.woodDark, `rx="0.05" ${ink(0.035)}`)
 
 /** Woven chiếu cói for the runner and the waiting-area mat. */
 export const MAT =
@@ -307,9 +419,6 @@ function benchMat(left: number, right: number, row: number): string {
   )
 }
 
-/** Rounds a computed coordinate so the SVG stays short. */
-const f = (v: number) => +v.toFixed(3)
-
 /** A bamboo pole filling the box, lit along its upper or left side, with a dark node every `step` or so. */
 function pole(x: number, y: number, w: number, h: number, step = 0.6): string {
   const across = w >= h
@@ -331,28 +440,49 @@ function pole(x: number, y: number, w: number, h: number, step = 0.6): string {
 // tủ chè: low dark-wood chest with brass corners and mother-of-pearl flowers, a lidded caddy and a tea set on top
 const CORNERS =
   `M0.1,0.6 H0.3 L0.1,0.8Z M2.9,0.6 H2.7 L2.9,0.8Z M0.1,1.16 H0.3 L0.1,0.96Z M2.9,1.16 H2.7 L2.9,0.96Z`
+const pearlFlower =
+  `<g ${ink(0.015)}>` +
+  [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dx, dy]) => `<circle cx="${f(1.5 + dx * 0.075)}" cy="${f(0.87 + dy * 0.075)}" r="0.05" fill="${C.cream}"/>`).join('') +
+  `<circle cx="1.5" cy="0.87" r="0.035" fill="${C.mustard}"/></g>`
+const teaCaddy =
+  rect(0.33, 0.2, 0.3, 0.3, C.cream, `rx="0.08" ${ink(FINE)}`) +
+  `<path d="M0.34,0.36 H0.62" stroke="${C.cobalt}" stroke-width="0.05"/>` +
+  rect(0.36, 0.14, 0.24, 0.08, C.cobalt, `rx="0.03" ${ink(0.025)}`)
 const teaChest =
   rect(0.22, 1.1, 0.16, 0.2, C.woodDark, ink(0.025)) +
   rect(2.62, 1.1, 0.16, 0.2, C.woodDark, ink(0.025)) +
   rect(0.1, 0.54, 2.8, 0.62, C.woodDark, `rx="0.03" ${ink()}`) +
   [0.22, 1.1, 1.98].map(x => rect(x, 0.68, 0.8, 0.38, 'none', `rx="0.04" stroke="${C.wood}" stroke-width="0.035"`)).join('') +
-  `<g ${ink(0.015)}>` +
-  [[-1, 0], [1, 0], [0, -1], [0, 1]].map(([dx, dy]) => `<circle cx="${f(1.5 + dx * 0.075)}" cy="${f(0.87 + dy * 0.075)}" r="0.05" fill="${C.cream}"/>`).join('') +
-  `<circle cx="1.5" cy="0.87" r="0.035" fill="${C.mustard}"/></g>` +
+  pearlFlower +
   `<circle cx="0.62" cy="0.87" r="0.055" fill="none" stroke="${C.mustard}" stroke-width="0.03"/>` +
   `<circle cx="2.38" cy="0.87" r="0.055" fill="none" stroke="${C.mustard}" stroke-width="0.03"/>` +
   `<path d="${CORNERS}" fill="${C.mustard}" ${ink(0.02)}/>` +
   rect(0.04, 0.36, 2.92, 0.24, C.wood, `rx="0.06" ${ink()}`) +
   `<path d="M0.16,0.45 H2.84" stroke="${C.woodLight}" stroke-width="0.045" stroke-linecap="round"/>` +
-  rect(0.33, 0.2, 0.3, 0.3, C.cream, `rx="0.08" ${ink(FINE)}`) +
-  `<path d="M0.34,0.36 H0.62" stroke="${C.cobalt}" stroke-width="0.05"/>` +
-  rect(0.36, 0.14, 0.24, 0.08, C.cobalt, `rx="0.03" ${ink(0.025)}`) +
+  teaCaddy +
   rect(0.98, 0.42, 1.14, 0.12, C.woodLight, `rx="0.05" ${ink(FINE)}`) +
   `<path d="M1.42,0.36 Q1.55,0.31 1.57,0.2" stroke="${C.ink}" stroke-width="0.045" fill="none" stroke-linecap="round"/>` +
   `<ellipse cx="1.24" cy="0.38" rx="0.2" ry="0.14" fill="${C.cream}" ${ink(FINE)}/>` +
   `<path d="M1.07,0.42 H1.41" stroke="${C.cobalt}" stroke-width="0.03"/>` +
   `<circle cx="1.24" cy="0.22" r="0.05" fill="${C.cobalt}" ${ink(0.02)}/>` +
   [1.62, 1.8, 1.98].map(x => `<ellipse cx="${x}" cy="0.45" rx="0.075" ry="0.055" fill="${C.cream}" ${ink(0.025)}/>`).join('')
+
+// tea chest turned: the caddy, then the tray with the teapot and three cups along its top, its end with brass corners and a pearl flower to the front
+const teaChestTurned =
+  rect(0.22, 3.1, 0.16, 0.2, C.woodDark, ink(0.025)) +
+  rect(0.6, 3.1, 0.16, 0.2, C.woodDark, ink(0.025)) +
+  rect(0.84, 0.5, 0.18, 2.66, C.woodDark, `rx="0.03" ${ink(0.04)}`) +
+  [0.95, 1.85].map(y => `<circle cx="0.95" cy="${y}" r="0.04" fill="none" stroke="${C.mustard}" stroke-width="0.03"/>`).join('') +
+  rect(0.06, 0.36, 0.86, 2.26, C.wood, `rx="0.06" ${ink()}`) +
+  `<path d="M0.17,0.48 V2.5" stroke="${C.woodLight}" stroke-width="0.045" stroke-linecap="round"/>` +
+  rect(0.1, 2.56, 0.78, 0.6, C.woodDark, `rx="0.03" ${ink()}`) +
+  rect(0.2, 2.68, 0.58, 0.36, 'none', `rx="0.04" stroke="${C.wood}" stroke-width="0.035"`) +
+  `<g transform="translate(-1.01 1.99)">${pearlFlower}</g>` +
+  `<path d="M0.1,2.56 H0.26 L0.1,2.72Z M0.88,2.56 H0.72 L0.88,2.72Z M0.1,3.16 H0.26 L0.1,3Z M0.88,3.16 H0.72 L0.88,3Z" fill="${C.mustard}" ${ink(0.02)}/>` +
+  `<g transform="translate(0.01 0.42)">${teaCaddy}</g>` +
+  rect(0.24, 1.08, 0.5, 1.3, C.woodLight, `rx="0.05" ${ink(FINE)}`) +
+  `<g transform="translate(-0.16 1)">${teapot}</g>` +
+  [1.82, 2.02, 2.22].map(y => `<ellipse cx="0.49" cy="${y}" rx="0.075" ry="0.055" fill="${C.cream}" ${ink(0.025)}/>`).join('')
 
 // chum sứ: blue-and-white lidded jar with cobalt bands and a cobalt medallion on its belly
 const jar =
@@ -380,12 +510,29 @@ const bambooBench =
   pole(0.02, 0.04, 0.17, 1.08) +
   pole(2.81, 0.04, 0.17, 1.08)
 
+// bamboo bench turned: its two back poles down the left, the three woven seats, the seat pole down the right and the end poles across, legs to the front
+const bambooBenchTurned =
+  WEAVE +
+  pole(0.24, 3.04, 0.11, 0.28) +
+  pole(0.76, 3.04, 0.11, 0.28) +
+  [0, 1, 2].map(i => rect(0.32, f(0.22 + i * 0.92), 0.58, 0.88, 'url(#weave)', `rx="0.08" ${ink(0.04)}`)).join('') +
+  pole(0.05, 0.12, 0.14, 2.9) +
+  pole(0.18, 0.12, 0.14, 2.9) +
+  pole(0.88, 0.1, 0.16, 2.94) +
+  pole(0.02, 0.04, 1.06, 0.17) +
+  pole(0.02, 2.92, 1.06, 0.17)
+
 /** A brown clay pot centred on cx from its rim at `top` to its foot, `half` wide at the rim's ends. */
 const clayPot = (cx: number, top: number, bottom: number, half: number) =>
   `<path d="M${f(cx - half * 0.6)},${top} Q${f(cx - half * 1.25)},${f((top + bottom) / 2)} ${f(cx - half * 0.7)},${bottom} H${f(cx + half * 0.7)} Q${f(cx + half * 1.25)},${f((top + bottom) / 2)} ${f(cx + half * 0.6)},${top}Z" fill="${C.clay}" ${ink(FINE)}/>` +
   rect(f(cx - half * 0.7), f(top - 0.04), f(half * 1.4), 0.07, C.clayLight, `rx="0.03" ${ink(0.02)}`)
 
 // slatted bamboo top with a clay teapot and two cups
+const clayTeapot =
+  `<path d="M0.85,0.36 Q0.98,0.31 1.0,0.2" stroke="${C.ink}" stroke-width="0.045" fill="none" stroke-linecap="round"/>` +
+  `<ellipse cx="0.65" cy="0.38" rx="0.22" ry="0.15" fill="${C.clay}" ${ink(FINE)}/>` +
+  `<path d="M0.5,0.3 Q0.65,0.25 0.8,0.3" stroke="${C.clayLight}" stroke-width="0.03" fill="none"/>` +
+  `<circle cx="0.65" cy="0.21" r="0.05" fill="${C.clayLight}" ${ink(0.02)}/>`
 const bambooTea =
   pole(0.2, 0.7, 0.12, 0.22) +
   pole(1.68, 0.7, 0.12, 0.22) +
@@ -393,20 +540,33 @@ const bambooTea =
   `<path d="M0.1,0.46 H1.9 M0.1,0.58 H1.9" stroke="${C.bambooDark}" stroke-width="${FINE}"/>` +
   `<path d="M0.55,0.35 V0.46 M1.35,0.35 V0.46 M0.95,0.46 V0.58 M1.7,0.46 V0.58 M0.35,0.58 V0.69 M1.2,0.58 V0.69" stroke="${C.bambooDark}" stroke-width="0.03"/>` +
   pole(0.06, 0.64, 1.88, 0.15) +
-  `<path d="M0.85,0.36 Q0.98,0.31 1.0,0.2" stroke="${C.ink}" stroke-width="0.045" fill="none" stroke-linecap="round"/>` +
-  `<ellipse cx="0.65" cy="0.38" rx="0.22" ry="0.15" fill="${C.clay}" ${ink(FINE)}/>` +
-  `<path d="M0.5,0.3 Q0.65,0.25 0.8,0.3" stroke="${C.clayLight}" stroke-width="0.03" fill="none"/>` +
-  `<circle cx="0.65" cy="0.21" r="0.05" fill="${C.clayLight}" ${ink(0.02)}/>` +
+  clayTeapot +
   `<ellipse cx="1.25" cy="0.46" rx="0.09" ry="0.06" fill="${C.clayLight}" ${ink(0.025)}/>` +
   `<ellipse cx="1.5" cy="0.46" rx="0.09" ry="0.06" fill="${C.clayLight}" ${ink(0.025)}/>`
+
+// bamboo tea table turned: its slats running up the top under the clay teapot and cups, the slats' ends and legs to the front and its front pole down the right
+const bambooTeaTurned =
+  pole(0.2, 1.68, 0.12, 0.26) +
+  pole(0.7, 1.68, 0.12, 0.26) +
+  rect(0.08, 0.12, 0.82, 1.62, C.bamboo, `rx="0.06" ${ink(0.04)}`) +
+  `<path d="M0.35,0.14 V1.72 M0.62,0.14 V1.72" stroke="${C.bambooDark}" stroke-width="${FINE}"/>` +
+  `<path d="M0.08,0.55 H0.35 M0.62,0.95 H0.9 M0.35,1.25 H0.62" stroke="${C.bambooDark}" stroke-width="0.03"/>` +
+  rect(0.08, 1.62, 0.82, 0.14, C.bamboo, `rx="0.05" ${ink(0.035)}`) +
+  `<path d="M0.35,1.63 V1.75 M0.62,1.63 V1.75" stroke="${C.bambooDark}" stroke-width="0.03"/>` +
+  pole(0.86, 0.08, 0.15, 1.7) +
+  `<g transform="translate(-0.15 0.3)">${clayTeapot}</g>` +
+  `<ellipse cx="0.48" cy="1.14" rx="0.09" ry="0.06" fill="${C.clayLight}" ${ink(0.025)}/>` +
+  `<ellipse cx="0.48" cy="1.4" rx="0.09" ry="0.06" fill="${C.clayLight}" ${ink(0.025)}/>`
 
 // two-tier bamboo rack: a mây basket of rolled towels and a clay pot above, folded towels and a basket below
 const ROLLED: [number, string][] = [[0.45, C.cream], [0.64, C.tealLight], [0.83, C.cream]]
 const FOLDED: [number, string][] = [[1.18, C.cream], [1.06, C.tealLight], [0.94, C.cream]]
+const rolledTowels =
+  ROLLED.map(([x, fill]) => `<circle cx="${x}" cy="0.44" r="0.1" fill="${fill}" ${ink(0.025)}/>`).join('') +
+  rect(0.28, 0.46, 0.72, 0.28, 'url(#weave)', `rx="0.06" ${ink(FINE)}`)
 const bambooShelf =
   WEAVE +
-  ROLLED.map(([x, fill]) => `<circle cx="${x}" cy="0.44" r="0.1" fill="${fill}" ${ink(0.025)}/>`).join('') +
-  rect(0.28, 0.46, 0.72, 0.28, 'url(#weave)', `rx="0.06" ${ink(FINE)}`) +
+  rolledTowels +
   clayPot(1.42, 0.42, 0.74, 0.24) +
   FOLDED.map(([y, fill]) => rect(0.3, y, 0.66, 0.14, fill, `rx="0.06" ${ink(0.025)}`)).join('') +
   rect(1.12, 1.04, 0.62, 0.34, 'url(#weave)', `rx="0.06" ${ink(FINE)}`) +
@@ -414,6 +574,22 @@ const bambooShelf =
   pole(0.04, 1.36, 1.92, 0.13) +
   pole(0.06, 0.12, 0.15, 1.52) +
   pole(1.79, 0.12, 0.15, 1.52)
+
+// bamboo rack turned: the basket of rolled towels and the clay pot along its top tier, and its end frame to the front with the folded towels on the tier below
+const bambooShelfTurned =
+  WEAVE +
+  rect(0.16, 0.14, 0.76, 1.62, C.bamboo, ink(FINE)) +
+  `<path d="M0.35,0.16 V1.74 M0.54,0.16 V1.74 M0.73,0.16 V1.74" stroke="${C.bambooDark}" stroke-width="${FINE}"/>` +
+  pole(0.05, 0.1, 0.14, 1.68) +
+  pole(0.89, 0.1, 0.14, 1.68) +
+  pole(0.03, 0.06, 1.04, 0.13) +
+  `<g transform="translate(-0.1 0.08)">${rolledTowels}</g>` +
+  clayPot(0.54, 1.22, 1.56, 0.24) +
+  FOLDED.map(([y, fill]) => rect(0.28, f(y + 1), 0.52, 0.14, fill, `rx="0.06" ${ink(0.025)}`)).join('') +
+  pole(0.05, 1.12, 0.15, 1.52) +
+  pole(0.89, 1.12, 0.15, 1.52) +
+  pole(0.03, 1.72, 1.04, 0.13) +
+  pole(0.03, 2.36, 1.04, 0.13)
 
 // standing lamp: a glowing bamboo-ribbed shade on a bamboo stem
 const bambooLamp =
@@ -529,9 +705,40 @@ const silkScreen =
   swallow(1.36, 0.42) +
   swallow(1.6, 0.74)
 
+/** A `fill` board stood along its column and seen edge-on, `h` high: its foot, a sliver of its face with `marks` over the right rim, then its edge,
+ * the top running up the floor and the near end, `tall` high, to the front. */
+const edgeOn = (h: number, tall: number, fill: string, marks: string, foot: string = C.woodDark) => {
+  const bottom = f(h - 0.33)
+  return (
+    rect(0.4, f(bottom - 0.04), 0.16, 0.32, foot, ink(0.025)) +
+    rect(0.54, 0.12, 0.32, f(bottom - 0.16), fill, `rx="0.03" ${ink(FINE)}`) +
+    marks +
+    rect(0.36, 0.06, 0.22, f(bottom - 0.06), fill, `rx="0.04" ${ink()}`) +
+    `<path d="M0.36,${f(bottom - tall)} H0.58" ${ink(FINE)}/>`
+  )
+}
+
+// silk screen turned: the two red-lacquer panels edge-on, a sliver of the silk with the lotus and the swallows over the right rim
+const silkScreenTurned = edgeOn(
+  2.75, 1.46, C.lanternDark,
+  rect(0.6, 0.18, 0.2, 2.14, C.cream, `stroke="${C.mustard}" stroke-width="0.02"`) +
+  rect(0.54, 1.2, 0.32, 0.1, C.lanternDark, ink(FINE)) +
+  rect(0.66, 1.21, 0.08, 0.08, C.mustard, ink(0.015)) +
+  `<path d="M0.69,1.08 Q0.66,0.86 0.7,0.66" stroke="${C.leaf}" stroke-width="0.025" fill="none"/>` +
+  `<ellipse cx="0.7" cy="0.58" rx="0.05" ry="0.09" fill="${C.lotus}" ${ink(0.015)}/>` +
+  `<g transform="translate(0.35 0.8) scale(0.5)">${swallow(0.7, 1.6)}</g>` +
+  `<g transform="translate(0.35 0.975) scale(0.5)">${swallow(0.7, 1.95)}</g>`,
+  C.lanternDark,
+)
+
 const PORTRAITS = [C.terracotta, C.mustard, C.cobalt, C.lotus, C.teal, C.lantern, C.leaf, C.woodLight]
 
 // bảng ảnh khách quen: a brown wooden board on two feet, eight small photos of the regulars in cream frames, and a red ribbon across its top
+const ribbonBow =
+  `<g ${ink(0.025)}>` +
+  `<path d="M0.97,0.34 L0.9,0.56 L0.95,0.53 L1,0.36Z M1.03,0.34 L1.1,0.56 L1.05,0.53 L1,0.36Z" fill="${C.lanternDark}"/>` +
+  `<path d="M1,0.3 Q0.78,0.12 0.8,0.34 Q0.9,0.4 1,0.3Z M1,0.3 Q1.22,0.12 1.2,0.34 Q1.1,0.4 1,0.3Z" fill="${C.lantern}"/>` +
+  `<circle cx="1" cy="0.32" r="0.05" fill="${C.lanternDark}"/></g>`
 const regularsBoard =
   rect(0.3, 1.36, 0.14, 0.32, C.woodDark, ink(0.025)) +
   rect(1.56, 1.36, 0.14, 0.32, C.woodDark, ink(0.025)) +
@@ -548,10 +755,22 @@ const regularsBoard =
   }).join('') +
   `<path d="M0.12,0.26 Q1,0.46 1.88,0.26" stroke="${C.ink}" stroke-width="0.09" fill="none" stroke-linecap="round"/>` +
   `<path d="M0.12,0.26 Q1,0.46 1.88,0.26" stroke="${C.lantern}" stroke-width="0.05" fill="none" stroke-linecap="round"/>` +
-  `<g ${ink(0.025)}>` +
-  `<path d="M0.97,0.34 L0.9,0.56 L0.95,0.53 L1,0.36Z M1.03,0.34 L1.1,0.56 L1.05,0.53 L1,0.36Z" fill="${C.lanternDark}"/>` +
-  `<path d="M1,0.3 Q0.78,0.12 0.8,0.34 Q0.9,0.4 1,0.3Z M1,0.3 Q1.22,0.12 1.2,0.34 Q1.1,0.4 1,0.3Z" fill="${C.lantern}"/>` +
-  `<circle cx="1" cy="0.32" r="0.05" fill="${C.lanternDark}"/></g>`
+  ribbonBow
+
+// regulars' board turned: the wooden board edge-on with its ribbon's bow on top, a sliver of the photos and the ribbon over the right rim
+const regularsBoardTurned =
+  edgeOn(
+    2.7, 1.22, C.wood,
+    rect(0.58, 0.17, 0.24, 2.14, 'none', `rx="0.03" stroke="${C.woodDark}" stroke-width="${FINE}"`) +
+    PORTRAITS.map((shirt, i) => {
+      const x = f(0.61 + (i % 2) * 0.11)
+      const y = f(0.3 + Math.floor(i / 2) * 0.5)
+      return rect(x, y, 0.09, 0.34, C.cream, ink(0.012)) + rect(x, f(y + 0.2), 0.09, 0.14, shirt, ink(0.012))
+    }).join('') +
+    `<path d="M0.58,0.14 Q0.72,1.2 0.58,2.3" stroke="${C.ink}" stroke-width="0.09" fill="none" stroke-linecap="round"/>` +
+    `<path d="M0.58,0.14 Q0.72,1.2 0.58,2.3" stroke="${C.lantern}" stroke-width="0.05" fill="none" stroke-linecap="round"/>`,
+  ) +
+  `<g transform="rotate(-90 0.47 0.6) translate(-0.53 0.3)">${ribbonBow}</g>`
 
 // Gifts from the VIPs
 
@@ -624,6 +843,18 @@ const goldBoard =
     )
   }).join('') +
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
+
+// gold board turned: the red-lacquer board edge-on with its gold star turned sideways on top, a sliver of the gold frames over the right rim
+const goldBoardTurned =
+  edgeOn(
+    2.75, 1.04, C.lanternDark,
+    rect(0.58, 0.17, 0.24, 2.16, 'none', `rx="0.03" stroke="${C.mustard}" stroke-width="0.03"`) +
+    [C.lotus, C.teal, C.cobalt, C.terracotta].map((shirt, i) => {
+      const y = f(0.32 + i * 0.5)
+      return rect(0.62, y, 0.16, 0.38, C.mustard, ink(0.025)) + rect(0.645, f(y + 0.03), 0.11, 0.32, C.cream, ink(0.012)) + rect(0.645, f(y + 0.2), 0.11, 0.15, shirt, ink(0.012))
+    }).join(''),
+  ) +
+  `<path d="M0.47,0.26 L0.5,0.42 L0.59,0.44 L0.52,0.55 L0.55,0.72 L0.47,0.62 L0.39,0.72 L0.42,0.55 L0.35,0.44 L0.44,0.42Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
 const skinHex = (i: number) => `#${SKIN[i].toString(16).padStart(6, '0')}`
 const star5 = (cx: number, cy: number, R: number, r: number, extra = '') => {
@@ -728,6 +959,13 @@ const starWall =
   rect(0.06, 0.4, 1.88, 1.04, C.lanternDark, `rx="0.05" ${ink()}`) +
   rect(0.13, 0.47, 1.74, 0.9, 'none', `rx="0.03" stroke="${C.mustard}" stroke-width="0.03"`) +
   [0, 1, 2].map(row => [0, 1, 2].map(col => star5(f(0.5 + col * 0.5), f(0.72 + row * 0.26), 0.11, 0.05, ink(0.02))).join('')).join('')
+
+// star wall turned: the red-lacquer board edge-on, a sliver of its gold stars over the right rim
+const starWallTurned = edgeOn(
+  2.75, 1.04, C.lanternDark,
+  rect(0.58, 0.17, 0.24, 2.16, 'none', `rx="0.03" stroke="${C.mustard}" stroke-width="0.03"`) +
+  [0, 1, 2].map(row => [0.65, 0.77].map(x => star5(x, f(0.5 + row * 0.7), 0.075, 0.035, ink(0.015))).join('')).join(''),
+)
 
 // festival keepsakes, drawn in the sketch's pixels (80 to a tile, origin at the foot, y up) and scaled into the tile
 const KEEP = 0.011875
@@ -873,21 +1111,30 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   maskBed: { w: 1.1, h: 3.45, body: maskBed },
   massageBed: { w: 1.1, h: 3.15, body: massageBed },
   bench: { w: 3.2, h: 1.35, body: bench },
+  'bench-turned': { w: 1.1, h: 3.35, body: benchTurned },
   desk: { w: 3, h: 1.45, body: desk },
+  'desk-turned': { w: 1.1, h: 3.45, body: deskTurned },
   plant: { w: 1, h: 1.6, body: plant },
   'decor-screen': { w: 5, h: 1.3, body: screen },
+  'decor-screen-turned': { w: 1.1, h: 5.3, body: screenTurned },
   'decor-cabinet': { w: 3, h: 1.5, body: cabinet },
+  'decor-cabinet-turned': { w: 1.1, h: 3.5, body: cabinetTurned },
   'decor-shelf': { w: 3, h: 1.3, body: shelf },
+  'decor-shelf-turned': { w: 1.1, h: 3.3, body: shelfTurned },
   'decor-lotus': { w: 2, h: 1.1, body: lotus },
+  'decor-lotus-turned': { w: 1.1, h: 2.1, body: lotusTurned },
   'decor-vase': { w: 1, h: 1.9, body: vase },
   'decor-vyPainting': { w: 1, h: 1.9, body: vyPainting },
   'decor-silkScreen': { w: 2, h: 1.75, body: silkScreen },
+  'decor-silkScreen-turned': { w: 1.1, h: 2.75, body: silkScreenTurned },
   'decor-regularsBoard': { w: 2, h: 1.7, body: regularsBoard },
+  'decor-regularsBoard-turned': { w: 1.1, h: 2.7, body: regularsBoardTurned },
   'decor-photoSinger': { w: 1, h: 1.7, body: photo(photoSinger) },
   'decor-photoMiss': { w: 1, h: 1.7, body: photo(photoMiss) },
   'decor-photoStar': { w: 1, h: 1.7, body: photo(photoStar) },
   'decor-photoChef': { w: 1, h: 1.7, body: photo(photoChef) },
   'decor-goldBoard': { w: 2, h: 1.75, body: goldBoard },
+  'decor-goldBoard-turned': { w: 1.1, h: 2.75, body: goldBoardTurned },
   'decor-photoIdolSontung': { w: 1, h: 1.7, body: idolPhoto(photoIdolSontung) },
   'decor-photoIdolTaylor': { w: 1, h: 1.7, body: idolPhoto(photoIdolTaylor) },
   'decor-photoIdolGd': { w: 1, h: 1.7, body: idolPhoto(photoIdolGd) },
@@ -898,6 +1145,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-photoIdolBieber': { w: 1, h: 1.7, body: idolPhoto(photoIdolBieber) },
   'decor-photoIdolDaesung': { w: 1, h: 1.7, body: idolPhoto(photoIdolDaesung) },
   'decor-starWall': { w: 2, h: 1.75, body: starWall },
+  'decor-starWall-turned': { w: 1.1, h: 2.75, body: starWallTurned },
   'decor-maiBranch': { w: 1, h: 1.9, body: maiBranch },
   'decor-heartFrame': { w: 1, h: 1.9, body: heartFrame },
   'decor-roseVase': { w: 1, h: 1.9, body: roseVase },
@@ -911,13 +1159,20 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'decor-lanternString': { w: 1, h: 2.7, body: lanternString },
   'decor-orchid': { w: 1, h: 2.4, body: orchid },
   'decor-tea': { w: 2, h: 0.9, body: tea },
+  'decor-tea-turned': { w: 1.1, h: 2, body: teaTurned },
   'decor-slippers': { w: 2, h: 0.9, body: slippers },
+  'decor-slippers-turned': { w: 1.1, h: 2, body: slippersTurned },
   'decor-planter': { w: 3, h: 1.1, body: planter },
+  'decor-planter-turned': { w: 1.1, h: 3.1, body: planterTurned },
   teaChest: { w: 3, h: 1.35, body: teaChest },
+  'teaChest-turned': { w: 1.1, h: 3.35, body: teaChestTurned },
   jar: { w: 1, h: 1.6, body: jar },
   bambooBench: { w: 3, h: 1.35, body: bambooBench },
+  'bambooBench-turned': { w: 1.1, h: 3.35, body: bambooBenchTurned },
   bambooTea: { w: 2, h: 0.95, body: bambooTea },
+  'bambooTea-turned': { w: 1.1, h: 2, body: bambooTeaTurned },
   bambooShelf: { w: 2, h: 1.7, body: bambooShelf },
+  'bambooShelf-turned': { w: 1.1, h: 2.7, body: bambooShelfTurned },
   bambooLamp: { w: 1, h: 2.05, body: bambooLamp },
   clayJar: { w: 1, h: 1.45, body: clayJar },
   areca: { w: 1, h: 2, body: areca },
@@ -935,9 +1190,10 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   benchMat: { w: 4, h: 3.5, body: `<defs>${MAT}</defs><g transform="translate(-1.5 -12.5)">${benchMat(2, 4, 13)}</g>` },
 }
 
-/** The texture of an item kind: the first pieces keep their keys, the old decor is under `decor-`. */
-export function itemTexture(kind: ItemKind): string {
-  return kind in FURNITURE ? kind : `decor-${kind}`
+/** The texture of an item kind: the first pieces keep their keys, the old decor is under `decor-`; turned, a piece that can turn has its upright picture under `-turned`. */
+export function itemTexture(kind: ItemKind, turned = false): string {
+  const key = kind in FURNITURE ? kind : `decor-${kind}`
+  return turned && canTurn(kind) ? `${key}-turned` : key
 }
 
 export function furnitureTextures(): Record<string, string> {
