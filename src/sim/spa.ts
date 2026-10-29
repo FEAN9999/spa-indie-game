@@ -77,7 +77,7 @@ import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
-import { BASIC_SERVICES, isLessonService, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
+import { BASIC_SERVICES, isLessonService, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
@@ -182,6 +182,8 @@ export class SpaSim {
   candidatesDay = 0
   /** The services the shop has opened, in opening order; shampoo is built in. */
   services: ServiceId[] = ['shampoo']
+  /** The lesson services whose tuition is paid and whose lesson is not passed yet. */
+  lessonsPaid: LessonService[] = []
   /** What is left of each item; only used up from day 5. */
   stock: Record<StockItem, number> = fullStock()
   /** What has been tried and heard for each recipe, and whether it is solved. */
@@ -804,6 +806,7 @@ export class SpaSim {
       candidatesDay: this.candidatesDay,
       nextStaffId: this.nextStaffId,
       services: this.services,
+      lessonsPaid: this.lessonsPaid,
       stock: this.stock,
       book: this.book,
       vip: this.vip,
@@ -840,6 +843,7 @@ export class SpaSim {
     // never hand out an id a damaged save already uses
     sim.nextItemId = Math.max(d.nextItemId, ...d.items.map(i => i.id + 1))
     sim.services = d.services
+    sim.lessonsPaid = d.lessonsPaid
     sim.stock = d.stock
     sim.book = d.book
     sim.vip = d.vip
