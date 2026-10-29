@@ -4,6 +4,7 @@ import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import type { CustomerKind } from '../sim/customers'
 import type { Stars } from '../sim/economy'
+import type { IdolId } from '../sim/idols'
 import type { Look } from '../sim/types'
 import { textStyle } from './text'
 import { addCard } from './ui'
@@ -12,6 +13,8 @@ import { addCard } from './ui'
 export interface MiniGameData {
   look: Look
   kind: CustomerKind
+  /** A star, drawn in their own colours. */
+  idol?: IdolId
   /** Added to the time limit and the star marks on the gentler first days; only the shampoo uses it. */
   extraMs: number
   /** A picky customer: the hard version of the game. */

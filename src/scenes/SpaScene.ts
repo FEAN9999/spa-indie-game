@@ -1207,8 +1207,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         const data: MiniGameData = {
           look: c.look,
           kind: c.kind,
+          idol: c.idol ?? undefined,
           extraMs: dayEase(this.sim.day).miniGameExtraMs,
-          hard: c.vip !== null || KINDS[c.kind].hard,
+          hard: c.vip !== null || c.idol !== null || KINDS[c.kind].hard,
           demo: !this.sim.hintDone(demo),
           onDone: stars => {
             this.sim.markHint(demo)
@@ -1409,7 +1410,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol)),
+      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol, c.idol)),
       bar: this.add.graphics(),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),

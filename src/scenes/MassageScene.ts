@@ -63,7 +63,7 @@ export class MassageScene extends Phaser.Scene {
     this.demoTaps = this.params.demo
     this.demoHold = this.params.demo
 
-    const colors = customerColors(this.params.look, this.params.kind)
+    const colors = customerColors(this.params.look, this.params.kind, null, null, false, this.params.idol ?? null)
     this.instruction = addMiniGameCard(this, t('massageTap'))
     const o = MS_ORIGIN
     this.add.image(BACK.x, BACK.y, 'ms-bed').setOrigin(o.bed.x, o.bed.y)

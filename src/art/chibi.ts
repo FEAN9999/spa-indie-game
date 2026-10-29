@@ -1,3 +1,4 @@
+import { IDOL_PARTS } from './idols'
 import { OUTFIT_PARTS } from './outfits'
 import { fillsOnly, linesOnly } from './outline'
 import { C } from './palette'
@@ -754,6 +755,7 @@ const parts: Record<string, Part> = {
   'hair3-up': hair(bunDown + path(bobUp), strandsBack, -18),
   'hair3-side': hair(bunSide + path(bobSide), strandsFront, -18),
   ...OUTFIT_PARTS,
+  ...IDOL_PARTS,
 }
 
 /** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. Whole names, so `headphones` stays untinted. */

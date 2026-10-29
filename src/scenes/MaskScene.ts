@@ -79,7 +79,7 @@ export class MaskScene extends Phaser.Scene {
     this.revealed = false
     this.demoHand = null
 
-    const colors = customerColors(this.params.look, this.params.kind)
+    const colors = customerColors(this.params.look, this.params.kind, null, null, false, this.params.idol ?? null)
     this.instruction = addMiniGameCard(this, t('maskPaint'))
     const o = MK_ORIGIN
     this.add.image(FACE.x, FACE.y, 'mk-pillow').setOrigin(o.pillow.x, o.pillow.y)
