@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { offFloor } from '../../src/sim/build'
-import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout, tileRuns } from '../../src/sim/grid'
+import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout } from '../../src/sim/grid'
 import { towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
@@ -30,11 +30,6 @@ describe('grid', () => {
     expect([walk(0, 5), walk(2, 3), walk(2, 2), walk(2, 4), walk(5, 6), walk(8, 14), walk(2, 13), walk(3, 12), walk(-1, 0)]).toEqual(
       [false, false, false, false, false, false, false, false, false], // wall, bed, bed head, bed foot, screen, desk, seat, planter, out of bounds
     )
-  })
-
-  it('groups tiles into horizontal runs', () => {
-    const tiles = [{ x: 1, y: 6 }, { x: 2, y: 6 }, { x: 3, y: 6 }, { x: 7, y: 6 }, { x: 8, y: 6 }, { x: 4, y: 9 }]
-    expect(tileRuns(tiles)).toEqual([{ left: 1, right: 3, row: 6 }, { left: 7, right: 8, row: 6 }, { left: 4, right: 4, row: 9 }])
   })
 
   it('treats a bed slot, its basin above and the two tiles below as the slot', () => {

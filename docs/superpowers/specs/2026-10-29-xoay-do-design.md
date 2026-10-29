@@ -85,7 +85,7 @@ Cách đọc giống các spec trước:
 
 - Món mới `desk` tên **Quầy lễ tân**, 3 × 1 ô, giá 400.000 đ, điểm đẹp 0, ở tab Trang trí. Có hình dựng dọc.
 - **Chỉ đặt ở tầng 1**, như ghế chờ. Báo: "Quầy lễ tân chỉ đặt ở tầng 1."
-- **Tiệm luôn giữ ít nhất 1 quầy**, như luật giữ 1 giường gội và 1 ghế chờ. Báo: "Tiệm cần giữ một quầy lễ tân." Muốn bán quầy cũ thì mua quầy mới trước.
+- **Tiệm luôn giữ ít nhất 1 quầy**, như luật giữ 1 giường gội và 1 ghế chờ. Báo: "Tiệm cần ít nhất một quầy lễ tân" Muốn bán quầy cũ thì mua quầy mới trước.
 - **Ô chủ tiệm đứng đi theo quầy:** ô ngay phía sau ô giữa của quầy. Quầy nằm ngang thì là ô phía trên ô giữa. Quầy dựng dọc thì là ô cạnh ô giữa, phía ngược với mặt trước.
   - **Mỗi quầy** giữ ô này cho riêng nó, như giường giữ ô làm việc. Không món nào được đè, và ô phải đi tới được từ cửa. Nhờ vậy bán quầy cũ nhất thì quầy kế tiếp đã có sẵn ô trống, đi tới được.
   - Tiệm có nhiều quầy thì dùng quầy cũ nhất (số `id` nhỏ nhất).

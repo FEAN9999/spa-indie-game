@@ -29,13 +29,6 @@ export interface Grid {
   links: [Tile, Tile][]
 }
 
-/** Tiles in one row with consecutive x. */
-export interface TileRun {
-  left: number
-  right: number
-  row: number
-}
-
 const LEGEND: Record<string, Cell> = {
   '#': 'wall',
   '.': 'floor',
@@ -166,17 +159,6 @@ export function bedSlotAt(grid: Grid, t: Tile): Tile | undefined {
 /** True on a bed's middle tile and while stepping on or off it from either side. */
 export function onBed(grid: Grid, p: Vec): boolean {
   return grid.beds.some(b => Math.abs(p.x - b.x) < 1 && Math.abs(p.y - b.y) < 0.5)
-}
-
-/** Groups tiles given in reading order (row, then x) into horizontal runs. */
-export function tileRuns(tiles: Tile[]): TileRun[] {
-  const runs: TileRun[] = []
-  for (const t of tiles) {
-    const last = runs[runs.length - 1]
-    if (last && last.row === t.y && last.right + 1 === t.x) last.right = t.x
-    else runs.push({ left: t.x, right: t.x, row: t.y })
-  }
-  return runs
 }
 
 export function tileEq(a: Tile, b: Tile): boolean {

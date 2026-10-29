@@ -209,7 +209,7 @@ export class SpaSim {
   private readonly rng: Rng
   private readonly crew: CrewHost
   private readonly autoSpawn: boolean
-  /** The layout without its furniture: walls, door, screen and desk. */
+  /** The layout without its furniture: walls and door; the screens and desk are furniture. */
   private shell: string[]
   /** How many floors are open; the shell always holds every floor the layout has. */
   floors = 1
@@ -922,7 +922,7 @@ export class SpaSim {
     // a branch is built on its own room, and knows its place before anything else is read
     const sim = new SpaSim(d.place === null ? options : { ...options, layout: BRANCH_LAYOUT })
     sim.place = d.place
-    // furniture off the grid or on a wall, the door, the screen or the desk cannot be laid out; overlaps and paths are not checked here
+    // furniture off the grid or on a wall or the door cannot be laid out; overlaps and paths are not checked here
     sim.floors = d.floors
     const shell = parseLayout(sim.shell)
     // an older shop may have furniture where the stairs now are: it goes first, with a refund
