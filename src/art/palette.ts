@@ -87,9 +87,6 @@ export const C = {
   saltGrey: '#E4EEF0',
   burnPale: '#FBE3DC',
   scrubSheet: '#DCEFF4',
-  herb: '#7FA86A',
-  herbDark: '#5E8A4C',
-  wrongPink: '#F4B3A8',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
   seaWall: '#BFD9E2',
@@ -105,6 +102,9 @@ export const C = {
   mapLand: '#EFE2CB',
   straw: '#E8C878',
   strawDark: '#B9944A',
+  // the foot soak's herb water, and the pink of a wrong point
+  herb: '#7FA86A',
+  wrongPink: '#F4B3A8',
   // the backpacker's cobalt cap (darker peak and seams) and olive pack, the lady's berry handbag
   capPeak: '#244C86',
   capSeam: '#1E3F70',

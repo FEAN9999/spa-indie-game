@@ -162,7 +162,7 @@ export type SimEvent =
   | { type: 'studied'; staffId: number; course: Course; level: number }
   /** A booked course taught nothing (already at the top), so the tuition went back to the till. */
   | { type: 'studyRefunded'; staffId: number; amount: number }
-  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' | 'busyStone' | 'busyMud' | 'busyScrub' | 'powerWait' }
+  | { type: 'toast'; key: 'stationsBusy' | 'busyMask' | 'busyMassage' | 'busySteam' | 'busyStone' | 'busyMud' | 'busyScrub' | 'busyFoot' | 'powerWait' }
   /** An item reached the low-stock count, or ran out when a customer needed it. */
   | { type: 'stockLow'; item: StockItem }
   | { type: 'stockOut'; item: StockItem }

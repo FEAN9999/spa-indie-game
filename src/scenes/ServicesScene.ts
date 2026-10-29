@@ -57,6 +57,8 @@ const TEXT_X = 260
 const TEXT_WRAP = 400
 const ACTION_X = 825
 const ACTION_W = 310
+// the name stops this far short of the action column
+const NAME_W = ACTION_X - ACTION_W / 2 - 16 - TEXT_X
 const ACTION_H = 110
 const DONE_Y = 1895
 // the page arrows sit either side of "Xong"
@@ -202,8 +204,9 @@ export class ServicesScene extends Phaser.Scene {
     const first = this.shown.length
     this.keep(this.add.image(ICON_X, cy, `svc-${id}`).setScale(1.5))
     const name = this.keep(this.add.text(TEXT_X, cy - 58, t(spec.name), textStyle(40)).setOrigin(0, 0.5))
+    name.setScale(Math.min(1, NAME_W / name.width))
     // after the name, where it clears the "Đang có" pill whatever the price
-    if (id === sim.festivalServiceToday()) this.festivalTag(name.x + name.width + TAG_GAP, cy - 58)
+    if (id === sim.festivalServiceToday()) this.festivalTag(name.x + name.displayWidth + TAG_GAP, cy - 58)
     this.keep(this.add.text(TEXT_X, cy - 14, t('servicePrice', { money: formatMoney(spec.price) }), textStyle(28, '600')).setOrigin(0, 0.5))
     this.keep(
       this.add

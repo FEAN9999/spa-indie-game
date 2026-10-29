@@ -31,6 +31,7 @@ type Tab = 'working' | 'hiring'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
+const PICK_W = 760
 // the title and the two-line intro sit high enough that their boxes clear each other and the tabs
 const TITLE_Y = 290
 const INTRO_Y = 385
@@ -446,11 +447,19 @@ export class StaffScene extends Phaser.Scene {
         close()
         this.confirmStudy(id, course)
       }
-      const button = addButton(this, MID, y + 250 + i * rowH, 760, 110, label, 'plain', pick, 36).setDepth(CONFIRM_DEPTH)
+      const button = this.pickButton(y + 250 + i * rowH, label, pick).setDepth(CONFIRM_DEPTH)
       if (sim.money < price) button.setAlpha(FADED_ALPHA)
       parts.push(button)
     })
     parts.push(addButton(this, MID, y + 250 + open.length * rowH + 20, 340, 110, t('cancel'), 'plain', close).setDepth(CONFIRM_DEPTH))
+  }
+
+  /** A wide choice button whose label shrinks to fit inside it. */
+  private pickButton(y: number, label: string, pick: () => void): Phaser.GameObjects.Container {
+    const button = addButton(this, MID, y, PICK_W, 110, label, 'plain', pick, 36)
+    const text = button.list[1] as Phaser.GameObjects.Text
+    text.setScale(Math.min(1, (PICK_W - 60) / text.width))
+    return button
   }
 
   /** A card that lists the shops the person can move to, one button each, faded and inert when it has no room. */
@@ -471,7 +480,7 @@ export class StaffScene extends Phaser.Scene {
         this.show()
       }
       const label = full ? t('moveFull', { place: placeName(place) }) : placeName(place)
-      const button = addButton(this, MID, y + 250 + i * rowH, 760, 110, label, 'plain', pick, 36).setDepth(CONFIRM_DEPTH)
+      const button = this.pickButton(y + 250 + i * rowH, label, pick).setDepth(CONFIRM_DEPTH)
       if (full) button.setAlpha(FADED_ALPHA)
       parts.push(button)
     })

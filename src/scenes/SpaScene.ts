@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, HUM_MS, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -132,6 +132,8 @@ interface CustomerSprite {
   steam: Phaser.GameObjects.Image
   /** On the back while the customer is served on the stone bed. */
   stones: Phaser.GameObjects.Image
+  /** 0 on the floor to 1 on the foot chair's seat, eased as they sit down and get up. */
+  lift: number
   bubble: Phaser.GameObjects.Image | null
 }
 
@@ -1039,7 +1041,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   update(time: number, delta: number) {
     if (this.tooNew) return
     // over a panel too, so it does not wait for the panel to close; not over a lesson game, which has no serving customer
-    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
+    if (this.heldAway.length > 0 && this.sim.servingCustomerId === null && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.scene.isActive('FootScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
       if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
         this.queueToast(this.heldWearToast)
@@ -1442,6 +1444,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       steam: this.add.image(0, 0, 'fx-steam').setOrigin(0.5, 1).setVisible(false),
       stones: this.add.image(0, 0, 'fx-stones').setVisible(false),
       bubble: null,
+      lift: 0,
     })
   }
 
@@ -1480,8 +1483,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (tub) p.x += tub.work.x > tub.bed.x ? -TILE / 2 : TILE / 2
     // a customer on the bed, or stepping on or off it, draws over the bed, whose anchor is one tile lower
     const depth = !street && onBed(this.sim.grid, c.pos) ? p.y + TILE + 1 : sitting ? p.y + 1 : p.y
-    // the chair's seat is its upper tile, one above the bed tile they stand on
-    if (seated) p.y -= TILE
+    // the chair's seat is its upper tile, one above the bed tile they stand on; they rise onto it and step down rather than hop
+    s.lift = Math.min(1, Math.max(0, s.lift + ((seated ? 1 : -1) * dt) / FOOT_SEAT_MS))
+    p.y -= TILE * s.lift
 
     // face down on the massage and stone beds, face up anywhere else
     s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : c.state === 'waiting' || seated ? 'down' : p.facing)

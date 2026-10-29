@@ -2,7 +2,7 @@ import * as Phaser from 'phaser'
 import { FOOT_BOX } from '../art/footArt'
 import { C, customerColors } from '../art/palette'
 import { sound } from '../audio/engine'
-import { FOOT_LIMIT_MS, FOOT_POINTS, FOOT_WRONG_MS } from '../config'
+import { FOOT_LIMIT_MS, FOOT_POINT_R, FOOT_POINTS, FOOT_WRONG_MS } from '../config'
 import type { Stars } from '../sim/economy'
 import { FootGame, footPointAt, type FootPhase } from '../sim/foot'
 import { createRng } from '../sim/rng'
@@ -14,8 +14,8 @@ const WORDS: Partial<Record<FootPhase, StringKey>> = { lead: 'footWatch', show: 
 /** A point at rest, lit, wrong, and just tapped right: radii in px. */
 const IDLE = { glow: 64, glowAlpha: 0.55, disc: 36, heart: 15 }
 const LIT = { glow: 84, ring: 72, ringW: 10, disc: 44, heart: 18 }
-const WRONG = { pink: 66, pinkAlpha: 0.85, disc: 40, shakePx: 12, shakePerMs: 0.06, cross: 13, crossW: 6 }
-const FLASH = { ms: 300, from: 66, grow: 20, disc: 40, heart: 16 }
+const WRONG = { pink: FOOT_POINT_R, pinkAlpha: 0.85, disc: 40, shakePx: 12, shakePerMs: 0.06, cross: 13, crossW: 6 }
+const FLASH = { ms: 300, from: FOOT_POINT_R, grow: 20, disc: 40, heart: 16 }
 const INK = { disc: 4, heart: 2.5 }
 /** The three round dots under the progress bar. */
 const DOTS = { x: 480, step: 60, y: 492, r: 17, ink: 4, nowInk: 6, icon: 7, iconW: 4 }
@@ -75,10 +75,11 @@ export class FootScene extends Phaser.Scene {
     if (this.params.demo) this.demoHand = this.add.image(0, 0, 'hand').setOrigin(0.5, 1).setAlpha(DEMO.alpha).setDepth(DEPTH.hand).setVisible(false)
 
     this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.revealed) return
-      this.hideDemo()
+      // a tap that does not count leaves the demo hand for the turn it shows in
+      if (this.revealed || this.rules.phase !== 'input') return
       const point = footPointAt(p.x, p.y)
       if (point === null) return
+      this.hideDemo()
       if (this.rules.tap(point) === 'right') {
         this.flashPoint = point
         this.flashAt = this.now
@@ -199,6 +200,7 @@ export class FootScene extends Phaser.Scene {
 
   private reveal(stars: Stars): void {
     this.revealed = true
+    setInstruction(this.instruction, t('shampooDone'))
     this.hideDemo()
     this.g.clear()
     drawBars(this.bars, this.rules.progress(), 1 - this.rules.elapsedMs / FOOT_LIMIT_MS)

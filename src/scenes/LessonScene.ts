@@ -36,7 +36,7 @@ const FAIL = { w: 880, feetY: 470, scale: 2, rx: 110, ry: 22, textY: 520, textW:
 const BTN_GAP = 40
 
 /**
- * A lesson over the services panel: the teacher's card, one practice game on her back, then "Học xong!" or "Chưa đạt".
+ * A lesson over the services panel: the teacher's card, one practice game on the teacher, then "Học xong!" or "Chưa đạt".
  * The shop and the panel wait underneath, frozen.
  */
 export class LessonScene extends Phaser.Scene {
@@ -135,7 +135,7 @@ export class LessonScene extends Phaser.Scene {
     })
   }
 
-  /** The practice game on the teacher's back: this card steps aside, and the result comes back as a pass or fail card. */
+  /** The practice game on the teacher: this card steps aside, and the result comes back as a pass or fail card. */
   private start(): void {
     const { sim, service, onChange } = this.params
     const data: MiniGameData = {

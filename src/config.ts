@@ -188,6 +188,8 @@ export const FOOT_POINTS = [
 /** The point's drawn radius, and how far from its centre a tap still reaches it. */
 export const FOOT_POINT_R = 66
 export const FOOT_TAP_R = 80
+/** How long a customer takes to rise onto the foot chair's seat, or step down from it, in ms. */
+export const FOOT_SEAT_MS = 150
 /** Points lit in each of the three rounds; a picky customer gets the longer ones, lit faster. */
 export const FOOT_ROUNDS = [3, 4, 5]
 export const FOOT_ROUNDS_HARD = [4, 5, 6]
