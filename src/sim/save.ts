@@ -237,10 +237,11 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
   return { at, told: c.told === true, branches: kept }
 }
 
-/** A shop saved from version 3 to before the furnished version gets the default screens and desk as its newest items; anything else, damaged saves included, passes through for parseVersioned to judge. */
+/** A shop saved from version 3 to before the furnished version gets the default screens and desk as its newest items; one that already holds a screen or desk, which no save from before the version can, was furnished already and is a parsed save parsed again; anything else, damaged saves included, passes through for parseVersioned to judge. */
 function withScreensAndDesk(raw: unknown): unknown {
   if (!isObject(raw) || typeof raw.v !== 'number' || raw.v < 3 || raw.v >= FURNISHED_SAVE_VERSION) return raw
   if (!isNumber(raw.nextItemId) || !isItems(raw.items)) return raw
+  if (raw.items.some(i => i.kind === 'screen' || i.kind === 'desk')) return raw
   const added = DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: (raw.nextItemId as number) + i }))
   return { ...raw, items: [...raw.items, ...added], nextItemId: (raw.nextItemId as number) + added.length }
 }

@@ -2198,6 +2198,12 @@ describe('the screens and the desk in an older shop', () => {
     const chain = Chain.fromSave(parseSave(structuredClone(v29)), 8)
     expect(chain.shop('beach')!.ownerStart()).toEqual({ x: 9, y: 13 })
   })
+  it('furnishes only once when a parsed save is parsed again before it saves', () => {
+    const again = parseSave(parseSave(structuredClone(v29)))
+    const count = (items: { kind: string }[], kind: string) => items.filter(i => i.kind === kind).length
+    expect([count(again.items, 'desk'), count(again.items, 'screen'), again.nextItemId]).toEqual([1, 2, 18])
+    for (const b of again.chain!.branches) expect([count(b.items, 'desk'), count(b.items, 'screen')]).toEqual([1, 2])
+  })
   it('adds them once to a shop rebuilt from the default furniture', () => {
     for (const raw of [v1, v2]) expect(parseSave(structuredClone(raw)).items.filter(i => i.kind === 'desk')).toHaveLength(1)
   })
