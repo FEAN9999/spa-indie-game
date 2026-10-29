@@ -1,7 +1,7 @@
 # Khách ngôi sao: chín người nổi tiếng thật ghé tiệm
 
 - Ngày: 2026-10-29
-- Trạng thái: chờ anh duyệt
+- Trạng thái: anh đã duyệt (2026-10-29, "Duyệt, làm đi")
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`. Dựng tiếp trên khách VIP của Đợt 2 (`2026-10-27-dot-2-khach-design.md`, mục 7). Đi sau Đợt 4 (save v25, master 86a6a92).
 - Bản phác hình (mặt trước, anh đã duyệt): https://claude.ai/artifact/1XPvDk4DaUnpJ1xSDn7bTh. Nguồn vẽ: `docs/art/ngoi-sao-mat-truoc.mjs`.
 
