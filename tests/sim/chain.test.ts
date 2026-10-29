@@ -262,6 +262,50 @@ describe('events of the shops the owner is away from', () => {
     expect(chain.takeVipCall()).toBeNull()
   })
 
+  it('calls the owner once for a star arriving at the main shop', () => {
+    const { chain, main } = atBeach()
+    main.spawnCustomer({ idol: 'jennie' })
+    chain.advance(STEP_MS)
+    expect(chain.takeIdolCall()).toBe('jennie')
+    expect(chain.takeIdolCall()).toBeNull()
+    expect(chain.takeVipCall()).toBeNull()
+  })
+
+  it('calls the owner to a star already waiting as she leaves the main shop', () => {
+    const { chain, main } = withBeach()
+    hireStaff(main, 'technician')
+    main.spawnCustomer({ idol: 'jennie' })
+    chainUntil(chain, () => main.customers[0]?.state === 'waiting')
+    main.drainEvents()
+    chain.goTo('beach')
+    expect(chain.takeIdolCall()).toBe('jennie')
+    expect(chain.takeIdolCall()).toBeNull()
+  })
+
+  it('clears the star calls on going back to the main shop and on a new day', () => {
+    const { chain, main } = atBeach()
+    main.spawnCustomer({ idol: 'jennie' })
+    chain.advance(STEP_MS)
+    chain.goTo(null)
+    expect(chain.takeIdolCall()).toBeNull()
+    chain.goTo('beach')
+    main.spawnCustomer({ idol: 'gd' })
+    chain.advance(STEP_MS)
+    chain.startDay()
+    expect(chain.takeIdolCall()).toBeNull()
+  })
+
+  it('gives a VIP call then a star call, in order, while away', () => {
+    const { chain, main } = atBeach()
+    main.spawnCustomer({ vip: 'singer' })
+    main.spawnCustomer({ idol: 'jennie' })
+    chain.advance(STEP_MS)
+    expect(chain.takeVipCall()).toBe('singer')
+    expect(chain.takeVipCall()).toBeNull()
+    expect(chain.takeIdolCall()).toBe('jennie')
+    expect(chain.takeIdolCall()).toBeNull()
+  })
+
   it("drops the main shop's reviews and arrivals", () => {
     const { chain, main } = atBeach()
     hireStaff(main, 'technician')

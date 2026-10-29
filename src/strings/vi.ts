@@ -654,6 +654,8 @@ export const vi = {
   vipCallKicker: 'Tiệm gốc · khách VIP',
   vipCallTitle: '{name} đã đến tiệm gốc',
   vipCallLine: 'Chỉ chủ tiệm mới làm được. Chị chờ được một lúc, quá lâu thì chị về.',
+  idolCallKicker: 'Tiệm gốc · ngôi sao',
+  idolCallLine: 'Chỉ chủ tiệm mới làm được. Ngôi sao chờ được một lúc, quá lâu thì về.',
   vipCallGo: 'Về ngay',
   vipCallStay: 'Ở lại',
   serviceAtMain: 'Mở ở tiệm gốc',

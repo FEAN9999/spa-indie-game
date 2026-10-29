@@ -10,9 +10,11 @@ import type { SpaSim } from '../sim/spa'
 import type { StaffRole } from '../sim/staff'
 import { STOCK_NAME } from '../sim/stock'
 import type { Look } from '../sim/types'
+import type { IdolId } from '../sim/idols'
 import type { VipId } from '../sim/vips'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
+import { IDOL_TEXT } from '../strings/idols'
 import { VIP_TEXT } from '../strings/vips'
 import type { GoldCard } from './festivals'
 
@@ -24,8 +26,8 @@ export const placeName = (place: PlaceId | null): string => t(place === null ? '
 /** Money with a "+" in front when above 0. */
 export const signedMoney = (n: number): string => (n > 0 ? '+' : '') + formatMoney(n)
 
-/** Who stands between the title and the lines: a VIP under five stars, or the owner by her scooter. */
-export type ChoiceFigure = { kind: 'vip'; vip: VipId } | { kind: 'owner' }
+/** Who stands between the title and the lines: a VIP or a star under five stars, or the owner by her scooter. */
+export type ChoiceFigure = { kind: 'vip'; vip: VipId } | { kind: 'idol'; idol: IdolId } | { kind: 'owner' }
 
 /** A card over the frozen shop that waits for one of its buttons, the first the main one. */
 export interface ChoiceText {
@@ -55,6 +57,17 @@ export function vipCallCard(vip: VipId): ChoiceText {
     lines: [t('vipCallLine')],
     buttons: [t('vipCallGo'), t('vipCallStay')],
     figure: { kind: 'vip', vip },
+  }
+}
+
+/** A star came to the main shop while the owner is at a branch: back now, or stay. */
+export function idolCallCard(idol: IdolId): ChoiceText {
+  return {
+    kicker: t('idolCallKicker'),
+    title: t('vipCallTitle', { name: IDOL_TEXT[idol].name }),
+    lines: [t('idolCallLine')],
+    buttons: [t('vipCallGo'), t('vipCallStay')],
+    figure: { kind: 'idol', idol },
   }
 }
 

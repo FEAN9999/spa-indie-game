@@ -36,7 +36,7 @@ import { GENEROUS_LINES, RECIPE_HINT_TEXT, t, type StringKey } from '../strings/
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
-import { closingCard, noTechCard, placeName, unlockCard, vipCallCard, type ChoiceText } from '../view/chain'
+import { closingCard, idolCallCard, noTechCard, placeName, unlockCard, vipCallCard, type ChoiceText } from '../view/chain'
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
@@ -426,7 +426,7 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('ChoiceScene', data)
   }
 
-  /** At a branch: once the owner is free at closing time, the card that sends her home; before then, a VIP waiting at the main shop, once the shop is free. */
+  /** At a branch: once the owner is free at closing time, the card that sends her home; before then, a VIP, else a star, waiting at the main shop, once the shop is free. */
   private callOwner(place: PlaceId): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused) return
@@ -434,10 +434,13 @@ export class SpaScene extends Phaser.Scene {
       if (sim.servingCustomerId === null && sim.owner.task?.kind !== 'serve') this.choose(closingCard(place, sim.hasTechnician()), () => this.switchShop(null))
       return
     }
-    const vip = this.shopFree() ? this.chain.takeVipCall() : null
-    if (!vip) return
-    // "Về ngay" goes back; "Ở lại" leaves her waiting there as usual
-    this.choose(vipCallCard(vip), i => {
+    if (!this.shopFree()) return
+    const vip = this.chain.takeVipCall()
+    const idol = vip ? null : this.chain.takeIdolCall()
+    const card = vip ? vipCallCard(vip) : idol ? idolCallCard(idol) : null
+    if (!card) return
+    // "Về ngay" goes back; "Ở lại" leaves them waiting there as usual
+    this.choose(card, i => {
       if (i === 0) this.switchShop(null)
     })
   }

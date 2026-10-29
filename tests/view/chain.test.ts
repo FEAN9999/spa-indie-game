@@ -4,7 +4,7 @@ import { DAY_END_MIN } from '../../src/config'
 import { Chain } from '../../src/sim/chain'
 import { PLACE_IDS, type PlaceId } from '../../src/sim/places'
 import { VIP_TEXT } from '../../src/strings/vips'
-import { closingCard, figureOf, mapSub, noTechCard, pinLabel, pinState, placeName, sheetOf, signedMoney, unlockCard, vipCallCard } from '../../src/view/chain'
+import { closingCard, figureOf, mapSub, noTechCard, pinLabel, pinState, placeName, sheetOf, signedMoney, idolCallCard, unlockCard, vipCallCard } from '../../src/view/chain'
 import { hireStaff, starShop } from '../sim/helpers'
 
 /** A 3-star main shop with `money` in the purse and 1.840.000 đ made today; the owner is there. */
@@ -62,6 +62,18 @@ describe('the VIP call', () => {
       figure: { kind: 'vip', vip: 'singer' },
     })
     expect(vipCallCard('chef').figure).toEqual({ kind: 'vip', vip: 'chef' })
+  })
+})
+
+describe('the star call', () => {
+  it('names and pictures the star who came to the main shop, going back first', () => {
+    expect(idolCallCard('jennie')).toEqual({
+      kicker: 'Tiệm gốc · ngôi sao',
+      title: 'Jennie đã đến tiệm gốc',
+      lines: ['Chỉ chủ tiệm mới làm được. Ngôi sao chờ được một lúc, quá lâu thì về.'],
+      buttons: ['Về ngay', 'Ở lại'],
+      figure: { kind: 'idol', idol: 'jennie' },
+    })
   })
 })
 
