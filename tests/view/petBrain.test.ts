@@ -4,6 +4,7 @@ import { isWalkable, manhattan, tileOf as roundTile } from '../../src/sim/grid'
 import type { BreedId } from '../../src/sim/pets'
 import { createRng, type Rng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
+import type { Tile } from '../../src/sim/types'
 import { newMind, poseOf, settle, stepMind, tileOf, type PetMind, type PetWorld } from '../../src/view/petBrain'
 
 const STEP = 50
@@ -42,11 +43,13 @@ describe('the pet brain', () => {
       const world = shop(floors)
       const rng = createRng(7)
       const minds = pets(world, [...CATS, ...DOGS], rng)
+      // one expect at the end: one per step makes the test slow
+      const off: Tile[] = []
       run(minds, world, rng, MINUTES_10, m => {
         const t = tileOf(m)
-        expect(isWalkable(world.grid, t)).toBe(true)
-        expect(floorOf(t.y)).toBeLessThanOrEqual(world.floors)
+        if (!isWalkable(world.grid, t) || floorOf(t.y) > world.floors) off.push(t)
       })
+      expect(off).toEqual([])
     }
   })
 
