@@ -1450,9 +1450,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     })
   }
 
-  /** Where the heart and the VIP star sit while waiting: level with the service badge, shifted left of it when it shows. */
+  /** Where the heart and the VIP star sit while waiting: level with the service badge, shifted left of it when it shows, or, on an upright seat, to the side of it away from the customer. */
   private badgeSide(p: Placement, s: CustomerSprite, badge: boolean, dx: number): [number, number] {
-    return [p.x + dx + (badge ? (dx < 0 ? -HEART_DX : HEART_DX) : 0), p.y + BADGE_BOTTOM - s.badge.height / 2]
+    return [p.x + dx + (badge ? (dx > 0 ? -HEART_DX : HEART_DX) : 0), p.y + BADGE_BOTTOM - s.badge.height / 2]
   }
 
   private syncCustomer(c: Customer, s: CustomerSprite, time: number, dt: number, badges: boolean): void {
