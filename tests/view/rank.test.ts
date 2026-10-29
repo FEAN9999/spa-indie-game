@@ -95,8 +95,12 @@ describe('learnLine', () => {
   it('names the service the new star opens', () => {
     expect(learnLine(m(2, 3), ['massage'])).toBe('Món mới để học: Chà muối biển.')
   })
+  it('names Ngâm chân thảo mộc at 4 stars, unless learned', () => {
+    expect(learnLine(m(3, 4), ['massage'])).toBe('Món mới để học: Ngâm chân thảo mộc.')
+    expect(learnLine(m(3, 4), ['massage', 'foot'])).toBeNull()
+  })
   it('is null for other rises and for keeping', () => {
-    expect(learnLine(m(3, 4), [])).toBeNull()
+    expect(learnLine(m(4, 5), [])).toBeNull()
     expect(learnLine(m(1, 2), [])).toBeNull()
     expect(learnLine(m(3, 3), [])).toBeNull()
   })

@@ -5,6 +5,7 @@ import { GAME_H, GAME_W, LESSON_PASS_STARS } from '../config'
 import type { Stars } from '../sim/economy'
 import { SERVICES, type LessonService } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
+import type { HintId } from '../sim/types'
 import { t } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { lessonHowTo, lessonPassLine, lessonTitle } from '../view/lesson'
@@ -23,7 +24,9 @@ export interface LessonData {
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
 /** The lesson's game scene, by service. */
-const GAME_SCENE: Record<LessonService, string> = { scrub: 'ScrubScene' }
+const GAME_SCENE: Record<LessonService, string> = { scrub: 'ScrubScene', foot: 'FootScene' }
+/** The hand that shows the lesson game once, by service. */
+const LESSON_DEMO: Record<LessonService, HintId> = { scrub: 'demoScrub', foot: 'demoFoot' }
 const TITLE_Y = 100
 const TITLE_MAX_W = 800
 const BOTTOM_PAD = 55
@@ -141,9 +144,9 @@ export class LessonScene extends Phaser.Scene {
       extraMs: 0,
       hard: false,
       // the hand shows until one lesson game has ended; a retry plays without it
-      demo: !sim.hintDone('demoScrub'),
+      demo: !sim.hintDone(LESSON_DEMO[service]),
       onDone: (stars: Stars) => {
-        sim.markHint('demoScrub')
+        sim.markHint(LESSON_DEMO[service])
         const passed = stars >= LESSON_PASS_STARS
         if (passed) sim.passLesson(service)
         onChange()

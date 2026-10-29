@@ -296,3 +296,11 @@ describe('salt for Chà muối biển', () => {
     expect(stockItemsFor([...six, 'scrub'])).toEqual(['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud', 'salt'])
   })
 })
+
+describe('herbs for Ngâm chân thảo mộc', () => {
+  it('shares the herbs with the steam tent and a towel, and adds no stock item', () => {
+    expect(STOCK_USES.foot).toEqual(['herbs', 'towel'])
+    expect(stockUsers('herbs', ['steam', 'foot'])).toEqual(['steam', 'foot'])
+    expect(stockItemsFor(['shampoo', 'foot'])).toEqual(['shampoo', 'towel', 'herbs'])
+  })
+})

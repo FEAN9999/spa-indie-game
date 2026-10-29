@@ -55,16 +55,23 @@ const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.strin
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
 type Shop = { lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
-/** A raw save as today's code reads it: the new keys of the Chà muối biển records (salt in the stock, scrub in the tiers and the counts) filled in, in the main shop and each branch. */
+/** A raw save as today's code reads it: the new keys of the Chà muối biển and Ngâm chân records (salt in the stock, scrub in the tiers and the counts, and foot beside it in the tiers and the counts) filled in, in the main shop and each branch. */
 const withNewKeys = <T extends object>(raw: T): T => {
   const out = structuredClone(raw) as T & Shop & { chain?: { branches: Shop[] } }
   for (const shop of [out, ...(out.chain?.branches ?? [])]) {
     shop.stock.salt = 20
     shop.lessonsPaid = []
-    for (const p of [...shop.staff, ...shop.candidates]) p.tiers.scrub = 0
+    for (const p of [...shop.staff, ...shop.candidates]) {
+      p.tiers.scrub = 0
+      p.tiers.foot = 0
+    }
     shop.progress.total.services.scrub = 0
+    shop.progress.total.services.foot = 0
     const start = shop.progress.dayStart as { services: Record<string, number> } | null
-    if (start && typeof start === 'object') start.services.scrub = 0
+    if (start && typeof start === 'object') {
+      start.services.scrub = 0
+      start.services.foot = 0
+    }
   }
   return out
 }
@@ -771,7 +778,7 @@ describe('save version 10', () => {
     const rec = hireStaff(sim, 'receptionist')
     rec.study = { course: 'greet', paid: 50000 }
     expect(viaJson(sim).toSave()).toEqual(sim.toSave())
-    expect(sim.toSave().staff[0].tiers).toEqual({ shampoo: 2, mask: 1, massage: 0, steam: 0, stone: 0, mud: 0, scrub: 0 })
+    expect(sim.toSave().staff[0].tiers).toEqual({ shampoo: 2, mask: 1, massage: 0, steam: 0, stone: 0, mud: 0, scrub: 0, foot: 0 })
   })
 
   it('repairs damaged tiers and courses field by field', () => {
@@ -787,7 +794,7 @@ describe('save version 10', () => {
     r1.tiers = { shampoo: 2 }
     r1.study = { course: 'greet', paid: 50000 }
     const out = parseSave(raw).staff
-    expect(out[0].tiers).toEqual({ shampoo: 3, mask: 0, massage: 0, steam: 0, stone: 0, mud: 0, scrub: 0 })
+    expect(out[0].tiers).toEqual({ shampoo: 3, mask: 0, massage: 0, steam: 0, stone: 0, mud: 0, scrub: 0, foot: 0 })
     expect(out[3].tiers).toEqual(noTiers())
     expect(out.slice(0, 3).map(s => s.study)).toEqual([null, null, null])
     expect(out[3].study).toEqual({ course: 'greet', paid: 50000 })
@@ -802,12 +809,12 @@ describe('save version 11', () => {
     expect(sim.staff.length).toBe(v10.staff.length)
     sim.staff.forEach((s, i) => {
       const old = v10.staff[i]
-      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.tiers, s.study]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, { ...old.tiers, steam: 0, stone: 0, mud: 0, scrub: 0 }, old.study])
+      expect([s.name, s.role, s.stats, s.level, s.xp, s.wage, s.tiers, s.study]).toEqual([old.name, old.role, old.stats, old.level, old.xp, old.wage, { ...old.tiers, steam: 0, stone: 0, mud: 0, scrub: 0, foot: 0 }, old.study])
       expect(fits(s)).toBe(true)
     })
     expect(sim.candidates.length).toBe(v10.candidates.length)
     sim.candidates.forEach((c, i) => {
-      expect([c.stats, c.tiers]).toEqual([v10.candidates[i].stats, { ...v10.candidates[i].tiers, steam: 0, stone: 0, mud: 0, scrub: 0 }])
+      expect([c.stats, c.tiers]).toEqual([v10.candidates[i].stats, { ...v10.candidates[i].tiers, steam: 0, stone: 0, mud: 0, scrub: 0, foot: 0 }])
       expect(fits(c)).toBe(true)
     })
   })
@@ -931,7 +938,7 @@ describe('the recipe book', () => {
     expect(saved.recipes.stone).toEqual(emptyRecipes().stone)
     expect(saved.recipes.mud).toEqual(emptyRecipes().mud)
     expect(saved.stock).toEqual({ ...raw.stock, mud: 20, salt: 20 })
-    expect(saved.staff).toEqual(raw.staff.map((s: any) => ({ ...s, tiers: { ...s.tiers, stone: 0, mud: 0, scrub: 0 }, moveTo: null })))
+    expect(saved.staff).toEqual(raw.staff.map((s: any) => ({ ...s, tiers: { ...s.tiers, stone: 0, mud: 0, scrub: 0, foot: 0 }, moveTo: null })))
     const parsed = parseSave(structuredClone(raw))
     expect(parsed.staff.length).toBe(raw.staff.length)
     for (const p of [...parsed.staff, ...parsed.candidates]) expect([p.tiers.stone, p.tiers.mud]).toEqual([0, 0])

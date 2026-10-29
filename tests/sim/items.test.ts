@@ -162,3 +162,10 @@ describe('the salt bed', () => {
     expect(ITEM_KINDS.indexOf('scrubBed')).toBe(ITEM_KINDS.indexOf('mudTub') + 1)
   })
 })
+
+describe('the foot chair', () => {
+  it('is a 1×2 bed listed right after the salt bed', () => {
+    expect(ITEMS.footChair).toEqual({ w: 1, h: 2, price: 650_000, beauty: 0, group: 'bed', name: 'itemFootChair' })
+    expect(ITEM_KINDS.indexOf('footChair')).toBe(ITEM_KINDS.indexOf('scrubBed') + 1)
+  })
+})

@@ -8,7 +8,7 @@ export type BasicService = 'shampoo' | 'mask' | 'massage'
 /** A service opened by solving its recipe at the bench. */
 export type RecipeService = RecipeId
 /** A service learned in a lesson with a teacher. */
-export type LessonService = 'scrub'
+export type LessonService = 'scrub' | 'foot'
 export type ServiceId = BasicService | RecipeService | LessonService
 
 /** The basic services in the order they open. */
@@ -17,7 +17,7 @@ export const BASIC_SERVICES: readonly BasicService[] = ['shampoo', 'mask', 'mass
 export const RECIPE_SERVICES: readonly RecipeService[] = ['steam', 'stone', 'mud']
 
 /** The lesson services, learned from a teacher once the shop has the stars. */
-export const LESSON_SERVICES: readonly LessonService[] = ['scrub']
+export const LESSON_SERVICES: readonly LessonService[] = ['scrub', 'foot']
 
 /** Every service: the basic ones, then the recipe ones, then the lesson ones. */
 export const SERVICE_IDS: ServiceId[] = [...BASIC_SERVICES, ...RECIPE_SERVICES, ...LESSON_SERVICES]
@@ -45,6 +45,7 @@ export const SERVICES: Record<ServiceId, ServiceSpec> = {
   stone: { price: SERVICE_PRICE.stone, openCost: SERVICE_OPEN_COST.stone, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' },
   mud: { price: SERVICE_PRICE.mud, openCost: SERVICE_OPEN_COST.mud, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' },
   scrub: { price: SERVICE_PRICE.scrub, openCost: SERVICE_OPEN_COST.scrub, bed: 'scrubBed', name: 'serviceScrub', busy: 'busyScrub' },
+  foot: { price: SERVICE_PRICE.foot, openCost: SERVICE_OPEN_COST.foot, bed: 'footChair', name: 'serviceFoot', busy: 'busyFoot' },
 }
 
 /** The service a kind of bed gives, or null for other furniture. */

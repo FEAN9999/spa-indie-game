@@ -101,6 +101,21 @@ const scrubBed =
   `<ellipse cx="0.82" cy="2.86" rx="0.2" ry="0.12" fill="${C.cobalt}" ${ink(FINE)}/>` +
   `<path d="M0.66,2.84 Q0.82,2.7 0.98,2.84Z" fill="${C.cream}" ${ink(0.02)}/>`
 
+// foot chair: a padded wooden armchair with teal cushions, a basin of herb water in front of it with two leaves and a lotus petal
+const footChair =
+  rect(0.1, 0.05, 0.9, 0.62, C.wood, `rx="0.22" ${ink()}`) +
+  rect(0.18, 0.12, 0.74, 0.46, C.tealLight, `rx="0.16" ${ink(FINE)}`) +
+  rect(0.06, 0.5, 0.98, 0.66, C.wood, `rx="0.14" ${ink()}`) +
+  rect(0.16, 0.56, 0.78, 0.5, C.teal, `rx="0.12" ${ink(FINE)}`) +
+  rect(0.02, 0.4, 0.16, 0.74, C.woodDark, `rx="0.08" ${ink(FINE)}`) +
+  rect(0.92, 0.4, 0.16, 0.74, C.woodDark, `rx="0.08" ${ink(FINE)}`) +
+  `<ellipse cx="0.55" cy="1.74" rx="0.5" ry="0.4" fill="${C.wood}" ${ink()}/>` +
+  `<path d="M0.08,1.82 Q0.55,2.06 1.02,1.82" stroke="${C.woodDark}" stroke-width="${FINE}" fill="none"/>` +
+  `<ellipse cx="0.55" cy="1.64" rx="0.4" ry="0.26" fill="${C.herb}" ${ink(FINE)}/>` +
+  `<ellipse cx="0.42" cy="1.6" rx="0.08" ry="0.035" fill="${C.leaf}" transform="rotate(-25 0.42 1.6)" ${ink(0.015)}/>` +
+  `<ellipse cx="0.7" cy="1.7" rx="0.08" ry="0.035" fill="${C.leafLight}" transform="rotate(20 0.7 1.7)" ${ink(0.015)}/>` +
+  `<circle cx="0.6" cy="1.55" r="0.035" fill="${C.lotus}"/>`
+
 const bench =
   WEAVE +
   rect(0.1, 0.05, 3.0, 0.3, C.wood, `rx="0.08" ${ink()}`) +
@@ -768,6 +783,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   stoneBed: { w: 1.1, h: 3.15, body: stoneBed },
   mudTub: { w: 2, h: 3.15, body: mudTub },
   scrubBed: { w: 1.1, h: 3.15, body: scrubBed },
+  footChair: { w: 1.1, h: 2.2, body: footChair },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

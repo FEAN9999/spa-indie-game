@@ -187,3 +187,73 @@ describe('served by staff', () => {
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
+
+describe('Ngâm chân thảo mộc', () => {
+  it('needs 4 stars, massage open and 850.000 đ', () => {
+    expect(starShop(3).lessonProblem('foot')).toBe('stars')
+    expect(starShop(4).lessonProblem('foot')).toBeNull()
+    expect(starShop(4, 849_999).lessonProblem('foot')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Ghế ngâm chân and leaves the herbs alone', () => {
+    const sim = starShop(4)
+    const herbs = sim.stock.herbs
+    const money = sim.money
+    sim.payLesson('foot')
+    expect(money - sim.money).toBe(850_000)
+    sim.passLesson('foot')
+    expect(sim.book.gifts.filter(g => g === 'footChair')).toHaveLength(1)
+    expect(sim.stock.herbs).toBe(herbs)
+  })
+
+  it('is learned in either order with Chà muối biển', () => {
+    const sim = starShop(4)
+    expect(sim.learnable()).toBe('scrub')
+    sim.payLesson('foot')
+    sim.passLesson('foot')
+    expect(sim.services).toEqual(['shampoo', 'mask', 'massage', 'foot'])
+    expect(sim.learnable()).toBe('scrub')
+    sim.payLesson('scrub')
+    sim.passLesson('scrub')
+    expect(sim.services.slice(-2)).toEqual(['scrub', 'foot'])
+  })
+
+  it('opens at the old town only with its chair there, and never brings more customers', () => {
+    const chain = new Chain(starShop(4), 11)
+    chain.open('oldTown')
+    const oldTown = chain.shop('oldTown')!
+    chain.main.payLesson('foot')
+    chain.main.passLesson('foot')
+    chain.sync()
+    const rng = createRng(5)
+    for (let i = 0; i < 300; i++) expect(drawService('backpacker', oldTown.availableServices(), rng)).not.toBe('foot')
+    const before = serviceArrivalFactor(oldTown.availableServices())
+    placeFirst(oldTown, 'footChair')
+    let seen = false
+    for (let i = 0; i < 300; i++) if (drawService('backpacker', oldTown.availableServices(), rng) === 'foot') seen = true
+    expect(seen).toBe(true)
+    expect(serviceArrivalFactor(oldTown.availableServices())).toBe(before)
+    placeFirst(chain.main, 'footChair')
+    let elder = false
+    for (let i = 0; i < 300; i++) if (drawService('elder', chain.main.availableServices(), rng) === 'foot') elder = true
+    expect(elder).toBe(true)
+  })
+
+  it('is served by staff for the ranked price, using herbs and a towel', () => {
+    const main = starShop(4)
+    main.payLesson('foot')
+    main.passLesson('foot')
+    placeFirst(main, 'footChair')
+    hireStaff(main, 'technician', undefined, {})
+    const herbs = main.stock.herbs
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'elder', service: 'foot' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(190_000, 4))
+    expect(main.stock.herbs).toBe(herbs - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})

@@ -85,6 +85,8 @@ export const C = {
   saltGrey: '#E4EEF0',
   burnPale: '#FBE3DC',
   scrubSheet: '#DCEFF4',
+  herb: '#7FA86A',
+  herbDark: '#5E8A4C',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
   seaWall: '#BFD9E2',

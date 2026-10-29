@@ -13,13 +13,13 @@ describe('panelPage', () => {
     const p0 = panelPage(SERVICE_IDS, 0)
     expect(p0.pages).toBe(2)
     expect(p0.rows).toEqual(SIX)
-    expect(panelPage(SERVICE_IDS, 1).rows).toEqual(['scrub'])
+    expect(panelPage(SERVICE_IDS, 1).rows).toEqual(['scrub', 'foot'])
   })
   it('wraps the page both ways', () => {
     expect(panelPage(SERVICE_IDS, 2).page).toBe(0)
     expect(panelPage(SERVICE_IDS, 2).rows).toEqual(SIX)
     expect(panelPage(SERVICE_IDS, -1).page).toBe(1)
-    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['scrub'])
+    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['scrub', 'foot'])
   })
   it('keeps six rows on one page', () => {
     expect(panelPage(SIX, 0).pages).toBe(1)
@@ -84,6 +84,11 @@ describe('lessonAction', () => {
     expect(lessonAction(starShop(3), 'scrub')).toEqual({ kind: 'learn', label: 'Học nghề\n700.000 đ', faded: false })
     expect(lessonAction(starShop(3, 100), 'scrub')).toMatchObject({ kind: 'learn', faded: true })
     expect(lessonAction(starShop(3, -1), 'scrub')).toMatchObject({ kind: 'learn', faded: true })
+  })
+  it('offers the Ngâm chân lesson at 4 stars', () => {
+    expect(lessonAction(starShop(3), 'foot')).toEqual({ kind: 'note', text: 'Đạt 4★' })
+    expect(lessonAction(starShop(4), 'foot')).toEqual({ kind: 'learn', label: 'Học nghề\n850.000 đ', faded: false })
+    expect(servicesOpening(starShop(4), true, false)).toEqual({ tab: 'services', page: 1 })
   })
   it('goes on once paid, also after a reload', () => {
     const chain = new Chain(starShop(3), 11)

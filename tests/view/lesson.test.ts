@@ -12,6 +12,11 @@ describe('lesson texts', () => {
   it('names the bed given as a gift', () => {
     expect(lessonPassLine('scrub')).toBe('Tiệm đã có Chà muối biển. Quà: một Giường chà muối trong hộp quà.')
   })
+  it('texts the Ngâm chân lesson', () => {
+    expect(lessonTitle('foot')).toBe('Học Ngâm chân thảo mộc')
+    expect(lessonHowTo('foot')).toEqual(['Nhìn các huyệt sáng lên lần lượt.', 'Rồi bấm lại đúng thứ tự đó.'])
+    expect(lessonPassLine('foot')).toBe('Tiệm đã có Ngâm chân thảo mộc. Quà: một Ghế ngâm chân trong hộp quà.')
+  })
   it('passes at 2 stars', () => {
     expect(LESSON_PASS_STARS).toBe(2)
   })

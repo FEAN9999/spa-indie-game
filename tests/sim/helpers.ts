@@ -141,6 +141,14 @@ export function placeFirst(sim: SpaSim, kind: ItemKind): void {
 
 const OLD_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud']
 
+/** A 4-star main shop that has learned Chà muối biển, with its bed placed and the branches told. */
+export function learnScrub(chain: Chain): void {
+  chain.main.rank.stars = 4
+  chain.main.services = [...OLD_SERVICES, 'scrub']
+  placeFirst(chain.main, 'scrubBed')
+  chain.sync()
+}
+
 /**
  * Four days of a 3-star chain with the six old services open: who came to each shop, who applied and which quests were given.
  * Compared against a log made before Chà muối biển, it checks that a shop that has not learned it draws exactly as before.

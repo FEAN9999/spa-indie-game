@@ -130,6 +130,8 @@ describe('staff tiers', () => {
     expect(candidatePool(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
     expect(candidatePool(['shampoo', 'scrub'])).toEqual(['shampoo', 'mask', 'massage', 'scrub'])
     expect(noTiers().scrub).toBe(0)
+    expect(noTiers().foot).toBe(0)
+    expect(candidatePool(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot']).slice(-2)).toEqual(['scrub', 'foot'])
   })
 
   it('draws a steam specialty only once steam is open', () => {
@@ -167,6 +169,7 @@ describe('courses', () => {
     expect(courses(s, [...six, 'scrub']).at(-1)).toBe('scrub')
     expect(courses(s, [...six])).not.toContain('scrub')
     expect(tuition({ ...s, trait: 'calm' } as Staff, 'scrub')).toBe(100_000)
+    expect(courses(s, [...six, 'foot']).at(-1)).toBe('foot')
   })
 
   it('offers a receptionist Tiếp khách until 5 dots', () => {

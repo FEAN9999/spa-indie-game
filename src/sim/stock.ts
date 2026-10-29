@@ -16,6 +16,7 @@ export const STOCK_USES: Record<ServiceId, StockItem[]> = {
   stone: ['oil', 'towel'],
   mud: ['mud', 'towel'],
   scrub: ['salt', 'towel'],
+  foot: ['herbs', 'towel'],
 }
 
 /** The open services whose own item this is; none for the towel, which every service uses. */

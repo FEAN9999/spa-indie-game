@@ -278,6 +278,15 @@ export function fxTextures(): Record<string, string> {
         `<path d="M13,30 Q17,17 28,16 Q39,17 43,30Z" fill="${C.cream}" ${INNER}/>` +
         `<path d="M22,24 l2.2,-3 l2.2,3 l-2.2,3Z M30,21 l2,-2.6 l2,2.6 l-2,2.6Z M33,27 l1.8,-2.4 l1.8,2.4 l-1.8,2.4Z" fill="${C.seaPale}" stroke="${C.ink}" stroke-width="1.2" stroke-linejoin="round"/>`,
     ),
+    // a sole rising out of a wooden basin of herb water, a leaf floating
+    'svc-foot': badge(
+      C.mint,
+      `<path d="M10,31 H46 L42,45 Q28,49 14,45Z" fill="${C.wood}" ${INNER}/>` +
+        `<path d="M22,32 Q18,20 21,13 Q28,6 35,13 Q38,20 34,32Z" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<circle cx="23" cy="11.5" r="3" fill="${SKIN_TONE}" ${INNER}/><circle cx="29" cy="9.5" r="2.4" fill="${SKIN_TONE}" ${INNER}/><circle cx="34" cy="11" r="2.1" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<ellipse cx="28" cy="31" rx="17" ry="4" fill="${C.herb}" ${INNER}/>` +
+        `<ellipse cx="38" cy="30.5" rx="4" ry="1.8" fill="${C.leaf}" transform="rotate(-20 38 30.5)"/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
