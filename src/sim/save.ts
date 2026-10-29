@@ -1,7 +1,7 @@
 import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
-import { IDOL_IDS, type IdolId } from './idols'
+import { emptyIdolBook, IDOL_IDS, type IdolBook, type IdolId } from './idols'
 import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
@@ -23,7 +23,7 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 25
+export const SAVE_VERSION = 26
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 
@@ -84,6 +84,8 @@ export interface SaveData {
   book: GuestBook
   /** The VIPs, the booking and the gold board. */
   vip: VipBook
+  /** The idols, the booking and the star wall. */
+  idol: IdolBook
   /** The recipes tried and the hints heard. */
   recipes: RecipeBook
   /** What the shop has counted, and its quests. */
@@ -279,6 +281,7 @@ function parseShop(raw: unknown): SaveData {
   data.customers = data.customers.map(c => ({ ...c, regular: REGULAR_IDS.includes(c.regular as never) ? c.regular : null, heldMs: isNumber(c.heldMs) ? c.heldMs : 0 }))
   // shops saved before the VIPs have an empty book and no booking; a customer who is not a known VIP is an ordinary one
   data.vip = repairVipBook(data.vip, data.day)
+  data.idol = repairIdolBook(data.idol, data.day)
   data.customers = data.customers.map(c => ({ ...c, vip: VIP_IDS.includes(c.vip as VipId) ? c.vip : null }))
   // a customer who is not a known idol is an ordinary one
   data.customers = data.customers.map(c => ({ ...c, idol: IDOL_IDS.includes(c.idol as IdolId) ? c.idol : null }))
@@ -342,6 +345,23 @@ function repairBook(x: unknown, day: number): GuestBook {
   book.extraCustomer = repairBool(x.extraCustomer)
   book.extraAt = repairNullable(x.extraAt)
   book.boardGiven = repairBool(x.boardGiven)
+  return book
+}
+
+/** A well-formed idol book, field by field; a missing one is empty. A booking more than a day ahead, or for an unknown idol, is dropped. */
+export function repairIdolBook(x: unknown, day: number): IdolBook {
+  const book = emptyIdolBook()
+  if (!isObject(x)) return book
+  const idols: Record<string, unknown> = isObject(x.idols) ? x.idols : {}
+  for (const id of IDOL_IDS) {
+    const v = isObject(idols[id]) ? idols[id] : {}
+    book.idols[id] = { visits: repairCount(v.visits), best: Math.min(3, repairCount(v.best)), photo: repairBool(v.photo), thanked: repairBool(v.thanked) }
+  }
+  const b = x.booking
+  book.booking = isObject(b) && IDOL_IDS.includes(b.idol as IdolId) && Number.isInteger(b.day) && (b.day as number) <= day + 1 && isNumber(b.minute) ? { idol: b.idol as IdolId, day: b.day as number, minute: b.minute } : null
+  book.nextDay = repairCount(x.nextDay)
+  book.everBooked = repairBool(x.everBooked) || book.booking !== null || IDOL_IDS.some(id => book.idols[id].visits > 0)
+  book.wallGiven = repairBool(x.wallGiven)
   return book
 }
 
@@ -571,7 +591,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

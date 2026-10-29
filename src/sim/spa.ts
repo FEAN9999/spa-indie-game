@@ -831,6 +831,7 @@ export class SpaSim {
       stock: this.stock,
       book: this.book,
       vip: this.vip,
+      idol: this.idol,
       recipes: this.recipes,
       progress: this.progress,
       badges: this.badges,
@@ -867,6 +868,7 @@ export class SpaSim {
     sim.stock = d.stock
     sim.book = d.book
     sim.vip = d.vip
+    sim.idol = d.idol
     sim.recipes = d.recipes
     sim.progress = d.progress
     sim.badges = d.badges ?? {}
