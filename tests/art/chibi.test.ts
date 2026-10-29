@@ -85,6 +85,47 @@ describe('chibi and fx art', () => {
       }
   })
 
+  it("has every star's pieces in each side they list", () => {
+    const keys = Object.keys(chibiTextures())
+    const sides: Record<string, string[]> = {
+      bangsTaylor: ['down', 'side'],
+      redLips: ['down', 'side'],
+      sequins: ['down', 'side', 'up'],
+      redSuit: ['down', 'side', 'up'],
+      moustache: ['down', 'side'],
+      hoodie: ['down', 'side', 'up'],
+      beanie: ['down', 'side', 'up'],
+      daisyPin: ['down', 'side'],
+      hoops: ['down', 'side'],
+      tankChain: ['down', 'side', 'up'],
+      mohawk: ['down', 'side', 'up'],
+      bowTieSuit: ['down', 'side', 'up'],
+      backCap: ['down', 'side', 'up'],
+      jersey: ['down', 'side', 'up'],
+      quiff: ['down', 'side', 'up'],
+      goldChainJacket: ['down', 'side', 'up'],
+      bangsJennie: ['down', 'side'],
+      bow: ['down', 'side', 'up'],
+      tweed: ['down', 'side', 'up'],
+    }
+    for (const [part, listed] of Object.entries(sides))
+      for (const side of ['down', 'side', 'up']) {
+        const key = `${part}-${side}`
+        if (!listed.includes(side)) {
+          expect(keys, key).not.toContain(key)
+          continue
+        }
+        expect(keys, key).toContain(key)
+        expect(keys, key).not.toContain(`${key}-line`)
+        expect(PART_ANCHORS[key], key).toBeDefined()
+      }
+    for (const key of ['face-grin', 'face-grinSide']) {
+      expect(keys, key).toContain(key)
+      expect(keys, key).not.toContain(`${key}-line`)
+      expect(PART_ANCHORS[key], key).toBeDefined()
+    }
+  })
+
   it("draws the tourist's straw hat and flower shirt from every side, untinted, each with an anchor", () => {
     const keys = Object.keys(chibiTextures())
     for (const part of ['strawHat', 'flowerShirt'])

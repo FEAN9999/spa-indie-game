@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { BACKPACKER_HAIR, customerColors, ELDER_HAIR, HAIR, inspectorColors, lookColors, TEACHER_LOOK, teacherColors, OWNER_SHIRT, ownerColors, SHIRT, SKIN, STAFF_SHIRT, staffColors } from '../../src/art/palette'
 import { LOOK_COUNTS, OWNER_LOOK_COUNTS } from '../../src/config'
+import { IDOL_COLORS } from '../../src/art/idols'
+import { IDOL_IDS, IDOLS } from '../../src/sim/idols'
 
 describe('look palettes', () => {
   it('has a color for every look choice', () => {
@@ -60,6 +62,17 @@ describe('look palettes', () => {
     expect(customerColors(look, 'office', null, null, true)).toEqual({ ...customerColors(look, 'office'), visitor: 'kol' })
     expect(customerColors(look, 'office').visitor).toBeUndefined()
     expect(inspectorColors()).toMatchObject({ shirt: 0x3d4a66, visitor: 'inspector' })
+  })
+
+  it("dresses a star in their own colours, and everyone else as before", () => {
+    expect(customerColors(IDOLS.gd.look, 'celeb', null, null, false, 'gd')).toMatchObject({ hair: 0xf49ab4, idol: 'gd', kind: 'celeb' })
+    const look = { skin: 2, hair: 1, hairStyle: 0, shirt: 3 }
+    expect(customerColors(look, 'celeb', null, null, false, null)).toEqual(customerColors(look, 'celeb'))
+    expect(customerColors(look, 'celeb').idol).toBeUndefined()
+    for (const id of IDOL_IDS) {
+      expect(IDOL_COLORS[id].skin, id).toBe(SKIN[IDOLS[id].look.skin])
+      expect(IDOL_COLORS[id].hairStyle, id).toBe(IDOLS[id].look.hairStyle)
+    }
   })
 })
 

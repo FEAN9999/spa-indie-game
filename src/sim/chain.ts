@@ -8,6 +8,7 @@ import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
 import type { MoveTo, Staff, StaffRole } from './staff'
 import type { CustomerState, SimEvent } from './types'
+import type { IdolId } from './idols'
 import type { VipId } from './vips'
 
 /** `open`: a branch is there already; `stars`: the main shop's stars are short; `money`: the purse is short. */
@@ -44,6 +45,8 @@ export class Chain {
   private held: SimEvent[] = []
   /** The VIPs who came to the main shop while the owner was at a branch. */
   private vipCalls: VipId[] = []
+  /** The stars who came to the main shop while the owner was at a branch. */
+  private idolCalls: IdolId[] = []
 
   constructor(main: SpaSim, seed: number) {
     this.main = main
@@ -140,15 +143,18 @@ export class Chain {
     this.sync()
     this.at = place
     // a VIP call is for an owner who is away from the main shop
-    if (place === null) this.vipCalls = []
-    else if (left === this.main) this.callForWaitingVips()
+    if (place === null) {
+      this.vipCalls = []
+      this.idolCalls = []
+    } else if (left === this.main) this.callForWaitingVips()
     this.active().ownerArrives()
     return null
   }
 
-  /** Each VIP waiting at the main shop calls the owner, once. */
+  /** Each VIP and each star waiting at the main shop calls the owner, once. */
   private callForWaitingVips(): void {
     for (const c of this.main.customers) if (c.vip !== null && WAITING.includes(c.state) && !this.vipCalls.includes(c.vip)) this.vipCalls.push(c.vip)
+    for (const c of this.main.customers) if (c.idol !== null && WAITING.includes(c.state) && !this.idolCalls.includes(c.idol)) this.idolCalls.push(c.idol)
   }
 
   /** Per-frame entry point; a huge delta is clamped. */
@@ -234,6 +240,7 @@ export class Chain {
     }
     this.at = null
     this.vipCalls = []
+    this.idolCalls = []
     this.main.ownerHere = true
     for (const b of this.branches) b.ownerHere = false
     this.sync()
@@ -308,11 +315,17 @@ export class Chain {
     return this.vipCalls.shift() ?? null
   }
 
+  /** The next star who came to the main shop while the owner was away, or null. */
+  takeIdolCall(): IdolId | null {
+    return this.idolCalls.shift() ?? null
+  }
+
   /** The events of a shop the owner is away from: a branch's are dropped; the main shop's VIP calls her, and its cards are kept. */
   private route(shop: SpaSim, events: SimEvent[]): void {
     if (shop.place !== null) return
     for (const e of events) {
       if (e.type === 'vipArrived') this.vipCalls.push(e.vip)
+      else if (e.type === 'idolArrived') this.idolCalls.push(e.idol)
       else if (HELD.includes(e.type)) this.held.push(e)
     }
   }

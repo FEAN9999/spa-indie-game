@@ -4,6 +4,7 @@ import { OUTFIT_HAS_HAT, OUTFIT_PANTS, type DressedId } from '../art/outfits'
 import { PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
 import type { CustomerKind } from '../sim/customers'
+import type { IdolId } from '../sim/idols'
 import type { RegularId } from '../sim/regulars'
 import type { VipId } from '../sim/vips'
 import type { Facing } from '../sim/types'
@@ -87,6 +88,51 @@ const VIP_WORN: Record<VipId, { key: string; on: 'body' | 'face' | 'hair' }[]> =
   chef: [{ key: 'chefHat', on: 'hair' }],
 }
 
+/** A piece worn on the body, over the face or on the hair; `keep` stays on while lying on the bed. */
+type Worn = { key: string; on: 'body' | 'face' | 'hair'; keep?: true }
+
+/** What each star wears, ahead of the VIP's, the regular's and the kind's; their hair pieces stay on the bed. */
+export const IDOL_WORN: Record<IdolId, Worn[]> = {
+  sontung: [
+    { key: 'goldChainJacket', on: 'body' },
+    { key: 'quiff', on: 'hair', keep: true },
+  ],
+  taylor: [
+    { key: 'sequins', on: 'body' },
+    { key: 'redLips', on: 'face' },
+    { key: 'bangsTaylor', on: 'hair', keep: true },
+  ],
+  gd: [
+    { key: 'daisyPin', on: 'body' },
+    { key: 'hoops', on: 'face' },
+  ],
+  jennie: [
+    { key: 'tweed', on: 'body' },
+    { key: 'bangsJennie', on: 'hair', keep: true },
+    { key: 'bow', on: 'hair' },
+  ],
+  hieuthuhai: [
+    { key: 'jersey', on: 'body' },
+    { key: 'backCap', on: 'hair' },
+  ],
+  weeknd: [
+    { key: 'redSuit', on: 'body' },
+    { key: 'moustache', on: 'face' },
+  ],
+  taeyang: [
+    { key: 'tankChain', on: 'body' },
+    { key: 'mohawk', on: 'hair', keep: true },
+  ],
+  bieber: [
+    { key: 'hoodie', on: 'body' },
+    { key: 'beanie', on: 'hair' },
+  ],
+  daesung: [{ key: 'bowTieSuit', on: 'body' }],
+}
+
+/** A star's own face from the front and the side, in place of the kind's: Daesung's crescent-eyed grin. */
+const IDOL_FACE: Partial<Record<IdolId, { down: string; side: string }>> = { daesung: { down: 'face-grin', side: 'face-grinSide' } }
+
 /** What an event's visitor holds, ahead of everything else worn; the face still comes from the kind. */
 const VISITOR_WORN: Record<NonNullable<CharacterColors['visitor']>, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
   kol: [{ key: 'phone', on: 'body' }],
@@ -113,12 +159,14 @@ export class CharacterView {
   private readonly apron: Phaser.GameObjects.Image | null
   private readonly head: Phaser.GameObjects.Image
   private readonly face: Phaser.GameObjects.Image
-  /** The face from the front: a picky customer frowns. */
+  /** The face from the front: a picky customer frowns, and a star may have their own. */
   private readonly frontFace: string
+  /** The face from the side: a star's own, or the plain one. */
+  private readonly sideFace: string
   private readonly hair: Phaser.GameObjects.Image
   private readonly hairStyle: number
-  /** What the kind, the regular or the VIP wears, each with its key without the side. */
-  private readonly worn = new Map<Phaser.GameObjects.Image, string>()
+  /** What the kind, the regular, the VIP or the star wears, each with its key without the side and whether it stays on the bed. */
+  private readonly worn = new Map<Phaser.GameObjects.Image, Worn>()
   /** The pieces worn on the body, which breathe with it. */
   private readonly bodyWorn: Phaser.GameObjects.Image[]
   private readonly mask: Phaser.GameObjects.Image
@@ -147,11 +195,11 @@ export class CharacterView {
     const dressed = colors.outfit && colors.outfit !== 'baba' ? colors.outfit : null
     this.outfit = dressed
     const wear = (on: 'body' | 'face' | 'hair') =>
-      (colors.visitor ? VISITOR_WORN[colors.visitor] : colors.vip ? VIP_WORN[colors.vip] : colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
+      (colors.visitor ? VISITOR_WORN[colors.visitor] : colors.idol ? IDOL_WORN[colors.idol] : colors.vip ? VIP_WORN[colors.vip] : colors.regular ? REGULAR_WORN[colors.regular] : colors.kind ? WORN[colors.kind] : [])
         .filter(w => w.on === on)
         .map(w => {
           const img = part(`${w.key}-down`, 0, on === 'body' ? BODY_Y : HEAD_Y)
-          this.worn.set(img, w.key)
+          this.worn.set(img, w)
           return img
         })
     this.shadow = scene.add.image(0, 0, 'shadow')
@@ -163,7 +211,9 @@ export class CharacterView {
     this.arms = [part('arm', -9 * U, SHOULDER_Y, colors.skin), part('arm', 9 * U, SHOULDER_Y, colors.skin)]
     if (dressed) this.sleeves = this.arms.map(arm => part(`sleeve-${dressed}`, arm.x, SHOULDER_Y))
     this.head = part('head', 0, HEAD_Y, colors.skin)
-    this.frontFace = colors.kind === 'picky' ? 'face-frown' : 'face-down'
+    const idolFace = colors.idol ? IDOL_FACE[colors.idol] : undefined
+    this.frontFace = idolFace?.down ?? (colors.kind === 'picky' ? 'face-frown' : 'face-down')
+    this.sideFace = idolFace?.side ?? 'face-side'
     this.face = part(this.frontFace, 0, HEAD_Y)
     this.mask = part('mask-face', 0, HEAD_Y).setVisible(false)
     const onFace = wear('face')
@@ -202,7 +252,7 @@ export class CharacterView {
     const dir = side ? 'side' : f
     this.hair.setTexture(`hair${this.hairStyle}-${dir}`)
     const lying = this.pose === 'lie'
-    this.face.setTexture(lying ? 'face-rest' : side ? 'face-side' : this.frontFace).setVisible(f !== 'up')
+    this.face.setTexture(lying ? 'face-rest' : side ? this.sideFace : this.frontFace).setVisible(f !== 'up')
     for (const img of [this.head, this.face, this.hair]) img.setFlipX(f === 'left')
     // seen from the side the legs overlap and only the near arm shows
     this.legs[0].x = (side ? -1.5 : -3.5) * U
@@ -219,10 +269,10 @@ export class CharacterView {
     }
     // the apron shows its front or its side, and hides from behind and with the body
     this.apron?.setTexture(`apron-${side ? 'side' : 'down'}`).setFlipX(f === 'left').setVisible(f !== 'up' && this.body.visible)
-    // what the kind, the regular or the VIP wears comes off on the bed
-    for (const [img, key] of this.worn) {
+    // what the kind, the regular, the VIP or the star wears comes off on the bed, but for a star's hair pieces
+    for (const [img, { key, keep = false }] of this.worn) {
       const tex = `${key}-${dir}`
-      const shown = !lying && tex in PART_ANCHORS
+      const shown = (!lying || keep) && tex in PART_ANCHORS
       if (shown) img.setTexture(tex).setOrigin(PART_ANCHORS[tex].ox, PART_ANCHORS[tex].oy)
       img.setFlipX(f === 'left').setVisible(shown)
     }
@@ -245,7 +295,7 @@ export class CharacterView {
     this.syncLines()
   }
 
-  /** Swaps the hair and the blanket for the towel while towelled and lying; what is worn on the hair is already off while lying. */
+  /** Swaps the hair and the blanket for the towel while towelled and lying; what is worn on the hair is already off while lying, and no star who keeps theirs on books the mud. */
   private wrapTowel(): void {
     const lying = this.pose === 'lie'
     this.towel.setVisible(this.towelled && lying)

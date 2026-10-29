@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { SCOOTER_BOX } from '../art/fx'
 import { C, customerColors, type CharacterColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
+import { IDOLS } from '../sim/idols'
 import { VIP_KIND, VIPS } from '../sim/vips'
 import type { ChoiceFigure, ChoiceText } from '../view/chain'
 import { CharacterView } from '../view/CharacterView'
@@ -82,11 +83,11 @@ export class ChoiceScene extends Phaser.Scene {
     this.view?.update(delta)
   }
 
-  /** The VIP on a gold glow under five stars, or the owner beside her scooter on a sand ellipse, with the feet at `feet`. */
+  /** The VIP or star on a gold glow under five stars, or the owner beside her scooter on a sand ellipse, with the feet at `feet`. */
   private figure(figure: ChoiceFigure, feet: number): void {
-    if (figure.kind === 'vip') {
+    if (figure.kind === 'vip' || figure.kind === 'idol') {
       this.add.ellipse(MID, feet, VIP_GROUND.rx * 2, VIP_GROUND.ry * 2, hex(C.gold), VIP_GROUND.alpha)
-      this.stand(MID, feet, customerColors(VIPS[figure.vip].look, VIP_KIND, null, figure.vip))
+      this.stand(MID, feet, figure.kind === 'vip' ? customerColors(VIPS[figure.vip].look, VIP_KIND, null, figure.vip) : customerColors(IDOLS[figure.idol].look, VIP_KIND, null, null, false, figure.idol))
       const starsY = feet - FIGURE.feet + VIP_STARS.y
       for (let i = 0; i < 5; i++) this.add.image(MID + (i - 2) * VIP_STARS.step, starsY, 'star').setScale(VIP_STARS.scale)
       return

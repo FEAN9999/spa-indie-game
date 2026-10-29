@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { EVENT_FROM_DAY, INSPECT_MIN, POWER_FROM_MIN } from '../../src/config'
-import { dueKol, emptyEventBook, hotDaysLeft, hotOn, planEvent, type EventBook } from '../../src/sim/events'
+import { dueKol, emptyEventBook, hotCardToday, hotDaysLeft, hotOn, makeHot, planEvent, type EventBook } from '../../src/sim/events'
 import { createRng, type Rng } from '../../src/sim/rng'
 
 /** An rng that counts its draws. */
@@ -102,5 +102,41 @@ describe('Mi Mi and the hot days', () => {
     expect([12, 13, 14, 15].map(d => hotOn(book, d))).toEqual([false, true, true, false])
     expect([13, 14, 15].map(d => hotDaysLeft(book, d))).toEqual([2, 1, 0])
     expect(hotOn(emptyEventBook(), 1)).toBe(false)
+  })
+
+  it('makeHot starts a run from tomorrow', () => {
+    const book = emptyEventBook()
+    makeHot(book, 10, 'kol')
+    expect(book).toMatchObject({ hotUntil: 12, hotDays: 2, hotCardDay: 11, hotBy: 'kol' })
+    expect([10, 11, 12, 13].map(d => hotOn(book, d))).toEqual([false, true, true, false])
+  })
+
+  it('makeHot extends a running spell without a gap', () => {
+    const a = emptyEventBook()
+    makeHot(a, 10, 'kol')
+    makeHot(a, 12, 'taylor')
+    expect(a).toMatchObject({ hotUntil: 14, hotCardDay: 13, hotBy: 'taylor' })
+    expect([11, 12, 13, 14].map(d => hotOn(a, d))).toEqual([true, true, true, true])
+    const b = emptyEventBook()
+    makeHot(b, 10, 'kol')
+    makeHot(b, 11, 'gd')
+    expect(b.hotUntil).toBe(13)
+    expect([11, 12, 13].map(d => hotOn(b, d))).toEqual([true, true, true])
+    expect(hotOn(b, 14)).toBe(false)
+  })
+
+  it('makeHot after a run has ended starts a new one', () => {
+    const book = emptyEventBook()
+    makeHot(book, 10, 'kol')
+    makeHot(book, 14, 'taylor')
+    expect([13, 14, 15, 16, 17].map(d => hotOn(book, d))).toEqual([false, false, true, true, false])
+  })
+
+  it('hotCardToday is true on a runs first day and on hotCardDay', () => {
+    const book = emptyEventBook()
+    makeHot(book, 10, 'kol')
+    makeHot(book, 12, 'taylor')
+    expect([10, 11, 12, 13, 14].map(d => hotCardToday(book, d))).toEqual([false, true, false, true, false])
+    expect([12, 13, 14].map(d => hotCardToday({ ...emptyEventBook(), hotUntil: 14 }, d))).toEqual([false, true, false])
   })
 })

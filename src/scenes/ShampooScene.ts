@@ -56,7 +56,7 @@ export class ShampooScene extends Phaser.Scene {
     this.revealed = false
     this.demoHand = null
 
-    const colors = customerColors(this.params.look, this.params.kind)
+    const colors = customerColors(this.params.look, this.params.kind, null, null, false, this.params.idol ?? null)
     this.instruction = addMiniGameCard(this, t('shampooFoam'))
     this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
     this.add.image(GAME_W / 2, HEAD_Y, 'sh-head').setTint(colors.skin)

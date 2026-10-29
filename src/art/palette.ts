@@ -1,8 +1,10 @@
 import type { CustomerKind } from '../sim/customers'
+import type { IdolId } from '../sim/idols'
 import type { RegularId } from '../sim/regulars'
 import type { VipId } from '../sim/vips'
 import type { OutfitId } from '../sim/outfits'
 import type { Look } from '../sim/types'
+import { IDOL_COLORS } from './idols'
 
 /** Named colors from the approved style A board (spec 7.1). */
 export const C = {
@@ -167,6 +169,8 @@ export interface CharacterColors {
   regular?: RegularId
   /** The VIP a customer is, who wears her own things ahead of the regular's and the kind's. */
   vip?: VipId
+  /** The star a customer is, in their own colours and wearing their own things ahead of the VIP's, the regular's and the kind's. */
+  idol?: IdolId
   /** An event's visitor, who holds her own thing ahead of everything else worn: Mi Mi's phone or the inspector's clipboard. */
   visitor?: 'kol' | 'inspector'
 }
@@ -183,8 +187,12 @@ export function teacherColors(): CharacterColors {
   return { ...lookColors(TEACHER_LOOK), outfit: 'teacher' }
 }
 
-/** A customer's colors: their look, with an elder's hair grey, a backpacker's blond, a lady's hair in a bun, their kind, the regular they are, the VIP they are, and Mi Mi's mark, if any. */
-export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null, vip: VipId | null = null, kol = false): CharacterColors {
+/**
+ * A customer's colors: their look, with an elder's hair grey, a backpacker's blond, a lady's hair in a bun, their kind, the regular they are,
+ * the VIP they are, and Mi Mi's mark, if any; a star in their own colours instead of their look's.
+ */
+export function customerColors(look: Look, kind: CustomerKind, regular: RegularId | null = null, vip: VipId | null = null, kol = false, idol: IdolId | null = null): CharacterColors {
+  if (idol) return { ...IDOL_COLORS[idol], kind, idol }
   const colors = lookColors(look)
   return {
     ...colors,

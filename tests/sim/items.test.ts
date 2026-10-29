@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { KEEPSAKE_BEAUTY } from '../../src/config'
 import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
+import { IDOLS, IDOL_IDS } from '../../src/sim/idols'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
 import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, beautyOf, bedTile, footprint, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
@@ -98,9 +99,10 @@ describe('items', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
   })
 
-  it('keeps twenty free gift-only decor pieces out of the sets', () => {
+  it('keeps thirty free gift-only decor pieces out of the sets', () => {
     expect(ITEM_KINDS.filter(k => ITEMS[k].giftOnly)).toEqual([
       'vyPainting', 'silkScreen', 'regularsBoard', 'photoSinger', 'photoMiss', 'photoStar', 'photoChef', 'goldBoard',
+      'photoIdolSontung', 'photoIdolTaylor', 'photoIdolGd', 'photoIdolJennie', 'photoIdolHieuthuhai', 'photoIdolWeeknd', 'photoIdolTaeyang', 'photoIdolBieber', 'photoIdolDaesung', 'starWall',
       'maiBranch', 'heartFrame', 'roseVase', 'starLantern', 'flowerBasket', 'xmasTree', 'certificate',
       'trophy', 'merit', 'surfboard', 'lanternString', 'orchid',
     ])
@@ -108,6 +110,15 @@ describe('items', () => {
     expect(ITEMS.vyPainting).toEqual({ w: 1, h: 1, price: 0, beauty: 4, group: 'decor', giftOnly: true, name: 'itemVyPainting' })
     expect(ITEMS.silkScreen).toEqual({ w: 2, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: 'itemSilkScreen' })
     expect(ITEMS.regularsBoard).toEqual({ w: 2, h: 1, price: 0, beauty: 6, group: 'decor', giftOnly: true, name: 'itemRegularsBoard' })
+  })
+
+  it('makes each star photo a 1-tile gift of beauty 5 and the wall a 2-tile gift of beauty 9', () => {
+    for (const id of IDOL_IDS) {
+      const kind = IDOLS[id].photo
+      expect(ITEMS[kind]).toEqual({ w: 1, h: 1, price: 0, beauty: 5, group: 'decor', giftOnly: true, name: `item${kind[0].toUpperCase()}${kind.slice(1)}` })
+    }
+    expect(ITEMS.starWall).toEqual({ w: 2, h: 1, price: 0, beauty: 9, group: 'decor', giftOnly: true, name: 'itemStarWall' })
+    expect(new Set(IDOL_IDS.map(id => IDOLS[id].photo)).size).toBe(9)
   })
 
   it('the gold cup and the bằng khen are gift-only 1×1 decor, never sold', () => {

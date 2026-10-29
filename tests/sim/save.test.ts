@@ -11,7 +11,7 @@ import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
-import { emptyEventBook } from '../../src/sim/events'
+import { emptyEventBook, makeHot } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
@@ -48,7 +48,10 @@ import v23 from '../fixtures/save-v23.json'
 import v24 from '../fixtures/save-v24.json'
 import v25 from '../fixtures/save-v25.json'
 import v26 from '../fixtures/save-v26.json'
+import v27 from '../fixtures/save-v27.json'
 import { Chain } from '../../src/sim/chain'
+import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
+import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, starShop, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -286,6 +289,7 @@ describe('save version 3', () => {
     expect(parseSave({ ...good, v: 23 }).v).toBe(23)
     expect(parseSave({ ...good, v: 24 }).v).toBe(24)
     expect(parseSave({ ...good, v: 25 }).v).toBe(25)
+    expect(parseSave({ ...good, v: 26 }).v).toBe(26)
     expect(parseSave({ ...good, v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
     expect(() => parseSave({ ...good, v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
   })
@@ -910,8 +914,8 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      // a customer saved before version 18 is not Mi Mi
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
@@ -930,8 +934,8 @@ describe('the recipe book', () => {
     for (const key of Object.keys(raw)) {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
-      // a customer saved before version 18 is not Mi Mi
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false })) : raw[key]
+      // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
@@ -1301,13 +1305,16 @@ describe('save version 18', () => {
   })
 
   it('repairs a damaged event book field by field', () => {
-    const good = { nextDay: 16, last: 'kol', plan: { kind: 'inspect', day: 14, minute: 900 }, hotUntil: 15, count: 2, inspected: true, certGiven: true }
+    const good = { nextDay: 16, last: 'kol', plan: { kind: 'inspect', day: 14, minute: 900 }, hotUntil: 15, hotDays: 3, hotBy: 'taylor', hotCardDay: 14, count: 2, inspected: true, certGiven: true }
     expect(repairEvents(structuredClone(good), 13)).toEqual(good)
-    expect(repairEvents({ ...good, last: 'party', nextDay: -2, hotUntil: 1.5, count: 'x', inspected: 1, certGiven: 'yes' }, 13)).toEqual({
+    expect(repairEvents({ ...good, last: 'party', nextDay: -2, hotUntil: 1.5, hotDays: 0, hotBy: 'x', hotCardDay: -1, count: 'x', inspected: 1, certGiven: 'yes' }, 13)).toEqual({
       ...good,
       last: null,
       nextDay: 0,
       hotUntil: 0,
+      hotDays: 2,
+      hotBy: 'kol',
+      hotCardDay: 0,
       count: 0,
       inspected: false,
       certGiven: false,
@@ -1578,6 +1585,17 @@ describe('save version 22', () => {
   })
 })
 
+/** An old save's event books (the main shop's and each branch's) with the hot-run fields a read gives them, and an empty idol book on every shop. */
+function withHotFields<T extends object>(raw: T): T {
+  const hot = { hotDays: 2, hotBy: 'kol', hotCardDay: 0 }
+  const r = raw as { events?: object; chain?: { branches: { events?: object }[] } }
+  const out: typeof r & { idol?: object } = { ...r }
+  if (r.events) out.events = { ...r.events, ...hot }
+  if (r.chain) out.chain = { ...r.chain, branches: r.chain.branches.map(b => (({ ...b, ...(b.events ? { events: { ...b.events, ...hot } } : {}), idol: emptyIdolBook() }))) }
+  out.idol = emptyIdolBook()
+  return out as T
+}
+
 describe('save version 23', () => {
   /** A main shop with the beach open, saved and read back as plain JSON. */
   const chainJson = () => {
@@ -1600,7 +1618,8 @@ describe('save version 23', () => {
     const { place, chain, ...rest } = data
     expect(place).toBeNull()
     expect(chain).toEqual({ at: null, told: false, branches: [] })
-    expect(rest).toEqual(withNewKeys(v22))
+    // a customer saved before the idols is not an idol
+    expect(rest).toEqual({ ...withHotFields(withNewKeys(v22)), customers: v22.customers.map(c => ({ ...c, idol: null })) })
     const saved = Chain.fromSave(data, 8).toSave()
     expect([saved.v, saved.place, saved.chain]).toEqual([SAVE_VERSION, null, { at: null, told: false, branches: [] }])
     expect(saved.starter).toEqual(v22.starter)
@@ -1743,7 +1762,7 @@ describe('save version 24', () => {
   it('opens the v23 shop with its beach as it was', () => {
     const expected = withNewKeys(v23) as unknown as { chain: { branches: { staff: object[] }[] } }
     expected.chain.branches = expected.chain.branches.map(b => ({ ...b, staff: b.staff.map(s => ({ ...s, moveTo: null })) }))
-    expect(parseSave(structuredClone(v23))).toEqual(expected)
+    expect(parseSave(structuredClone(v23))).toEqual(withHotFields(expected))
     const chain = Chain.fromSave(parseSave(structuredClone(v23)), 8)
     expect(chain.at).toBe('beach')
     expect(chain.branches.length).toBe(1)
@@ -1782,7 +1801,7 @@ describe('save version 25', () => {
     const expected = withNewKeys(v24) as unknown as Raw
     expected.staff = expected.staff.map(s => ({ ...s, moveTo: null }))
     expected.chain.branches = expected.chain.branches.map(b => ({ ...b, staff: b.staff.map(s => ({ ...s, moveTo: null })) }))
-    expect(parseSave(structuredClone(v24))).toEqual(expected)
+    expect(parseSave(structuredClone(v24))).toEqual(withHotFields(expected))
     const chain = Chain.fromSave(parseSave(structuredClone(v24)), 8)
     expect(chain.at).toBe('beach')
     expect(chain.shop('beach')!.staff.length).toBe(1)
@@ -1829,7 +1848,8 @@ describe('save version 26', () => {
   }
 
   it('opens the v25 chain as it was, with nothing paid', () => {
-    expect(parseSave(structuredClone(v25))).toEqual(withNewKeys(v25))
+    // a customer saved before the idols is not an idol
+    expect(parseSave(structuredClone(v25))).toEqual({ ...withHotFields(withNewKeys(v25)), customers: v25.customers.map(c => ({ ...c, idol: null })) })
     const chain = Chain.fromSave(parseSave(structuredClone(v25)), 8)
     expect(chain.at).toBeNull()
     expect(chain.branches.length).toBe(1)
@@ -1867,16 +1887,183 @@ describe('save version 26', () => {
 
 describe('save version 27', () => {
   const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26 }
+  type Raw = { customers: Record<string, unknown>[]; staff: Record<string, unknown>[]; chain: { branches: { customers: Record<string, unknown>[]; staff: Record<string, unknown>[] }[] } }
+  const ownerOnly = (sim: SpaSim) => sim.customers.filter(c => c.vip !== null || c.idol !== null)
+  /** A reload through JSON of a shop whose arrivals run, as the booked ones come only then. */
+  const reload = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(2), autoSpawn: true })
+
+  /** A shop with the gold board, two technicians, and mask and massage open with a massage bed. */
+  const boardShop = () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
+    sim.money = 20_000_000
+    expect(sim.openService('mask')).toBeNull()
+    expect(sim.openService('massage')).toBeNull()
+    expect(sim.buy('massageBed', 6, 2, false)).toBeNull()
+    sim.vip.boardGiven = true
+    hireStaff(sim, 'technician')
+    hireStaff(sim, 'technician')
+    sim.drainEvents()
+    return sim
+  }
+
+  it('opens the v26 chain as it was, with an empty idol book, no idol on anyone and the old hot run', () => {
+    const expected = withNewKeys(v26) as unknown as Raw
+    expected.customers = expected.customers.map(c => ({ ...c, idol: null }))
+    expected.chain.branches = expected.chain.branches.map(b => ({ ...b, customers: b.customers.map(c => ({ ...c, idol: null })) }))
+    const data = parseSave(structuredClone(v26))
+    // the fixture's VIP book has a visit but no everBooked, which a read has always implied
+    ;(expected as unknown as { vip: { everBooked: boolean } }).vip.everBooked = true
+    expect(data).toEqual(withHotFields(expected))
+    expect(data.idol).toEqual(emptyIdolBook())
+    const chain = Chain.fromSave(data, 8)
+    expect(chain.branches.length).toBe(1)
+    expect(chain.toSave().v).toBe(SAVE_VERSION)
+    const main = chain.main
+    expect([main.eventBook.hotUntil, main.eventBook.hotDays, main.eventBook.hotBy]).toEqual([41, 2, 'kol'])
+    expect(main.day).toBe(40)
+    expect(main.hotToday()).toBe(true)
+    main.day = 41
+    expect(main.hotToday()).toBe(true)
+    main.day = 42
+    expect(main.hotToday()).toBe(false)
+  })
+
+  it('opens every older save and saves it as the current version', () => {
+    for (const [name, raw] of Object.entries(fixtures)) {
+      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
+      expect([name, saved.v, saved.idol]).toEqual([name, SAVE_VERSION, emptyIdolBook()])
+    }
+  })
+
+  it('opens the current version and refuses a newer one', () => {
+    expect(parseSave({ ...structuredClone(v26), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
+    expect(() => parseSave({ ...structuredClone(v26), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  })
+
+  it('repairs a damaged idol book field by field', () => {
+    const read = (idol: unknown) => parseSave({ ...structuredClone(v26), v: SAVE_VERSION, idol } as never).idol
+    expect(read(undefined)).toEqual(emptyIdolBook())
+    expect(read('x')).toEqual(emptyIdolBook())
+    const good = { ...emptyIdolBook(), nextDay: 44, wallGiven: true, booking: { idol: 'taylor' as const, day: 41, minute: 600 } }
+    good.idols = { ...good.idols, jennie: { visits: 2, best: 3, photo: true, thanked: true } }
+    expect(read(structuredClone(good))).toEqual({ ...good, everBooked: true })
+    const bad = read({
+      idols: { ...good.idols, jennie: { visits: 2, best: 9, photo: 'yes', thanked: 1 }, gd: { visits: -1, best: 1.5 }, nobody: { visits: 5, best: 3, photo: true, thanked: true } },
+      booking: { idol: 'taylor', day: 42, minute: 600 },
+      nextDay: -3,
+      everBooked: false,
+      wallGiven: 'yes',
+    })
+    expect(bad.idols.jennie).toEqual({ visits: 2, best: 3, photo: false, thanked: false })
+    expect(bad.idols.gd).toEqual({ visits: 0, best: 0, photo: false, thanked: false })
+    expect(Object.keys(bad.idols)).toEqual(IDOL_IDS)
+    expect([bad.booking, bad.nextDay, bad.wallGiven]).toEqual([null, 0, false])
+    // a visit implies everBooked
+    expect(bad.everBooked).toBe(true)
+    // a booking for an unknown star is dropped; a booking implies everBooked
+    expect(read({ booking: { idol: 'moon', day: 40, minute: 600 } })).toEqual(emptyIdolBook())
+    expect(read({ booking: { idol: 'gd', day: 41, minute: 600 } })).toMatchObject({ booking: { idol: 'gd', day: 41, minute: 600 }, everBooked: true })
+  })
+
+  it('reads an unknown idol on a customer as null', () => {
+    const read = (idol: unknown) => {
+      const raw = structuredClone(v26) as unknown as Raw
+      raw.customers[0].idol = idol
+      return parseSave(raw as never).customers[0].idol
+    }
+    expect([read('taylor'), read('moon'), read(3), read(undefined)]).toEqual(['taylor', null, null, null])
+  })
+
+  it('keeps a star waiting outside behind a VIP, and she still comes once after a reload', () => {
+    const sim = boardShop()
+    const vip = sim.spawnCustomer({ vip: 'chef' })
+    advanceUntil(sim, () => vip.state === 'waiting')
+    sim.idol.booking = { idol: 'sontung', day: sim.day, minute: Math.floor(sim.clock.minutes) }
+    sim.advance(2_000)
+    const copy = reload(sim)
+    expect(copy.idol.booking).toEqual(sim.idol.booking)
+    expect(ownerOnly(copy).map(c => c.vip)).toEqual(['chef'])
+    const waiting = copy.customers.find(c => c.vip === 'chef')!
+    copy.tapTile(waiting.seat!)
+    advanceUntil(copy, () => waiting.state === 'inService')
+    copy.completeService(waiting.id, 3)
+    while (copy.customers.includes(waiting)) {
+      expect(ownerOnly(copy).filter(c => c.idol !== null)).toEqual([])
+      copy.advance(STEP_MS)
+    }
+    copy.advance(STEP_MS)
+    expect(ownerOnly(copy).map(c => c.idol)).toEqual(['sontung'])
+    expect(copy.idol.idols.sontung.visits).toBe(1)
+    expect(copy.idol.booking).toBeNull()
+    // reloaded with the star in, nothing is booked or counted again
+    const again = reload(copy)
+    expect(again.idol.idols.sontung.visits).toBe(1)
+    expect(again.customers.filter(c => c.idol !== null).length).toBe(1)
+  })
+
+  it('keeps a waiting star through a reload, who pays five times with the photo once', () => {
+    const sim = boardShop()
+    const idol = sim.spawnCustomer({ idol: 'taylor' })
+    advanceUntil(sim, () => idol.state === 'waiting')
+    const copy = viaJson(sim)
+    const back = copy.customers.find(c => c.idol === 'taylor')!
+    expect(back).toEqual(idol)
+    // the shop made the visit count without saying it was booked; a read implies it
+    expect(copy.idol).toEqual({ ...sim.idol, everBooked: true })
+    copy.tapTile(back.seat!)
+    advanceUntil(copy, () => back.state === 'inService')
+    copy.drainEvents()
+    const before = copy.money
+    copy.completeService(back.id, 3)
+    const served = copy.drainEvents()
+    expect(served).toContainEqual(expect.objectContaining({ type: 'idolServed', idol: 'taylor', stars: 3, photo: true }))
+    expect(copy.money - before).toBeGreaterThanOrEqual(SERVICE_PRICE[back.service] * IDOL_PRICE_FACTOR)
+    const photos = (s: SpaSim) => s.book.gifts.filter(g => g === IDOLS.taylor.photo).length
+    expect(photos(copy)).toBe(1)
+    expect(copy.idol.idols.taylor).toMatchObject({ visits: 1, best: 3, photo: true })
+    advanceUntil(copy, () => !copy.customers.includes(back))
+    // a reload after the visit gives nothing again, and a second one neither
+    const second = viaJson(copy)
+    second.advance(STEP_MS * 5)
+    expect(second.drainEvents().filter(e => e.type === 'idolServed' || e.type === 'idolArrived')).toEqual([])
+    expect(second.idol).toEqual(copy.idol)
+    expect(photos(second)).toBe(1)
+    expect(viaJson(second).idol).toEqual(copy.idol)
+  })
+
+  it('keeps a stretched hot run through a reload without stretching it again', () => {
+    const sim = boardShop()
+    // yesterday's run, which the star's visit stretches
+    makeHot(sim.eventBook, sim.day - 1, 'kol')
+    const idol = sim.spawnCustomer({ idol: 'gd' })
+    advanceUntil(sim, () => idol.state === 'waiting')
+    sim.tapTile(idol.seat!)
+    advanceUntil(sim, () => idol.state === 'inService')
+    sim.completeService(idol.id, 3)
+    const run = { ...sim.eventBook }
+    expect(run.hotBy).toBe('gd')
+    expect(run.hotDays).toBeGreaterThan(HOT_DAYS)
+    expect(run.hotUntil).toBeGreaterThan(0)
+    const copy = viaJson(sim)
+    expect(copy.eventBook).toEqual(run)
+    const twice = viaJson(copy)
+    expect(twice.eventBook).toEqual(run)
+    expect(twice.hotToday()).toBe(copy.hotToday())
+  })
+})
+
+describe('save version 28', () => {
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27 }
   const paid = (lessonsPaid: unknown, services?: string[]) => {
-    const raw = structuredClone(v26) as unknown as { lessonsPaid: unknown; services: string[] }
+    const raw = structuredClone(v27) as unknown as { lessonsPaid: unknown; services: string[] }
     raw.lessonsPaid = lessonsPaid
     if (services) raw.services = services
     return parseSave(raw as never).lessonsPaid
   }
 
-  it('opens the v26 chain as it was, with scrub kept and foot not learned', () => {
-    expect(parseSave(structuredClone(v26))).toEqual(withNewKeys(v26))
-    const chain = Chain.fromSave(parseSave(structuredClone(v26)), 8)
+  it('opens the v27 chain as it was, with scrub kept and foot not learned', () => {
+    expect(parseSave(structuredClone(v27))).toEqual(withNewKeys(v27))
+    const chain = Chain.fromSave(parseSave(structuredClone(v27)), 8)
     expect(chain.main.services).toContain('scrub')
     expect(chain.main.services).not.toContain('foot')
     const tech = chain.main.staff.find(s => s.role === 'technician')!
@@ -1884,6 +2071,9 @@ describe('save version 27', () => {
     expect(tech.study?.course).toBe('scrub')
     expect(chain.main.items.filter(i => i.kind === 'scrubBed').length).toBe(1)
     expect(chain.shop('beach')!.staff.length).toBe(1)
+    // the beach branch keeps scrub as a service it has, and has no foot
+    expect(chain.shop('beach')!.services).toContain('scrub')
+    expect(chain.shop('beach')!.services).not.toContain('foot')
     expect(chain.toSave().v).toBe(SAVE_VERSION)
   })
 
@@ -1894,10 +2084,10 @@ describe('save version 27', () => {
     }
   })
 
-  it('opens 26 and the current version and refuses a newer one', () => {
-    expect(parseSave({ ...structuredClone(v26), v: 26 }).v).toBe(26)
-    expect(parseSave({ ...structuredClone(v26), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
-    expect(() => parseSave({ ...structuredClone(v26), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  it('opens 27 and the current version and refuses a newer one', () => {
+    expect(parseSave({ ...structuredClone(v27), v: 27 }).v).toBe(27)
+    expect(parseSave({ ...structuredClone(v27), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
+    expect(() => parseSave({ ...structuredClone(v27), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
   })
 
   it('repairs the foot lesson paid', () => {

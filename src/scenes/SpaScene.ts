@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, GAME_H, GAME_W, HUM_MS, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -33,10 +33,11 @@ import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
 import { GENEROUS_LINES, RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
+import { IDOL_TEXT } from '../strings/idols'
 import { VIP_TEXT } from '../strings/vips'
 import { awayTip } from '../view/away'
 import { BADGE_TEXT } from '../view/badges'
-import { closingCard, noTechCard, placeName, unlockCard, vipCallCard, type ChoiceText } from '../view/chain'
+import { closingCard, idolCallCard, noTechCard, placeName, unlockCard, vipCallCard, type ChoiceText } from '../view/chain'
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
@@ -51,7 +52,7 @@ import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
 import { servicesOpening } from '../view/servicesPanel'
 import { stockLowText } from '../view/stockText'
-import { bookingText } from '../view/vip'
+import { humNow, humText, todayToasts } from '../view/idol'
 import { RoomView } from '../view/RoomView'
 import { SpeechBubble } from '../view/SpeechBubble'
 import { goalCard, lockedText } from '../view/starter'
@@ -211,6 +212,8 @@ export class SpaScene extends Phaser.Scene {
   private bubbleSpots = new Map<number, { x: number; y: number; floor: number }>()
   /** A line waiting for that customer's live bubble to finish. */
   private queuedLines = new Map<number, { text: string; ms: number }>()
+  /** How long each waiting star has been quiet, in ms. */
+  private humMs = new Map<number, number>()
 
   constructor() {
     super('SpaScene')
@@ -242,6 +245,7 @@ export class SpaScene extends Phaser.Scene {
     this.bubbles = new Map()
     this.bubbleSpots = new Map()
     this.queuedLines = new Map()
+    this.humMs = new Map()
     this.store = openStore()
     // the chain's save: the main shop's own leaves its branches out
     this.session = new SaveSession(this.store, () => this.chain.toSave(), () => location.reload())
@@ -427,7 +431,7 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('ChoiceScene', data)
   }
 
-  /** At a branch: once the owner is free at closing time, the card that sends her home; before then, a VIP waiting at the main shop, once the shop is free. */
+  /** At a branch: once the owner is free at closing time, the card that sends her home; before then, a VIP, else a star, waiting at the main shop, once the shop is free. */
   private callOwner(place: PlaceId): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused) return
@@ -435,10 +439,13 @@ export class SpaScene extends Phaser.Scene {
       if (sim.servingCustomerId === null && sim.owner.task?.kind !== 'serve') this.choose(closingCard(place, sim.hasTechnician()), () => this.switchShop(null))
       return
     }
-    const vip = this.shopFree() ? this.chain.takeVipCall() : null
-    if (!vip) return
-    // "Về ngay" goes back; "Ở lại" leaves her waiting there as usual
-    this.choose(vipCallCard(vip), i => {
+    if (!this.shopFree()) return
+    const vip = this.chain.takeVipCall()
+    const idol = vip ? null : this.chain.takeIdolCall()
+    const card = vip ? vipCallCard(vip) : idol ? idolCallCard(idol) : null
+    if (!card) return
+    // "Về ngay" goes back; "Ở lại" leaves them waiting there as usual
+    this.choose(card, i => {
       if (i === 0) this.switchShop(null)
     })
   }
@@ -901,10 +908,10 @@ export class SpaScene extends Phaser.Scene {
 
   private showMorningBanner(): void {
     this.hud.banner(t('morningBanner', { name: this.sim.shopName, day: this.sim.day }))
-    const b = this.sim.vip.booking
-    const vipToday = b?.day === this.sim.day
-    if (vipToday) this.hud.toast(bookingText('vipTodayToast', b))
-    this.studiedToastMs = vipToday ? LATE_TOAST_MS : 0
+    const [first, ...rest] = todayToasts(this.sim.vip, this.sim.idol, this.sim.day)
+    if (first !== undefined) this.hud.toast(first)
+    this.studiedToastMs = first !== undefined ? LATE_TOAST_MS : 0
+    for (const text of rest) this.queueToast(text)
   }
 
   /** Brings a floor into view, the one place that does, and draws its furniture. */
@@ -1089,6 +1096,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // staff also hold still while the owner plays, as the sim does
     this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
     this.moveBubbles()
+    this.humStars(dt)
     // festivals are the main shop's
     this.room.setFestival(this.sim.place === null ? festivalOf(this.sim.day) : null)
     this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
@@ -1213,8 +1221,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         const data: MiniGameData = {
           look: c.look,
           kind: c.kind,
+          idol: c.idol ?? undefined,
           extraMs: dayEase(this.sim.day).miniGameExtraMs,
-          hard: c.vip !== null || KINDS[c.kind].hard,
+          hard: c.vip !== null || c.idol !== null || KINDS[c.kind].hard,
           demo: !this.sim.hintDone(demo),
           onDone: stars => {
             this.sim.markHint(demo)
@@ -1260,6 +1269,15 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         if (e.photo) this.hud.toast(t('vipPhotoToast', { name }))
         // queued after the photo toast, which a toast right now would overwrite, and ahead of a quest it finished
         if (e.board) this.queueToast(t('vipBoardToast'))
+        return
+      }
+      case 'idolArrived':
+        this.say(e.customerId, IDOL_TEXT[e.idol].arrive, BUBBLE_MS.story)
+        return
+      case 'idolServed': {
+        if (e.stars === 3) this.say(e.customerId, IDOL_TEXT[e.idol].thanks, BUBBLE_MS.story)
+        if (e.photo) this.hud.toast(t('vipPhotoToast', { name: IDOL_TEXT[e.idol].name }))
+        if (e.wall) this.queueToast(t('idolWallToast'))
         return
       }
       case 'heart': {
@@ -1360,7 +1378,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.badgeQueue.push(eventCard(e.plan, this.sim.rivalTarget()))
         return
       case 'hotStarted':
-        this.badgeQueue.push(hotCard())
+        this.badgeQueue.push(hotCard(this.sim.eventBook.hotBy))
         return
       case 'kolArrived':
         this.queueToast(t('kolArrivedToast'))
@@ -1415,7 +1433,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
-      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol)),
+      view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol, c.idol)),
       bar: this.add.graphics(),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
@@ -1505,7 +1523,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     s.heart.setVisible(heart)
     if (heart) s.heart.setPosition(...this.badgeSide(p, s, badge))
 
-    const star = (c.vip !== null && !lying) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
+    const star = ((c.vip !== null || c.idol !== null) && !lying) || (c.kol && (c.state === 'arriving' || c.state === 'toSeat'))
     s.vipStar.setVisible(star)
     if (star) {
       const waiting = c.state === 'waiting'
@@ -1523,6 +1541,23 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
     s.bubble?.setPosition(p.x, p.y - CHARACTER_HEIGHT_PX + 4).setAlpha(p.alpha).setVisible(true)
     this.bubbleSpots.set(c.id, { x: p.x, y: p.y + SPEECH_TIP, floor })
+  }
+
+  /** A star on the way to or waiting at their seat hums their song title every HUM_EVERY_MS, never over a line. */
+  private humStars(dt: number): void {
+    const sim = this.sim
+    const live = new Set<number>()
+    for (const c of sim.customers) {
+      if (c.idol === null || (c.state !== 'toSeat' && c.state !== 'waiting')) continue
+      live.add(c.id)
+      if (sim.paused || sim.servingCustomerId !== null) continue
+      const ms = (this.humMs.get(c.id) ?? 0) + dt
+      if (humNow(c, ms, this.bubbles.has(c.id) || this.queuedLines.has(c.id))) {
+        this.say(c.id, humText(c.idol), HUM_MS)
+        this.humMs.set(c.id, 0)
+      } else this.humMs.set(c.id, ms)
+    }
+    for (const id of [...this.humMs.keys()]) if (!live.has(id)) this.humMs.delete(id)
   }
 
   /** Follows each customer; one whose customer has left holds its last spot until it fades out, then goes. */

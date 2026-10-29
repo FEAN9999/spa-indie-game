@@ -51,7 +51,9 @@ export class SummaryScene extends Phaser.Scene {
       { label: 'rating', value: rating ?? 0, kind: 'count', show: v => (rating === null ? t('noRating') : v.toFixed(1)) },
     ]
     const kinds = rows.map(row => row.kind)
-    const notes = [...starterNotes(sim), ...summaryNotes(firstDay, sim.vip, sim.eventBook, sim.day, sim.hintDone('vip'), sim.rivalTarget())]
+    const notes = [...starterNotes(sim), ...summaryNotes(firstDay, sim.vip, sim.idol, sim.eventBook, sim.day, sim.hintDone('vip'), sim.hintDone('idol'), sim.rivalTarget())]
+    // the star's first note is shown now, once only
+    if (notes.some(note => note.text === t('idolFirstNote'))) sim.markHint('idol')
     // each note is its own text, stacked under the rows; they are measured first, since the card and the button follow their height, then put in place (depth 1 keeps them above the card)
     const texts = notes.map(note => {
       const style = note.booking ? textStyle(36, '800', C.teal) : textStyle(34, '600')
