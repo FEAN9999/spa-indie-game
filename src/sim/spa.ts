@@ -19,6 +19,7 @@ import {
   HOT_ARRIVAL,
   HOT_DAYS,
   INSPECT_BEAUTY,
+  LESSON_STARS,
   LOW_STOCK,
   MAX_FRAME_MS,
   MEMBER_PATIENCE,
@@ -77,7 +78,7 @@ import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
-import { BASIC_SERVICES, isLessonService, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
+import { BASIC_SERVICES, isLessonService, LESSON_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
@@ -92,6 +93,11 @@ export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
 /** A new bowl was paid for and tried; a bowl tried before answers again for free; or money stops a new one. `right` counts the recipe's ingredients in the bowl. */
+/** Where a lesson stands: not paid, tuition paid and not yet passed, or learned. */
+export type LessonState = 'no' | 'paid' | 'yes'
+/** What stops a lesson now: not the main shop, too few stars, massage not open, debt, or too little money for the tuition. */
+export type LessonProblem = 'main' | 'stars' | 'order' | 'debt' | 'money'
+
 export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; right: number } | { kind: 'problem'; problem: 'debt' | 'money' }
 
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 })
@@ -412,6 +418,49 @@ export class SpaSim {
     this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
     this.advanceStarter()
     return null
+  }
+
+  lessonState(id: LessonService): LessonState {
+    if (this.services.includes(id)) return 'yes'
+    return this.lessonsPaid.includes(id) ? 'paid' : 'no'
+  }
+
+  /** What stops the lesson now, or null. Once the tuition is paid the lesson can always go on, whatever the stars. */
+  lessonProblem(id: LessonService): LessonProblem | null {
+    if (this.place !== null) return 'main'
+    if (this.lessonState(id) !== 'no') return null
+    if (this.rank.stars < LESSON_STARS[id]) return 'stars'
+    if (!this.services.includes('massage')) return 'order'
+    if (this.money < 0) return 'debt'
+    return this.money < SERVICES[id].openCost ? 'money' : null
+  }
+
+  /** Takes the tuition once (never in the day's figures). A paid or learned lesson costs nothing. */
+  payLesson(id: LessonService): LessonProblem | null {
+    const problem = this.lessonProblem(id)
+    if (problem) return problem
+    if (this.lessonState(id) === 'no') {
+      this.money -= SERVICES[id].openCost
+      this.lessonsPaid.push(id)
+    }
+    return null
+  }
+
+  /** The lesson is passed: opens the service and puts its bed in the gift box. Throws unless the tuition is paid. */
+  passLesson(id: LessonService): void {
+    if (this.lessonState(id) !== 'paid') throw new Error(`Lesson ${id} is not paid`)
+    this.services = SERVICE_IDS.filter(x => x === id || this.services.includes(x))
+    this.lessonsPaid = this.lessonsPaid.filter(x => x !== id)
+    this.book.gifts.push(SERVICES[id].bed)
+  }
+
+  /** The first lesson the shop could take now (money may still be short); null when there is none. */
+  learnable(): LessonService | null {
+    return LESSON_SERVICES.find(id => {
+      if (this.lessonState(id) !== 'no') return false
+      const p = this.lessonProblem(id)
+      return p === null || p === 'debt' || p === 'money'
+    }) ?? null
   }
 
   /** The services customers can ask for: open, with at least one bed. */

@@ -13,4 +13,8 @@ describe('the shop draws', () => {
   it('draws the same in a 3-star chain with every old service open while Chà muối biển is not learned', () => {
     expect(sixServiceLog(4)).toEqual(sixFixture)
   })
+
+  it('draws the same when the tuition is paid and the lesson not passed', () => {
+    expect(sixServiceLog(4, c => { expect(c.main.payLesson('scrub')).toBeNull() })).toEqual(sixFixture)
+  })
 })
