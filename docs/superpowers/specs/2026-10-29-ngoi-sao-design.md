@@ -94,7 +94,7 @@ Cách đọc giống các spec trước:
 - **Ngôi sao xuất hiện trước khi tiệm có Bảng vàng.**
 - **Tiệm chưa có Bảng vàng chơi khác đi chút nào.** Mọi test cũ còn đạt, `same-draws` giữ nguyên, VIP và sự kiện bốc y như cũ.
 - **Phần mới bốc trong dòng ngẫu nhiên của tiệm hay của VIP.** Ngôi sao có dòng riêng.
-- **Hai khách chỉ chủ tiệm phục vụ được tới cùng lúc:** ngôi sao và VIP hẹn cùng ngày thì giờ hẹn cách nhau ít nhất 3 tiếng (mục 7.2).
+- **Hai khách chỉ chủ tiệm phục vụ được ở trong tiệm cùng lúc** (một VIP và một ngôi sao). Mục 7.2 nói cách giữ điều này.
 - **Trả hai lần hay tặng hai lần:** tải lại ô lưu không tặng lại ảnh, không tặng lại Tường ngôi sao, không kéo dài lại ngày hot.
 - **Ngôi sao bỏ về vì hết ghế.**
 - **Nhân viên mời ngôi sao.**
@@ -148,6 +148,11 @@ Dữ liệu nằm ở `src/sim/idols.ts` (kiểu `IdolId`, `IDOL_IDS`, `IDOLS`) 
   1. **Ai tới:** người đầu tiên chưa từng ghé theo thứ tự ở mục 7.1, mà dịch vụ tiệm đang làm được. Khi cả chín đã ghé thì chọn ngẫu nhiên trong những người có dịch vụ hợp.
   2. **Giờ:** một nửa giờ từ 10:00 tới 17:00, như VIP. Nếu ngày mai có VIP thì chỉ bốc trong những nửa giờ cách giờ VIP ít nhất 3 tiếng. Khung 10:00–17:00 luôn còn ít nhất 2 nửa giờ như vậy.
   3. **Khoảng cách tới lần sau:** 3 tới 5 ngày (`IDOL_GAP_DAYS`).
+- **Người tới sau chờ người tới trước đi đã.** **(em đề xuất)**
+  - Lý do: VIP chờ lâu có thể ở lại hơn 3 tiếng giờ game. Kiên nhẫn 0,7 là khoảng 3,4 tiếng giờ game, có lễ tân thì tới khoảng 4,5 tiếng. Nên chỉ cách giờ hẹn 3 tiếng thì chưa đủ.
+  - Cách làm: tới giờ hẹn mà khách chỉ-chủ-phục-vụ kia (VIP hay ngôi sao) vẫn còn trong tiệm, thì người tới sau chưa vào. Người đó vào ngay khi khách kia rời tiệm, dù được phục vụ xong hay bỏ về.
+  - Lúc đang đợi như vậy, người tới sau chưa có mặt trong tiệm. Không tính kiên nhẫn, không có bong bóng, không có thẻ "Về ngay".
+  - Tính ra thì người tới sau luôn vào được trước 20:00: giờ hẹn muộn nhất là 17:00, và người tới trước đến sớm hơn ít nhất 3 tiếng rồi ở lại tối đa khoảng 4,5 tiếng. Nếu sau này số kiên nhẫn đổi làm chuyện đó sai, thì tới giờ đóng cửa mà chưa vào được thì hôm đó người đó không tới và lịch hẹn bị bỏ.
 - **Không hẹn ngôi sao vào ngày đã có sự kiện.** Sự kiện chỉ xếp cho ngày mai, và xếp sau ngôi sao, nên điều này tự đúng. Ghi lại ở đây để không ai đảo thứ tự.
 - Lịch hẹn của ngày đã qua thì bỏ, như `clearStale` của VIP.
 
@@ -254,18 +259,18 @@ Làm y như VIP. **(em đề xuất)**
 
 ### 7.12 Câu chữ
 
-Giọng Sài Gòn thân thiện. Mỗi câu tối đa 2 dòng trong bong bóng. Không câu nào có lời bài hát. **(em đề xuất)**
+Giọng Sài Gòn thân thiện. Mỗi câu tối đa 60 ký tự (`BUBBLE_MAX_CHARS`, tức 2 dòng trong bong bóng), kiểm bằng test câu chữ đang có. Không câu nào có lời bài hát. **(em đề xuất)**
 
 | Ngôi sao | Câu chào | Câu cảm ơn (3 sao) |
 |---|---|---|
 | Sơn Tùng M-TP | Chào em! Anh vừa ra bài mới, chạy show mỏi vai quá trời. | Nhẹ cả người! Lần sau anh dẫn cả ê-kíp tới luôn nha. |
-| Taylor Swift | Hi y'all! Tối nay chị diễn ba tiếng rưỡi, bóp vai giùm chị nha! | Amazing! Vai nhẹ tênh, tối nay chị diễn thêm cũng được! |
+| Taylor Swift | Hi! Tối nay chị diễn ba tiếng rưỡi, bóp vai giùm chị nha! | Amazing! Vai nhẹ tênh, tối nay chị diễn thêm cũng được! |
 | G-Dragon | Annyeong! Gội nhẹ tay giùm anh, tóc hồng này mới nhuộm đó. | Màu vẫn hồng mà tóc mềm hơn! Tiệm này chất ghê. |
 | Jennie | Annyeong! Mai chị chụp bìa tạp chí, làm da chị sáng lên nha. | Da căng bóng luôn! Mai lên hình khỏi cần chỉnh. |
 | HIEUTHUHAI | Mai quay MV rồi, gội cho anh thơm tho bảnh bao nha! | Thơm phức! Vô MV tóc vào nếp khỏi cần vuốt. |
 | The Weeknd | Hát tới khuya, ngủ chưa đủ giấc… Gội cho anh tỉnh ngủ nha. | Tỉnh cả người! Đêm nay anh hát tới sáng cũng được. |
 | Taeyang | Tập nhảy cả ngày, lưng cứng đơ rồi. Massage giùm anh nha! | Lưng dẻo lại rồi! Giờ nhảy thêm bài nữa cũng được. |
-| Justin Bieber | Yo! Bay qua đây mệt quá. Sorry nếu anh ngủ quên lúc đắp mặt nạ nha! | Ngủ ngon thiệt! Da mát rượi, bay về khỏi lo mệt. |
+| Justin Bieber | Yo! Bay mệt quá. Sorry nếu anh ngủ quên lúc đắp mặt nạ nha! | Ngủ ngon thiệt! Da mát rượi, bay về khỏi lo mệt. |
 | Daesung | Hehe! Cười nhiều quá mỏi cả mặt, đắp mặt nạ cho anh nha! | Mặt mát rượi, cười tiếp được rồi! Hehe! |
 
 - Trong câu hẹn và lời nhắc, gọi chung là "ngôi sao" + tên. Ví dụ: "ngôi sao Jennie hẹn đắp mặt nạ lúc 14:30".
@@ -296,6 +301,7 @@ Test tự động, viết trước khi làm (TDD), theo mẫu `tests/sim/spa-vip
   - vòng đầu đi đúng thứ tự, bỏ qua người không có dịch vụ hợp;
   - khoảng cách 3–5 ngày;
   - cùng ngày với VIP thì cách ít nhất 3 tiếng;
+  - khách kia còn trong tiệm thì người tới sau đợi, và vào ngay khi khách kia đi (thử cả hai chiều: VIP trước, ngôi sao trước);
   - không có sự kiện vào ngày có ngôi sao.
 - **Không đổi gì cũ:**
   - tiệm chưa có Bảng vàng bốc y như trước (VIP, sự kiện, khách);
@@ -337,6 +343,9 @@ Kiểm tra trên trình duyệt ở 390 px:
 - Bố cục ô trong lưới sổ khách, cỡ chữ, chỗ đặt tên bài trên trang riêng.
 - Hình khung ảnh và Tường ngôi sao, miễn đúng như mục 7.7 tả và hợp nét game.
 - Có cho ngôi sao ngân nga lúc đi ra cửa hay không.
+- Cách lưu đợt hot cho đúng khi bị kéo dài, ví dụ lưu thêm ngày bắt đầu. Điều phải giữ là mọi ngày trong đợt đều hot.
+- Ngôi sao tới mà dịch vụ của họ vừa bị đóng: không được bốc bù từ dòng ngẫu nhiên của tiệm.
+- Ngôi sao có tính vào huy hiệu số khách đã phục vụ hay không (VIP đang được tính).
 
 ## 10. Câu hỏi cho lần chơi thử
 
