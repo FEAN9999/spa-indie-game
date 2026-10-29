@@ -1,3 +1,4 @@
+import type { BreedId } from '../sim/pets'
 import type { Ingredient, RecipeId } from '../sim/recipes'
 import type { SteamThing } from '../sim/steam'
 
@@ -21,6 +22,30 @@ export const RECIPE_HINT_TEXT: Record<RecipeId, Partial<Record<Ingredient, strin
 }
 
 export const STAFF_NAMES = ['Mai', 'Hoa', 'Cúc', 'Hương', 'Linh', 'Ngọc', 'Trang', 'Tùng', 'Minh', 'Nam', 'Phúc', 'Khang', 'Bảo', 'Hùng', 'Tâm', 'An', 'Duy', 'Yến', 'Quân', 'Sơn'] as const
+
+/** Each pet breed's name. */
+export const BREED_NAME: Record<BreedId, string> = {
+  muop: 'Mèo mướp',
+  mun: 'Mèo mun',
+  tamthe: 'Mèo tam thể',
+  xiem: 'Mèo Xiêm',
+  chota: 'Chó ta',
+  phuquoc: 'Chó Phú Quốc',
+  corgi: 'Corgi',
+  poodle: 'Poodle',
+}
+
+/** Three name ideas for each breed; the first is taken when the name is left empty. */
+export const PET_NAME_IDEAS: Record<BreedId, readonly [string, string, string]> = {
+  muop: ['Mướp', 'Miu', 'Cam'],
+  mun: ['Mun', 'Mực', 'Than'],
+  tamthe: ['Bông', 'Ba Màu', 'Kem'],
+  xiem: ['Sữa', 'Xíu', 'Ngọc'],
+  chota: ['Vàng', 'Lu', 'Ki'],
+  phuquoc: ['Mực', 'Đen', 'Gấu'],
+  corgi: ['Bơ', 'Lúa', 'Bánh Mì'],
+  poodle: ['Bông', 'Kẹo', 'Su Su'],
+}
 
 /** The 8 recipe ingredients, in shelf order, then the leaf game's 3 decoys. */
 export const INGREDIENT_NAME: Record<SteamThing, string> = {

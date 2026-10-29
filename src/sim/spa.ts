@@ -49,8 +49,10 @@ import {
   VIP_PATIENCE,
   VIP_PRICE_FACTOR,
   VIP_REVIEWS,
+  LITTER_FROM_DAY,
+  MAX_PETS,
 } from '../config'
-import { t } from '../strings/vi'
+import { PET_NAME_IDEAS, t } from '../strings/vi'
 import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
@@ -76,6 +78,7 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
+import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
@@ -205,6 +208,8 @@ export class SpaSim {
   festival: FestivalBook = emptyFestivalBook()
   /** The starter chain: the goal being worked on and the buttons it opened. */
   starter: StarterBook
+  /** The shop's pets; a branch's live at the main shop. */
+  pets: PetBook = emptyPetBook()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -259,6 +264,7 @@ export class SpaSim {
     branch.ownerOutfit = main.ownerOutfit
     branch.profileDone = main.profileDone
     branch.purse = main.purse
+    branch.pets = branchPetBook()
     const decor = PLACE_DECOR[place]
     branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
     branch.rebuildRoom()
@@ -912,6 +918,7 @@ export class SpaSim {
       outfitsSeen: this.outfitsSeen,
       away: this.away,
       starter: this.starter,
+      pets: this.pets,
       savedAt: null,
     })
   }
@@ -951,6 +958,7 @@ export class SpaSim {
     sim.away = d.away
     // the starter chain is the main shop's: a branch's has always passed
     sim.starter = d.place === null ? d.starter : pastStarter()
+    sim.pets = d.place === null ? d.pets : branchPetBook()
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -1123,6 +1131,52 @@ export class SpaSim {
   /** Records that the shop has been told about these outfits. */
   markOutfitsSeen(ids: OutfitId[]): void {
     this.outfitsSeen = OUTFIT_IDS.filter(id => this.outfitsSeen.includes(id) || ids.includes(id))
+  }
+
+  /** Whether Chú Sáu's litter waits for the shop: the main shop, from LITTER_FROM_DAY once the profile is done, while it has room for a pet. */
+  litterDue(): boolean {
+    return this.place === null && !this.pets.litter && this.day >= LITTER_FROM_DAY && this.profileDone && this.pets.owned.length < MAX_PETS
+  }
+
+  /** Takes Chú Sáu's litter, free: a pet of one of FREE_BREEDS named `name`; null, and no change, when the litter is not due or the breed is not on offer. */
+  takeLitter(breed: BreedId, name: string): Pet | null {
+    if (!this.litterDue() || !FREE_BREEDS.includes(breed)) return null
+    this.pets.litter = true
+    return this.addPet(breed, name)
+  }
+
+  /** Pays for a pet of `breed` named `name`; what stops it, or null. */
+  adoptPet(breed: BreedId, name: string): PetProblem | null {
+    if (this.place !== null) return 'main'
+    if (this.pets.owned.length >= MAX_PETS) return 'full'
+    const price = BREEDS[breed].price
+    if (this.money < price) return 'money'
+    this.money -= price
+    this.addPet(breed, name)
+    return null
+  }
+
+  /** Renames a pet; false, and no change, for one the shop does not have. */
+  renamePet(id: number, name: string): boolean {
+    const pet = this.pets.owned.find(p => p.id === id)
+    if (!pet) return false
+    pet.name = cleanPetName(name, PET_NAME_IDEAS[pet.breed][0])
+    return true
+  }
+
+  /** Gives a pet away, with nothing paid back; false for one the shop does not have. */
+  giveAwayPet(id: number): boolean {
+    const before = this.pets.owned.length
+    this.pets.owned = this.pets.owned.filter(p => p.id !== id)
+    return this.pets.owned.length < before
+  }
+
+  private addPet(breed: BreedId, name: string): Pet {
+    const pet = { id: this.pets.nextId++, breed, name: cleanPetName(name, PET_NAME_IDEAS[breed][0]) }
+    this.pets.owned.push(pet)
+    // a full shop has no room for the litter: it counts as taken
+    if (this.pets.owned.length >= MAX_PETS) this.pets.litter = true
+    return pet
   }
 
   /** Whether the daily quests, the badges and the outfits are open today. */

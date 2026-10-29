@@ -294,6 +294,13 @@ export const STAIRS_MS = 1000
 /** Each floor beyond the first lets the shop hire this many more technicians. */
 export const STAFF_PER_FLOOR = 2
 
+// Pets
+/** The most pets a shop keeps. */
+export const MAX_PETS = 6
+export const PET_NAME_MAX = 12
+/** The day Chú Sáu first brings his litter. */
+export const LITTER_FROM_DAY = 2
+
 /** Beauty of the default shop, the beauty where the speed-up tops out, and the most it can shorten the arrival gap. */
 export const BEAUTY_BASE = 21
 export const BEAUTY_TOP = 81

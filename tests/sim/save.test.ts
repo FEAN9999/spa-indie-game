@@ -52,6 +52,7 @@ import v27 from '../fixtures/save-v27.json'
 import v28 from '../fixtures/save-v28.json'
 import v29 from '../fixtures/save-v29.json'
 import v30 from '../fixtures/save-v30.json'
+import v31 from '../fixtures/save-v31.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -61,16 +62,17 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; place?: unknown; pets?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest. */
 const withFurniture = (items: object[], nextItemId: number) => [...items, ...DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...item, id: nextItemId + i }))]
-/** A raw save as today's code reads it: the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, and the screens and desk of a shop saved before them added as its newest items, in the main shop and each branch. */
+/** A raw save as today's code reads it: the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, the screens and desk of a shop saved before them added as its newest items, and an empty pet book (a branch's with the litter taken), in the main shop and each branch. */
 const withNewKeys = <T extends object>(raw: T): T => {
   const out = structuredClone(raw) as T & Shop & { chain?: { branches: Shop[] } }
   for (const shop of [out, ...(out.chain?.branches ?? [])]) {
     shop.stock.salt ??= 20
     shop.stock.polish ??= 20
     shop.lessonsPaid ??= []
+    shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
       shop.items.push(...DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...item, id: shop.nextItemId + i })))
@@ -2246,17 +2248,42 @@ describe('the screens and the desk in an older shop', () => {
 })
 
 describe('save version 31', () => {
-  it('is 31, and opens a v30 chain with nothing changed but the version', () => {
-    expect(SAVE_VERSION).toBe(31)
+  it('opens a v30 chain with nothing changed but the version', () => {
     const data = parseSave(structuredClone(v30))
     expect(data).toEqual(withNewKeys(v30)) // like every older save, it keeps its own v until the shop saves again
     expect(data.chain!.branches).toHaveLength(1)
-    expect(open(v30).toSave().v).toBe(31)
+    expect(open(v30).toSave().v).toBe(SAVE_VERSION)
   })
   it('keeps the cabinet turned, and a turned bed', () => {
     const raw = structuredClone(v30) as unknown as { items: { id: number; kind: string; x: number; y: number; flip: boolean; turned?: boolean }[] }
     expect(parseSave(structuredClone(raw)).items.find(i => i.id === 3)!.turned).toBe(true)
     raw.items.push({ id: 40, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true })
     expect(parseSave(raw).items.find(i => i.id === 40)!.turned).toBe(true)
+  })
+})
+
+describe('save version 32', () => {
+  it('is 32, and opens a v31 chain with no pets and the litter still to come', () => {
+    expect(SAVE_VERSION).toBe(32)
+    const data = parseSave(structuredClone(v31))
+    expect(data).toEqual(withNewKeys(v31))
+    expect(data.pets).toEqual({ owned: [], nextId: 1, litter: false })
+    expect(data.chain!.branches[0].pets).toEqual({ owned: [], nextId: 1, litter: true })
+    const chain = Chain.fromSave(data, 8)
+    expect(chain.main.litterDue()).toBe(true)
+    expect(chain.toSave().v).toBe(32)
+  })
+  it('repairs a damaged pet book as it reads it', () => {
+    const raw = structuredClone(v31) as unknown as { pets: unknown }
+    raw.pets = { owned: [{ id: 2, breed: 'corgi', name: '  Bơ   nhỏ ' }, { id: 2, breed: 'mun', name: 'Mun' }, { id: 5, breed: 'hamster', name: 'X' }, { id: 7, breed: 'poodle', name: '   ' }], nextId: 1, litter: false }
+    expect(parseSave(raw).pets).toEqual({ owned: [{ id: 2, breed: 'corgi', name: 'Bơ nhỏ' }, { id: 7, breed: 'poodle', name: 'Bông' }], nextId: 8, litter: false })
+  })
+  it('keeps the pets through a save, and a branch never has any', () => {
+    const chain = Chain.fromSave(parseSave(structuredClone(v31)), 8)
+    chain.main.takeLitter('chota', 'Ki')
+    chain.main.adoptPet('xiem', 'Sữa')
+    const back = Chain.fromSave(parseSave(JSON.parse(JSON.stringify(chain.toSave()))), 8)
+    expect(back.main.pets).toEqual({ owned: [{ id: 1, breed: 'chota', name: 'Ki' }, { id: 2, breed: 'xiem', name: 'Sữa' }], nextId: 3, litter: true })
+    expect(back.branches[0].pets).toEqual({ owned: [], nextId: 1, litter: true })
   })
 })
