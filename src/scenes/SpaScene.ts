@@ -1493,8 +1493,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // a waiting customer on a seat faces the front of the piece under them, which an upright bench turns sideways
     const seat = c.state === 'waiting' && sitting && !seated ? this.sim.items.find(i => seatTiles(i).some(t => tileEq(t, c.pos))) : undefined
     const facing = seat ? seatFacing(seat) : null
-    // on an upright seat the waiting marks move a tile to the side they face, off the faces of those sitting above
-    const markDx = seat?.turned ? (facing === 'left' ? -TILE : TILE) : 0
+    // on an upright seat the waiting marks move a tile to the side they face, off the faces of those sitting above, or to the other side when a wall or the grid's edge is there
+    const side = facing === 'left' ? -1 : 1
+    const wall = (dx: number) => (this.sim.grid.cells[c.pos.y]?.[c.pos.x + dx] ?? 'wall') === 'wall'
+    const markDx = seat?.turned ? (wall(side) ? -side : side) * TILE : 0
     s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : facing ?? (c.state === 'waiting' || seated ? 'down' : p.facing))
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
