@@ -3,7 +3,7 @@ import { FESTIVAL_PATIENCE, HOT_ARRIVAL, HOT_DAYS, INSPECT_BEAUTY, LOW_STOCK, PO
 import { averageDay, baseReward, type DayRecord } from '../../src/sim/quests'
 import { parseSave } from '../../src/sim/save'
 import { reviewScore } from '../../src/sim/economy'
-import { KOL_LOOK, MACHINES, makeHot, powerOutAt, rivalTarget } from '../../src/sim/events'
+import { hotOn, KOL_LOOK, MACHINES, makeHot, powerOutAt, rivalTarget } from '../../src/sim/events'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -203,6 +203,7 @@ describe('Mi Mi', () => {
     expect(ofType(sim.drainEvents(), 'hotStarted')).toEqual([{ type: 'hotStarted', until: 16 }])
     expect(sim.eventBook.hotBy).toBe('gd')
     expect(sim.hotToday()).toBe(true)
+    expect(hotOn(sim.eventBook, 14)).toBe(true)
     expect(sim.day).toBe(15)
     sim.day = 16
     expect(sim.hotToday()).toBe(true)

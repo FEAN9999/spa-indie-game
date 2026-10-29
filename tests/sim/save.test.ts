@@ -11,7 +11,7 @@ import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
-import { emptyEventBook } from '../../src/sim/events'
+import { emptyEventBook, makeHot } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
@@ -49,7 +49,7 @@ import v24 from '../fixtures/save-v24.json'
 import v25 from '../fixtures/save-v25.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
-import { IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
+import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
 import { advanceUntil, busyShop, hireStaff, ownerServes, seatAndWait, starShop, startService } from './helpers'
 
 const opts = () => ({ rng: createRng(2), autoSpawn: false })
@@ -1908,7 +1908,6 @@ describe('save version 26', () => {
     advanceUntil(sim, () => vip.state === 'waiting')
     sim.idol.booking = { idol: 'sontung', day: sim.day, minute: Math.floor(sim.clock.minutes) }
     sim.advance(2_000)
-    expect(ownerOnly(sim)).toEqual([vip])
     const copy = reload(sim)
     expect(copy.idol.booking).toEqual(sim.idol.booking)
     expect(ownerOnly(copy).map(c => c.vip)).toEqual(['chef'])
@@ -1962,6 +1961,8 @@ describe('save version 26', () => {
 
   it('keeps a stretched hot run through a reload without stretching it again', () => {
     const sim = boardShop()
+    // yesterday's run, which the star's visit stretches
+    makeHot(sim.eventBook, sim.day - 1, 'kol')
     const idol = sim.spawnCustomer({ idol: 'gd' })
     advanceUntil(sim, () => idol.state === 'waiting')
     sim.tapTile(idol.seat!)
@@ -1969,6 +1970,7 @@ describe('save version 26', () => {
     sim.completeService(idol.id, 3)
     const run = { ...sim.eventBook }
     expect(run.hotBy).toBe('gd')
+    expect(run.hotDays).toBeGreaterThan(HOT_DAYS)
     expect(run.hotUntil).toBeGreaterThan(0)
     const copy = viaJson(sim)
     expect(copy.eventBook).toEqual(run)

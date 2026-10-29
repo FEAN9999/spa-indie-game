@@ -566,7 +566,6 @@ const goldBoard =
   }).join('') +
   `<path d="M1,0.04 L1.07,0.2 L1.25,0.22 L1.11,0.33 L1.16,0.5 L1,0.4 L0.84,0.5 L0.89,0.33 L0.75,0.22 L0.93,0.2Z" fill="${C.mustard}" ${ink(0.025)}/>`
 
-// Ngôi sao: the signed photo again, with a small gold star on the top edge of its frame
 const skinHex = (i: number) => `#${SKIN[i].toString(16).padStart(6, '0')}`
 const star5 = (cx: number, cy: number, R: number, r: number, extra = '') => {
   const pts = Array.from({ length: 10 }, (_, i) => {
@@ -576,6 +575,7 @@ const star5 = (cx: number, cy: number, R: number, r: number, extra = '') => {
   })
   return `<path d="M${pts.join(' L')}Z" fill="${C.mustard}" ${extra}/>`
 }
+// Ngôi sao: the signed photo again, with a small gold star on the top edge of its frame
 const idolPhoto = (portrait: string) => photo(portrait) + star5(0.5, 0.15, 0.1, 0.045, ink(0.02))
 
 /** Two dot eyes at the head's centre line. */
@@ -621,8 +621,8 @@ const photoIdolJennie =
 // HIEUTHUHAI: a cobalt cap worn backwards, only its crown and strap gap showing, over a cream jersey with a cobalt 2
 const photoIdolHieuthuhai =
   bust('#FBF7EE', skinHex(0)) +
-  `<path d="M0.46,0.91 Q0.5,0.85 0.54,0.91 Q0.54,0.95 0.46,1 H0.55" stroke="#2D5FA8" stroke-width="0.03" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
-  `<path d="M0.35,0.56 Q0.35,0.4 0.5,0.4 Q0.65,0.4 0.65,0.56Z" fill="#2D5FA8" ${ink(0.02)}/>` +
+  `<path d="M0.46,0.91 Q0.5,0.85 0.54,0.91 Q0.54,0.95 0.46,1 H0.55" stroke="${C.cobalt}" stroke-width="0.03" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
+  `<path d="M0.35,0.56 Q0.35,0.4 0.5,0.4 Q0.65,0.4 0.65,0.56Z" fill="${C.cobalt}" ${ink(0.02)}/>` +
   `<path d="M0.42,0.56 Q0.5,0.5 0.58,0.56" stroke="${C.cream}" stroke-width="0.015" fill="none"/>` +
   `<circle cx="0.5" cy="0.4" r="0.015" fill="${C.cream}"/>` +
   eyes(0.63) +

@@ -443,7 +443,7 @@ export class SpaSim {
     return this.powerOut() && MACHINES.includes(service)
   }
 
-  /** True on the days after Mi Mi's 3 stars. */
+  /** True on the days after Mi Mi's, or a star's, 3 stars. */
   hotToday(): boolean {
     return hotOn(this.eventBook, this.day)
   }
@@ -715,7 +715,7 @@ export class SpaSim {
   }
 
   /**
-   * Where a VIP stands when every seat is taken: in walking order from the door, the first plain floor beside the desk
+   * Where a VIP or a star stands when every seat is taken: in walking order from the door, the first plain floor beside the desk
    * (never a bed's work tile) that is not the receptionist's spot, the owner's start or the door; with none, the first floor in from the door.
    */
   private standSpot(): Tile {
@@ -1331,7 +1331,7 @@ export class SpaSim {
     this.emit({ type: 'roomChanged' })
   }
 
-  /** Gives each standing VIP or Mi Mi whose spot is now under furniture, or out of the door's reach, a new one; returns them. */
+  /** Gives each standing VIP, star or Mi Mi whose spot is now under furniture, or out of the door's reach, a new one; returns them. */
   private restandVips(): Customer[] {
     const reached = doorReach(this.grid, this.grid.door)
     const moved = this.customers.filter(c => ['toSeat', 'waiting'].includes(c.state) && this.isStanding(c) && !(isWalkable(this.grid, c.seat!) && reached(c.seat!)))
@@ -1343,7 +1343,8 @@ export class SpaSim {
   private repickLostServices(): void {
     const available = this.availableServices()
     for (const c of this.customers)
-      if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service)) c.service = drawService(c.kind, available, this.rng)
+      if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service))
+        c.service = c.idol !== null ? available[0] : drawService(c.kind, available, this.rng)
   }
 
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
@@ -1451,9 +1452,9 @@ export class SpaSim {
       const b = dueVip(this.vip, this.day, this.clock.minutes)
       if (b && !this.ownerOnlyHere()) this.spawnCustomer({ vip: b.vip })
       // so does a booked idol, waiting outside while a VIP is in; one whose service the shop no longer has does not come
-      const idol = dueIdol(this.idol, this.day, this.clock.minutes)
-      if (idol && !this.ownerOnlyHere()) {
-        if (this.availableServices().includes(IDOLS[idol.idol].service)) this.spawnCustomer({ idol: idol.idol })
+      const due = dueIdol(this.idol, this.day, this.clock.minutes)
+      if (due && !this.ownerOnlyHere()) {
+        if (this.availableServices().includes(IDOLS[due.idol].service)) this.spawnCustomer({ idol: due.idol })
         else this.idol.booking = null
       }
       // so does Mi Mi

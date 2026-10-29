@@ -74,7 +74,7 @@ export function idolEligible(board: boolean, technicians: number, available: Ser
 /**
  * The end-of-day booking, for tomorrow. Returns null without touching the book or the rng while one is pending,
  * while the gap since the last visit has not passed, or while the shop is not eligible.
- * Draws, in order: who (only once all nine have visited), the half hour, then the gap to the next booking.
+ * Draws, in order: who (only once every open star has visited), the half hour, then the gap to the next booking.
  * The half hour keeps IDOL_VIP_APART_MIN from tomorrow's VIP booking.
  */
 export function planIdol(

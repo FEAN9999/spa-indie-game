@@ -416,6 +416,23 @@ describe('a VIP and a star never in the shop together', () => {
     expect(sim.idol.booking).toEqual({ idol: 'sontung', day: day + 2, minute: expect.any(Number) })
   })
 
+  it('a waiting star whose last bed is sold takes the first open service, drawing nothing from the shop', () => {
+    const [rngA, rngB] = [createRng(5), createRng(5)]
+    const [sim, twin] = [boardShop(rngA), boardShop(rngB)]
+    // a mask bed too, so two services stay open when the massage bed goes
+    for (const s of [sim, twin]) expect(s.buy('maskBed', 8, 2, false)).toBeNull()
+    const star = seatAndWait(sim, { idol: 'sontung', service: 'massage' })
+    const other = seatAndWait(twin, { idol: 'sontung', service: 'massage' })
+    // on the twin the star already wants an open service, so the sale re-picks no one
+    other.service = 'shampoo'
+    for (const s of [sim, twin]) for (const bed of s.items.filter(i => i.kind === 'massageBed')) expect(s.sell(bed.id)).toBeNull()
+    const available = sim.availableServices()
+    expect(available).not.toContain('massage')
+    expect(available.length).toBeGreaterThan(1)
+    expect(star.service).toBe(available[0])
+    expect(rngA()).toBe(rngB())
+  })
+
   it('a star whose service is gone by the minute does not come, and the booking is dropped', () => {
     const [rngA, rngB] = [createRng(5), createRng(5)]
     const [sim, twin] = [boardShop(rngA, true), boardShop(rngB, true)]
