@@ -6,10 +6,17 @@ import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { carryTo, retagFloors, followFloor, climbPose, pills, showPills, stairsToasts } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, deskCandle, pills, showPills, stairsToasts } from '../../src/view/floors'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
+
+describe('deskCandle', () => {
+  it('stands the desk candle on the middle of the desk', () => {
+    expect(deskCandle({ id: 1, kind: 'desk', x: 8, y: 14, flip: false })).toEqual({ x: 9.5, y: 13.9 })
+    expect(deskCandle({ id: 1, kind: 'desk', x: 4, y: 9, flip: false, turned: true })).toEqual({ x: 4.5, y: 9.9 })
+  })
+})
 
 describe('followFloor', () => {
   it('goes to the owner floor on the frame a walk to a bed reaches it', () => {

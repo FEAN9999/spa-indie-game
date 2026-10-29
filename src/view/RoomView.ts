@@ -4,14 +4,13 @@ import { C } from '../art/palette'
 import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
-import { tileRuns, type Grid } from '../sim/grid'
-import { ITEMS, workTile, type Item } from '../sim/items'
+import { size, workTile, type Item } from '../sim/items'
 import type { PlaceId } from '../sim/places'
 import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
 import { t } from '../strings/vi'
 import { FESTIVAL_COLORS } from './festivals'
-import { retagFloors } from './floors'
+import { deskCandle, retagFloors } from './floors'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 
@@ -39,7 +38,7 @@ const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
 const DARK = { color: 0x1e2440, alpha: 0.48 }
-/** The candles' places in tiles, the same on every floor: on the desk, on the tea table under the waiting bench, in the corner by the first bed's foot, by the stairs. */
+/** The candles' places in tiles, the same on every floor: on the desk (where the oldest desk stands today, moved in sync), on the tea table under the waiting bench, in the corner by the first bed's foot, by the stairs. */
 const CANDLES = [
   { x: 9.5, y: 13.9 },
   { x: 4, y: 15.3 },
@@ -58,11 +57,13 @@ interface ItemSprite {
   part: Phaser.GameObjects.Image | null
   /** The floor the item stands on. */
   floor: number
+  /** The item is stood on its side; a bench's mat is not drawn then. */
+  turned: boolean
   /** The part is a bed's lantern, which hangs on floor 1's wall only. */
   lantern: boolean
 }
 
-/** Draws one floor of the room at a time: its fixed screen and desk (floor 1), the stairs, and one sprite per item on it; converts between tiles and world pixels. */
+/** Draws one floor of the room at a time: the stairs, and one sprite per item on it; converts between tiles and world pixels. */
 export class RoomView {
   /** The floor on view, from 1. */
   floor = 1
@@ -71,8 +72,6 @@ export class RoomView {
   private readonly rope: Phaser.GameObjects.Image
   /** The pigeon coop over the rooftop's stairs cells. */
   private readonly coop: Phaser.GameObjects.Image
-  /** The desk and screen, which stand on floor 1 only. */
-  private readonly fixtures: Phaser.GameObjects.Image[] = []
   private readonly items = new Map<number, ItemSprite>()
   private readonly slots = new Map<string, Phaser.GameObjects.Image>()
   /** The item build mode is carrying, kept hidden across syncs. */
@@ -93,7 +92,6 @@ export class RoomView {
   /** `place` is where the shop is, null for the main shop: the beach has its own floor 1, and a branch has no rank plaque. */
   constructor(
     private readonly scene: Phaser.Scene,
-    grid: Grid,
     private readonly place: PlaceId | null,
   ) {
     this.room = scene.add.image(MAP_X, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
@@ -114,12 +112,6 @@ export class RoomView {
     this.rope = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y + 2), 'stairsRope').setOrigin(0, 0).setDepth(this.rowY(STAIRS_TILE.y + 3) + ITEM_DEPTH_BIAS).setVisible(false)
     // Over whoever is on the stairs cells or lifted by a climb (they go behind it), one pixel under whoever stands on the foot, whose depth is the foot's bottom edge.
     this.coop = scene.add.image(MAP_X + 10.75 * TILE, this.rowY(6), 'coop').setOrigin(0, 0).setDisplaySize(1.5 * TILE, 4 * TILE).setDepth(this.rowY(STAIRS_TILE.y + 4) - 1).setVisible(false)
-    for (const [key, tiles] of [['desk', grid.desks], ['decor-screen', grid.decor.screen]] as const) {
-      for (const r of tileRuns(tiles)) {
-        const bottom = this.rowY(r.row + 1)
-        this.fixtures.push(scene.add.image(MAP_X + ((r.left + r.right + 1) / 2) * TILE, bottom, key).setOrigin(0.5, 1).setDepth(bottom))
-      }
-    }
   }
 
   /** Floor 1's room: the place's own at a branch, or the main shop's. */
@@ -127,11 +119,10 @@ export class RoomView {
     return this.place ? `room-${this.place}` : 'room'
   }
 
-  /** Shows `floor`: its room, the desk and screen on floor 1, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
+  /** Shows `floor`: its room, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
     this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
-    for (const f of this.fixtures) f.setVisible(floor === 1)
     // the rooftop has the coop where the stairs are, and no rope
     this.coop.setVisible(floor === 3)
     this.stairs.setVisible(maxFloors > 1 && floor < 3)
@@ -261,7 +252,7 @@ export class RoomView {
     return MAP_Y + (y - (this.floor - 1) * FLOOR_ROWS) * TILE
   }
 
-  /** Creates, moves, flips and removes the item sprites to match `items`, and shows the bed slots that are open. */
+  /** Creates, moves, turns, flips and removes the item sprites to match `items`, and shows the bed slots that are open. */
   sync(items: Item[], slots: { tile: Tile; open: boolean }[]): void {
     const ids = new Set(items.map(i => i.id))
     for (const [id, s] of this.items) {
@@ -273,9 +264,14 @@ export class RoomView {
     retagFloors(this.items, items)
     for (const item of items) {
       const s = this.items.get(item.id) ?? this.addItem(item)
-      const { w, h } = ITEMS[item.kind]
+      const { w, h } = size(item)
       const bottom = this.rowY(item.y + h)
-      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(bottom + ITEM_DEPTH_BIAS).setFlipX(item.flip)
+      const key = itemTexture(item.kind, item.turned)
+      if (s.body.texture.key !== key) s.body.setTexture(key)
+      s.turned = item.turned === true
+      // an upright piece draws on its top row's depth, so whoever stands on its lower rows is in front of it
+      const depth = item.turned ? this.rowY(item.y + 1) : bottom
+      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
       if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY((floorOf(item.y) - 1) * FLOOR_ROWS))
       else if (s.part) this.placeMat(s.part, item)
@@ -290,6 +286,11 @@ export class RoomView {
       }
       slot.setVisible(open && this.floor === 1)
     }
+    const desk = items.filter(i => i.kind === 'desk' && floorOf(i.y) === 1).reduce<Item | null>((old, i) => (!old || i.id < old.id ? i : old), null)
+    if (desk) {
+      const c = deskCandle(desk)
+      for (const candle of this.candles.slice(0, 2)) candle.setPosition(MAP_X + c.x * TILE, MAP_Y + c.y * TILE)
+    }
     this.hide(this.hidden)
   }
 
@@ -299,7 +300,7 @@ export class RoomView {
     for (const [key, s] of this.items) {
       const shown = key !== id && s.floor === this.floor
       s.body.setVisible(shown)
-      s.part?.setVisible(shown && (!s.lantern || s.floor === 1))
+      s.part?.setVisible(shown && (!s.lantern || s.floor === 1) && !s.turned)
     }
   }
 
@@ -314,10 +315,10 @@ export class RoomView {
 
   private addItem(item: Item): ItemSprite {
     const add = this.scene.add
-    const body = add.image(0, 0, itemTexture(item.kind)).setOrigin(0.5, 1)
+    const body = add.image(0, 0, itemTexture(item.kind, item.turned)).setOrigin(0.5, 1)
     const partKey = item.kind === 'bed' ? 'lantern' : item.kind === 'bench' ? 'benchMat' : null
     const part = partKey ? add.image(0, 0, partKey).setOrigin(0, 0).setDepth(PART_DEPTH) : null
-    const s = { body, part, floor: floorOf(item.y), lantern: partKey === 'lantern' }
+    const s = { body, part, floor: floorOf(item.y), turned: item.turned === true, lantern: partKey === 'lantern' }
     this.items.set(item.id, s)
     return s
   }

@@ -1,7 +1,7 @@
 import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY, MERIT_BEAUTY, TROPHY_BEAUTY } from '../config'
 import type { StringKey } from '../strings/vi'
 import { SPA_LAYOUT_1A } from './layout'
-import type { Tile } from './types'
+import type { Facing, Tile } from './types'
 
 export type ItemKind =
   | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers' | 'screen' | 'desk'
@@ -151,6 +151,11 @@ export function deskSpot(item: Item): Tile | null {
   if (item.kind !== 'desk') return null
   if (!item.turned) return { x: item.x + 1, y: item.y - 1 }
   return { x: item.flip ? item.x + 1 : item.x - 1, y: item.y + 1 }
+}
+
+/** The way a customer sits on a seat piece: down at its front, or right (left when flipped) once it stands upright. */
+export function seatFacing(item: Item): Facing {
+  return item.turned ? (item.flip ? 'left' : 'right') : 'down'
 }
 
 export function seatTiles(item: Item): Tile[] {

@@ -4,11 +4,16 @@ import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
 import { IDOLS, IDOL_IDS } from '../../src/sim/idols'
 import { claimed } from '../../src/sim/build'
 import { buildGrid, parseLayout } from '../../src/sim/grid'
-import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, deskSpot, footprint, nextFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
+import { DEFAULT_ITEMS, ITEMS, ITEM_KINDS, type Item, beautyOf, bedTile, canTurn, deskSpot, footprint, nextFacing, seatFacing, size, setProgress, shellOf, workTile } from '../../src/sim/items'
 import { SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { t } from '../../src/strings/vi'
 
 describe('items', () => {
+  it('seats a waiting customer facing the front of the bench', () => {
+    const bench: Item = { id: 1, kind: 'bench', x: 2, y: 13, flip: false }
+    expect([seatFacing(bench), seatFacing({ ...bench, turned: true }), seatFacing({ ...bench, turned: true, flip: true })]).toEqual(['down', 'right', 'left'])
+  })
+
   it("makes the screens and the desk the default shop's last items", () => {
     const n = DEFAULT_ITEMS.length
     expect(DEFAULT_ITEMS.slice(-3)).toEqual([

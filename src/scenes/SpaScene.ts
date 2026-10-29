@@ -17,9 +17,9 @@ import { monthOf } from '../sim/calendar'
 import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
-import { onBed } from '../sim/grid'
+import { onBed, tileEq } from '../sim/grid'
 import type { OutfitId } from '../sim/outfits'
-import { ITEMS } from '../sim/items'
+import { ITEMS, seatFacing, seatTiles } from '../sim/items'
 import type { PlaceId } from '../sim/places'
 import { bookOpen } from '../sim/regulars'
 import { createRng } from '../sim/rng'
@@ -271,7 +271,7 @@ export class SpaScene extends Phaser.Scene {
       this.badgeQueue = [...this.mainCards.badgeQueue]
       this.inspectNote = this.mainCards.inspectNote
     }
-    this.room = new RoomView(this, this.sim.grid, this.sim.place)
+    this.room = new RoomView(this, this.sim.place)
     this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
@@ -1490,7 +1490,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     p.y -= TILE * s.lift
 
     // face down on the massage and stone beds, face up anywhere else
-    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : c.state === 'waiting' || seated ? 'down' : p.facing)
+    // a waiting customer on a seat faces the front of the piece under them, which an upright bench turns sideways
+    const seat = c.state === 'waiting' && sitting && !seated ? this.sim.items.find(i => seatTiles(i).some(t => tileEq(t, c.pos))) : undefined
+    s.view.setFacing(lying ? (c.service === 'massage' || c.service === 'stone' || c.service === 'scrub' ? 'up' : 'down') : seat ? seatFacing(seat) : c.state === 'waiting' || seated ? 'down' : p.facing)
     s.view.setPose(lying ? 'lie' : sitting ? 'sit' : street || c.path.length > 0 ? 'walk' : 'stand')
     s.view.setMask(c.service === 'mask' && c.state === 'inService')
     // only the towel-wrapped head shows over the mud

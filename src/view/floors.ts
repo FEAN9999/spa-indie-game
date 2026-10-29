@@ -1,6 +1,6 @@
 import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
-import { ITEMS, type Item, type ItemKind } from '../sim/items'
+import { ITEMS, size, type Item, type ItemKind } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
@@ -60,6 +60,13 @@ export function pills(sim: SpaSim, viewed: number): Pill[] {
 /** The same piece moved by whole floors onto `floor`, keeping its row within the floor. */
 export function carryTo(item: Item, floor: number): Item {
   return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }
+}
+
+/** Where the power cut's first candle stands: the middle of the desk, in floor-local tiles. */
+export function deskCandle(desk: Item): Vec {
+  const { w, h } = size(desk)
+  const localY = desk.y - (floorOf(desk.y) - 1) * FLOOR_ROWS
+  return { x: desk.x + w / 2, y: localY + h / 2 - 0.6 }
 }
 
 /** Gives each sprite the floor its item now stands on, so one carried to another floor shows there. */
