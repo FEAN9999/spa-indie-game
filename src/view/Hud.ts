@@ -225,7 +225,7 @@ export class Hud {
     this.rating.setText(r === null ? t('noRating') : r.toFixed(1))
     this.dayTime.setText(dayTimeText(this.sim.day, this.sim.clock.label(), this.sim.place === null))
     this.clockStar.setPosition(this.dayTime.x + this.dayTime.width + 34, 152)
-    this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.eventBook, this.sim.day, this.sim.clock.minutes))
+    this.clockStar.setVisible(clockStar(this.sim.vip, this.sim.idol, this.sim.eventBook, this.sim.day, this.sim.clock.minutes))
     const row = layoutTopBar(this.money.width, this.rating.width)
     this.money.setScale(row.moneyScale)
     this.star.x = row.starX

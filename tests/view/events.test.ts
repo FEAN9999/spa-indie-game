@@ -8,6 +8,7 @@ import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
 import { EVENT_ICON, eventCard, eventNote, hotCard, inspectResult, inspectRows, powerWarnText, rivalBeatenCard } from '../../src/view/events'
 import { festivalStartCard } from '../../src/view/festivals'
+import { emptyIdolBook } from '../../src/sim/idols'
 import { clockStar, summaryNotes } from '../../src/view/vip'
 
 // the cards name textures, and svg.ts imports Phaser for loading textures, which needs a browser
@@ -28,18 +29,18 @@ describe("tomorrow's event on the summary", () => {
   })
 
   it('is a marked note the day before only', () => {
-    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 12, true, 4)).toEqual([{ text: eventNote(kol, 4), booking: true }])
-    expect(summaryNotes(false, emptyVipBook(), withPlan(kol), 13, true, 4)).toEqual([])
-    expect(summaryNotes(false, emptyVipBook(), withPlan(rival), 12, true, 7)).toEqual([{ text: eventNote(rival, 7), booking: true }])
+    expect(summaryNotes(false, emptyVipBook(), emptyIdolBook(), withPlan(kol), 12, true, true, 4)).toEqual([{ text: eventNote(kol, 4), booking: true }])
+    expect(summaryNotes(false, emptyVipBook(), emptyIdolBook(), withPlan(kol), 13, true, true, 4)).toEqual([])
+    expect(summaryNotes(false, emptyVipBook(), emptyIdolBook(), withPlan(rival), 12, true, true, 7)).toEqual([{ text: eventNote(rival, 7), booking: true }])
   })
 })
 
 describe("the clock star for Mi Mi", () => {
   it('lights from an hour before her minute, and never for the inspector', () => {
-    expect(clockStar(emptyVipBook(), withPlan(kol), 13, 870 - VIP_WARN_MIN - 1)).toBe(false)
-    expect(clockStar(emptyVipBook(), withPlan(kol), 13, 870 - VIP_WARN_MIN)).toBe(true)
-    expect(clockStar(emptyVipBook(), withPlan(kol), 12, 870)).toBe(false)
-    expect(clockStar(emptyVipBook(), withPlan(inspect), 13, 900)).toBe(false)
+    expect(clockStar(emptyVipBook(), emptyIdolBook(), withPlan(kol), 13, 870 - VIP_WARN_MIN - 1)).toBe(false)
+    expect(clockStar(emptyVipBook(), emptyIdolBook(), withPlan(kol), 13, 870 - VIP_WARN_MIN)).toBe(true)
+    expect(clockStar(emptyVipBook(), emptyIdolBook(), withPlan(kol), 12, 870)).toBe(false)
+    expect(clockStar(emptyVipBook(), emptyIdolBook(), withPlan(inspect), 13, 900)).toBe(false)
   })
 })
 
