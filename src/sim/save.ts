@@ -23,9 +23,11 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 29
+export const SAVE_VERSION = 30
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
+/** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
+export const FURNISHED_SAVE_VERSION = 30
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -235,13 +237,21 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
   return { at, told: c.told === true, branches: kept }
 }
 
+/** A shop saved from version 3 to before the furnished version gets the default screens and desk as its newest items; anything else, damaged saves included, passes through for parseVersioned to judge. */
+function withScreensAndDesk(raw: unknown): unknown {
+  if (!isObject(raw) || typeof raw.v !== 'number' || raw.v < 3 || raw.v >= FURNISHED_SAVE_VERSION) return raw
+  if (!isNumber(raw.nextItemId) || !isItems(raw.items)) return raw
+  const added = DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: (raw.nextItemId as number) + i }))
+  return { ...raw, items: [...raw.items, ...added], nextItemId: (raw.nextItemId as number) + added.length }
+}
+
 /** Checks that `raw` looks like a saved shop; throws SaveError otherwise. */
 function parseShop(raw: unknown): SaveData {
   // read before parseVersioned, whose helpers rewrite `v` for the oldest saves
   // a stored parsed save keeps the flag, with `v` already rewritten, until the sim saves itself again
   const before = isObject(raw) && typeof raw.v === 'number' && raw.v < STAIRS_SAVE_VERSION
   const flagged = before || (isObject(raw) && raw.clearStairs === true)
-  const data = parseVersioned(raw)
+  const data = parseVersioned(withScreensAndDesk(raw))
   // floors are a whole number from 1 to MAX_FLOORS, else one; an older save has one, and its stairs spot is cleared on load
   data.floors = !before && Number.isInteger(data.floors) && data.floors >= 1 && data.floors <= MAX_FLOORS ? data.floors : 1
   if (flagged) data.clearStairs = true
@@ -600,7 +610,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

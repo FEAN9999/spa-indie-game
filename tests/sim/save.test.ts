@@ -3,7 +3,7 @@ import { CHAT_MS_MAX, DAY_START_MIN, LATE_MIN, PATIENCE_MS, RATING_WINDOW, SERVI
 import { tipFor } from '../../src/sim/economy'
 import { placeProblem } from '../../src/sim/build'
 import { FLOOR_PRICE } from '../../src/config'
-import { DEFAULT_ITEMS } from '../../src/sim/items'
+import { beautyOf, DEFAULT_ITEMS, type Item } from '../../src/sim/items'
 import { parseLayout } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
@@ -50,6 +50,7 @@ import v25 from '../fixtures/save-v25.json'
 import v26 from '../fixtures/save-v26.json'
 import v27 from '../fixtures/save-v27.json'
 import v28 from '../fixtures/save-v28.json'
+import v29 from '../fixtures/save-v29.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -59,14 +60,21 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
-/** A raw save as today's code reads it: the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, in the main shop and each branch. */
+type Shop = { v?: number; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+/** The items of a shop saved before the screens and desk were furniture, with them added as the newest. */
+const withFurniture = (items: object[], nextItemId: number) => [...items, ...DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...item, id: nextItemId + i }))]
+/** A raw save as today's code reads it: the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, and the screens and desk of a shop saved before them added as its newest items, in the main shop and each branch. */
 const withNewKeys = <T extends object>(raw: T): T => {
   const out = structuredClone(raw) as T & Shop & { chain?: { branches: Shop[] } }
   for (const shop of [out, ...(out.chain?.branches ?? [])]) {
     shop.stock.salt ??= 20
     shop.stock.polish ??= 20
     shop.lessonsPaid ??= []
+    const v = shop.v ?? (out as { v?: number }).v ?? 0
+    if (v >= 3 && v < 30) {
+      shop.items.push(...DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...item, id: shop.nextItemId + i })))
+      shop.nextItemId += 3
+    }
     for (const p of [...shop.staff, ...shop.candidates]) {
       p.tiers.scrub ??= 0
       p.tiers.foot ??= 0
@@ -304,7 +312,7 @@ describe('save version 3 as saved by batch 3', () => {
   it('opens a batch-3 shop as it was saved', () => {
     const sim = open(v3)
     expect([sim.day, sim.money]).toEqual([v3.day, v3.money])
-    expect(sim.items).toEqual(v3.items)
+    expect(sim.items).toEqual(withFurniture(v3.items, v3.nextItemId))
     expect(sim.items.map(i => i.kind)).toEqual(expect.arrayContaining(['bed', 'teaChest']))
     expect(sim.customers.map(c => [c.id, c.stationId, c.seat])).toEqual(v3.customers.map(c => [c.id, c.stationId, c.seat]))
     expect(sim.servingCustomerId).toBe(v3.servingCustomerId)
@@ -655,7 +663,7 @@ describe('save version 8', () => {
 describe('save version 9', () => {
   it('opens a v8 shop with an empty VIP book', () => {
     const sim = open(v8)
-    expect([sim.day, sim.money, sim.book, sim.items]).toEqual([v8.day, v8.money, parseSave(structuredClone(v8)).book, v8.items])
+    expect([sim.day, sim.money, sim.book, sim.items]).toEqual([v8.day, v8.money, parseSave(structuredClone(v8)).book, withFurniture(v8.items, v8.nextItemId)])
     expect(sim.vip).toEqual(emptyVipBook())
     expect(sim.customers.length).toBeGreaterThan(0)
     expect(sim.customers.every(c => c.vip === null)).toBe(true)
@@ -920,7 +928,7 @@ describe('the recipe book', () => {
       // candidates are redrawn on load, so their day moves with them
       if (['v', 'stock', 'staff', 'candidates', 'candidatesDay', 'recipes'].includes(key)) continue
       // a customer saved before version 18 is not Mi Mi, and one saved before the idols is not an idol
-      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : raw[key]
+      const kept = key === 'stats' ? { ...raw.stats, quests: 0, ownerServed: 0 } : key === 'customers' ? raw.customers.map((c: object) => ({ ...c, kol: false, idol: null })) : key === 'items' ? withFurniture(raw.items, raw.nextItemId) : key === 'nextItemId' ? raw.nextItemId + 3 : raw[key]
       expect([key, saved[key]]).toEqual([key, kept])
     }
     expect(saved.v).toBe(SAVE_VERSION)
@@ -2166,5 +2174,41 @@ describe('save version 29', () => {
     const d = parseSave(raw)
     expect('turned' in d.items.find(i => i.id === other[0].id)!).toBe(false)
     expect('turned' in d.items.find(i => i.id === other[1].id)!).toBe(false)
+  })
+})
+
+describe('the screens and the desk in an older shop', () => {
+  it('stands them where they always stood, as the newest items, in the main shop and each branch', () => {
+    const data = parseSave(structuredClone(v29))
+    expect(data.items.slice(-3)).toEqual([
+      { id: 15, kind: 'screen', x: 1, y: 6, flip: false },
+      { id: 16, kind: 'screen', x: 7, y: 6, flip: false },
+      { id: 17, kind: 'desk', x: 8, y: 14, flip: false },
+    ])
+    expect(data.items.slice(0, -3)).toEqual(v29.items)
+    expect(data.nextItemId).toBe(18)
+    for (const b of data.chain!.branches) expect(b.items.slice(-3).map(i => [i.kind, i.x, i.y])).toEqual([['screen', 1, 6], ['screen', 7, 6], ['desk', 8, 14]])
+  })
+  it('opens with the same beauty and the owner behind the desk', () => {
+    const sim = open(v29)
+    expect(sim.beauty()).toBe(beautyOf(v29.items as Item[]))
+    expect(sim.ownerStart()).toEqual({ x: 9, y: 13 })
+  })
+  it('opens a branch with the owner behind its desk too', () => {
+    const chain = Chain.fromSave(parseSave(structuredClone(v29)), 8)
+    expect(chain.shop('beach')!.ownerStart()).toEqual({ x: 9, y: 13 })
+  })
+  it('adds them once to a shop rebuilt from the default furniture', () => {
+    for (const raw of [v1, v2]) expect(parseSave(structuredClone(raw)).items.filter(i => i.kind === 'desk')).toHaveLength(1)
+  })
+  it('never adds them again to a shop saved with them', () => {
+    const sim = open(v29)
+    expect(sim.sell(sim.items.find(i => i.kind === 'screen')!.id)).toBeNull()
+    expect(parseSave(JSON.parse(JSON.stringify(sim.toSave()))).items.filter(i => i.kind === 'screen')).toHaveLength(1)
+  })
+  it('still clears the stairs of a v13 shop, whose desk is at (8, 14)', () => {
+    const sim = open(v13)
+    expect(sim.items.some(i => i.id === 14 || i.id === 15)).toBe(false)
+    expect(sim.items.find(i => i.kind === 'desk')).toMatchObject({ x: 8, y: 14 })
   })
 })
