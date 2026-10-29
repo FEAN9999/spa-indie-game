@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
+import { Chain } from '../../src/sim/chain'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { noTiers, TRAIT_IDS } from '../../src/sim/staff'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { courseName, specialtyOf, studyButton, traitLines } from '../../src/view/staffCard'
-import { hireStaff } from '../sim/helpers'
+import { courseName, moveOptions, specialtyOf, studyButton, traitLines } from '../../src/view/staffCard'
+import { hireStaff, starShop } from '../sim/helpers'
 
 const newSim = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
 
@@ -61,5 +62,51 @@ describe('staff card', () => {
       expect(good.length).toBeGreaterThan(0)
       expect(flaw.length).toBeGreaterThan(0)
     }
+  })
+})
+
+/** A chain with the main shop at 5 stars and the beach and uptown open. */
+const withTwoBranches = () => {
+  const chain = new Chain(starShop(5, 50_000_000), 7)
+  expect(chain.open('beach')).toBeNull()
+  expect(chain.open('uptown')).toBeNull()
+  return { chain, main: chain.main, beach: chain.shop('beach')!, uptown: chain.shop('uptown')! }
+}
+
+describe('move options', () => {
+  it('lists every open shop but their own, the main shop first', () => {
+    const { chain, beach } = withTwoBranches()
+    const tech = hireStaff(beach, 'technician')
+    expect(moveOptions(chain, 'beach', tech.id)).toEqual([
+      { place: null, full: false },
+      { place: 'uptown', full: false },
+    ])
+  })
+
+  it('marks a shop full when its technicians are three', () => {
+    const { chain, main, uptown } = withTwoBranches()
+    for (let i = 0; i < 3; i++) hireStaff(uptown, 'technician')
+    const tech = hireStaff(main, 'technician')
+    expect(moveOptions(chain, null, tech.id)).toEqual([
+      { place: 'beach', full: false },
+      { place: 'uptown', full: true },
+    ])
+  })
+
+  it('counts a booked mover against the room', () => {
+    const { chain, main, uptown } = withTwoBranches()
+    hireStaff(uptown, 'technician')
+    hireStaff(uptown, 'technician')
+    const first = hireStaff(main, 'technician')
+    const second = hireStaff(main, 'technician')
+    expect(chain.move(null, first.id, 'uptown')).toBeNull()
+    expect(moveOptions(chain, null, second.id).find(o => o.place === 'uptown')).toEqual({ place: 'uptown', full: true })
+  })
+
+  it('marks the main shop full for a receptionist when it has one', () => {
+    const { chain, main, beach } = withTwoBranches()
+    hireStaff(main, 'receptionist')
+    const rec = hireStaff(beach, 'receptionist')
+    expect(moveOptions(chain, 'beach', rec.id)[0]).toEqual({ place: null, full: true })
   })
 })

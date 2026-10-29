@@ -1,3 +1,5 @@
+import type { Chain } from '../sim/chain'
+import type { PlaceId } from '../sim/places'
 import { SERVICE_IDS, SERVICES, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
 import { courses, tuition, type Candidate, type Course, type Staff, type TraitId } from '../sim/staff'
@@ -33,3 +35,9 @@ export function studyButton(sim: SpaSim, s: Staff): StudyButton {
   if (sim.money < Math.min(...open.map(c => tuition(s, c)))) return { kind: 'noMoney' }
   return { kind: 'open', courses: open }
 }
+
+/** The shops `id` can be sent to from `from`: every open one but `from`, the main shop first, then the branches in place order, `full` when it has no room. */
+export const moveOptions = (chain: Chain, from: PlaceId | null, id: number): { place: PlaceId | null; full: boolean }[] =>
+  [null, ...chain.branches.map(b => b.place!)]
+    .filter(place => place !== from)
+    .map(place => ({ place, full: chain.moveProblem(from, id, place) === 'full' }))

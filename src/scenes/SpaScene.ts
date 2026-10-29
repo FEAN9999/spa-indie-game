@@ -602,6 +602,7 @@ export class SpaScene extends Phaser.Scene {
     if (studyIntro) sim.markHint('study')
     const data: StaffData = {
       sim,
+      chain: this.chain,
       intro,
       studyIntro,
       onChange: () => this.session.saveNow(),

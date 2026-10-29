@@ -1,18 +1,23 @@
 import * as Phaser from 'phaser'
 import { C, staffColors } from '../art/palette'
 import { GAME_H, GAME_W } from '../config'
+import { moveDest, type Chain } from '../sim/chain'
+import type { PlaceId } from '../sim/places'
 import type { SpaSim } from '../sim/spa'
 import { SERVICES } from '../sim/services'
 import { STAT_KEYS, tuition, type Candidate, type Course, type StaffRole, type StatKey, type TraitId } from '../sim/staff'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
-import { courseName, specialtyOf, studyButton, traitLines, type StudyButton } from '../view/staffCard'
+import { placeName } from '../view/chain'
+import { courseName, moveOptions, specialtyOf, studyButton, traitLines, type StudyButton } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
 
 export interface StaffData {
   sim: SpaSim
+  /** The chain `sim` belongs to: its branches are where staff can move. */
+  chain: Chain
   /** The first time the panel opens: it says how hiring works. */
   intro: boolean
   /** The first time the panel opens after the hire intro is done and a technician works here: it says what study does. */
@@ -40,6 +45,10 @@ const TAB_X = { working: 300, hiring: 780 } as const
 const ROW_TOP = 590
 const ROW_H = 290
 const MAX_ROWS = 4
+// with a branch open the working tab gives each row a move line under the stats
+const MOVE_ROW_H = 380
+const MOVE_MAX_ROWS = 3
+const MOVE_DY = 330
 // the page arrows sit either side of "Xong"
 const ARROW_X = 150
 const ARROW_W = 100
@@ -103,6 +112,8 @@ interface Row {
   onTap: () => void
   /** The study button above the action, for staff only. */
   study?: { state: StudyButton; onTap: () => void }
+  /** The move line, when the chain has a branch: tomorrow's shop if one is booked, `open` asks where, `stay` cancels. */
+  move?: { to: PlaceId | null | undefined; open: () => void; stay: () => void }
 }
 
 /**
@@ -143,9 +154,9 @@ export class StaffScene extends Phaser.Scene {
   private show(): void {
     for (const obj of this.shown) obj.destroy()
     this.shown = []
-    const { sim, intro, studyIntro } = this.params
+    const { sim, chain, intro, studyIntro } = this.params
     this.keep(addCard(this, 40, 230, 1000, 1760))
-    this.keep(this.add.text(MID, TITLE_Y, t('staffTitle'), textStyle(60)).setOrigin(0.5))
+    this.keep(this.add.text(MID, TITLE_Y, this.params.chain.branches.length ? t('staffTitleAt', { place: placeName(this.params.chain.at) }) : t('staffTitle'), textStyle(60)).setOrigin(0.5))
     if (intro || studyIntro) {
       this.keep(this.add.text(MID, INTRO_Y, t(intro ? 'staffIntro' : 'studyIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: intro ? INTRO_WRAP : STUDY_INTRO_WRAP } }).setOrigin(0.5))
     }
@@ -168,8 +179,20 @@ export class StaffScene extends Phaser.Scene {
           faded: false,
           onTap: () => this.confirmLetGo(s.id, s.name, s.wage, s.study?.paid),
           study: { state: studyButton(sim, s), onTap: () => this.studyTap(s.id) },
+          move: chain.branches.length
+            ? {
+                to: s.moveTo === null ? undefined : moveDest(s.moveTo),
+                open: () => this.chooseShop(s.id, s.name),
+                stay: () => {
+                  chain.stay(chain.at, s.id)
+                  this.params.onChange()
+                  this.show()
+                },
+              }
+            : undefined,
         })),
         t('noStaff'),
+        chain.branches.length > 0,
       )
     } else {
       this.rows(
@@ -182,6 +205,7 @@ export class StaffScene extends Phaser.Scene {
           onTap: () => this.hire(i),
         })),
         t('noCandidates'),
+        false,
       )
       if (sim.money < 0) this.keep(this.add.text(MID, NOTE_Y, t('hireNoMoney'), textStyle(34, '600', C.lantern)).setOrigin(0.5))
     }
@@ -200,18 +224,20 @@ export class StaffScene extends Phaser.Scene {
     this.show()
   }
 
-  /** One page of up to four rows from ROW_TOP with a thin line between them and arrows when there are more, or `empty` when there are none. */
-  private rows(rows: Row[], empty: string): void {
+  /** One page of up to four rows (three of the taller kind when `tall`) from ROW_TOP with a thin line between them and arrows when there are more, or `empty` when there are none. */
+  private rows(rows: Row[], empty: string, tall: boolean): void {
     if (rows.length === 0) {
       this.keep(this.add.text(MID, EMPTY_Y, empty, { ...textStyle(36, '600'), align: 'center', wordWrap: { width: 860 } }).setOrigin(0.5))
       return
     }
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
-    const pages = Math.ceil(rows.length / MAX_ROWS)
+    const perPage = tall ? MOVE_MAX_ROWS : MAX_ROWS
+    const rowH = tall ? MOVE_ROW_H : ROW_H
+    const pages = Math.ceil(rows.length / perPage)
     // a firing can leave fewer pages than the one on show
     this.page = Math.min(this.page, pages - 1)
-    rows.slice(this.page * MAX_ROWS, (this.page + 1) * MAX_ROWS).forEach((row, i) => {
-      const y0 = ROW_TOP + i * ROW_H
+    rows.slice(this.page * perPage, (this.page + 1) * perPage).forEach((row, i) => {
+      const y0 = ROW_TOP + i * rowH
       if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
       this.row(row, y0)
     })
@@ -242,6 +268,8 @@ export class StaffScene extends Phaser.Scene {
       if (row.faded) button.setAlpha(FADED_ALPHA)
     }
 
+    if (row.move) this.moveLine(row.move, y0 + MOVE_DY)
+
     STAT_KEYS.forEach((k, i) => {
       const cx = ROW_LEFT + STAT_W * i + STAT_W / 2
       this.keep(this.add.text(cx, y0 + 222, t(STAT[k]), textStyle(30, '600')).setOrigin(0.5))
@@ -251,6 +279,24 @@ export class StaffScene extends Phaser.Scene {
         dots.fillStyle(hex(d < person.stats[k] ? C.mustard : C.tileSeam), 1).fillCircle(x, y0 + 255, DOT_R).strokeCircle(x, y0 + 255, DOT_R)
       }
     })
+  }
+
+  /** The move line: a button that asks where, or tomorrow's shop on a mustard strip with a button that cancels. */
+  private moveLine(move: NonNullable<Row['move']>, y: number): void {
+    if (move.to === undefined) {
+      this.keep(addButton(this, ACTION_X, y, PAIR_W, PAIR_H, t('moveButton'), 'plain', move.open, PAIR_SIZE))
+      return
+    }
+    const w = ACTION_X - PAIR_W / 2 - 20 - TEXT_X
+    const bg = this.add
+      .graphics()
+      .fillStyle(hex(C.mustard), 1)
+      .fillRoundedRect(-w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
+    const text = this.add.text(0, 0, t('moveTomorrow', { place: placeName(move.to) }), textStyle(32, '600')).setOrigin(0.5)
+    this.keep(this.add.container(TEXT_X + w / 2, y, [bg, text]))
+    this.keep(addButton(this, ACTION_X, y, PAIR_W, PAIR_H, t('moveStay'), 'plain', move.stay, PAIR_SIZE))
   }
 
   /** A service icon and its tier's stars for each specialty, closed services faded. */
@@ -405,6 +451,31 @@ export class StaffScene extends Phaser.Scene {
       parts.push(button)
     })
     parts.push(addButton(this, MID, y + 250 + open.length * rowH + 20, 340, 110, t('cancel'), 'plain', close).setDepth(CONFIRM_DEPTH))
+  }
+
+  /** A card that lists the shops the person can move to, one button each, faded and inert when it has no room. */
+  private chooseShop(id: number, name: string): void {
+    const { chain } = this.params
+    const options = moveOptions(chain, chain.at, id)
+    const rowH = 130
+    const h = 240 + options.length * rowH + 140
+    const y = 1100 - h / 2
+    const { parts, close } = this.askCard(90, y, 900, h)
+    parts.push(this.add.text(MID, y + 70, t('movePick', { name }), { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 720 } }).setOrigin(0.5, 0).setDepth(CONFIRM_DEPTH))
+    options.forEach(({ place, full }, i) => {
+      const pick = () => {
+        if (full) return
+        close()
+        chain.move(chain.at, id, place)
+        this.params.onChange()
+        this.show()
+      }
+      const label = full ? t('moveFull', { place: placeName(place) }) : placeName(place)
+      const button = addButton(this, MID, y + 250 + i * rowH, 760, 110, label, 'plain', pick, 36).setDepth(CONFIRM_DEPTH)
+      if (full) button.setAlpha(FADED_ALPHA)
+      parts.push(button)
+    })
+    parts.push(addButton(this, MID, y + 250 + options.length * rowH + 20, 340, 110, t('cancel'), 'plain', close).setDepth(CONFIRM_DEPTH))
   }
 
   /** A card over the panel that asks before the course is paid for. */
