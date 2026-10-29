@@ -4,7 +4,7 @@ import { GAME_H, GAME_W, LOW_STOCK, RESTOCK_AMOUNT, RESTOCK_PRICE } from '../con
 import { ITEMS } from '../sim/items'
 import { isRecipeService, SERVICE_IDS, SERVICES, type RecipeService, type ServiceId } from '../sim/services'
 import type { SpaSim } from '../sim/spa'
-import { STOCK_ITEMS, STOCK_NAME, STOCK_USES, stockUsers, type StockItem } from '../sim/stock'
+import { STOCK_NAME, stockItemsFor, stockUsers, type StockItem } from '../sim/stock'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
@@ -122,7 +122,7 @@ export class ServicesScene extends Phaser.Scene {
     const top = tabbed ? TABBED_ROW_TOP : ROW_TOP
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
     if (this.tab === 'stock') {
-      const items = STOCK_ITEMS.filter(item => this.params.sim.services.some(id => STOCK_USES[id].includes(item)))
+      const items = stockItemsFor(this.params.sim.services)
       items.forEach((item, i) => {
         const y0 = top + i * STOCK_ROW_H
         if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)

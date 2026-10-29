@@ -12,7 +12,7 @@ const newSim = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
 
 describe('staff card', () => {
   it('lists the services a person has a tier in, dimming the closed ones', () => {
-    const person = { tiers: { shampoo: 0, mask: 2, massage: 1, steam: 0, stone: 0, mud: 0 } }
+    const person = { tiers: { shampoo: 0, mask: 2, massage: 1, steam: 0, stone: 0, mud: 0, scrub: 0 } }
     expect(specialtyOf(person, ['shampoo', 'mask'])).toEqual([
       { service: 'mask', tier: 2, dim: false },
       { service: 'massage', tier: 1, dim: true },
@@ -43,7 +43,7 @@ describe('staff card', () => {
     expect(studyButton(sim, tech)).toEqual({ kind: 'booked', course: 'mask' })
     tech.study = null
 
-    tech.tiers = { shampoo: 3, mask: 3, massage: 0, steam: 0, stone: 0, mud: 0 }
+    tech.tiers = { shampoo: 3, mask: 3, massage: 0, steam: 0, stone: 0, mud: 0, scrub: 0 }
     expect(studyButton(sim, tech)).toEqual({ kind: 'best' })
 
     const rec = hireStaff(sim, 'receptionist', { skill: 3, speed: 3, friendly: 5, stamina: 3 })

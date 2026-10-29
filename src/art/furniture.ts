@@ -85,6 +85,22 @@ const mudTub =
   `<circle cx="0.84" cy="2.3" r="0.11" fill="${C.clayLight}" ${ink(0.02)}/>` +
   rect(0.6, 0.2, 0.8, 0.32, C.paper, `rx="0.14" ${ink(FINE)}`)
 
+// salt bed: a massage-style bed in sea colours, with the face cradle at the head and a bowl of salt at the foot
+const waveRow = (y: number) => `M0.2,${y} q0.085,-0.07 0.17,0 t0.17,0 t0.17,0 t0.17,0`
+const scrubBed =
+  rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 0.82, 2.72, C.scrubSheet, `rx="0.1" ${ink(FINE)}`) +
+  `<path d="${waveRow(1.25)} ${waveRow(1.95)}" stroke="${C.sea}" stroke-width="0.035" fill="none"/>` +
+  `<ellipse cx="0.55" cy="0.66" rx="0.3" ry="0.24" fill="${C.sand}" ${ink(FINE)}/>` +
+  `<ellipse cx="0.55" cy="0.66" rx="0.15" ry="0.1" fill="${C.woodDark}" ${ink(FINE)}/>` +
+  rect(0.2, 2.2, 0.7, 0.24, C.sea, `rx="0.12" ${ink(FINE)}`) +
+  `<path d="M0.36,2.21 V2.43 M0.74,2.21 V2.43" stroke="${C.cream}" stroke-width="0.035"/>` +
+  rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  `<ellipse cx="0.82" cy="2.86" rx="0.2" ry="0.12" fill="${C.cobalt}" ${ink(FINE)}/>` +
+  `<path d="M0.66,2.84 Q0.82,2.7 0.98,2.84Z" fill="${C.cream}" ${ink(0.02)}/>`
+
 const bench =
   WEAVE +
   rect(0.1, 0.05, 3.0, 0.3, C.wood, `rx="0.08" ${ink()}`) +
@@ -751,6 +767,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   steamTent: { w: 2, h: 2.6, body: steamTent },
   stoneBed: { w: 1.1, h: 3.15, body: stoneBed },
   mudTub: { w: 2, h: 3.15, body: mudTub },
+  scrubBed: { w: 1.1, h: 3.15, body: scrubBed },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

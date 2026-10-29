@@ -155,3 +155,10 @@ describe('keepsakes', () => {
     }
   })
 })
+
+describe('the salt bed', () => {
+  it('is a 1×3 bed listed right after the mud tub', () => {
+    expect(ITEMS.scrubBed).toEqual({ w: 1, h: 3, price: 600_000, beauty: 0, group: 'bed', name: 'itemScrubBed' })
+    expect(ITEM_KINDS.indexOf('scrubBed')).toBe(ITEM_KINDS.indexOf('mudTub') + 1)
+  })
+})

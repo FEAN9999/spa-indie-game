@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BADGE_IDS, badgeEarned, badgeProgress, newBadges, type BadgeId, type BadgeShop } from '../../src/sim/badges'
+import { BADGES, BADGE_IDS, badgeEarned, badgeProgress, newBadges, type BadgeId, type BadgeShop } from '../../src/sim/badges'
 import { zeroShop } from './helpers'
 
 /** Each badge with a shop just short of it and a shop that just reaches it. */
@@ -25,6 +25,13 @@ const EDGES: Record<BadgeId, [Partial<BadgeShop>, Partial<BadgeShop>]> = {
   diligent: [{ dailies: 19 }, { dailies: 20 }],
   fullYear: [{ day: 36 }, { day: 37 }],
 }
+
+describe('Đủ món', () => {
+  it('asks for six services and any six count', () => {
+    expect(BADGES.allServices.goal).toBe(6)
+    expect(badgeProgress('allServices', { ...zeroShop(), services: 7 })).toEqual([6, 6])
+  })
+})
 
 describe('each badge', () => {
   for (const id of BADGE_IDS) {

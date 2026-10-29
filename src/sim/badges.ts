@@ -1,6 +1,5 @@
 import { BADGE_GOALS, MAX_TIER } from '../config'
 import { REGULAR_IDS } from './regulars'
-import { SERVICE_IDS } from './services'
 
 export const BADGE_IDS = [
   'served100',
@@ -72,7 +71,7 @@ export const BADGES: Record<BadgeId, { count: (s: BadgeShop) => number; goal: nu
   fullBook: { count: s => s.fullHearts, goal: REGULAR_IDS.length, ring: true },
   vipPhoto: { count: s => s.photos, goal: 1, ring: false },
   vipBoard: { count: s => Number(s.boardHung), goal: 1, ring: false },
-  allServices: { count: s => s.services, goal: SERVICE_IDS.length, ring: true },
+  allServices: { count: s => s.services, goal: BADGE_GOALS.allServices, ring: true },
   firstRecipe: { count: s => s.recipes, goal: 1, ring: false },
   floor2: { count: s => s.floors, goal: 2, ring: false },
   rooftop: { count: s => s.floors, goal: 3, ring: false },

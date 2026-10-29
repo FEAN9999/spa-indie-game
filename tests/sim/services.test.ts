@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { serviceArrivalFactor, tipFor } from '../../src/sim/economy'
 import { bedTile, workTile } from '../../src/sim/items'
 import { emptyRecipes } from '../../src/sim/recipes'
+import { LESSON_STARS } from '../../src/config'
 import { createRng } from '../../src/sim/rng'
-import { BASIC_SERVICES, isRecipeService, RECIPE_SERVICES, SERVICE_IDS, SERVICES } from '../../src/sim/services'
+import { BASIC_SERVICES, isLessonService, isRecipeService, LESSON_SERVICES, RECIPE_SERVICES, SERVICE_IDS, SERVICES, serviceOfBed } from '../../src/sim/services'
 import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
@@ -63,8 +64,8 @@ describe('opening Xông lá', () => {
   it('lists the basic services, then the recipe ones', () => {
     expect(BASIC_SERVICES).toEqual(['shampoo', 'mask', 'massage'])
     expect(RECIPE_SERVICES).toEqual(['steam', 'stone', 'mud'])
-    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
-    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true])
+    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub'])
+    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true, false])
     expect(SERVICES.steam).toEqual({ price: 110_000, openCost: 500_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
     expect([t('serviceSteam'), t('itemSteamTent'), t('stockHerbs'), t('busySteam')]).toEqual(['Xông lá', 'Lều xông lá', 'Gói lá xông', 'Lều xông đang bận'])
   })
@@ -278,5 +279,17 @@ describe('the owner and the technician on mask chairs', () => {
     advanceUntil(sim, () => b.state === 'inService', 60_000, ev)
     expect(sim.stations.find(s => s.id === b.stationId)!.service).toBe('mask')
     expect(ev.filter(e => e.type === 'toast')).toEqual([])
+  })
+})
+
+describe('Chà muối biển', () => {
+  it('is the one service learned in a lesson, at 3 stars, with its bed, price and tuition', () => {
+    expect(LESSON_SERVICES).toEqual(['scrub'])
+    expect(isLessonService('scrub')).toBe(true)
+    expect(isLessonService('mud')).toBe(false)
+    expect(LESSON_STARS.scrub).toBe(3)
+    expect(SERVICES.scrub).toEqual({ price: 170_000, openCost: 700_000, bed: 'scrubBed', name: 'serviceScrub', busy: 'busyScrub' })
+    expect(serviceOfBed('scrubBed')).toBe('scrub')
+    expect([t('serviceScrub'), t('itemScrubBed'), t('stockSalt'), t('busyScrub')]).toEqual(['Chà muối biển', 'Giường chà muối', 'Muối biển', 'Giường chà muối đang bận'])
   })
 })

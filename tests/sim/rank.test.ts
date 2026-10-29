@@ -51,6 +51,12 @@ describe('the calendar of judging', () => {
     const quiet = monthInput(book, 15, 4, 30, 3, { served: 100, lost: 5 })
     expect([quiet.servedPerDay, quiet.lostShare]).toEqual([0, null])
   })
+
+  it('counts no more than six services, so the part is full and the card reads 6/6', () => {
+    const i = monthInput(emptyRankBook(13, 100, 5), 15, 4, 30, 7, { served: 145, lost: 10 })
+    expect(i.services).toBe(6)
+    expect(rankParts(i)[2]).toBe(20)
+  })
 })
 
 describe('the monthly grade', () => {

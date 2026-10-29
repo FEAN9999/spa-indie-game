@@ -7,17 +7,23 @@ import type { RecipeId } from './recipes'
 export type BasicService = 'shampoo' | 'mask' | 'massage'
 /** A service opened by solving its recipe at the bench. */
 export type RecipeService = RecipeId
-export type ServiceId = BasicService | RecipeService
+/** A service learned in a lesson with a teacher. */
+export type LessonService = 'scrub'
+export type ServiceId = BasicService | RecipeService | LessonService
 
 /** The basic services in the order they open. */
 export const BASIC_SERVICES: readonly BasicService[] = ['shampoo', 'mask', 'massage']
 /** The recipe services, which open in any order once massage is open. */
 export const RECIPE_SERVICES: readonly RecipeService[] = ['steam', 'stone', 'mud']
 
-/** Every service: the basic ones, then the recipe ones. */
-export const SERVICE_IDS: ServiceId[] = [...BASIC_SERVICES, ...RECIPE_SERVICES]
+/** The lesson services, learned from a teacher once the shop has the stars. */
+export const LESSON_SERVICES: readonly LessonService[] = ['scrub']
+
+/** Every service: the basic ones, then the recipe ones, then the lesson ones. */
+export const SERVICE_IDS: ServiceId[] = [...BASIC_SERVICES, ...RECIPE_SERVICES, ...LESSON_SERVICES]
 
 export const isRecipeService = (id: ServiceId): id is RecipeService => (RECIPE_SERVICES as readonly ServiceId[]).includes(id)
+export const isLessonService = (id: ServiceId): id is LessonService => (LESSON_SERVICES as readonly ServiceId[]).includes(id)
 
 export interface ServiceSpec {
   /** What a customer pays. */
@@ -38,6 +44,7 @@ export const SERVICES: Record<ServiceId, ServiceSpec> = {
   steam: { price: SERVICE_PRICE.steam, openCost: SERVICE_OPEN_COST.steam, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' },
   stone: { price: SERVICE_PRICE.stone, openCost: SERVICE_OPEN_COST.stone, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' },
   mud: { price: SERVICE_PRICE.mud, openCost: SERVICE_OPEN_COST.mud, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' },
+  scrub: { price: SERVICE_PRICE.scrub, openCost: SERVICE_OPEN_COST.scrub, bed: 'scrubBed', name: 'serviceScrub', busy: 'busyScrub' },
 }
 
 /** The service a kind of bed gives, or null for other furniture. */
@@ -45,5 +52,5 @@ export function serviceOfBed(kind: ItemKind): ServiceId | null {
   return SERVICE_IDS.find(id => SERVICES[id].bed === kind) ?? null
 }
 
-/** What stops a service opening now: money is negative, there is not enough, an earlier service is still closed, or its recipe is not solved yet. */
-export type ServiceProblem = 'debt' | 'money' | 'order' | 'recipe' | 'main'
+/** What stops a service opening now: money is negative, there is not enough, an earlier service is still closed, its recipe is not solved yet, or it is a lesson service not learned yet. */
+export type ServiceProblem = 'debt' | 'money' | 'order' | 'recipe' | 'main' | 'lesson'

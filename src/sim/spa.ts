@@ -77,7 +77,7 @@ import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
-import { BASIC_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
+import { BASIC_SERVICES, isLessonService, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
 import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
@@ -364,6 +364,7 @@ export class SpaSim {
     if (this.services.includes(id)) return null
     if (this.place !== null) return 'main'
     if (this.money < 0) return 'debt'
+    if (isLessonService(id)) return 'lesson'
     if (isRecipeService(id)) {
       if (!this.benchOpen()) return 'order'
       if (!this.recipes[id].solved) return 'recipe'

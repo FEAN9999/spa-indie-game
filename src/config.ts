@@ -18,9 +18,11 @@ export const REAL_MS_PER_GAME_MIN = 12500 / 60
 export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
+/** The stars a lesson service opens to learn at. */
+export const LESSON_STARS = { scrub: 3 } as const
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000 } as const
+export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000, scrub: 170000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -150,7 +152,7 @@ export const MUD_HALF_HARD = 0.08
 export const MUD_STARS = { three: 0.7, two: 0.45 }
 
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 
@@ -341,7 +343,7 @@ export const QUEST_FLOOR = { serve: 5, owner3Min: 2, owner3Max: 6, earn: 150_000
 export const CLEAN_DAY_MIN_SERVED = 15
 
 /** What each badge with a number in it asks for. */
-export const BADGE_GOALS = { served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
+export const BADGE_GOALS = { allServices: 6, served100: 100, served1000: 1000, goldHands: 50, busyDay: 25, pretty: 60, fullCrew: 7, million: 1_000_000, bigProfit: 1_000_000, diligent: 20, fullYear: 36 } as const
 /** The badges each owner outfit asks for, from the uniform to the gấm; the bà ba is free and the Spa của năm dress comes from a win. */
 export const OUTFIT_NEED = [2, 4, 6, 9, 12, 16, 20] as const
 /** How long the gold banner for a new badge stays on screen. */

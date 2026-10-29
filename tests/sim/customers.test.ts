@@ -3,6 +3,7 @@ import { PATIENCE_MS } from '../../src/config'
 import { drawKind, drawService, KINDS, MAIN_KINDS, type CustomerKind } from '../../src/sim/customers'
 import { reviewScore, tipFor, type Stars } from '../../src/sim/economy'
 import { createRng } from '../../src/sim/rng'
+import { SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
 import { advanceUntil, seatAndWait, startService } from './helpers'
@@ -48,7 +49,12 @@ describe('kinds of customer', () => {
   it('has office workers like Đá nóng, celebrities like Tắm bùn, and picky customers like all six', () => {
     expect(KINDS.office.prefers).toContain('stone')
     expect(KINDS.celeb.prefers).toContain('mud')
-    expect([...KINDS.picky.prefers]).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'])
+    expect([...KINDS.picky.prefers]).toEqual(SERVICE_IDS)
+  })
+
+  it('has students and tourists like Chà muối biển too', () => {
+    expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub'])
+    expect([...KINDS.tourist.prefers]).toEqual(['mud', 'stone', 'massage', 'scrub'])
   })
 
   it('draws no number when the shop has one service', () => {

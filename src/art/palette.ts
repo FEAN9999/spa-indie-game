@@ -80,6 +80,8 @@ export const C = {
   coopStepHigh: '#56331F',
   // the beach branch: sea, its wall and floors, a shell; the chain map's land, beach and river; the tourist's straw hat
   sea: '#6FB3CF',
+  seaPale: '#CFE8F0',
+  scrubSheet: '#DCEFF4',
   seaWash: '#E3F0F3',
   seaWashLine: '#C8DFE5',
   seaWall: '#BFD9E2',
