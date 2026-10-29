@@ -175,6 +175,33 @@ export const SCRUB_STARS = { burns: 1, clean2: 3 }
 export const SCRUB_PATCH_R = 92
 export const SCRUB_RING_R = 150
 
+// Ngâm chân thảo mộc game: six points on the sole, in game pixels on the card. The sequence grows over three rounds; times are in ms.
+export const FOOT_LIMIT_MS = 15000
+export const FOOT_POINTS = [
+  { x: 470, y: 760 },
+  { x: 615, y: 790 },
+  { x: 470, y: 940 },
+  { x: 615, y: 960 },
+  { x: 505, y: 1110 },
+  { x: 565, y: 1270 },
+] as const
+/** The point's drawn radius, and how far from its centre a tap still reaches it. */
+export const FOOT_POINT_R = 66
+export const FOOT_TAP_R = 80
+/** Points lit in each of the three rounds; a picky customer gets the longer ones, lit faster. */
+export const FOOT_ROUNDS = [3, 4, 5]
+export const FOOT_ROUNDS_HARD = [4, 5, 6]
+export const FOOT_ON_MS = 500
+export const FOOT_GAP_MS = 200
+export const FOOT_ON_HARD_MS = 340
+export const FOOT_GAP_HARD_MS = 140
+/** Pauses before a round's show, after a wrong tap, and after a round is passed. */
+export const FOOT_LEAD_MS = 700
+export const FOOT_WRONG_MS = 800
+export const FOOT_NEXT_MS = 700
+/** Most mistakes for 3 stars, and rounds passed for 2. */
+export const FOOT_STARS = { mistakes: 1, pass2: 2 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
 export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000 } as const
 export const RESTOCK_AMOUNT = 20
