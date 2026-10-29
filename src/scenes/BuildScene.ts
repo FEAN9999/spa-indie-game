@@ -1,22 +1,26 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
+import { PET_ORIGIN, petKey } from '../art/pets'
 import { sound } from '../audio/engine'
-import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, TILE } from '../config'
+import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, MAX_PETS, TILE } from '../config'
 import { claimed, nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
 import { footprint, ITEMS, nextFacing, setProgress, size, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
+import { BREEDS, type BreedId, type Pet } from '../sim/pets'
 import type { SpaSim } from '../sim/spa'
 import type { Tile } from '../sim/types'
 import { formatMoney } from '../strings/format'
-import { t, type StringKey } from '../strings/vi'
-import { catalogPage, type CatalogEntry } from '../view/catalog'
+import { BREED_NAME, t, type StringKey } from '../strings/vi'
+import { catalogPage, petPage, type CatalogEntry } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
 import { carryTo, clampToFloor, pills, showPills } from '../view/floors'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
+import type { PetGiveData } from './PetGiveScene'
+import type { PetNameData } from './PetNameScene'
 
 export interface BuildData {
   sim: SpaSim
@@ -56,8 +60,9 @@ const NOTE_Y = 1676
 const NOTE_ROOM = 40
 const ROW_H = 120
 const TAB_Y = 1762
-const TAB_W = 260
-const TAB_STEP = 272
+const TAB_W = 196
+const TAB_STEP = 204
+const TAB_SIZE = 38
 const DONE_W = 204
 const INFO_Y = 1854
 const CARD_TOP = 1886
@@ -80,11 +85,20 @@ const PILL_BAND = { top: 1807, bottom: 1903 }
 const HOLD_TOAST_Y = 1690
 const EDGE = 24
 
-const TABS: { group: ItemGroup; label: StringKey }[] = [
+/** A furniture group, or the shop's pets. */
+type Tab = ItemGroup | 'pets'
+
+const TABS: { group: Tab; label: StringKey }[] = [
   { group: 'bed', label: 'tabBeds' },
   { group: 'seat', label: 'tabSeats' },
   { group: 'decor', label: 'tabDecor' },
+  { group: 'pets', label: 'tabPets' },
 ]
+/** On a pet card, up from its bottom: the feet of the picture, the name, the breed, the rename button and "Cho đi"; on a breed card, the feet, the name and the price button. */
+const OWNED = { feet: 164, name: 118, breed: 86, rename: 60, give: 20 }
+const SALE = { feet: 134, name: 88, price: 50 }
+/** The pet on its own card, a little smaller to leave room for the buttons. */
+const OWNED_SCALE = 0.9
 const SETS: { id: SetId; name: StringKey }[] = [
   { id: 'saigon', name: 'setSaigon' },
   { id: 'bamboo', name: 'setBamboo' },
@@ -104,7 +118,7 @@ const cardText = (size: number, weight: '600' | '800') => ({
  */
 export class BuildScene extends Phaser.Scene {
   private params!: BuildData
-  private tab: ItemGroup = 'bed'
+  private tab: Tab = 'bed'
   private page = 0
   private held: Held | null = null
   /** Where the finger went down above the panel and the held piece's tile then; `pick` while nothing is held and the press may still pick something up. */
@@ -186,8 +200,8 @@ export class BuildScene extends Phaser.Scene {
   }
 
   /** A panel button that ignores a finger let go on it at the end of a drag, or pressed just after the panel changed. */
-  private button(x: number, y: number, w: number, h: number, label: string, kind: 'primary' | 'plain', onTap: () => void, size?: number): void {
-    this.keep(addButton(this, x, y, w, h, label, kind, () => this.panelTap() && onTap(), size))
+  private button(x: number, y: number, w: number, h: number, label: string, kind: 'primary' | 'plain', onTap: () => void, size?: number): Phaser.GameObjects.Container {
+    return this.keep(addButton(this, x, y, w, h, label, kind, () => this.panelTap() && onTap(), size))
   }
 
   /** The press began on the panel, not above it, and after the panel settled. */
@@ -207,16 +221,27 @@ export class BuildScene extends Phaser.Scene {
     const lift = intro ? 0 : NOTE_ROOM
     TABS.forEach((tab, i) => {
       const kind = tab.group === this.tab ? 'primary' : 'plain'
-      this.button(EDGE + TAB_W / 2 + i * TAB_STEP, TAB_Y - lift, TAB_W, ROW_H, t(tab.label), kind, () => this.openTab(tab.group), 44)
+      this.button(EDGE + TAB_W / 2 + i * TAB_STEP, TAB_Y - lift, TAB_W, ROW_H, t(tab.label), kind, () => this.openTab(tab.group), TAB_SIZE)
     })
     this.button(GAME_W - EDGE - DONE_W / 2, TAB_Y - lift, DONE_W, ROW_H, t('done'), 'plain', () => this.close())
-    this.showScore(INFO_Y - lift)
 
     const top = CARD_TOP - lift
     const { sim } = this.params
-    const { entries, page, pages } = catalogPage(this.tab, this.page, sim.services, sim.book.gifts)
-    this.page = page
-    entries.forEach((entry, i) => this.card(entry, MID + (i - (entries.length - 1) / 2) * CARD_STEP, top))
+    const cardX = (i: number, n: number) => MID + (i - (n - 1) / 2) * CARD_STEP
+    let pages: number
+    if (this.tab === 'pets') {
+      this.showPetCount(INFO_Y - lift)
+      const shown = petPage(sim.pets.owned, this.page)
+      this.page = shown.page
+      pages = shown.pages
+      shown.entries.forEach((entry, i) => ('pet' in entry ? this.petCard(entry.pet, cardX(i, shown.entries.length), top) : this.breedCard(entry.breed, cardX(i, shown.entries.length), top)))
+    } else {
+      this.showScore(INFO_Y - lift)
+      const shown = catalogPage(this.tab, this.page, sim.services, sim.book.gifts)
+      this.page = shown.page
+      pages = shown.pages
+      shown.entries.forEach((entry, i) => this.card(entry, cardX(i, shown.entries.length), top))
+    }
     if (pages > 1) {
       const y = (top + CARD_BOTTOM) / 2
       this.button(EDGE + ARROW_W / 2, y, ARROW_W, ARROW_H, t('prevPage'), 'plain', () => this.turnPage(-1), 64)
@@ -265,7 +290,97 @@ export class BuildScene extends Phaser.Scene {
     })
   }
 
-  private openTab(group: ItemGroup): void {
+  /** How many pets the shop keeps, out of MAX_PETS; red once full. */
+  private showPetCount(y: number): void {
+    const n = this.params.sim.pets.owned.length
+    const full = n >= MAX_PETS
+    this.keep(this.add.text(MID, y, t(full ? 'petsCountFull' : 'petsCount', { n, max: MAX_PETS }), textStyle(32, '800', full ? C.terracotta : C.soft)).setOrigin(0.5))
+  }
+
+  /** A card of the given fill, from `top` to the cards' bottom. */
+  private petBox(x: number, top: number, fill: string): void {
+    this.keep(this.add.graphics().fillStyle(hex(fill), 1).fillRoundedRect(x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top, 24).lineStyle(4, hex(C.ink)).strokeRoundedRect(x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top, 24))
+  }
+
+  /** A name or a breed on a card, shrunk to fit its width. */
+  private cardLine(x: number, y: number, text: string, size: number, weight: '600' | '800', color: string = C.ink): void {
+    const line = this.keep(this.add.text(x, y, text, textStyle(size, weight, color)).setOrigin(0.5, 1))
+    line.setScale(Math.min(1, (CARD_W - 24) / line.width))
+  }
+
+  /** One of the shop's pets, on gold: its name and breed, a rename button and "Cho đi". */
+  private petCard(pet: Pet, x: number, top: number): void {
+    this.petBox(x, top, C.goldPale)
+    this.keep(this.add.image(x, CARD_BOTTOM - OWNED.feet, petKey(pet.breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y).setScale(OWNED_SCALE))
+    this.cardLine(x, CARD_BOTTOM - OWNED.name, pet.name, 30, '800')
+    this.cardLine(x, CARD_BOTTOM - OWNED.breed, BREED_NAME[pet.breed], 22, '600', C.soft)
+    this.button(x, CARD_BOTTOM - OWNED.rename, 176, 46, t('petRename'), 'plain', () => this.namePet(pet.breed, pet), 26)
+    const give = this.keep(this.add.text(x, CARD_BOTTOM - OWNED.give, t('petGive'), textStyle(24, '800', C.lanternDark)).setOrigin(0.5))
+    // a little bigger than the words, for a finger
+    give.setInteractive(new Phaser.Geom.Rectangle(-20, -10, give.width + 40, give.height + 20), Phaser.Geom.Rectangle.Contains).on('pointerup', () => {
+      if (!this.panelTap()) return
+      sound.play('tap')
+      this.givePet(pet)
+    })
+  }
+
+  /** A breed for sale: its price on a button, faded when the shop is full or short of money. */
+  private breedCard(breed: BreedId, x: number, top: number): void {
+    const { sim } = this.params
+    const { price } = BREEDS[breed]
+    const full = sim.pets.owned.length >= MAX_PETS
+    const can = !full && sim.money >= price
+    this.petBox(x, top, C.cream)
+    this.keep(this.add.image(x, CARD_BOTTOM - SALE.feet, petKey(breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y))
+    this.cardLine(x, CARD_BOTTOM - SALE.name, BREED_NAME[breed], 28, '800')
+    const buy = () => {
+      if (full) this.toast(t('petsFull', { max: MAX_PETS }))
+      else if (!can) this.toast(t(PROBLEM_TEXT.money, { money: formatMoney(price - sim.money) }))
+      else this.namePet(breed)
+    }
+    this.button(x, CARD_BOTTOM - SALE.price, 186, 64, formatMoney(price), can ? 'primary' : 'plain', buy, 28).setAlpha(can ? 1 : FADED_ALPHA)
+  }
+
+  /** The name card over build mode: a new pet of `breed` to pay for, or a new name for `pet`. */
+  private namePet(breed: BreedId, pet?: Pet): void {
+    const { sim } = this.params
+    const data: PetNameData = {
+      breed,
+      current: pet?.name,
+      price: BREEDS[breed].price,
+      onCancel: () => {},
+      onDone: name => {
+        if (pet) {
+          sim.renamePet(pet.id, name)
+          this.toast(t('petRenamed', { name: pet.name }))
+        } else {
+          const problem = sim.adoptPet(breed, name)
+          if (problem) return this.toast(problem === 'full' ? t('petsFull', { max: MAX_PETS }) : t(PROBLEM_TEXT.money, { money: formatMoney(BREEDS[breed].price - sim.money) }))
+          this.toast(t('petHome', { name: sim.pets.owned[sim.pets.owned.length - 1].name }))
+        }
+        this.params.onChange()
+        this.showCatalog()
+      },
+    }
+    this.scene.launch('PetNameScene', data)
+  }
+
+  /** Asks first; a pet given away is gone, with nothing paid back. */
+  private givePet(pet: Pet): void {
+    const data: PetGiveData = {
+      pet,
+      onKeep: () => {},
+      onGive: () => {
+        this.params.sim.giveAwayPet(pet.id)
+        this.toast(t('petGone', { name: pet.name }))
+        this.params.onChange()
+        this.showCatalog()
+      },
+    }
+    this.scene.launch('PetGiveScene', data)
+  }
+
+  private openTab(group: Tab): void {
     this.tab = group
     this.page = 0
     this.showCatalog()

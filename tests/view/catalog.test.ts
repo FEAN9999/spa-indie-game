@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { ITEMS, ITEM_KINDS, type ItemGroup, type ItemKind } from '../../src/sim/items'
 import type { ServiceId } from '../../src/sim/services'
-import { catalogPage } from '../../src/view/catalog'
+import { catalogPage, petPage } from '../../src/view/catalog'
 
 const kinds = (p: ReturnType<typeof catalogPage>) => p.entries.map(e => e.kind)
 
@@ -116,5 +116,20 @@ describe('build mode catalogue', () => {
       expect(entries.filter(e => e.gift), g).toEqual(g === 'decor' ? gifts.map(kind => ({ kind, gift: true })) : [])
       expect(entries.filter(e => ITEMS[e.kind].giftOnly && !e.gift), g).toEqual([])
     }
+  })
+})
+
+describe('the Thú cưng tab', () => {
+  it('shows the eight breeds on two pages', () => {
+    expect(petPage([], 0)).toEqual({ entries: [{ breed: 'muop' }, { breed: 'mun' }, { breed: 'tamthe' }, { breed: 'xiem' }], page: 0, pages: 2 })
+    expect(petPage([], 1).entries).toEqual([{ breed: 'chota' }, { breed: 'phuquoc' }, { breed: 'corgi' }, { breed: 'poodle' }])
+  })
+
+  it('puts the pets of the shop first, and comes round past either end', () => {
+    const lu = { id: 1, breed: 'chota' as const, name: 'Lu' }
+    const p = petPage([lu], -1)
+    expect([p.page, p.pages]).toEqual([2, 3])
+    expect(p.entries).toEqual([{ breed: 'poodle' }])
+    expect(petPage([lu], 0).entries.slice(0, 2)).toEqual([{ pet: lu }, { breed: 'muop' }])
   })
 })
