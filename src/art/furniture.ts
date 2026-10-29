@@ -615,13 +615,13 @@ const photoIdolJennie =
   `<path d="M0.4,0.84 L0.5,1.12 L0.6,0.84" stroke="${C.woodDark}" stroke-width="0.03" fill="none"/>` +
   `<path d="M0.34,0.58 Q0.34,0.42 0.5,0.42 Q0.66,0.42 0.66,0.58 Q0.5,0.5 0.34,0.58Z" fill="${C.ink}"/>` +
   eyes(0.63) +
-  `<path d="M0.66,0.46 L0.78,0.38 L0.78,0.54Z M0.66,0.46 L0.54,0.38 L0.54,0.54Z" fill="${C.cream}" ${ink(0.015)} transform="translate(0.04 -0.02) scale(0.8)"/>` +
-  `<circle cx="0.7" cy="0.44" r="0.02" fill="${C.cream}" ${ink(0.015)}/>`
+  `<path d="M0.65,0.49 L0.73,0.44 L0.73,0.54Z M0.65,0.49 L0.57,0.44 L0.57,0.54Z" fill="#FBF7EE" ${ink(0.015)}/>` +
+  `<circle cx="0.65" cy="0.49" r="0.02" fill="#F3E9DA" ${ink(0.012)}/>`
 
 // HIEUTHUHAI: a cobalt cap worn backwards, only its crown and strap gap showing, over a cream jersey with a cobalt 2
 const photoIdolHieuthuhai =
   bust('#FBF7EE', skinHex(0)) +
-  `<path d="M0.46,0.88 H0.54 V0.98 H0.46 M0.46,0.93 H0.54 M0.46,0.98 H0.54" stroke="#2D5FA8" stroke-width="0.025" fill="none"/>` +
+  `<path d="M0.46,0.91 Q0.5,0.85 0.54,0.91 Q0.54,0.95 0.46,1 H0.55" stroke="#2D5FA8" stroke-width="0.03" fill="none" stroke-linecap="round" stroke-linejoin="round"/>` +
   `<path d="M0.35,0.56 Q0.35,0.4 0.5,0.4 Q0.65,0.4 0.65,0.56Z" fill="#2D5FA8" ${ink(0.02)}/>` +
   `<path d="M0.42,0.56 Q0.5,0.5 0.58,0.56" stroke="${C.cream}" stroke-width="0.015" fill="none"/>` +
   `<circle cx="0.5" cy="0.4" r="0.015" fill="${C.cream}"/>` +
