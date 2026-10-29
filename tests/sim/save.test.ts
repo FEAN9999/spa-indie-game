@@ -49,6 +49,7 @@ import v24 from '../fixtures/save-v24.json'
 import v25 from '../fixtures/save-v25.json'
 import v26 from '../fixtures/save-v26.json'
 import v27 from '../fixtures/save-v27.json'
+import v28 from '../fixtures/save-v28.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -2096,5 +2097,60 @@ describe('save version 28', () => {
 
   it('repairs the foot lesson paid', () => {
     expect([paid(['foot']), paid(['foot', 'scrub'], ['shampoo']), paid(['foot'], ['shampoo', 'foot'])]).toEqual([['foot'], ['scrub', 'foot'], []])
+  })
+})
+
+describe('save version 29', () => {
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28 }
+  const paid = (lessonsPaid: unknown, services?: string[]) => {
+    const raw = structuredClone(v28) as unknown as { lessonsPaid: unknown; services: string[] }
+    raw.lessonsPaid = lessonsPaid
+    if (services) raw.services = services
+    return parseSave(raw as never).lessonsPaid
+  }
+  const polish = (n: number) => {
+    const raw = structuredClone(v28) as unknown as { stock: Record<string, number> }
+    raw.stock.polish = n
+    return parseSave(raw as never).stock.polish
+  }
+
+  it('opens the v28 chain as it was, with foot kept and nails not learned', () => {
+    expect(parseSave(structuredClone(v28))).toEqual(withNewKeys(v28))
+    const chain = Chain.fromSave(parseSave(structuredClone(v28)), 8)
+    expect(chain.main.services).toContain('scrub')
+    expect(chain.main.services).toContain('foot')
+    expect(chain.main.services).not.toContain('nails')
+    const tech = chain.main.staff.find(s => s.role === 'technician')!
+    expect(tech.tiers.foot).toBe(1)
+    expect(tech.tiers.nails).toBe(0)
+    expect(tech.study?.course).toBe('foot')
+    expect(chain.main.items.filter(i => i.kind === 'footChair').length).toBe(1)
+    const town = chain.shop('oldTown')!
+    expect(town.services).toContain('foot')
+    expect(town.staff.length).toBe(1)
+    expect(town.stock.polish).toBe(20)
+    expect(chain.main.stock.polish).toBe(20)
+    expect(chain.toSave().v).toBe(SAVE_VERSION)
+  })
+
+  it('opens every older save and saves it as the current version', () => {
+    for (const [name, raw] of Object.entries(fixtures)) {
+      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
+      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
+    }
+  })
+
+  it('opens 28 and the current version and refuses a newer one', () => {
+    expect(parseSave({ ...structuredClone(v28), v: 28 }).v).toBe(28)
+    expect(parseSave({ ...structuredClone(v28), v: SAVE_VERSION }).v).toBe(29)
+    expect(() => parseSave({ ...structuredClone(v28), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  })
+
+  it('repairs the nails lesson paid', () => {
+    expect([paid(['nails']), paid(['nails', 'foot', 'scrub'], ['shampoo']), paid(['nails'], ['shampoo', 'nails'])]).toEqual([['nails'], ['scrub', 'foot', 'nails'], []])
+  })
+
+  it('reads the polish stock and repairs a bad one', () => {
+    expect([polish(7), polish(-1)]).toEqual([7, 20])
   })
 })
