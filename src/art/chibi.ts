@@ -628,10 +628,10 @@ const pearls = (n: number, rx: number): Part => ({
 const pearlsDown = pearls(11, 7)
 const pearlsSide = pearls(7, 3.6)
 /** The bag at her hand (drawn over the body, under the arm; from the side the near arm is mid-body, so it moves there), its handle gold; the clasp shows only from the front. */
-const handbag = (dx: number, clasp: boolean): Part => ({
+const handbag = (dx: number, clasp: boolean, flip = false): Part => ({
   viewBox: [-19, 6, 38, 17],
   body:
-    `<g transform="translate(${dx} 0)">` +
+    `<g transform="translate(${dx} 0)${flip ? ' scale(-1 1)' : ''}">` +
     `<path d="M8.6,12.4 Q11.6,6.8 14.6,12.4" stroke="${INK}" stroke-width="2.4" fill="none" stroke-linecap="round"/>` +
     `<path d="M8.6,12.4 Q11.6,6.8 14.6,12.4" stroke="${GOLD}" stroke-width="1.1" fill="none" stroke-linecap="round"/>` +
     `<path d="M6.8,12.2 H16.4 L17.4,20.6 Q11.6,22 5.8,20.6Z" fill="${C.berry}" ${LINE}/>` +
@@ -735,7 +735,7 @@ const parts: Record<string, Part> = {
   'pearls-side': pearlsSide,
   'handbag-down': handbag(0, true),
   'handbag-side': handbag(-11.6, true),
-  'handbag-up': handbag(0, false),
+  'handbag-up': handbag(0, false, true),
   'hairpin-down': hairpinDown,
   'hairpin-side': hairpinSide,
   'hairpin-up': hairpinDown,

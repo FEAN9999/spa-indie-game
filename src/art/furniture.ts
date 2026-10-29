@@ -676,8 +676,8 @@ const orchidFlower = ([x, y]: number[]) =>
     return `<ellipse cx="${px}" cy="${py}" rx="8" ry="6" transform="rotate(${i * 72} ${px} ${py})" fill="${C.orchid}" stroke="${C.ink}" stroke-width="2.5"/>`
   }).join('') + `<circle cx="${x}" cy="${y}" r="4.5" fill="${C.lotus}" stroke="${C.ink}" stroke-width="2"/>`
 const orchid =
-  `<ellipse cx="0.47" cy="2.4" rx="0.3" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
-  `<g transform="translate(0.47,2.4) scale(0.0095)">` +
+  `<ellipse cx="0.47" cy="2.34" rx="0.3" ry="0.06" fill="${C.ink}" opacity="0.18"/>` +
+  `<g transform="translate(0.47,2.34) scale(0.0095)">` +
   `<path d="M-30,0 L-24,-58 H24 L30,0Z" fill="${C.cream}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
   `<path d="M-27,-30 H27" stroke="${C.mustard}" stroke-width="7"/>` +
   `<path d="M-2,-58 Q-10,-120 8,-160 Q22,-190 30,-196" stroke="${C.leaf}" stroke-width="6" fill="none"/>` +

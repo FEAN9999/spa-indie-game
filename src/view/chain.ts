@@ -91,7 +91,7 @@ export interface Sheet {
 /** A place's own customer (the kind, how it looks and its name) and the piece its room opens with. */
 const PLACE_OWN: Record<PlaceId, { kind: CustomerKind; look: Look; name: StringKey; decor: StringKey }> = {
   beach: { kind: 'tourist', look: { skin: 1, hair: 1, hairStyle: 0, shirt: 0 }, name: 'kindTourist', decor: 'decorBeach' },
-  oldTown: { kind: 'backpacker', look: { skin: 0, hair: 0, hairStyle: 2, shirt: 4 }, name: 'kindBackpacker', decor: 'decorOldTown' },
+  oldTown: { kind: 'backpacker', look: { skin: 0, hair: 0, hairStyle: 0, shirt: 4 }, name: 'kindBackpacker', decor: 'decorOldTown' },
   uptown: { kind: 'lady', look: { skin: 0, hair: 0, hairStyle: 3, shirt: 3 }, name: 'kindLady', decor: 'decorUptown' },
 }
 

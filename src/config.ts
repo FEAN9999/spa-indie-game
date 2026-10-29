@@ -162,7 +162,7 @@ export const PLACES = {
   oldTown: { stars: 4, price: 8_000_000, arrival: 1.0, priceFactor: 1.2 },
   uptown: { stars: 5, price: 12_000_000, arrival: 0.8, priceFactor: 1.6 },
 }
-/** The weights of the kinds each place draws; the kinds of the later places are named here before they exist. */
+/** The weights of the kinds each place draws. */
 export const PLACE_KINDS: Record<keyof typeof PLACES, Record<string, number>> = {
   beach: { tourist: 5, student: 2, office: 1, picky: 1 },
   oldTown: { backpacker: 4, elder: 3, student: 1, picky: 1 },

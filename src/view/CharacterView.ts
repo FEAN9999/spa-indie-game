@@ -28,7 +28,7 @@ const LIE_HEAD_Y = -1.45 * TILE
 export const CHARACTER_HEIGHT_PX = 51 * U
 
 /** What each kind of customer wears, untinted, on the body, over the face or on the hair; a piece shows from each side it has a texture for. */
-const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
+export const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]> = {
   student: [{ key: 'backpack', on: 'body' }],
   office: [{ key: 'tie', on: 'body' }],
   picky: [{ key: 'glasses', on: 'face' }],
