@@ -62,7 +62,7 @@ import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWage
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
-import { ITEMS, beautyOf, bedTile, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
+import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
 import { SPA_LAYOUT_1A } from './layout'
 import { findPath } from './path'
@@ -82,7 +82,7 @@ import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterR
 import { BASIC_SERVICES, isLessonService, LESSON_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
 import { courses, greeterPatience, staffWalkSpeed, tipFactor, type Candidate, type Course, type Staff, type StaffRole } from './staff'
-import type { Customer, CustomerState, DayStats, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
+import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Mover, Owner, Seat, SimEvent, Station, Tile } from './types'
 import type { Feature } from './unlocks'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
@@ -236,7 +236,7 @@ export class SpaSim {
     this.items = itemsFromLayout(layout)
     this.nextItemId = this.items.length + 1
     this.rebuildRoom()
-    this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    this.owner = { pos: this.ownerStart(), facing: this.ownerStartFacing(), path: [], task: null }
   }
 
   get money(): number {
@@ -318,9 +318,26 @@ export class SpaSim {
     if (!this.hasTechnician()) this.leaveQuietly()
   }
 
-  /** The owner is back: at the start, facing down, with nothing to do. */
+  private oldestDesk(): Item | undefined {
+    return this.items.filter(i => i.kind === 'desk').sort((a, b) => a.id - b.id)[0]
+  }
+
+  /** Where the owner starts each day: behind the oldest desk; the old start for a layout with no desk. */
+  ownerStart(): Tile {
+    const desk = this.oldestDesk()
+    return (desk && deskSpot(desk)) || { ...OWNER_START }
+  }
+
+  /** The way the owner starts the day: toward the oldest desk, down for one that is not turned. */
+  ownerStartFacing(): Facing {
+    const desk = this.oldestDesk()
+    if (!desk?.turned) return 'down'
+    return desk.flip ? 'left' : 'right'
+  }
+
+  /** The owner is back: at the start, facing the desk, with nothing to do. */
   ownerArrives(): void {
-    this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    this.owner = { pos: this.ownerStart(), facing: this.ownerStartFacing(), path: [], task: null }
     this.ownerHere = true
   }
 
@@ -768,12 +785,12 @@ export class SpaSim {
 
   /**
    * Where a VIP or a star stands when every seat is taken: in walking order from the door, the first plain floor beside the desk
-   * (never a bed's work tile) that is not the receptionist's spot, the owner's start or the door; with none, the first floor in from the door.
+   * (never a bed's work tile) that is not the receptionist's spot, the desk's spot or the door; with none, the first floor in from the door.
    */
   private standSpot(): Tile {
     const floor = flood(this.grid, this.grid.door, t => isWalkable(this.grid, t)).filter(t => !tileEq(t, this.grid.door))
     const desk = this.receptionSpot()
-    const byDesk = floor.find(t => this.grid.cells[t.y][t.x] === 'floor' && !tileEq(t, desk) && !tileEq(t, OWNER_START) && this.grid.desks.some(d => manhattan(d, t) === 1))
+    const byDesk = floor.find(t => this.grid.cells[t.y][t.x] === 'floor' && !tileEq(t, desk) && !tileEq(t, this.ownerStart()) && this.grid.desks.some(d => manhattan(d, t) === 1))
     return byDesk ?? floor[0]
   }
 
@@ -989,7 +1006,7 @@ export class SpaSim {
     this.dayOver = false
     this.untilArrivalMs = FIRST_ARRIVAL_MS
     // spec 7.3: each day starts with the owner behind the reception desk
-    this.owner = { pos: { ...OWNER_START }, facing: 'down', path: [], task: null }
+    this.owner = { pos: this.ownerStart(), facing: this.ownerStartFacing(), path: [], task: null }
     startDay(this.crew)
     // a branch has no regulars, quests, rank or events of its own; its day's count still starts here, for its away book
     if (this.place !== null) {

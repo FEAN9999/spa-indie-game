@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { isWalkable, tileEq } from '../../src/sim/grid'
+import { isWalkable, manhattan, tileEq, tileOf } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil, seatAndWait, startService } from './helpers'
+import { advanceUntil, hireStaff, seatAndWait, startService } from './helpers'
 
 const fresh = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
 
@@ -167,5 +167,47 @@ describe('SpaSim owner and service', () => {
       ms += 100
     }
     expect(ms).toBeLessThanOrEqual(8_000)
+  })
+  describe('the desk', () => {
+    const shop = () => {
+      const sim = fresh()
+      sim.money = 10_000_000
+      return sim
+    }
+
+    it('starts the day behind the moved desk, facing it', () => {
+      const sim = shop()
+      const desk = sim.items.find(i => i.kind === 'desk')!.id
+      expect(sim.ownerStart()).toEqual({ x: 9, y: 13 })
+      expect(sim.move(desk, 4, 9, false, true)).toBeNull()
+      expect(sim.ownerStart()).toEqual({ x: 3, y: 10 })
+      expect(sim.ownerStartFacing()).toBe('right')
+      sim.startDay()
+      expect(sim.owner.pos).toEqual({ x: 3, y: 10 })
+      expect(sim.owner.facing).toBe('right')
+    })
+
+    it('starts at the oldest desk, and at the next once it is sold', () => {
+      const sim = shop()
+      const old = sim.items.find(i => i.kind === 'desk')!.id
+      expect(sim.buy('desk', 4, 10, false)).toBeNull()
+      expect(sim.ownerStart()).toEqual({ x: 9, y: 13 })
+      expect(sim.sell(old)).toBeNull()
+      expect(sim.ownerStart()).toEqual({ x: 5, y: 9 })
+    })
+
+    it('sends the receptionist to the moved desk, facing it', () => {
+      const sim = shop()
+      const r = hireStaff(sim, 'receptionist')
+      advanceUntil(sim, () => tileEq(tileOf(r.pos), sim.receptionSpot()) && r.path.length === 0)
+      expect(r.facing).toBe('down')
+      const desk = sim.items.find(i => i.kind === 'desk')!.id
+      expect(sim.move(desk, 4, 9, false, true)).toBeNull()
+      const spot = sim.receptionSpot()
+      expect(tileEq(spot, { x: 3, y: 10 })).toBe(false)
+      expect(sim.grid.desks.some(d => manhattan(d, spot) === 1)).toBe(true)
+      advanceUntil(sim, () => tileEq(tileOf(r.pos), sim.receptionSpot()) && r.path.length === 0)
+      expect(r.facing).toBe('right')
+    })
   })
 })

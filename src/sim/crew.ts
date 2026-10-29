@@ -1,4 +1,4 @@
-import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, OWNER_START, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS } from '../config'
+import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { floorOf } from './floors'
@@ -26,20 +26,20 @@ export interface CrewHost {
 /** groundFloor's answer for each laid-out room; a room is laid out afresh, never changed in place, so it stays right. */
 const groundFloors = new WeakMap<Grid, Tile[]>()
 
-/** The walkable tiles of floor 1, nearest the owner's start first; floor 2 is only reached through floor 1's foot, so leaving it out keeps the order. */
+/** The walkable tiles of floor 1, nearest the desk's spot first; floor 2 is only reached through floor 1's foot, so leaving it out keeps the order. */
 function groundFloor({ sim }: CrewHost): Tile[] {
   let tiles = groundFloors.get(sim.grid)
-  if (!tiles) groundFloors.set(sim.grid, (tiles = flood(sim.grid, OWNER_START, t => floorOf(t.y) === 1 && isWalkable(sim.grid, t))))
+  if (!tiles) groundFloors.set(sim.grid, (tiles = flood(sim.grid, sim.ownerStart(), t => floorOf(t.y) === 1 && isWalkable(sim.grid, t))))
   return tiles
 }
 
-/** Where the receptionist stands: the first floor tile beside the desk, nearest the owner's start; the start itself if there is none. */
+/** Where the receptionist stands: the first floor tile beside the desk, nearest the desk's spot; the spot itself if there is none. */
 export function receptionSpot(h: CrewHost): Tile {
   const { sim } = h
   const spot = groundFloor(h).find(
-    t => !tileEq(t, OWNER_START) && sim.grid.desks.some(d => manhattan(d, t) === 1),
+    t => !tileEq(t, sim.ownerStart()) && sim.grid.desks.some(d => manhattan(d, t) === 1),
   )
-  return spot ?? { ...OWNER_START }
+  return spot ?? sim.ownerStart()
 }
 
 /**
@@ -53,7 +53,7 @@ export function homeOf(h: CrewHost, s: Staff): Tile {
   if (s.role === 'receptionist') return spot
   const k = sim.staff.filter(x => x.role === 'technician').indexOf(s)
   const floor = groundFloor(h).filter(t => !sim.grid.feet.some(f => tileEq(f, t)))
-  const homes: Tile[] = [OWNER_START, spot]
+  const homes: Tile[] = [sim.ownerStart(), spot]
   for (let i = 0; i <= k; i++) {
     const next = floor.find(t => !homes.some(home => home.x === t.x && Math.abs(home.y - t.y) <= 1))
     if (!next) return spot
@@ -279,12 +279,13 @@ function restSpot({ sim }: CrewHost, s: Staff): Tile {
   return spot ?? from
 }
 
-/** An idle person who is not on their home tile walks there; one who is faces the door. */
+/** An idle person who is not on their home tile walks there; one who is faces the door, a receptionist the desk tile beside them. */
 function walkHome(h: CrewHost, s: Staff): void {
   if (s.path.length > 0) return
   const home = homeOf(h, s)
   if (tileEq(tileOf(s.pos), home)) {
-    s.facing = 'down'
+    const desk = s.role === 'receptionist' ? h.sim.grid.desks.find(d => manhattan(d, home) === 1) : undefined
+    s.facing = !desk ? 'down' : desk.x > home.x ? 'right' : desk.x < home.x ? 'left' : desk.y > home.y ? 'down' : 'up'
     return
   }
   s.path = h.walkTo(s, t => tileEq(t, home)) ?? []
