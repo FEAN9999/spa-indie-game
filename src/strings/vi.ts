@@ -244,6 +244,8 @@ export const vi = {
   floorOpen: 'Mở · {money}',
   floorLater: 'Để sau',
   floorShort: 'Còn thiếu {money}',
+  saleSign1: 'BÁN NHÀ',
+  saleSign2: 'CHÍNH CHỦ',
   floorOrder: 'Mở tầng 2 trước',
   floorBlocked: 'Dọn lối tới cầu thang trước',
   problemSeatFloor: 'Ghế chờ chỉ đặt ở tầng 1',

@@ -48,6 +48,7 @@ import { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
 import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
+import { stripLots } from '../view/houses'
 import { navIds, type NavId } from '../view/nav'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
@@ -1042,7 +1043,8 @@ export class SpaScene extends Phaser.Scene {
     }
     const visible = this.cam.visible()
     const door = this.room.tileToWorld(sim.grid.door).x
-    this.strip.show({ bounds: this.cam.bounds, visible, door, owner: ownerX, dots: offscreenWaiting(sim.customers, this.viewFloor, visible), look: sim.ownerLook })
+    const lots = stripLots(sim.houses, sim.shownHouses())
+    this.strip.show({ bounds: this.cam.bounds, visible, lots, door, owner: ownerX, dots: offscreenWaiting(sim.customers, this.viewFloor, visible), look: sim.ownerLook })
   }
 
   /** A viewed or open pill brings its floor into view; a locked one offers to open it. Nothing while waiting on an update check, which hides the pills on its next frame. */

@@ -4,6 +4,7 @@ import { sound } from '../audio/engine'
 import type { Look } from '../sim/types'
 import type { Rect } from './camera'
 import { drawFace } from './FloorBar'
+import type { StripLot } from './houses'
 import { STRIP, stripX } from './strip'
 import { whenTapped } from './ui'
 
@@ -11,15 +12,27 @@ const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const TICK_H = 44
 const FRAME_H = 48
 const DOT_R = 11
+/** A lot sits this far inside the bar; a lot for sale is outlined in dashes this long with gaps this long, its sign a square this wide. */
+const LOT = { inset: 4, dash: 8, gap: 6, sign: 8 }
 
-/** What the strip shows: the map's bounds and the part on screen, and the world x of the door, the owner and each customer waiting out of sight. */
+/** What the strip shows: the map's bounds and the part on screen, the neighbour houses, and the world x of the door, the owner and each customer waiting out of sight. */
 export interface StripModel {
   bounds: Rect
   visible: Rect
+  lots: StripLot[]
   door: number
   owner: number
   dots: number[]
   look: Look
+}
+
+/** A dashed line from (x0, y0) to (x1, y1). */
+function dashed(g: Phaser.GameObjects.Graphics, x0: number, y0: number, x1: number, y1: number): void {
+  const len = Math.hypot(x1 - x0, y1 - y0)
+  for (let d = 0; d < len; d += LOT.dash + LOT.gap) {
+    const e = Math.min(d + LOT.dash, len)
+    g.lineBetween(x0 + ((x1 - x0) * d) / len, y0 + ((y1 - y0) * d) / len, x0 + ((x1 - x0) * e) / len, y0 + ((y1 - y0) * e) / len)
+  }
 }
 
 /** The whole row in small under the map: the view's frame, the door, the owner and red dots; a tap reports the strip x tapped. */
@@ -53,7 +66,23 @@ export class PositionStrip {
     g.clear()
       .fillStyle(hex(C.cream), 1)
       .fillRoundedRect(STRIP.x, y - h / 2, STRIP.w, h, h / 2)
-      .lineStyle(4, hex(C.ink))
+    // each house: a bought one in its wall colour, one for sale as a dashed lot with a red sign
+    for (const lot of m.lots) {
+      const lx = x(lot.x) + LOT.inset
+      const lw = x(lot.x + lot.w) - x(lot.x) - 2 * LOT.inset
+      const top = y - h / 2 + LOT.inset
+      const lh = h - 2 * LOT.inset
+      if (lot.fill) g.fillStyle(hex(lot.fill), 1).fillRect(lx, top, lw, lh)
+      else {
+        g.lineStyle(2, hex(C.ink))
+        dashed(g, lx, top, lx + lw, top)
+        dashed(g, lx, top + lh, lx + lw, top + lh)
+        dashed(g, lx, top, lx, top + lh)
+        dashed(g, lx + lw, top, lx + lw, top + lh)
+        g.fillStyle(hex(C.lantern), 1).fillRect(lx + lw / 2 - LOT.sign / 2, y - LOT.sign / 2, LOT.sign, LOT.sign)
+      }
+    }
+    g.lineStyle(4, hex(C.ink))
       .strokeRoundedRect(STRIP.x, y - h / 2, STRIP.w, h, h / 2)
       .lineStyle(8, hex(C.mustard))
       .lineBetween(x(m.door), y - TICK_H / 2, x(m.door), y + TICK_H / 2)

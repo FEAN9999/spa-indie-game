@@ -1,16 +1,21 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
+import { houseKey } from '../art/houses'
 import { C } from '../art/palette'
-import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, SHOP_X0, TILE } from '../config'
+import { FLOOR_ROWS, GAME_W, HOUSE_PRICE, MAP_X, MAP_Y, SHOP_X0, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { isUpright, size, workTile, type Item } from '../sim/items'
+import { NO_HOUSES, type House, type Houses } from '../sim/layout'
 import type { PlaceId } from '../sim/places'
 import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
+import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
+import { mapBounds } from './camera'
 import { FESTIVAL_COLORS } from './festivals'
 import { deskCandle, retagFloors } from './floors'
+import { forSale, houseImageX, houseRect, housesBetween, innerFloor } from './houses'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 
@@ -25,8 +30,14 @@ const WALL = { left: 12.3, right: 24.7, top: 0.1 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** An item draws just under a character whose feet are on its bottom row, however late it was bought. */
 const ITEM_DEPTH_BIAS = -0.5
-/** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
-const FLOOR = { left: 13, top: 2, right: 24, bottom: 17 }
+/** The neighbour houses lie over the room's edges and under its lanterns, mats and bed slots. */
+const HOUSE_DEPTH = 0.5
+/** A house for sale's sign: its middle row in tiles, and its size in pixels. */
+const SALE_SIGN = { y: 14, w: 300, h: 170 }
+/** How far buying a house lifts its roof, and how long the roof, the dust and the new house take, in ms. */
+const PURCHASE = { rise: 60, roofMs: 400, dustMs: 500, fadeInMs: 300 }
+/** A house for sale's roof or its sign. */
+type SalePart = Phaser.GameObjects.Image | Phaser.GameObjects.Container
 
 /** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
 const PLAQUE = { x: 16.3, y: 17.5, bottom: 28 }
@@ -88,6 +99,12 @@ export class RoomView {
   private offMarks: Phaser.GameObjects.Image[] = []
   /** The power cut's floor and machine tiles as last drawn, or 'off', so a frame without a change draws nothing. */
   private powerKey = ''
+  /** The neighbour houses bought, whose floors are drawn over the room's edges. */
+  private houses: Houses = NO_HOUSES
+  /** One image per bought house, by its key. */
+  private readonly houseImages = new Map<string, Phaser.GameObjects.Image>()
+  /** The roof and sign of each house for sale, by its key. */
+  private readonly sales = new Map<string, SalePart[]>()
 
   /** `place` is where the shop is, null for the main shop: the beach has its own floor 1, and a branch has no rank plaque. */
   constructor(
@@ -114,6 +131,69 @@ export class RoomView {
     this.coop = scene.add.image(MAP_X + 22.75 * TILE, this.rowY(6), 'coop').setOrigin(0, 0).setDisplaySize(1.5 * TILE, 4 * TILE).setDepth(this.rowY(STAIRS_TILE.y + 4) - 1).setVisible(false)
   }
 
+  /**
+   * Lays each bought house's floor beside the room and each house for sale's roof with its sign, and widens the power cut's dark to the
+   * bought houses. `justBought` lifts its roof off in a puff of dust and fades the new house in.
+   */
+  setHouses(bought: Houses, shown: Houses, justBought: House | null = null): void {
+    this.houses = bought
+    const b = mapBounds(bought)
+    this.dark.setPosition(b.x, b.y).setSize(b.w, this.room.height)
+    const just = justBought && houseKey(justBought)
+    for (const h of housesBetween(NO_HOUSES, bought)) {
+      const key = houseKey(h)
+      if (this.houseImages.has(key)) continue
+      const image = this.scene.add.image(houseImageX(h), MAP_Y, `house-${key}-${this.floor}`).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
+      this.houseImages.set(key, image)
+      if (key === just) this.purchase(h, image)
+    }
+    const selling = forSale(bought, shown)
+    const keys = new Set<string>(selling.map(houseKey))
+    for (const [key, parts] of this.sales) {
+      if (keys.has(key)) continue
+      this.sales.delete(key)
+      if (key === just) this.liftRoof(parts)
+      else for (const p of parts) p.destroy()
+    }
+    for (const h of selling) if (!this.sales.has(houseKey(h))) this.sales.set(houseKey(h), this.saleParts(h))
+  }
+
+  /** A house for sale's roof over its six columns, and its sign: BÁN NHÀ, CHÍNH CHỦ and the price. */
+  private saleParts(h: House): SalePart[] {
+    const r = houseRect(h)
+    const roof = this.scene.add.image(r.x, r.y, `sale-${houseKey(h)}`).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
+    const { w, h: bh } = SALE_SIGN
+    const g = this.scene.add.graphics().fillStyle(0xffffff, 1).fillRoundedRect(-w / 2, -bh / 2, w, bh, 16).lineStyle(6, hex(C.lantern)).strokeRoundedRect(-w / 2, -bh / 2, w, bh, 16)
+    const big = this.scene.add.text(0, -42, t('saleSign1'), textStyle(46, '800', C.lantern)).setOrigin(0.5)
+    const small = this.scene.add.text(0, 8, t('saleSign2'), textStyle(26, '800')).setOrigin(0.5)
+    const price = this.scene.add.text(0, 50, formatMoney(HOUSE_PRICE[h.n - 1]), textStyle(28, '800', C.soft)).setOrigin(0.5)
+    const sign = this.scene.add.container(r.x + r.w / 2, MAP_Y + SALE_SIGN.y * TILE, [g, big, small, price]).setDepth(HOUSE_DEPTH + 0.1)
+    return [roof, sign]
+  }
+
+  /** The roof and sign of a house just bought rise and fade, then go. */
+  private liftRoof(parts: SalePart[]): void {
+    this.scene.tweens.add({
+      targets: parts,
+      y: `-=${PURCHASE.rise}`,
+      alpha: 0,
+      duration: PURCHASE.roofMs,
+      onComplete: () => parts.forEach(p => p.destroy()),
+    })
+  }
+
+  /** Sand-coloured dust rises along the old wall column while the new house fades in after the roof is off. */
+  private purchase(h: House, image: Phaser.GameObjects.Image): void {
+    image.setAlpha(0)
+    this.scene.tweens.add({ targets: image, alpha: 1, delay: PURCHASE.roofMs, duration: PURCHASE.fadeInMs })
+    // the old wall column's middle: the image's left edge on the right, its right edge on the left
+    const x = h.side === 'right' ? image.x : image.x + image.width
+    for (let i = 0; i < 8; i++) {
+      const puff = this.scene.add.circle(x, MAP_Y + (2.5 + i * 2) * TILE, 14 + ((i * 5) % 9), hex(C.sand)).setDepth(DARK_DEPTH - 1)
+      this.scene.tweens.add({ targets: puff, y: `-=${PURCHASE.rise}`, alpha: 0, duration: PURCHASE.dustMs, onComplete: () => puff.destroy() })
+    }
+  }
+
   /** Floor 1's room: the place's own at a branch, or the main shop's. */
   private groundRoom(): string {
     return this.place ? `room-${this.place}` : 'room'
@@ -123,6 +203,7 @@ export class RoomView {
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
     this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
+    for (const [key, image] of this.houseImages) image.setTexture(`house-${key}-${floor}`)
     // the rooftop has the coop where the stairs are, and no rope
     this.coop.setVisible(floor === 3)
     this.stairs.setVisible(maxFloors > 1 && floor < 3)
@@ -327,10 +408,11 @@ export class RoomView {
   private placeMat(mat: Phaser.GameObjects.Image, bench: Item): void {
     const x = bench.x - 0.5
     const y = bench.y - 0.5
-    const left = Math.max(x, FLOOR.left)
-    const top = Math.max(y, FLOOR.top)
-    const right = Math.min(x + mat.width / TILE, FLOOR.right)
-    const bottom = Math.min(y + mat.height / TILE, FLOOR.bottom)
+    const floor = innerFloor(this.houses)
+    const left = Math.max(x, floor.left)
+    const top = Math.max(y, floor.top)
+    const right = Math.min(x + mat.width / TILE, floor.right)
+    const bottom = Math.min(y + mat.height / TILE, floor.bottom)
     mat.setPosition(MAP_X + x * TILE, this.rowY(y)).setCrop((left - x) * TILE, (top - y) * TILE, (right - left) * TILE, (bottom - top) * TILE)
   }
 

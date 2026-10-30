@@ -1,0 +1,53 @@
+import { HOUSE_LOOK, houseKey } from '../art/houses'
+import { HOUSE_COLS, MAP_X, SHOP_X0, TILE } from '../config'
+import type { House, Houses, Side } from '../sim/layout'
+import { MAP_VIEW, type Rect } from './camera'
+
+/** One house on the position strip: its world x and width, and its wall colour once bought, or null while it is for sale. */
+export interface StripLot {
+  x: number
+  w: number
+  fill: string | null
+}
+
+/** The grid column a house's own six columns start at: the far side of the old shop's wall, outward. */
+const firstCol = (h: House): number => (h.side === 'left' ? SHOP_X0 - h.n * HOUSE_COLS : SHOP_X0 + 13 + (h.n - 1) * HOUSE_COLS)
+
+/** The world rect of a house's own six columns, the full height of the map. */
+export const houseRect = (h: House): Rect => ({ x: MAP_X + firstCol(h) * TILE, y: MAP_VIEW.y, w: HOUSE_COLS * TILE, h: MAP_VIEW.h })
+
+/** The left edge of a bought house's image, which starts on the middle of the old wall column: half a tile in on the right, flush on the left. */
+export const houseImageX = (h: House): number => houseRect(h).x - (h.side === 'right' ? TILE / 2 : 0)
+
+/** Each side's houses from the shop outward, from `from` + 1 up to `to`. */
+export const housesBetween = (from: Houses, to: Houses): House[] =>
+  (['left', 'right'] as Side[]).flatMap(side => {
+    const out: House[] = []
+    for (let n = from[side] + 1; n <= to[side]; n++) out.push({ side, n: n as 1 | 2 })
+    return out
+  })
+
+/** The houses the map shows for sale: those shown but not bought. */
+export const forSale = (bought: Houses, shown: Houses): House[] => housesBetween(bought, shown)
+
+/** The house for sale under world x, or null. */
+export const saleAt = (bought: Houses, shown: Houses, worldX: number): House | null =>
+  forSale(bought, shown).find(h => {
+    const r = houseRect(h)
+    return worldX >= r.x && worldX < r.x + r.w
+  }) ?? null
+
+/** The floor in tiles with `h` bought, right and bottom exclusive; a bench's mat is cut off at its edges. */
+export const innerFloor = (h: Houses): { left: number; top: number; right: number; bottom: number } => ({
+  left: SHOP_X0 + 1 - h.left * HOUSE_COLS,
+  top: 2,
+  right: SHOP_X0 + 12 + h.right * HOUSE_COLS,
+  bottom: 17,
+})
+
+/** Every house the strip shows: bought ones in their wall colour, the ones for sale empty. */
+export const stripLots = (bought: Houses, shown: Houses): StripLot[] =>
+  housesBetween({ left: 0, right: 0 }, shown).map(h => {
+    const r = houseRect(h)
+    return { x: r.x, w: r.w, fill: h.n <= bought[h.side] ? HOUSE_LOOK[houseKey(h)].wall : null }
+  })
