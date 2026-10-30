@@ -519,7 +519,7 @@ export class SpaScene extends Phaser.Scene {
     this.tooNew = true
     this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
     addCard(this.ui, 90, 800, 900, 520)
-    this.add
+    this.ui.add
       .text(GAME_W / 2, 880, t('saveTooNew'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } })
       .setOrigin(0.5, 0)
     addButton(this.ui, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
