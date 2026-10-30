@@ -60,6 +60,8 @@ export class BootScene extends Phaser.Scene {
       ...mudTextures(),
       ...petTextures(),
     })
+    // the layer over the map runs first, so the shop draws into it from its first frame
+    this.scene.launch('HudScene')
     this.scene.start('SpaScene')
   }
 }

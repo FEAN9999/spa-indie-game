@@ -42,7 +42,10 @@ import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
+import { MAP_VIEW, mapBounds } from '../view/camera'
 import { HandPointer } from '../view/HandPointer'
+import { MapCamera } from '../view/MapCamera'
+import { MapGestures } from '../view/MapGestures'
 import { navIds, type NavId } from '../view/nav'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
@@ -63,11 +66,13 @@ import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
+import { ZoomButtons } from '../view/ZoomButtons'
 import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
 import type { ChainData } from './ChainScene'
 import type { ChoiceData } from './ChoiceScene'
 import type { GuestBookData } from './GuestBookScene'
+import type { HudScene } from './HudScene'
 import type { QuestsData } from './QuestsScene'
 import type { StarterData } from './StarterScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
@@ -166,7 +171,15 @@ export class SpaScene extends Phaser.Scene {
   chain!: Chain
   /** The shop the owner is in: `chain.active()`. */
   sim!: SpaSim
+  /** The layer over the map that never zooms: the HUD, the floor buttons, the pointer, the cards and the shutter are drawn there. */
+  private ui!: HudScene
   private room!: RoomView
+  /** The map's zoom and place, on this scene's main camera. */
+  private cam!: MapCamera
+  private gestures!: MapGestures
+  private zoomButtons!: ZoomButtons
+  /** The customer the hand last pointed at, so the map slides to a new one out of view only once. */
+  private pointedId: number | null = null
   /** The floor on view, from 1; only showFloor changes it. */
   private viewFloor = 1
   /** The owner's floor on the last frame, so the view follows them only on the frame they come off the stairs. */
@@ -236,6 +249,7 @@ export class SpaScene extends Phaser.Scene {
   create(data?: SpaSceneData) {
     // a scene started without data gets an empty object; a switch of shops hands over the chain
     const switched = data?.chain ? data : null
+    this.ui = this.scene.get('HudScene') as HudScene
     this.customers = new Map()
     this.pendingService = null
     this.holding = false
@@ -260,6 +274,7 @@ export class SpaScene extends Phaser.Scene {
     this.bubbleSpots = new Map()
     this.queuedLines = new Map()
     this.humMs = new Map()
+    this.pointedId = null
     this.store = openStore()
     // the chain's save: the main shop's own leaves its branches out
     this.session = new SaveSession(this.store, () => this.chain.toSave(), () => location.reload())
@@ -285,14 +300,19 @@ export class SpaScene extends Phaser.Scene {
     this.room.setRank(this.sim.rank.stars)
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
+    // at normal size on the owner; the view is never saved
+    this.cam = new MapCamera(this, MAP_VIEW, mapBounds(this.sim.houses))
+    this.cam.jump({ zoom: 1, cx: this.room.tileToWorld(this.sim.owner.pos).x })
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.pets = new PetLayer(this, this.room)
-    this.hud = new Hud(this, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
-    this.floorBar = new FloorBar(this, HUD_DEPTH, floor => this.tapFloor(floor))
-    this.pointer = new HandPointer(this)
-    this.input.on('pointerup', this.onTap, this)
+    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
+    this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
+    this.pointer = new HandPointer(this.ui)
+    this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
+    // a press on anything of the HUD's never moves nor taps the map
+    this.gestures = new MapGestures(this.ui.input, this.cam, { allow: (_, over) => over.length === 0 && this.mapFree(), onTap: p => this.onMapTap(p) })
 
     // a shop is first written once it has an owner; until then the owner card holds it still, so nothing is lost
     const autosave = () => {
@@ -331,6 +351,9 @@ export class SpaScene extends Phaser.Scene {
       document.removeEventListener('visibilitychange', saveOnHide)
       window.removeEventListener('pagehide', saveOnLeave)
       stopWatching()
+      // the layer over the map outlives the scene: the next shop draws its own
+      this.ui.clear()
+      this.gestures.destroy()
     })
 
     if (switched) {
@@ -371,7 +394,7 @@ export class SpaScene extends Phaser.Scene {
         pauseUnlessOver()
       }
     }
-    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, chain: this.chain, spa: this, store: this.store, session: this.session })
+    if (import.meta.env.DEV) Object.assign((window as any).__spa, { sim: this.sim, chain: this.chain, spa: this, store: this.store, session: this.session, cam: this.cam })
   }
 
   /** On arriving by a switch of shops: the shutter rolls up, then the owner is greeted, or told the branch has no technician yet. */
@@ -411,16 +434,16 @@ export class SpaScene extends Phaser.Scene {
   private shutter(place: PlaceId | null, down: boolean, then: () => void): void {
     const y = down ? -GAME_H : 0
     const { sign } = SHUTTER
-    const sheet = this.add.rectangle(0, y, GAME_W, GAME_H, hex(C.wood)).setOrigin(0).setInteractive()
-    const art = this.add.graphics({ y }).lineStyle(6, hex(C.woodDark))
+    const sheet = this.ui.add.rectangle(0, y, GAME_W, GAME_H, hex(C.wood)).setOrigin(0).setInteractive()
+    const art = this.ui.add.graphics({ y }).lineStyle(6, hex(C.woodDark))
     for (let s = SHUTTER.slat; s < GAME_H; s += SHUTTER.slat) art.lineBetween(0, s, GAME_W, s)
     const signX = (GAME_W - sign.w) / 2
     const signY = (GAME_H - sign.h) / 2
     art.fillStyle(hex(C.goldPale), 1).fillRoundedRect(signX, signY, sign.w, sign.h, sign.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(signX, signY, sign.w, sign.h, sign.r)
-    const name = this.add.text(GAME_W / 2, y + GAME_H / 2, placeName(place), textStyle(64)).setOrigin(0.5)
+    const name = this.ui.add.text(GAME_W / 2, y + GAME_H / 2, placeName(place), textStyle(64)).setOrigin(0.5)
     const parts = [sheet, art, name]
     for (const p of parts) p.setDepth(SHUTTER.depth)
-    this.tweens.add({
+    this.ui.tweens.add({
       targets: parts,
       y: `${down ? '+' : '-'}=${GAME_H}`,
       duration: SHUTTER.ms,
@@ -477,7 +500,7 @@ export class SpaScene extends Phaser.Scene {
       onDone: () => {
         this.awayOpen = false
         this.modal = wasModal
-        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, back.paid, HUD_DEPTH + 40)
+        this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, back.paid, HUD_DEPTH + 40)
         then?.()
       },
     }
@@ -487,12 +510,12 @@ export class SpaScene extends Phaser.Scene {
   /** The slot was saved by a newer version: nothing runs and nothing is written; reloading fetches the newer version. */
   private showTooNew(): void {
     this.tooNew = true
-    this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    addCard(this, 90, 800, 900, 520)
+    this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    addCard(this.ui, 90, 800, 900, 520)
     this.add
       .text(GAME_W / 2, 880, t('saveTooNew'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } })
       .setOrigin(0.5, 0)
-    addButton(this, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
+    addButton(this.ui, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
   }
 
   private openChain(saved: SaveData | null): Chain {
@@ -795,35 +818,35 @@ export class SpaScene extends Phaser.Scene {
     const card: Omit<GoldCard, 'icon'> =
       typeof next === 'string' ? { head: t('badgeNew'), name: t(BADGE_TEXT[next].name), line: t(BADGE_TEXT[next].cond) } : next
     const fit = (text: Phaser.GameObjects.Text) => text.setScale(Math.min(1, BADGE_CARD.textW / text.width))
-    const head = fit(this.add.text(BADGE_CARD.textX, 300, card.head, textStyle(32, '800', C.terracotta)).setOrigin(0, 0.5))
-    const name = fit(this.add.text(BADGE_CARD.textX, 352, card.name, textStyle(50)).setOrigin(0, 0.5))
-    const line = this.add.text(BADGE_CARD.textX, 0, card.line, { ...textStyle(28, '600', C.soft), wordWrap: { width: BADGE_CARD.textW } })
+    const head = fit(this.ui.add.text(BADGE_CARD.textX, 300, card.head, textStyle(32, '800', C.terracotta)).setOrigin(0, 0.5))
+    const name = fit(this.ui.add.text(BADGE_CARD.textX, 352, card.name, textStyle(50)).setOrigin(0, 0.5))
+    const line = this.ui.add.text(BADGE_CARD.textX, 0, card.line, { ...textStyle(28, '600', C.soft), wordWrap: { width: BADGE_CARD.textW } })
     // the first line sits where a badge's one line always did
     line.setY(400 - line.height / line.getWrappedText().length / 2)
     const h = Math.max(BADGE_CARD.h, line.y + line.height + BADGE_CARD.bottomPad - BADGE_CARD.y)
     const iconY = BADGE_CARD.y + h / 2
-    const bg = this.add
+    const bg = this.ui.add
       .graphics()
       .fillStyle(hex(C.goldPale), 1)
       .fillRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
       .lineStyle(5, hex(C.ink))
       .strokeRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
     const icon: Phaser.GameObjects.GameObject[] = []
-    if (typeof next === 'string') icon.push(addMedal(this, next, BADGE_CARD.medalX, iconY, { got: true, ring: null }))
+    if (typeof next === 'string') icon.push(addMedal(this.ui, next, BADGE_CARD.medalX, iconY, { got: true, ring: null }))
     else {
-      const disc = this.add.circle(BADGE_CARD.medalX, iconY, BADGE_CARD.discR, hex(next.icon.disc)).setStrokeStyle(5, hex(C.ink))
-      const picture = this.add.image(BADGE_CARD.medalX, iconY, next.icon.texture)
+      const disc = this.ui.add.circle(BADGE_CARD.medalX, iconY, BADGE_CARD.discR, hex(next.icon.disc)).setStrokeStyle(5, hex(C.ink))
+      const picture = this.ui.add.image(BADGE_CARD.medalX, iconY, next.icon.texture)
       picture.setScale(BADGE_CARD.icon / Math.max(picture.width, picture.height))
       if (next.icon.tint) picture.setTint(hex(next.icon.tint))
       icon.push(disc, picture)
     }
-    const box = this.add
+    const box = this.ui.add
       .container(0, 0, [bg, ...icon, head, name, line])
       .setDepth(HUD_DEPTH + 60)
       .setAlpha(0)
     if (typeof next === 'string' || !next.quiet) sound.play('levelUp')
     const ms = goldCardMs(line.getWrappedText().length)
-    this.tweens.chain({
+    this.ui.tweens.chain({
       targets: box,
       tweens: [
         { alpha: 1, duration: BADGE_FADE_MS },
@@ -858,7 +881,7 @@ export class SpaScene extends Phaser.Scene {
       onDone: () => {
         inspector.container.destroy()
         this.modal = false
-        if (result.reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, result.reward, HUD_DEPTH + 40)
+        if (result.reward > 0) this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, result.reward, HUD_DEPTH + 40)
         if (result.cert) this.queueToast(t('certToast'))
         this.session.saveNow()
       },
@@ -929,10 +952,12 @@ export class SpaScene extends Phaser.Scene {
       sim.markHint('summary')
       this.chain.startDay()
       this.showFloor(1)
+      // the day starts at normal size, on the old shop
+      this.cam.jump({ zoom: 1, cx: 540, cy: 990 })
       this.session.saveNow()
       this.showMorningBanner()
       const reward = (month?.reward ?? 0) + (year?.reward ?? 0)
-      if (reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, reward, HUD_DEPTH + 40)
+      if (reward > 0) this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, reward, HUD_DEPTH + 40)
       if (month && month.after > month.before) {
         // after the VIP toast and before the month's (which the next update sends, timed by what this leaves)
         const text = t('rankUpToast', { n: month.after })
@@ -983,6 +1008,12 @@ export class SpaScene extends Phaser.Scene {
     this.room.sync(sim.items, sim.grid.bedSlots.map(tile => ({ tile, open: sim.canPlace('bed', tile.x, tile.y, false) === null })))
   }
 
+  /** The map can be swiped, zoomed and tapped: no card, pause, build mode or mini-game over it, and no update check waited on. */
+  private mapFree(): boolean {
+    const sim = this.sim
+    return !this.modal && !this.holding && !sim.paused && !sim.dayOver && sim.servingCustomerId === null
+  }
+
   /** The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game, nor while waiting on an update check. */
   private updateFloorBar(): void {
     const sim = this.sim
@@ -1022,22 +1053,22 @@ export class SpaScene extends Phaser.Scene {
       this.session.saveNow()
     }
     const parts: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [
-      this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
-      addCard(this, 90, 760, 900, 640),
-      this.add.text(GAME_W / 2, 810, t(`floorName${floor}` as StringKey), textStyle(60, '800')).setOrigin(0.5, 0),
-      this.add.text(GAME_W / 2, 910, `${t(`floorLine${floor}a` as StringKey)}
+      this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
+      addCard(this.ui, 90, 760, 900, 640),
+      this.ui.add.text(GAME_W / 2, 810, t(`floorName${floor}` as StringKey), textStyle(60, '800')).setOrigin(0.5, 0),
+      this.ui.add.text(GAME_W / 2, 910, `${t(`floorLine${floor}a` as StringKey)}
 ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
     ]
-    if (note) parts.push(this.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
+    if (note) parts.push(this.ui.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
     // the open button is wide enough for its price; "Để sau" beside it is narrower, so the pair keeps even margins inside the card
     const openX = GAME_W / 2 + 165
-    parts.push(addButton(this, note ? GAME_W / 2 : GAME_W / 2 - 245, 1290, note ? 340 : 300, 120, t('floorLater'), 'plain', close))
+    parts.push(addButton(this.ui, note ? GAME_W / 2 : GAME_W / 2 - 245, 1290, note ? 340 : 300, 120, t('floorLater'), 'plain', close))
     if (!note) {
-      const openBtn = addButton(this, openX, 1290, 460, 120, t('floorOpen', { money: formatMoney(price) }), 'primary', canOpen ? open : () => {}, 44)
+      const openBtn = addButton(this.ui, openX, 1290, 460, 120, t('floorOpen', { money: formatMoney(price) }), 'primary', canOpen ? open : () => {}, 44)
       parts.push(openBtn)
       if (problem === 'money') {
         openBtn.setAlpha(0.45)
-        parts.push(this.add.text(openX, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
+        parts.push(this.ui.add.text(openX, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
       }
     }
     for (const p of parts) p.setDepth(CARD_DEPTH)
@@ -1072,11 +1103,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
     const text = t('quickBuyBed', { money: formatMoney(price) })
     const parts = [
-      this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
-      addCard(this, 90, 860, 900, 440),
-      this.add.text(GAME_W / 2, 950, text, { ...textStyle(48, '800'), align: 'center', wordWrap: { width: 720 } }).setOrigin(0.5, 0),
-      addButton(this, GAME_W / 2 - 190, 1170, 340, 120, t('cancel'), 'plain', close),
-      addButton(this, GAME_W / 2 + 190, 1170, 340, 120, t('buy'), 'primary', buy),
+      this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
+      addCard(this.ui, 90, 860, 900, 440),
+      this.ui.add.text(GAME_W / 2, 950, text, { ...textStyle(48, '800'), align: 'center', wordWrap: { width: 720 } }).setOrigin(0.5, 0),
+      addButton(this.ui, GAME_W / 2 - 190, 1170, 340, 120, t('cancel'), 'plain', close),
+      addButton(this.ui, GAME_W / 2 + 190, 1170, 340, 120, t('buy'), 'primary', buy),
     ]
     for (const p of parts) p.setDepth(CARD_DEPTH)
   }
@@ -1150,6 +1181,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.hud.update(this.modal)
     this.updateFloorBar()
+    if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
+    else this.zoomButtons.hide()
+    this.cam.update(delta)
     this.updatePointer(delta)
   }
 
@@ -1210,27 +1244,35 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container
-    if (!pick || !at || !at.visible) {
+    // a customer newly pointed at out of view: the map slides to them, and the hand shows once they are in view
+    if (pick && at?.visible && pick.customerId !== this.pointedId) {
+      this.pointedId = pick.customerId
+      if (!this.cam.isVisible(at.x, at.y)) this.cam.slideTo(at.x, at.y)
+    }
+    if (!pick || !at || !at.visible || !this.cam.isVisible(at.x, at.y)) {
       this.pointer.hide()
       return
     }
+    // the hand is drawn over the map, where the customer is on screen
+    const head = this.cam.toScreen(at.x, at.y - CHARACTER_HEIGHT_PX - 10)
+    const bar = this.cam.toScreen(at.x, at.y + PATIENCE_BAR_TOP)
     if (pick.hint === 'tapCustomer') {
-      this.pointer.show(t('hintTapCustomer'), at.x, at.y - CHARACTER_HEIGHT_PX - 10, 'down')
+      this.pointer.show(t('hintTapCustomer'), head.x, head.y, 'down')
       return
     }
     if (pick.hint === 'regular') {
-      this.pointer.show(t('hintRegular'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+      this.pointer.show(t('hintRegular'), bar.x, bar.y, 'down')
       this.regularHintMs += delta
       if (this.regularHintMs >= PATIENCE_HINT_MS) sim.markHint('regular')
       return
     }
     if (pick.hint === 'vip') {
-      this.pointer.show(t('hintVip'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+      this.pointer.show(t('hintVip'), bar.x, bar.y, 'down')
       this.vipHintMs += delta
       if (this.vipHintMs >= PATIENCE_HINT_MS) sim.markHint('vip')
       return
     }
-    this.pointer.show(t('hintPatience'), at.x, at.y + PATIENCE_BAR_TOP, 'down')
+    this.pointer.show(t('hintPatience'), bar.x, bar.y, 'down')
     this.patienceHintMs += delta
     if (this.patienceHintMs >= PATIENCE_HINT_MS) sim.markHint('patience')
   }
@@ -1404,7 +1446,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.offerBed(e.slot)
         return
       case 'questDone':
-        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
+        this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
         this.queueToast(t('questDoneToast', { name: questTitle(e.quest), money: formatMoney(e.quest.reward) }))
         return
       case 'badge':
@@ -1414,11 +1456,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.badgeQueue.push(festivalStartCard(e, monthOf(this.sim.day)))
         return
       case 'goalDone':
-        if (e.reward > 0) this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
+        if (e.reward > 0) this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
         this.badgeQueue.push(goalCard(e))
         return
       case 'festivalQuestDone':
-        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
+        this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, e.quest.reward, HUD_DEPTH + 40)
         this.badgeQueue.push(festivalDoneCard(e))
         return
       case 'eventToday':
@@ -1440,7 +1482,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.inspectNote = e
         return
       case 'rivalBeaten':
-        this.floatMoneyAt(TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
+        this.floatMoneyAt(this.ui, TOP_BAR.moneyX + 120, 250, e.reward, HUD_DEPTH + 40)
         this.badgeQueue.push(rivalBeatenCard(e))
         return
       case 'powerWarn':
@@ -1659,7 +1701,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         continue
       }
       const spot = this.bubbleSpots.get(id)
-      if (spot) b.setPosition(spot.x, spot.y).setVisible(spot.floor === this.viewFloor)
+      if (spot) b.setPosition(spot.x, spot.y, this.inView()).setVisible(spot.floor === this.viewFloor)
     }
   }
 
@@ -1682,7 +1724,13 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     const b = new SpeechBubble(this, text, ms)
     this.bubbles.set(customerId, b)
     const spot = this.bubbleSpots.get(customerId)
-    if (spot) b.setPosition(spot.x, spot.y)
+    if (spot) b.setPosition(spot.x, spot.y, this.inView())
+  }
+
+  /** The left and right of the part of the map on screen, in world pixels: speech stays within them. */
+  private inView(): { left: number; right: number } {
+    const v = this.cam.visible()
+    return { left: v.x, right: v.x + v.w }
   }
 
   /** Like say, but waits for a live bubble of that customer to finish instead of replacing it. */
@@ -1731,18 +1779,18 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   private floatMoney(tile: Tile, amount: number, depth = FX_DEPTH + 10): void {
     if (!this.room.onFloor(tile.y)) return
     const at = this.room.tileToWorld(tile)
-    this.floatMoneyAt(at.x, at.y - 130, amount, depth)
+    this.floatMoneyAt(this, at.x, at.y - 130, amount, depth)
   }
 
-  /** A coin and "+money" centred on x, y that rises and fades. */
-  private floatMoneyAt(x: number, y: number, amount: number, depth: number): void {
-    const label = this.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
+  /** A coin and "+money" centred on x, y that rises and fades: on the map, or over the HUD by the money counter. */
+  private floatMoneyAt(on: Phaser.Scene, x: number, y: number, amount: number, depth: number): void {
+    const label = on.add.text(0, 0, '+' + formatMoney(amount), { ...textStyle(46), stroke: C.cream, strokeThickness: 10 }).setOrigin(0, 0.5)
     const width = 48 + 8 + label.width
-    const coin = this.add.image(-width / 2 + 24, 0, 'coin')
+    const coin = on.add.image(-width / 2 + 24, 0, 'coin')
     label.x = -width / 2 + 56
-    const box = this.add.container(x, y, [coin, label]).setDepth(depth)
-    this.tweens.add({ targets: box, y: box.y - 60, duration: 1000, ease: 'Cubic.easeOut' })
-    this.tweens.add({ targets: box, alpha: 0, duration: 1000, ease: 'Cubic.easeIn', onComplete: () => box.destroy() })
+    const box = on.add.container(x, y, [coin, label]).setDepth(depth)
+    on.tweens.add({ targets: box, y: box.y - 60, duration: 1000, ease: 'Cubic.easeOut' })
+    on.tweens.add({ targets: box, alpha: 0, duration: 1000, ease: 'Cubic.easeIn', onComplete: () => box.destroy() })
   }
 
   private showBubble(customerId: number, score: number): void {
@@ -1755,9 +1803,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.tweens.add({ targets: s.bubble, scale: 1.2, duration: 250, ease: 'Back.easeOut' })
   }
 
-  private onTap(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
+  /** A tap on the map that no HUD object took, from the map's gestures: tested against what is under it on the map, at its world point. */
+  private onMapTap(p: Phaser.Input.Pointer): void {
     if (this.holding) return
     if (Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
+    const w = this.cam.toWorld(p.x, p.y)
+    // under or over the map's area, a zoomed map has rows that are not drawn
+    if (!this.cam.isVisible(w.x, w.y)) return
+    const over = this.input.hitTestPointer(p)
     if (over.length > 0) {
       // a pet takes the tap: a pat, and the owner stays put
       const pet = this.pets.petAt(over)
@@ -1768,9 +1821,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     const hit = this.sim.customers.find(c => {
       if (c.state !== 'waiting' || !c.seat || this.floorOfCustomer(c) !== this.viewFloor) return false
       const at = this.room.tileToWorld(c.pos)
-      return Math.abs(p.x - at.x) <= TILE / 2 && p.y <= at.y && p.y >= at.y - CHARACTER_HEIGHT_PX
+      return Math.abs(w.x - at.x) <= TILE / 2 && w.y <= at.y && w.y >= at.y - CHARACTER_HEIGHT_PX
     })
-    const tile = hit?.seat ?? this.room.worldToTile(p.x, p.y)
+    const tile = hit?.seat ?? this.room.worldToTile(w.x, w.y)
     // a point above or below the floor in view would land on the rows of the next floor
     if (!this.room.onFloor(tile.y)) return
     this.sim.tapTile(tile)

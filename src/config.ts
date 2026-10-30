@@ -16,8 +16,17 @@ export const MAP_Y = 210
 export const STREET_TILES = 2
 /** The closest the map zooms in; the farthest out fits every bought column across the screen, never past normal size. */
 export const ZOOM_MAX = 1.6
+/** How much one tap of + or − zooms, about the middle of the map's area, and how long it eases. */
+export const ZOOM_STEP = 1.35
+export const ZOOM_STEP_MS = 200
+/** How long the map eases to a point it is sent to. */
+export const SLIDE_MS = 300
+/** A flick's glide slows by e every this many ms. */
+export const GLIDE_DECAY_MS = 250
 /** How far a finger may move, in screen pixels, and still tap. */
 export const TAP_SLOP_PX = 20
+/** A swiping finger held still this long before it lifts leaves the map where it is, with no glide. */
+export const GLIDE_STILL_MS = 100
 
 export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */

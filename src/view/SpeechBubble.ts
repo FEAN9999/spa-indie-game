@@ -13,7 +13,7 @@ const PAD_Y = 22
 const RADIUS = 24
 const TAIL_H = 26
 const TAIL_HALF_W = 18
-/** The card never gets closer than this to the screen's edge; its tail still points at the head. */
+/** The card never gets closer than this to the edge of the view; its tail still points at the head. */
 const EDGE_PX = 24
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
@@ -56,13 +56,13 @@ export class SpeechBubble {
     })
   }
 
-  /** The tail tip, in world pixels. */
-  setPosition(x: number, y: number): this {
+  /** The tail tip, in world pixels; the card stays between `bounds`' left and right, the part of the map in view. */
+  setPosition(x: number, y: number, bounds = { left: 0, right: GAME_W }): this {
     this.box.setPosition(x, y)
     // keep the tail under the card's body, and the card on screen
     const reach = this.halfW - RADIUS - TAIL_HALF_W
-    const left = EDGE_PX + this.halfW
-    const centre = Phaser.Math.Clamp(x, left, Math.max(left, GAME_W - EDGE_PX - this.halfW))
+    const left = bounds.left + EDGE_PX + this.halfW
+    const centre = Phaser.Math.Clamp(x, left, Math.max(left, bounds.right - EDGE_PX - this.halfW))
     this.card.x = Phaser.Math.Clamp(centre, x - reach, x + reach) - x
     return this
   }

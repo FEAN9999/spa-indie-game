@@ -1,4 +1,4 @@
-import { TAP_SLOP_PX } from '../config'
+import { GLIDE_STILL_MS, TAP_SLOP_PX } from '../config'
 
 /** What one pointer event amounts to for the map. Distances are screen pixels; a release's speed is pixels per ms. */
 export type GestureStep =
@@ -80,7 +80,8 @@ export class Gestures {
       const mode = this.mode
       this.mode = 'idle'
       if (mode === 'press') return { kind: 'tap', x, y }
-      if (mode === 'pan' && this.panned) return { kind: 'release', ...this.speed }
+      // a finger held still before it lifts leaves the map where it is
+      if (mode === 'pan' && this.panned && t - this.last.t <= GLIDE_STILL_MS) return { kind: 'release', ...this.speed }
       return NONE
     }
     if (this.at.size === 1) {

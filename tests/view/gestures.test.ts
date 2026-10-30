@@ -20,6 +20,13 @@ describe('gestures', () => {
     expect(g.busy).toBe(false)
   })
 
+  it('lets a pan that was held still before lifting stop where it is', () => {
+    const g = new Gestures()
+    g.down(1, 100, 100, 0)
+    g.move(1, 150, 100, 10)
+    expect(g.up(1, 150, 100, 400)).toEqual({ kind: 'none' })
+  })
+
   it('gives a 25 px move as one step of 25', () => {
     const g = new Gestures()
     g.down(1, 0, 0, 0)
