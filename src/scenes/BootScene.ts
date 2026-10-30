@@ -4,6 +4,7 @@ import { beachRoomTexture } from '../art/beach'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { floorTextures } from '../art/floors'
+import { houseTextures } from '../art/houses'
 import { furnitureTextures } from '../art/furniture'
 import { ingredientTextures } from '../art/ingredients'
 import { mapTexture } from '../art/map'
@@ -44,6 +45,7 @@ export class BootScene extends Phaser.Scene {
       'room-uptown': uptownRoomTexture(parseLayout(BRANCH_ROOM)),
       'chain-map': mapTexture(),
       ...floorTextures(),
+      ...houseTextures(),
       ...furnitureTextures(),
       ...chibiTextures(),
       ...fxTextures(),

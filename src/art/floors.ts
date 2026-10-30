@@ -6,7 +6,7 @@ import { svgDoc } from './svg'
 const COLS = 13
 
 /** A shuttered window: a glass pane between two green louvre leaves. */
-function shutterWindow(cx: number): string {
+export function shutterWindow(cx: number): string {
   const out = [rect(cx - 0.45, 0.3, 0.9, 1.05, C.glass, `rx="0.04" ${outline(0.04)}`), `<path d="M${cx},0.3 V1.35 M${cx - 0.45},0.82 H${cx + 0.45}" ${outline(FINE)}/>`]
   for (const x of [cx - 0.97, cx + 0.47]) {
     out.push(rect(x, 0.28, 0.5, 1.1, C.tealLight, `rx="0.04" ${outline(0.04)}`))
@@ -18,7 +18,7 @@ function shutterWindow(cx: number): string {
 }
 
 /** A terracotta pot of leaves and pink flowers; (cx, y) is the middle of its rim. */
-function pot(cx: number, y: number): string {
+export function pot(cx: number, y: number): string {
   const flowers = [[-0.18, -0.2], [0.1, -0.26], [0.22, -0.06], [-0.05, -0.02]]
     .map(([dx, dy]) => `<circle cx="${cx + dx}" cy="${y + dy}" r="0.08" fill="${C.lotus}" ${outline(0.025)}/>`)
     .join('')

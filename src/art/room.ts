@@ -13,14 +13,17 @@ export const LINE = 0.05
 export const FINE = 0.03
 export const outline = (w = LINE) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
 
-/** The board's gạch bông, one tile in 24 units. The flower is classed so the app icon can outline it. */
-export const GACH_BONG_TILE =
-  `<rect width="24" height="24" fill="${C.tile}"/>` +
-  `<path d="M0,0 h6 a6,6 0 0 1 -6,6Z M24,0 v6 a6,6 0 0 1 -6,-6Z M0,24 v-6 a6,6 0 0 1 6,6Z M24,24 h-6 a6,6 0 0 1 6,-6Z" fill="${C.terracotta}"/>` +
-  `<path class="flower" d="M12,4.5 Q15.2,9 12,12 Q8.8,9 12,4.5Z M19.5,12 Q15,15.2 12,12 Q15,8.8 19.5,12Z M12,19.5 Q8.8,15 12,12 Q15.2,15 12,19.5Z M4.5,12 Q9,8.8 12,12 Q9,15.2 4.5,12Z" fill="${C.teal}"/>` +
+/** A gạch bông tile in 24 units: a `base` ground, `corner` quarter circles and a `flower`. The flower is classed so the app icon can outline it. */
+export const gachBongTile = (base: string, corner: string, flower: string): string =>
+  `<rect width="24" height="24" fill="${base}"/>` +
+  `<path d="M0,0 h6 a6,6 0 0 1 -6,6Z M24,0 v6 a6,6 0 0 1 -6,-6Z M0,24 v-6 a6,6 0 0 1 6,6Z M24,24 h-6 a6,6 0 0 1 6,-6Z" fill="${corner}"/>` +
+  `<path class="flower" d="M12,4.5 Q15.2,9 12,12 Q8.8,9 12,4.5Z M19.5,12 Q15,15.2 12,12 Q15,8.8 19.5,12Z M12,19.5 Q8.8,15 12,12 Q15.2,15 12,19.5Z M4.5,12 Q9,8.8 12,12 Q9,15.2 4.5,12Z" fill="${flower}"/>` +
   `<circle class="flower" cx="12" cy="12" r="1.7" fill="${C.mustard}"/>` +
   `<path d="M12,0 L13.4,1.6 L12,3.2 L10.6,1.6Z M12,24 L13.4,22.4 L12,20.8 L10.6,22.4Z M0,12 L1.6,10.6 L3.2,12 L1.6,13.4Z M24,12 L22.4,10.6 L20.8,12 L22.4,13.4Z" fill="${C.mustard}"/>` +
   `<rect width="24" height="24" fill="none" stroke="${C.tileSeam}" stroke-width="0.6"/>`
+
+/** The board's gạch bông, one tile in 24 units. */
+export const GACH_BONG_TILE = gachBongTile(C.tile, C.terracotta, C.teal)
 
 /** One gạch bông per grid tile: the 24-unit tile scaled into a 1×1 tile. */
 export const GACH_BONG =
@@ -53,19 +56,25 @@ function clock(cx: number): string {
   )
 }
 
+/** One pane of glass shop front from x0 to x1 along the bottom of a room `rows` tall, with mullions and glints. */
+export function glassPane(x0: number, x1: number, rows: number): string {
+  const y = rows - 0.45
+  const h = 0.45
+  const mullions: string[] = []
+  for (let x = x0 + 0.7; x < x1 - 0.1; x += 0.7) mullions.push(`M${x},${y} V${y + h}`)
+  return (
+    rect(x0, y, x1 - x0, h, C.glass, outline(0.04)) +
+    `<path d="${mullions.join(' ')}" stroke="${C.tealLight}" stroke-width="0.06"/>` +
+    `<path d="M${x0 + 0.03},${y + 0.04} H${x1 - 0.03}" stroke="${C.tealLight}" stroke-width="0.09"/>` +
+    `<path d="M${x0 + 0.25},${y + 0.38} l0.2,-0.28 M${x0 + 2.9},${y + 0.38} l0.2,-0.28" stroke="#ffffff" stroke-width="0.04" opacity="0.85"/>`
+  )
+}
+
 /** Glass shop front either side of the door, with mullions, glints, door posts and a doormat. */
 export function shopFront(cols: number, rows: number, doorX: number): string {
   const y = rows - 0.45
-  const h = 0.45
   const out: string[] = []
-  for (const [x0, x1] of [[0.3, doorX], [doorX + 1, cols - 0.3]]) {
-    out.push(rect(x0, y, x1 - x0, h, C.glass, outline(0.04)))
-    const mullions: string[] = []
-    for (let x = x0 + 0.7; x < x1 - 0.1; x += 0.7) mullions.push(`M${x},${y} V${y + h}`)
-    out.push(`<path d="${mullions.join(' ')}" stroke="${C.tealLight}" stroke-width="0.06"/>`)
-    out.push(`<path d="M${x0 + 0.03},${y + 0.04} H${x1 - 0.03}" stroke="${C.tealLight}" stroke-width="0.09"/>`)
-    out.push(`<path d="M${x0 + 0.25},${y + 0.38} l0.2,-0.28 M${x0 + 2.9},${y + 0.38} l0.2,-0.28" stroke="#ffffff" stroke-width="0.04" opacity="0.85"/>`)
-  }
+  for (const [x0, x1] of [[0.3, doorX], [doorX + 1, cols - 0.3]]) out.push(glassPane(x0, x1, rows))
   out.push(rect(doorX + 0.1, rows - 0.3, 0.8, 0.26, C.terracotta, `rx="0.05" ${outline(FINE)}`))
   out.push(rect(doorX - 0.12, y - 0.15, 0.2, 0.68, C.wood, `rx="0.05" ${outline(0.035)}`))
   out.push(rect(doorX + 0.92, y - 0.15, 0.2, 0.68, C.wood, `rx="0.05" ${outline(0.035)}`))
