@@ -641,6 +641,8 @@ export class SpaScene extends Phaser.Scene {
         this.session.saveNow()
       },
       showFloor: floor => this.showFloor(floor),
+      map: this,
+      cam: this.cam,
     }
     this.scene.launch('BuildScene', data)
   }

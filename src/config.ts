@@ -27,6 +27,10 @@ export const GLIDE_DECAY_MS = 250
 export const TAP_SLOP_PX = 20
 /** A swiping finger held still this long before it lifts leaves the map where it is, with no glide. */
 export const GLIDE_STILL_MS = 100
+/** In build mode, a held piece dragged this close to the map's left or right edge, in screen pixels, scrolls the map that way. */
+export const EDGE_SCROLL = 80
+/** How fast that scroll goes, in screen pixels per ms. */
+export const EDGE_SCROLL_SPEED = 0.9
 
 export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */

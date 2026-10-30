@@ -3,22 +3,26 @@ import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { PET_ORIGIN, petKey } from '../art/pets'
 import { sound } from '../audio/engine'
-import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, MAX_PETS, SHOP_X0, TAP_SLOP_PX, TILE } from '../config'
+import { EDGE_SCROLL, EDGE_SCROLL_SPEED, GAME_H, GAME_W, MAP_X, MAX_PETS, TAP_SLOP_PX, TILE } from '../config'
 import { claimed, nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
 import { footprint, ITEMS, nextFacing, setProgress, size, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
 import { BREEDS, type BreedId, type Pet } from '../sim/pets'
 import type { SpaSim } from '../sim/spa'
-import type { Tile } from '../sim/types'
+import type { Tile, Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { BREED_NAME, t, type StringKey } from '../strings/vi'
+import { buildArea, dragTile, MAP_VIEW } from '../view/camera'
 import { catalogPage, petPage, type CatalogEntry } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
 import { carryTo, clampToFloor, pills, showPills } from '../view/floors'
+import type { MapCamera } from '../view/MapCamera'
+import { MapGestures } from '../view/MapGestures'
 import type { RoomView } from '../view/RoomView'
 import { textStyle } from '../view/text'
 import { addButton, addCard, addToast } from '../view/ui'
+import { ZoomButtons } from '../view/ZoomButtons'
 import type { PetGiveData } from './PetGiveScene'
 import type { PetNameData } from './PetNameScene'
 
@@ -32,6 +36,9 @@ export interface BuildData {
   onClose: () => void
   /** SpaScene's showFloor: the only way build mode changes the floor in view. */
   showFloor: (floor: number) => void
+  /** The shop's scene, whose map camera draws the grid, the tint and the held piece. */
+  map: Phaser.Scene
+  cam: MapCamera
 }
 
 /** The piece on the finger: a new one to buy or a gift to put down, or one of the shop's items, whose sprite is hidden meanwhile. */
@@ -42,8 +49,6 @@ interface Held {
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
-/** New pieces start on the free spot nearest the middle of the floor in view. */
-const centre = (floor: number): Tile => ({ x: SHOP_X0 + 6, y: 9 + (floor - 1) * FLOOR_ROWS })
 /** The catalogue or the hold row that just took the other's place ignores presses this long, so the second tap of a double tap cannot land on it. */
 const SETTLE_MS = 300
 const GHOST_LIFT_PX = 16
@@ -52,6 +57,10 @@ const TINT_ALPHA = 0.35
 const FADED_ALPHA = 0.45
 const PANEL_DEPTH = 10
 const TOAST_DEPTH = 20
+// on the map, over everything there
+const GRID_DEPTH = 9500
+const TINT_DEPTH = 9501
+const GHOST_DEPTH = 9502
 
 // the full panel covers the street and the bottom nav; without the first-time note, everything above the cards moves up into its room
 const PANEL_TOP = 1640
@@ -120,8 +129,8 @@ export class BuildScene extends Phaser.Scene {
   private tab: Tab = 'bed'
   private page = 0
   private held: Held | null = null
-  /** Where the finger went down above the panel and the held piece's tile then; `pick` while nothing is held and the press may still pick something up. */
-  private drag: { x: number; y: number; from: Tile | null; pick: boolean } | null = null
+  /** The finger that went down above the panel, where it went down on screen and on the map, and the held piece's tile then; `pick` while nothing is held and the press may still pick something up. */
+  private drag: { p: Phaser.Input.Pointer; x: number; y: number; down: Vec; from: Tile | null; pick: boolean } | null = null
   /** When the finger last went down, on the page's clock: the game's only moves on each frame. */
   private pressAt = 0
   /** Panel presses count from this time on; see SETTLE_MS. */
@@ -135,6 +144,10 @@ export class BuildScene extends Phaser.Scene {
   /** The floor in view when the held piece was taken, which Thôi goes back to after a carry. */
   private pickedOn = 1
   private toastBox: Phaser.GameObjects.Container | null = null
+  /** The zone under everything here: a press above the panel on anything else is a button's, not the map's. */
+  private catcher!: Phaser.GameObjects.Zone
+  private gestures!: MapGestures
+  private zoomButtons!: ZoomButtons
 
   constructor() {
     super('BuildScene')
@@ -158,14 +171,27 @@ export class BuildScene extends Phaser.Scene {
 
   create() {
     // under everything else here: swallows every tap the panel does not take
-    this.add.zone(0, 0, GAME_W, GAME_H).setOrigin(0).setInteractive()
+    this.catcher = this.add.zone(0, 0, GAME_W, GAME_H).setOrigin(0).setInteractive()
     this.floorBar = new FloorBar(this, PANEL_DEPTH, floor => this.panelTap() && this.carry(floor))
     this.drawGrid()
-    this.tint = this.add.graphics().setDepth(1)
+    this.tint = this.params.map.add.graphics().setDepth(TINT_DEPTH)
     this.input.on('pointerdown', this.onDown, this)
     this.input.on('pointermove', this.onMove, this)
     this.input.on('pointerup', this.onUp, this)
+    // with nothing held, a press on the bare map swipes and pinches it; one on a piece still picks it up, and taps go through onUp
+    const { cam } = this.params
+    this.gestures = new MapGestures(this.input, cam, { allow: (p, over) => !this.held && this.onMap(p, over) && !this.itemUnder(cam.toWorld(p.x, p.y)), onTap: () => {} })
+    this.zoomButtons = new ZoomButtons(this, PANEL_DEPTH, dir => cam.zoomStep(dir))
+    this.fitArea()
     this.showCatalog()
+  }
+
+  /** The map's area ends at the panel's top, with + and − just above that end. */
+  private fitArea(): void {
+    const { cam } = this.params
+    cam.setArea(buildArea(this.panelTop()))
+    const bottom = cam.area.y + cam.area.h
+    this.zoomButtons.show(1010, bottom - 180, bottom - 70)
   }
 
   /** A faint line round every floor tile of the bare floor in view, each edge drawn once. */
@@ -174,7 +200,7 @@ export class BuildScene extends Phaser.Scene {
     const shell = sim.shellGrid()
     const floor = (x: number, y: number) => floorOf(y) === room.floor && shell.cells[y]?.[x] === 'floor'
     this.grid?.destroy()
-    const g = (this.grid = this.add.graphics().lineStyle(2, hex(C.ink), 0.15))
+    const g = (this.grid = this.params.map.add.graphics().setDepth(GRID_DEPTH).lineStyle(2, hex(C.ink), 0.15))
     for (let y = 0; y < shell.rows; y++) {
       for (let x = 0; x < shell.cols; x++) {
         if (!floor(x, y)) continue
@@ -398,20 +424,33 @@ export class BuildScene extends Phaser.Scene {
       return
     }
     const { floor } = this.params.room
-    const start = centre(floor)
+    const start = this.centre()
     const spot = nearestSpot(sim.grid, start, s => floorOf(s.y + ITEMS[kind].h - 1) === floor && sim.canPlace(kind, s.x, s.y, false) === null) ?? start
     // not in the shop yet, so it has no id of its own
     this.hold({ item: { id: 0, kind, ...spot, flip: false, gift }, buying: true })
   }
 
-  /** A tap or a drag on the floor: picks up the item standing there, or else the one drawn over the point, unless a customer is using it. */
-  private pickUp(x: number, y: number): void {
-    const { sim, room } = this.params
-    const tile = room.worldToTile(x, y)
+  /** New pieces start on the free spot nearest the middle of the map's area, on the floor in view. */
+  private centre(): Tile {
+    const { view } = this.params.cam
+    return this.params.room.worldToTile(view.cx, view.cy)
+  }
+
+  /** The item standing on the map point, or else the one drawn over it; none off view. */
+  private itemUnder(w: Vec): Item | undefined {
+    const { sim, room, cam } = this.params
+    if (!cam.isVisible(w.x, w.y)) return undefined
+    const tile = room.worldToTile(w.x, w.y)
     // the top of a tall piece covers the tile behind it
-    const drawn = room.itemAt(x, y)
+    const drawn = room.itemAt(w.x, w.y)
     // a point above or below the floor in view would land on the rows of the next floor
-    const item = (room.onFloor(tile.y) ? sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) : undefined) ?? sim.items.find(i => i.id === drawn)
+    return (room.onFloor(tile.y) ? sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) : undefined) ?? sim.items.find(i => i.id === drawn)
+  }
+
+  /** A tap or a drag on the map: picks up the item under the point, unless a customer is using it. */
+  private pickUp(w: Vec): void {
+    const { sim, room } = this.params
+    const item = this.itemUnder(w)
     if (!item) return
     if (sim.isBusy(item.id)) {
       this.toast(t(PROBLEM_TEXT.busy))
@@ -424,9 +463,10 @@ export class BuildScene extends Phaser.Scene {
   private hold(held: Held): void {
     this.held = held
     this.pickedOn = this.params.room.floor
-    this.ghost = this.add.image(0, 0, itemTexture(held.item.kind, held.item.turned)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(2)
+    this.ghost = this.params.map.add.image(0, 0, itemTexture(held.item.kind, held.item.turned)).setOrigin(0.5, 1).setAlpha(GHOST_ALPHA).setDepth(GHOST_DEPTH)
     this.drawGhost()
     this.readyAt = performance.now() + SETTLE_MS
+    this.fitArea()
     this.showHoldRow()
   }
 
@@ -544,6 +584,7 @@ export class BuildScene extends Phaser.Scene {
     this.tint.clear()
     this.params.room.hide(null)
     this.readyAt = performance.now() + SETTLE_MS
+    this.fitArea()
     this.showCatalog()
   }
 
@@ -561,15 +602,25 @@ export class BuildScene extends Phaser.Scene {
     return this.held ? HOLD_TOP : PANEL_TOP
   }
 
-  private onDown(p: Phaser.Input.Pointer): void {
+  /** The press is above the panel and on nothing but the map, not on + or −. */
+  private onMap(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): boolean {
+    return p.y < this.panelTop() && over.every(o => o === this.catcher)
+  }
+
+  private onDown(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
     this.pressAt = performance.now()
+    // a second finger while the first may still pick something up: the touch is a pinch, which the map's gestures run
+    if (this.drag?.pick && this.drag.p !== p) {
+      this.drag = null
+      return
+    }
     const held = this.held?.item
     const onPill = held !== undefined && this.floorBar.shown && p.y >= PILL_BAND.top && p.y <= PILL_BAND.bottom
-    this.drag = p.y < this.panelTop() && !onPill ? { x: p.x, y: p.y, from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
+    this.drag = this.onMap(p, over) && !onPill ? { p, x: p.x, y: p.y, down: this.params.cam.toWorld(p.x, p.y), from: held ? { x: held.x, y: held.y } : null, pick: !held } : null
   }
 
   /**
-   * The held piece moves by whole tiles as far as the finger has gone since it went down, and stays on the grid.
+   * The held piece moves by whole map tiles as far as the finger has gone on the map since it went down, and stays on the grid.
    * With nothing held, a drag that starts on an item picks it up and carries it in the same gesture.
    */
   private onMove(p: Phaser.Input.Pointer): void {
@@ -578,22 +629,39 @@ export class BuildScene extends Phaser.Scene {
     if (drag.pick) {
       if (Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) <= TAP_SLOP_PX) return
       drag.pick = false
-      this.pickUp(drag.x, drag.y)
+      this.pickUp(drag.down)
       const picked = this.held?.item
-      if (picked) drag.from = { x: picked.x, y: picked.y }
+      if (picked) {
+        drag.from = { x: picked.x, y: picked.y }
+        // picking up shortened the panel and refitted the map: the finger's travel counts from its press on the map as it now is
+        drag.down = this.params.cam.toWorld(drag.x, drag.y)
+      }
     }
-    const { held } = this
-    if (!drag.from || !held) return
-    const { cols } = this.params.sim.grid
-    const { x, y } = clampToFloor(
-      { ...held.item, x: drag.from.x + Math.round((p.x - drag.x) / TILE), y: drag.from.y + Math.round((p.y - drag.y) / TILE) },
-      this.params.room.floor,
-      cols,
-    )
+    this.carryHeld(p)
+  }
+
+  /** Puts the held piece where the finger has carried it on the map. */
+  private carryHeld(p: Phaser.Input.Pointer): void {
+    const { drag, held } = this
+    if (!drag?.from || !held) return
+    const { cam, room, sim } = this.params
+    const { x, y } = clampToFloor({ ...held.item, ...dragTile(drag.from, drag.down, cam.toWorld(p.x, p.y)) }, room.floor, sim.grid.cols)
     if (x === held.item.x && y === held.item.y) return
     held.item.x = x
     held.item.y = y
     this.drawGhost()
+  }
+
+  /** A held piece dragged near the map's left or right edge scrolls the map that way, and stays under the finger. */
+  update(_: number, delta: number): void {
+    const { drag, held } = this
+    if (!drag?.from || !held || !drag.p.isDown) return
+    const { cam } = this.params
+    const { x, w } = cam.area
+    const dir = drag.p.x < x + EDGE_SCROLL ? 1 : drag.p.x > x + w - EDGE_SCROLL ? -1 : 0
+    if (dir === 0) return
+    cam.pan(dir * EDGE_SCROLL_SPEED * delta, 0)
+    this.carryHeld(drag.p)
   }
 
   /** A tap with nothing held picks up what stands there; the end of a drag only lets go of the finger. */
@@ -601,10 +669,16 @@ export class BuildScene extends Phaser.Scene {
     const drag = this.drag
     this.drag = null
     if (!drag?.pick || Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) > TAP_SLOP_PX) return
-    this.pickUp(p.x, p.y)
+    this.pickUp(this.params.cam.toWorld(p.x, p.y))
   }
 
+  /** Takes down what was drawn on the map and gives the map back its full area, where it was. */
   private close(): void {
+    this.gestures.destroy()
+    this.grid?.destroy()
+    this.tint.destroy()
+    this.ghost?.destroy()
+    this.params.cam.setArea(MAP_VIEW)
     this.params.onClose()
     this.scene.stop()
   }
