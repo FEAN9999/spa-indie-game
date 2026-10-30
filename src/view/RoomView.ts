@@ -34,7 +34,7 @@ const PLAQUE = { x: 16.3, y: 17.5, bottom: 28 }
  * The rival's sign stands on floor 1's sidewalk against the right edge, its board clear of today's line in the middle of the same band:
  * its right edge and board in pixels, its middle row in tiles.
  */
-const RIVAL_SIGN = { right: GAME_W - 16 + SHOP_X0 * TILE, y: 19.1, w: 230, h: 100, top: -60 }
+const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
 const DARK = { color: 0x1e2440, alpha: 0.48 }
