@@ -1204,8 +1204,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()
-    // leading a customer to a bed out of view on this floor: the map slides after the owner, never under a finger
-    if (this.mapFree() && !this.gestures.busy && task?.kind === 'serve' && o.path.length > 0 && floorOf(o.pos.y) === this.viewFloor && !this.cam.isVisible(at.x, at.y, TILE)) this.cam.slideTo(at.x, at.y)
+    // leading a customer to a bed out of view on this floor: one slide puts the owner in the middle, never under a finger
+    if (this.mapFree() && !this.gestures.busy && !this.cam.sliding && task?.kind === 'serve' && o.path.length > 0 && floorOf(o.pos.y) === this.viewFloor && !this.cam.isVisible(at.x, at.y, TILE)) this.cam.slideTo(at.x, at.y)
     this.cam.update(delta)
     this.updateStrip(at.x)
     this.updatePointer(delta)

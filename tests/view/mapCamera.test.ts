@@ -84,6 +84,20 @@ describe('the map camera', () => {
     expect(cam.view).toEqual({ zoom: 1.6, cx: 1047 - 540 / 1.6, cy: y })
   })
 
+  it('tells while a slide runs, until it ends or a finger moves the map', () => {
+    const { cam } = make()
+    cam.jump({ zoom: 1.6 })
+    expect(cam.sliding).toBe(false)
+    cam.slideTo(900)
+    cam.update(10)
+    expect(cam.sliding).toBe(true)
+    run(cam, SLIDE_MS)
+    expect(cam.sliding).toBe(false)
+    cam.slideTo(300)
+    cam.pan(1, 0)
+    expect(cam.sliding).toBe(false)
+  })
+
   it('glides on after a flick, slower each frame, and stops', () => {
     const { cam } = make()
     cam.jump({ zoom: 1.6, cx: 400 })

@@ -54,6 +54,11 @@ export class MapCamera {
     this.ease(clampView({ zoom, cx: wx, cy: wy }, this.bounds, this.area), SLIDE_MS)
   }
 
+  /** A slide or a + / − step is easing the view. */
+  get sliding(): boolean {
+    return this.slide !== null
+  }
+
   /** One step of + or − about the middle of the area; a step during another goes on from where that one ends. */
   zoomStep(dir: 1 | -1): void {
     const from = this.slide?.to ?? this.view
