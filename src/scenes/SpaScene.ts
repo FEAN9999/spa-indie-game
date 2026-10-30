@@ -303,11 +303,12 @@ export class SpaScene extends Phaser.Scene {
     }
     this.room = new RoomView(this, this.sim.place)
     this.room.setRank(this.sim.rank.stars)
+    // the houses go in before the first sync, which crops each bench's mat to the floor they widen
+    this.room.setHouses(this.sim.houses, this.sim.shownHouses())
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
     // at normal size on the owner; the view is never saved
     this.cam = new MapCamera(this, MAP_VIEW, mapBounds(this.sim.shownHouses()))
-    this.syncHouses()
     this.cam.jump({ zoom: 1, cx: this.room.tileToWorld(this.sim.owner.pos).x })
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
