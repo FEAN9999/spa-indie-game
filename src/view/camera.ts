@@ -83,11 +83,27 @@ export function zoomAbout(v: View, area: Rect, factor: number, sx: number, sy: n
 export const panBy = (v: View, area: Rect, dx: number, dy: number, bounds: Rect): View =>
   clampView({ zoom: v.zoom, cx: v.cx - dx / v.zoom, cy: v.cy - dy / v.zoom }, bounds, area)
 
-/** The view for a new area that keeps every world point where it was on screen, then clamped. */
+/** One axis of refit: a view that touched one edge of the bounds (not both) stays on that edge, else it keeps the point `c`. */
+function pinAxis(c: number, was: number, wasSpan: number, lo: number, size: number, span: number): number {
+  const atLo = was - wasSpan / 2 <= lo + 1e-6
+  const atHi = was + wasSpan / 2 >= lo + size - 1e-6
+  if (atLo === atHi) return c
+  return atLo ? lo + span / 2 : lo + size - span / 2
+}
+
+/** The view for a new area that keeps every world point where it was on screen, then clamped; a view on an edge of the bounds stays on it. */
 export function refit(v: View, from: Rect, to: Rect, bounds: Rect): View {
   const cx = v.cx + (to.x + to.w / 2 - (from.x + from.w / 2)) / v.zoom
   const cy = v.cy + (to.y + to.h / 2 - (from.y + from.h / 2)) / v.zoom
-  return clampView({ zoom: v.zoom, cx, cy }, bounds, to)
+  return clampView(
+    {
+      zoom: v.zoom,
+      cx: pinAxis(cx, v.cx, from.w / v.zoom, bounds.x, bounds.w, to.w / v.zoom),
+      cy: pinAxis(cy, v.cy, from.h / v.zoom, bounds.y, bounds.h, to.h / v.zoom),
+    },
+    bounds,
+    to,
+  )
 }
 
 /** A held piece's tile after the finger went from `down` to `now`, both world points: whole tiles crossed. */

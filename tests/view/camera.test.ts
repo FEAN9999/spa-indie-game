@@ -50,6 +50,23 @@ describe('the map view', () => {
     expect(buildArea(1940)).toEqual(MAP_VIEW)
   })
 
+  it('keeps a view that touched an edge of the map on that edge when the area changes', () => {
+    const panel = buildArea(1640)
+    const holding = buildArea(1940)
+    // zoomed in at the bottom of the map: picking up grows the area, and the map's bottom stays at its bottom
+    const bottom = clampView({ zoom: 1.6, cx: 540, cy: 10_000 }, shop, panel)
+    const held = refit(bottom, panel, holding, shop)
+    expect(toScreen(held, holding, 540, 1770).y).toBeCloseTo(1770, 9)
+    // putting down shrinks it again: the view is back where it was, not 130 px further up the map
+    const back = refit(held, holding, panel, shop)
+    expect(back.cy).toBeCloseTo(bottom.cy, 9)
+    expect(toScreen(back, panel, 540, 1770).y).toBeCloseTo(1640, 9)
+    // a view at the top stays at the top either way
+    const top = clampView({ zoom: 1.6, cx: 540, cy: 0 }, shop, panel)
+    expect(toScreen(refit(top, panel, holding, shop), holding, 540, 210).y).toBeCloseTo(210, 9)
+    expect(toScreen(refit(refit(top, panel, holding, shop), holding, panel, shop), panel, 540, 210).y).toBeCloseTo(210, 9)
+  })
+
   it('moves a held piece by the whole tiles the finger crossed on the map', () => {
     expect(dragTile({ x: 20, y: 5 }, { x: 0, y: 0 }, { x: 2.4 * 78, y: -0.6 * 78 })).toEqual({ x: 22, y: 4 })
   })
