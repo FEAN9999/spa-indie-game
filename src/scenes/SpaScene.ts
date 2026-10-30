@@ -46,6 +46,8 @@ import { MAP_VIEW, mapBounds } from '../view/camera'
 import { HandPointer } from '../view/HandPointer'
 import { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
+import { PositionStrip } from '../view/PositionStrip'
+import { offscreenWaiting, worldXAt } from '../view/strip'
 import { navIds, type NavId } from '../view/nav'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
@@ -178,6 +180,7 @@ export class SpaScene extends Phaser.Scene {
   private cam!: MapCamera
   private gestures!: MapGestures
   private zoomButtons!: ZoomButtons
+  private strip!: PositionStrip
   /** The customer the hand last pointed at, so the map slides to a new one out of view only once. */
   private pointedId: number | null = null
   /** The floor on view, from 1; only showFloor changes it. */
@@ -311,6 +314,10 @@ export class SpaScene extends Phaser.Scene {
     this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this.ui)
     this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
+    // a tap on the strip slides there, keeping the zoom and the height
+    this.strip = new PositionStrip(this.ui, HUD_DEPTH, sx => {
+      if (!this.holding) this.cam.slideTo(worldXAt(this.cam.bounds, sx))
+    })
     // a press on anything of the HUD's never moves nor taps the map
     this.gestures = new MapGestures(this.ui.input, this.cam, { allow: (_, over) => over.length === 0 && this.mapFree(), onTap: p => this.onMapTap(p) })
 
@@ -1024,6 +1031,18 @@ export class SpaScene extends Phaser.Scene {
     this.floorBar.show(pills(sim, this.viewFloor), sim.ownerLook)
   }
 
+  /** The strip shows whenever the map is free and wider than the screen, drawn from where this frame left the view. */
+  private updateStrip(ownerX: number): void {
+    const sim = this.sim
+    if (!this.mapFree() || !this.cam.overflowsX()) {
+      this.strip.hide()
+      return
+    }
+    const visible = this.cam.visible()
+    const door = this.room.tileToWorld(sim.grid.door).x
+    this.strip.show({ bounds: this.cam.bounds, visible, door, owner: ownerX, dots: offscreenWaiting(sim.customers, this.viewFloor, visible), look: sim.ownerLook })
+  }
+
   /** A viewed or open pill brings its floor into view; a locked one offers to open it. Nothing while waiting on an update check, which hides the pills on its next frame. */
   private tapFloor(floor: number): void {
     if (this.holding) return
@@ -1183,7 +1202,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()
+    // leading a customer to a bed out of view on this floor: the map slides after the owner, never under a finger
+    if (this.mapFree() && !this.gestures.busy && task?.kind === 'serve' && o.path.length > 0 && floorOf(o.pos.y) === this.viewFloor && !this.cam.isVisible(at.x, at.y, TILE)) this.cam.slideTo(at.x, at.y)
     this.cam.update(delta)
+    this.updateStrip(at.x)
     this.updatePointer(delta)
   }
 

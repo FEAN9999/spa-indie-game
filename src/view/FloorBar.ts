@@ -17,6 +17,20 @@ const DOT_R = 13
 const DASH_STEPS = 48
 const NAME: Record<number, StringKey> = { 1: 'floorName1', 2: 'floorName2', 3: 'floorName3' }
 
+/** A small head: skin disc with a cap of hair on top. */
+export function drawFace(scene: Phaser.Scene, look: Look, x: number, y: number): Phaser.GameObjects.Graphics {
+  const c = ownerColors(look)
+  return scene.add
+    .graphics()
+    .fillStyle(c.skin, 1)
+    .fillCircle(x, y, FACE_R)
+    .fillStyle(c.hair, 1)
+    .slice(x, y, FACE_R, Math.PI, 2 * Math.PI)
+    .fillPath()
+    .lineStyle(3, hex(C.ink))
+    .strokeCircle(x, y, FACE_R)
+}
+
 /** The floor buttons in a row above the nav; a tap on any of them reports its floor. */
 export class FloorBar {
   private box: Phaser.GameObjects.Container | null = null
@@ -68,7 +82,7 @@ export class FloorBar {
     if (locked || text.width > room) text.setScale(Math.min(1, room / text.width)).setX(from + room / 2)
     parts.push(text)
     if (locked) parts.push(add.image(-PILL_W / 2 + 56, 0, 'icon-lock').setScale(0.8))
-    if (p.face) parts.push(this.face(look, -PILL_W / 2 + 56, 0))
+    if (p.face) parts.push(drawFace(this.scene, look, -PILL_W / 2 + 56, 0))
     if (p.dot) parts.push(add.circle(PILL_W / 2 - 22, -PILL_H / 2 + 18, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)))
     return add
       .container(x, CENTER.y, parts)
@@ -78,20 +92,6 @@ export class FloorBar {
         sound.play('tap')
         this.onTap(p.floor)
       })
-  }
-
-  /** A small head: skin disc with a cap of hair on top. */
-  private face(look: Look, x: number, y: number): Phaser.GameObjects.Graphics {
-    const c = ownerColors(look)
-    return this.scene.add
-      .graphics()
-      .fillStyle(c.skin, 1)
-      .fillCircle(x, y, FACE_R)
-      .fillStyle(c.hair, 1)
-      .slice(x, y, FACE_R, Math.PI, 2 * Math.PI)
-      .fillPath()
-      .lineStyle(3, hex(C.ink))
-      .strokeCircle(x, y, FACE_R)
   }
 
   /** A stadium outline drawn as alternating dashes: two half-circles joined by straight sides. */
