@@ -5,6 +5,7 @@ import type { Look } from '../sim/types'
 import type { Rect } from './camera'
 import { drawFace } from './FloorBar'
 import { STRIP, stripX } from './strip'
+import { whenTapped } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const TICK_H = 44
@@ -53,13 +54,10 @@ export class PositionStrip {
     g.lineStyle(6, hex(C.teal)).strokeRoundedRect(left, y - FRAME_H / 2, x(m.visible.x + m.visible.w) - left, FRAME_H, 10)
     const parts: Phaser.GameObjects.GameObject[] = [g, drawFace(this.scene, m.look, x(m.owner), y)]
     for (const d of m.dots) parts.push(add.circle(x(d), y - FRAME_H / 2, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)))
-    const hit = add
-      .zone(STRIP.x + STRIP.w / 2, y, STRIP.w, STRIP.hitH)
-      .setInteractive()
-      .on('pointerup', (p: Phaser.Input.Pointer) => {
-        sound.play('tap')
-        this.onTap(p.x)
-      })
+    const hit = whenTapped(add.zone(STRIP.x + STRIP.w / 2, y, STRIP.w, STRIP.hitH).setInteractive(), p => {
+      sound.play('tap')
+      this.onTap(p.x)
+    })
     this.box = add.container(0, 0, [...parts, hit]).setDepth(this.depth)
   }
 

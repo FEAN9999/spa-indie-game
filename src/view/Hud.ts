@@ -13,7 +13,7 @@ import { textStyle } from './text'
 import { todayShown } from './today'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { lockedText } from './starter'
-import { addToast } from './ui'
+import { addToast, whenTapped } from './ui'
 import { clockStar } from './vip'
 
 export const DEPTH = 10000
@@ -126,7 +126,7 @@ export class Hud {
     pause.add(add.rectangle(-11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     pause.add(add.rectangle(11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     // thumb-sized hit area, larger than the drawn circle
-    pause.setSize(130, 130).setInteractive().on('pointerup', () => {
+    whenTapped(pause.setSize(130, 130).setInteractive(), () => {
       sound.play('tap')
       onPause()
     })
@@ -140,7 +140,7 @@ export class Hud {
     this.bookBadge = this.badge()
     this.bookBadge.setPosition(-BOOK_R, -BOOK_R)
     this.book.add(this.bookBadge)
-    this.book.setSize(120, 110).setInteractive().on('pointerup', () => {
+    whenTapped(this.book.setSize(120, 110).setInteractive(), () => {
       sound.play('tap')
       onBook()
     })
@@ -197,7 +197,7 @@ export class Hud {
       // a label never passes its plate's width
       if (label.width > step - 16) label.setScale((step - 16) / label.width)
       const feature = spec.feature
-      btn.setSize(130, 130).setInteractive().on('pointerup', () => {
+      whenTapped(btn.setSize(130, 130).setInteractive(), () => {
         sound.play('tap')
         if (feature && !this.isOpen(feature)) this.toast(lockedText(this.sim, feature))
         else if (id === 'build') this.onBuild()

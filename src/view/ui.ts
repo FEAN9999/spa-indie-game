@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
+import { TAP_SLOP_PX } from '../config'
 import { textStyle } from './text'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -13,6 +14,20 @@ export function addCard(scene: Phaser.Scene, x: number, y: number, w: number, h:
     .fillRoundedRect(x, y, w, h, 60)
     .lineStyle(4, hex(C.ink))
     .strokeRoundedRect(x, y, w, h, 60)
+}
+
+/**
+ * Calls `fn` when a press on `obj` lifts on it: the same pointer, the same press, moved no more than TAP_SLOP_PX. A swipe or a
+ * pinch that only ends over it, which Phaser also reports as its pointerup, never fires it.
+ */
+export function whenTapped<T extends Phaser.GameObjects.GameObject>(obj: T, fn: (p: Phaser.Input.Pointer) => void): T {
+  let press = { id: -1, at: -1 }
+  obj.on('pointerdown', (p: Phaser.Input.Pointer) => (press = { id: p.id, at: p.downTime }))
+  obj.on('pointerup', (p: Phaser.Input.Pointer) => {
+    if (p.id !== press.id || p.downTime !== press.at || Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
+    fn(p)
+  })
+  return obj
 }
 
 /** A fully rounded button centred on x, y; primary is teal with paper text, plain is cream with ink text. `size` overrides the label size. */
@@ -35,14 +50,11 @@ export function addButton(
     .lineStyle(4, hex(C.ink))
     .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
   const text = scene.add.text(0, 0, label, textStyle(size ?? (primary ? 56 : 44), '800', primary ? C.paper : C.ink)).setOrigin(0.5)
-  return scene.add
-    .container(x, y, [bg, text])
-    .setSize(w, h)
-    .setInteractive()
-    .on('pointerup', () => {
-      sound.play('tap')
-      onTap()
-    })
+  const button = scene.add.container(x, y, [bg, text]).setSize(w, h).setInteractive()
+  return whenTapped(button, () => {
+    sound.play('tap')
+    onTap()
+  })
 }
 
 /** A dark pill with paper text centred on x, y that fades in, stays 1.7 seconds and fades out, then destroys itself. */

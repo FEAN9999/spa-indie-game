@@ -6,6 +6,7 @@ import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
 import type { Pill } from './floors'
 import { textStyle } from './text'
+import { whenTapped } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const PILL_W = 320
@@ -84,14 +85,10 @@ export class FloorBar {
     if (locked) parts.push(add.image(-PILL_W / 2 + 56, 0, 'icon-lock').setScale(0.8))
     if (p.face) parts.push(drawFace(this.scene, look, -PILL_W / 2 + 56, 0))
     if (p.dot) parts.push(add.circle(PILL_W / 2 - 22, -PILL_H / 2 + 18, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)))
-    return add
-      .container(x, CENTER.y, parts)
-      .setSize(PILL_W, PILL_H)
-      .setInteractive()
-      .on('pointerup', () => {
-        sound.play('tap')
-        this.onTap(p.floor)
-      })
+    return whenTapped(add.container(x, CENTER.y, parts).setSize(PILL_W, PILL_H).setInteractive(), () => {
+      sound.play('tap')
+      this.onTap(p.floor)
+    })
   }
 
   /** A stadium outline drawn as alternating dashes: two half-circles joined by straight sides. */
