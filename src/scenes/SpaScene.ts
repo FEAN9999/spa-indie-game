@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, TILE, UPDATE_WAIT_MS } from '../config'
+import { ARRIVE_MS, AUTOSAVE_MS, BUBBLE_MS, EXIT_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -84,7 +84,6 @@ import type { SummaryData } from './SummaryScene'
 const FX_DEPTH = 9000
 /** The quick-buy card covers the top bar and the bottom nav too. */
 const CARD_DEPTH = HUD_DEPTH + 100
-const TAP_SLOP_PX = 20
 const STREET_SIDE_TILES = 4.5
 const RIPPLE_MS = 1200
 /** How long each of the money and star pointers stays after the first payment. */

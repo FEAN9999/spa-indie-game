@@ -16,6 +16,8 @@ export const MAP_Y = 210
 export const STREET_TILES = 2
 /** The closest the map zooms in; the farthest out fits every bought column across the screen, never past normal size. */
 export const ZOOM_MAX = 1.6
+/** How far a finger may move, in screen pixels, and still tap. */
+export const TAP_SLOP_PX = 20
 
 export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */
