@@ -3,6 +3,7 @@ import { DAY_END_MIN, PLACES } from '../config'
 import type { Chain } from '../sim/chain'
 import { clockLabel } from '../sim/clock'
 import { staffCap } from '../sim/crew'
+import { housesBought } from '../sim/layout'
 import { dayProfit } from '../sim/economy'
 import type { CustomerKind } from '../sim/customers'
 import { PLACE_IDS, type PlaceId } from '../sim/places'
@@ -147,7 +148,7 @@ function dayRows(shop: SpaSim): string[] {
   return [
     t('sheetToday', { n: stats.served, m: stats.angry + stats.walkedAway }),
     t('sheetProfit', { profit: signedMoney(dayProfit(stats)) }),
-    t('sheetStaff', { t: count('technician'), tc: staffCap('technician', shop.floors), r: count('receptionist'), rc: staffCap('receptionist', shop.floors) }),
+    t('sheetStaff', { t: count('technician'), tc: staffCap('technician', shop.floors, housesBought(shop.houses)), r: count('receptionist'), rc: staffCap('receptionist', shop.floors, housesBought(shop.houses)) }),
     low.length === 0 ? t('sheetStockOk') : t('sheetStockLow', { items: low.map(item => t(STOCK_NAME[item]).toLocaleLowerCase('vi')).join(', ') }),
   ]
 }

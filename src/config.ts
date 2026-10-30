@@ -308,7 +308,7 @@ export const AUTOSAVE_MS = 10_000
 export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json when the player comes back
 
 /** The day each feature button opens. */
-export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6, quests: 8 } as const
+export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6, quests: 8, houses: 10 } as const
 
 // Floors: the shop is one tall grid of three floors stacked, each this many rows
 export const FLOOR_ROWS = 18
@@ -319,6 +319,10 @@ export const FLOOR_PRICE: Record<number, number> = { 2: 2_000_000, 3: 4_000_000 
 export const STAIRS_MS = 1000
 /** Each floor beyond the first lets the shop hire this many more technicians. */
 export const STAFF_PER_FLOOR = 2
+/** What the neighbour house next to the shop costs, then the far one, on either side. */
+export const HOUSE_PRICE = [3_000_000, 6_000_000] as const
+/** Each neighbour house bought lets the shop hire this many more technicians. */
+export const STAFF_PER_HOUSE = 1
 
 // Pets
 /** The most pets a shop keeps. */

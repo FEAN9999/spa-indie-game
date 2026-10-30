@@ -1,7 +1,8 @@
-import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_REST_MS } from '../config'
+import { CANDIDATES_PER_DAY, CHAT_CHANCE, CHAT_MS_MAX, CHAT_MS_MIN, DAY_START_MIN, LATE_MIN, SLOPPY_CHANCE, MAX_TIER, REGULAR_OWNER_MS, STAFF_CAP, STAFF_PER_FLOOR, STAFF_PER_HOUSE, STAFF_REST_MS } from '../config'
 import { flood } from './build'
 import type { Stars } from './economy'
 import { floorOf } from './floors'
+import { housesBought } from './layout'
 import { besideSeat, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { deskSpot, footprint } from './items'
 import { findPath } from './path'
@@ -91,16 +92,16 @@ export function refreshCandidates({ sim, rng }: CrewHost): void {
   sim.candidatesDay = sim.day
 }
 
-/** How many of the role the shop can hire with `floors` floors open: each floor beyond the first lets in STAFF_PER_FLOOR more technicians. */
-export function staffCap(role: StaffRole, floors: number): number {
-  return STAFF_CAP[role] + (role === 'technician' ? (floors - 1) * STAFF_PER_FLOOR : 0)
+/** How many of the role the shop can hire with `floors` floors open and `houses` neighbour houses bought: each floor beyond the first lets in STAFF_PER_FLOOR more technicians, each house STAFF_PER_HOUSE. */
+export function staffCap(role: StaffRole, floors: number, houses: number): number {
+  return STAFF_CAP[role] + (role === 'technician' ? (floors - 1) * STAFF_PER_FLOOR + houses * STAFF_PER_HOUSE : 0)
 }
 
 /** What stops the candidate being hired now: money is negative, or the role is full (staff who are leaving do not count, those moving here do); null if nothing. */
 export function hireProblem({ sim }: CrewHost, index: number): HireProblem | null {
   if (sim.money < 0) return 'money'
   const c = sim.candidates[index]
-  return sim.staff.filter(s => s.role === c.role && !s.leaving).length + sim.incoming(c.role) >= staffCap(c.role, sim.floors) ? 'full' : null
+  return sim.staff.filter(s => s.role === c.role && !s.leaving).length + sim.incoming(c.role) >= staffCap(c.role, sim.floors, housesBought(sim.houses)) ? 'full' : null
 }
 
 /** Free and at once: the new person stands on the door tile. */

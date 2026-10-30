@@ -176,8 +176,8 @@ describe('seats', () => {
 
 describe('staff per floor', () => {
   it('lets two more technicians in for each floor', () => {
-    expect([1, 2, 3].map(f => staffCap('technician', f))).toEqual([3, 5, 7])
-    expect(staffCap('receptionist', 3)).toBe(1)
+    expect([1, 2, 3].map(f => staffCap('technician', f, 0))).toEqual([3, 5, 7])
+    expect(staffCap('receptionist', 3, 0)).toBe(1)
     const sim = upstairs()
     for (let i = 0; i < 5; i++) hireStaff(sim, 'technician')
     sim.candidates.push({ ...sim.staff[0], name: 'Extra' })

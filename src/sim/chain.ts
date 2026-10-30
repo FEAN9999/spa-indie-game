@@ -1,6 +1,7 @@
 import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, STEP_MS } from '../config'
 import type { AwayResult } from './away'
 import { staffCap } from './crew'
+import { housesBought } from './layout'
 import { dayProfit } from './economy'
 import { PLACE_IDS, type PlaceId } from './places'
 import { createRng } from './rng'
@@ -212,7 +213,7 @@ export class Chain {
 
   /** How many more people of `mover`'s role `shop` can take: its cap, less those there who are not leaving and the others moving there. */
   private room(shop: SpaSim, mover: Staff): number {
-    return staffCap(mover.role, shop.floors) - shop.staff.filter(s => s.role === mover.role && !s.leaving).length - this.heading(shop, mover.role, mover)
+    return staffCap(mover.role, shop.floors, housesBought(shop.houses)) - shop.staff.filter(s => s.role === mover.role && !s.leaving).length - this.heading(shop, mover.role, mover)
   }
 
   /** Everyone booked to move goes to their new shop, if it has room; the others stay. */

@@ -51,6 +51,8 @@ import {
   VIP_REVIEWS,
   LITTER_FROM_DAY,
   MAX_PETS,
+  HOUSE_PRICE,
+  HOUSES_PER_SIDE,
 } from '../config'
 import { PET_NAME_IDEAS, t } from '../strings/vi'
 import { newBadges, type BadgeShop, type Badges } from './badges'
@@ -66,7 +68,7 @@ import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, t
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
 import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
-import { NO_HOUSES, SHOP_LAYOUT, withHouses, type Houses } from './layout'
+import { NO_HOUSES, SHOP_LAYOUT, withHouses, type Houses, type Side } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, visitMinute, type GuestBook, type RegularId } from './regulars'
@@ -94,6 +96,7 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
+export type HouseProblem = 'branch' | 'max' | 'day' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
 /** Where a lesson stands: not paid, tuition paid and not yet passed, or learned. */
@@ -1376,6 +1379,45 @@ export class SpaSim {
     this.changeRoom()
     this.emit({ type: 'floorOpened', floor })
     return null
+  }
+
+  /** The price of the next house on `side`. */
+  housePrice(side: Side): number {
+    return HOUSE_PRICE[Math.min(this.houses[side], HOUSES_PER_SIDE - 1)]
+  }
+
+  /** What stops the next house on `side` being bought now, or null. */
+  houseProblem(side: Side): HouseProblem | null {
+    if (this.place !== null) return 'branch'
+    if (this.houses[side] >= HOUSES_PER_SIDE) return 'max'
+    if (this.day < UNLOCK_DAY.houses) return 'day'
+    if (this.money < this.housePrice(side)) return 'money'
+    return null
+  }
+
+  /** True when the next house on `side` is up for sale, whether or not the shop can pay for it yet. */
+  houseForSale(side: Side): boolean {
+    const problem = this.houseProblem(side)
+    return problem === null || problem === 'money'
+  }
+
+  /** Takes the price and opens the next house on `side` on every floor. */
+  buyHouse(side: Side): HouseProblem | null {
+    const problem = this.houseProblem(side)
+    if (problem) return problem
+    this.money -= this.housePrice(side)
+    const n = (this.houses[side] + 1) as 1 | 2
+    this.houses = { ...this.houses, [side]: n }
+    this.rebuildShell()
+    this.changeRoom()
+    this.emit({ type: 'houseBought', house: { side, n } })
+    return null
+  }
+
+  /** The houses the map shows: those bought, and the next one on each side while it is for sale. */
+  shownHouses(): Houses {
+    const shown = (side: Side) => this.houses[side] + (this.houseForSale(side) ? 1 : 0)
+    return { left: shown('left'), right: shown('right') }
   }
 
   /** The tower shell parsed, with no furniture in it. */

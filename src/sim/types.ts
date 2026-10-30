@@ -5,6 +5,7 @@ import type { EventPlan } from './events'
 import type { FestivalId } from './festivals'
 import type { IdolId } from './idols'
 import type { ItemKind } from './items'
+import type { House } from './layout'
 import type { Quest } from './quests'
 import type { Ingredient, RecipeId } from './recipes'
 import type { RegularGift, RegularId } from './regulars'
@@ -17,7 +18,7 @@ import type { StarterFeature, StarterGoalId } from './starter'
 /** The first day's tips. */
 export const TUTORIAL_HINTS = ['tapCustomer', 'demoShampoo', 'money', 'star', 'patience', 'summary'] as const
 /** Tips the shop shows once each; saved so they do not come back. */
-export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'demoScrub', 'demoFoot', 'demoNails', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests', 'openStarter', 'openChain', 'idol'] as const
+export const HINT_IDS = [...TUTORIAL_HINTS, 'openBuild', 'openStaff', 'openServices', 'openStock', 'demoMask', 'demoMassage', 'demoSteam', 'demoStone', 'demoMud', 'demoScrub', 'demoFoot', 'demoNails', 'recipes', 'regular', 'openBook', 'vip', 'bookVip', 'study', 'openFloor', 'openQuests', 'openStarter', 'openChain', 'idol', 'buyHouse'] as const
 export type HintId = (typeof HINT_IDS)[number]
 
 export interface Tile {
@@ -172,6 +173,8 @@ export type SimEvent =
   | { type: 'roomChanged' }
   /** A floor was bought and opened. */
   | { type: 'floorOpened'; floor: number }
+  /** A neighbour house was bought and opened. */
+  | { type: 'houseBought'; house: House }
   /** An older shop had furniture on the new stairs spot: `count` items went, `refund` came back, `gifts` of them went back to the guest book, and `rebuy` is the bed or seat item there was no room left for. */
   | { type: 'stairsCleared'; count: number; refund: number; gifts: number; rebuy: ItemKind | null }
   /** A quest was finished and its reward paid; `quest` is a copy as it stood then. */

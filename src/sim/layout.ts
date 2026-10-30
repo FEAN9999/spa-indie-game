@@ -41,6 +41,16 @@ export interface Houses {
 
 export const NO_HOUSES: Houses = { left: 0, right: 0 }
 
+export type Side = 'left' | 'right'
+
+/** One neighbour house: its side, and 1 for the one next to the shop or 2 for the far one. */
+export interface House {
+  side: Side
+  n: 1 | 2
+}
+
+export const housesBought = (h: Houses): number => h.left + h.right
+
 /**
  * Floor 1's shell with the bought houses opened: rows 2 to 16 of each house's five columns and of the wall it shares with
  * the shop become floor, its outer wall stays. Rows 0, 1 and 17 stay wall. The floors above follow through towerOf.

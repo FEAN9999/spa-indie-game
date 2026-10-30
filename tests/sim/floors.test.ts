@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { floorOf, towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
-import { SHOP_LAYOUT, SPA_LAYOUT_1A, widen, withHouses } from '../../src/sim/layout'
+import { housesBought, SHOP_LAYOUT, SPA_LAYOUT_1A, widen, withHouses } from '../../src/sim/layout'
 
 describe('floors', () => {
   it('numbers floors from 1 by grid row', () => {
@@ -57,5 +57,8 @@ describe('floors', () => {
     const flat = ['#####', '#...#', '##D##']
     expect(towerOf(flat)).toEqual(flat)
     expect(() => towerOf(['#####', '#.U.#', '#...#', '#...#', '#####'])).toThrow()
+  })
+  it('counts the houses bought on both sides', () => {
+    expect(housesBought({ left: 2, right: 1 })).toBe(3)
   })
 })
