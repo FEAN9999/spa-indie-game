@@ -1829,7 +1829,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
 
   /** A tap on the map that no HUD object took, from the map's gestures: tested against what is under it on the map, at its world point. */
   private onMapTap(p: Phaser.Input.Pointer): void {
-    if (this.holding) return
+    // a card, a pause or a mini-game may have come up between the press and the lift
+    if (!this.mapFree()) return
     if (Phaser.Math.Distance.Between(p.downX, p.downY, p.upX, p.upY) > TAP_SLOP_PX) return
     const w = this.cam.toWorld(p.x, p.y)
     // under or over the map's area, a zoomed map has rows that are not drawn
