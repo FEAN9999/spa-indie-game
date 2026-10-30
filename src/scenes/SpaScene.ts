@@ -1271,7 +1271,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // a customer newly pointed at out of view: the map slides to them, and the hand shows once they are in view
     if (pick && at?.visible && pick.customerId !== this.pointedId) {
       this.pointedId = pick.customerId
-      if (!this.cam.isVisible(at.x, at.y)) this.cam.slideTo(at.x, at.y)
+      if (!this.gestures.busy && !this.cam.isVisible(at.x, at.y)) this.cam.slideTo(at.x, at.y)
     }
     if (!pick || !at || !at.visible || !this.cam.isVisible(at.x, at.y)) {
       this.pointer.hide()
