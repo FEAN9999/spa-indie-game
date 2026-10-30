@@ -52,6 +52,12 @@ export class MapGestures {
   }
 
   private onMove(p: Phaser.Input.Pointer): void {
+    // a followed pointer lifted over a scene above: its swipe or pinch is over, so a hovering mouse never pans
+    if (this.held.has(p) && !p.isDown) {
+      this.gestures.cancel()
+      this.held.clear()
+      return
+    }
     this.apply(this.gestures.move(p.id, p.x, p.y, p.time), p)
   }
 
