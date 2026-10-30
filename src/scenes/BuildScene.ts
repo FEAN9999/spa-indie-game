@@ -609,9 +609,10 @@ export class BuildScene extends Phaser.Scene {
 
   private onDown(p: Phaser.Input.Pointer, over: Phaser.GameObjects.GameObject[]): void {
     this.pressAt = performance.now()
-    // a second finger while the first may still pick something up: the touch is a pinch, which the map's gestures run
-    if (this.drag?.pick && this.drag.p !== p) {
-      this.drag = null
+    // a second finger while the first may still pick something up: the touch is a pinch, which the map's gestures run;
+    // one while a piece is carried is ignored until the first lifts
+    if (this.drag && this.drag.p !== p && this.drag.p.isDown) {
+      if (this.drag.pick) this.drag = null
       return
     }
     const held = this.held?.item
@@ -625,7 +626,7 @@ export class BuildScene extends Phaser.Scene {
    */
   private onMove(p: Phaser.Input.Pointer): void {
     const { drag } = this
-    if (!p.isDown || !drag) return
+    if (!p.isDown || !drag || p !== drag.p) return
     if (drag.pick) {
       if (Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) <= TAP_SLOP_PX) return
       drag.pick = false
@@ -667,6 +668,8 @@ export class BuildScene extends Phaser.Scene {
   /** A tap with nothing held picks up what stands there; the end of a drag only lets go of the finger. */
   private onUp(p: Phaser.Input.Pointer): void {
     const drag = this.drag
+    // only the finger that pressed ends the drag
+    if (drag && drag.p !== p) return
     this.drag = null
     if (!drag?.pick || Phaser.Math.Distance.Between(drag.x, drag.y, p.x, p.y) > TAP_SLOP_PX) return
     this.pickUp(this.params.cam.toWorld(p.x, p.y))

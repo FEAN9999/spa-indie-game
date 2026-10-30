@@ -8,6 +8,7 @@ import { createRng } from '../sim/rng'
 import { t, type StringKey } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
 /** The polish of each colour the rules name. */
@@ -167,24 +168,24 @@ export class NailsScene extends Phaser.Scene {
     this.moveDemo(0)
 
     // only the right pick, or a touch that lights a dot, puts the demo hand away
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.revealed) return
-      if (this.rules.phase === 'pick') {
-        const bottle = nailsBottleAt(p.x, p.y)
-        if (bottle !== null && this.rules.pick(bottle) === 'right') this.picked = true
-      } else if (this.rules.phase === 'trace' && this.rules.down(p.x, p.y).lit > 0) this.hideDemo()
-    })
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (this.revealed || !p.isDown) return
-      const touch = this.rules.move(p.x, p.y)
-      if (touch.smudge) this.floatWord(t('nailsSmudge'), p.x, p.y - WORD.smudgeDy, C.lantern)
-      if (touch.lit > 0) this.hideDemo()
-    })
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) {
-      this.input.on(ev, () => {
+    oneFinger(this.input, {
+      down: p => {
+        if (this.revealed) return
+        if (this.rules.phase === 'pick') {
+          const bottle = nailsBottleAt(p.x, p.y)
+          if (bottle !== null && this.rules.pick(bottle) === 'right') this.picked = true
+        } else if (this.rules.phase === 'trace' && this.rules.down(p.x, p.y).lit > 0) this.hideDemo()
+      },
+      move: p => {
+        if (this.revealed || !p.isDown) return
+        const touch = this.rules.move(p.x, p.y)
+        if (touch.smudge) this.floatWord(t('nailsSmudge'), p.x, p.y - WORD.smudgeDy, C.lantern)
+        if (touch.lit > 0) this.hideDemo()
+      },
+      up: () => {
         if (!this.revealed) this.rules.up()
-      })
-    }
+      },
+    })
   }
 
   update(_time: number, delta: number) {

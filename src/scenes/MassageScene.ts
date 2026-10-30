@@ -6,6 +6,7 @@ import type { Stars } from '../sim/economy'
 import { MassageGame, type Judgement, type MassagePoint } from '../sim/massage'
 import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
 /** The back centre on the card; the rules' back square spans MS_BACK_PX either side of it. */
@@ -76,8 +77,7 @@ export class MassageScene extends Phaser.Scene {
     this.ring = this.add.image(0, 0, 'ms-ring').setVisible(false).setDepth(DEPTH.ring)
     this.bars = this.add.graphics()
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p))
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => this.rules.release())
+    oneFinger(this.input, { down: p => this.onDown(p), up: () => this.rules.release() })
   }
 
   update(_time: number, delta: number) {

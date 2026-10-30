@@ -6,6 +6,7 @@ import type { Stars } from '../sim/economy'
 import { ScrubGame, type ScrubSpot } from '../sim/scrub'
 import { t } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
 /** The back centre on the card, where MassageScene puts it; the rules work in pixels from here. */
@@ -84,15 +85,17 @@ export class ScrubScene extends Phaser.Scene {
     // the fingertip is at the bottom centre of the texture
     if (this.params.demo) this.demoHand = this.add.image(0, 0, 'hand').setOrigin(0.5, 1).setAlpha(DEMO.alpha).setDepth(DEPTH.hand)
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      if (this.revealed) return
-      this.hideDemo()
-      this.rules.down(p.x - BACK.x, p.y - BACK.y)
+    oneFinger(this.input, {
+      down: p => {
+        if (this.revealed) return
+        this.hideDemo()
+        this.rules.down(p.x - BACK.x, p.y - BACK.y)
+      },
+      move: p => {
+        if (!this.revealed && p.isDown) this.rules.move(p.x - BACK.x, p.y - BACK.y)
+      },
+      up: () => this.rules.up(),
     })
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
-      if (!this.revealed && p.isDown) this.rules.move(p.x - BACK.x, p.y - BACK.y)
-    })
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => this.rules.up())
   }
 
   update(_time: number, delta: number) {

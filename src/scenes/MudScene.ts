@@ -7,6 +7,7 @@ import { MudGame, type MudFeel } from '../sim/mud'
 import { createRng } from '../sim/rng'
 import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
 /** The heat column at the card's left: the mark runs from 0 at `bottom` to 1 at `top`, and the round ends reach half the width past them. */
@@ -107,9 +108,14 @@ export class MudScene extends Phaser.Scene {
     this.bars = this.add.graphics()
     if (this.params.demo) this.showDemo()
 
-    this.input.on('pointerdown', () => this.hideDemo())
-    // a finger lifted anywhere, even off the button or the game, lets go
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => this.setHeld(false))
+    // the finger on the button holds; lifted anywhere, even off the button or the game, it lets go
+    oneFinger(this.input, {
+      down: (_, over) => {
+        this.hideDemo()
+        if (over.includes(this.button)) this.setHeld(true)
+      },
+      up: () => this.setHeld(false),
+    })
   }
 
   update(_time: number, delta: number) {
@@ -171,7 +177,6 @@ export class MudScene extends Phaser.Scene {
     this.buttonFill = this.add.graphics()
     const label = this.add.text(0, 0, t('mudHold'), textStyle(HOLD.size, '800', C.paper)).setOrigin(0.5)
     this.button = this.add.container(HOLD.x, HOLD.y, [this.buttonFill, label]).setSize(HOLD.w, HOLD.h).setInteractive()
-    this.button.on('pointerdown', () => this.setHeld(true))
     this.drawButton()
   }
 

@@ -6,6 +6,7 @@ import type { Stars } from '../sim/economy'
 import { MaskGame, type MaskPhase } from '../sim/mask'
 import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 
 /** The face centre on the card; the face circle, the rules' unit circle, is MK_FACE_R px round it. */
 const FACE = { x: 540, y: 880 }
@@ -106,9 +107,7 @@ export class MaskScene extends Phaser.Scene {
     }
     this.bars = this.add.graphics()
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => this.onDown(p))
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p))
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => this.onUp())
+    oneFinger(this.input, { down: p => this.onDown(p), move: p => this.onMove(p), up: () => this.onUp() })
     this.showDemo('paint')
   }
 

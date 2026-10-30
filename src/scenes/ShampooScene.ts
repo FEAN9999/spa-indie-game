@@ -6,6 +6,7 @@ import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
 import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { oneFinger } from '../view/oneFinger'
 
 /** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
@@ -67,13 +68,15 @@ export class ShampooScene extends Phaser.Scene {
     this.shower = this.add.image(0, 0, 'sh-shower').setOrigin(0.5, 0.25).setVisible(false).setDepth(10)
     this.towel = this.add.image(0, 0, 'sh-towel').setVisible(false).setDepth(10)
 
-    this.input.on('pointerdown', (p: Phaser.Input.Pointer) => {
-      this.pointer = p
-      this.last = { x: p.x, y: p.y }
-      this.hideDemo()
+    oneFinger(this.input, {
+      down: p => {
+        this.pointer = p
+        this.last = { x: p.x, y: p.y }
+        this.hideDemo()
+      },
+      move: p => this.onMove(p),
+      up: () => (this.pointer = null),
     })
-    this.input.on('pointermove', (p: Phaser.Input.Pointer) => this.onMove(p))
-    for (const ev of ['pointerup', 'pointerupoutside', 'gameout']) this.input.on(ev, () => (this.pointer = null))
     this.showDemo('foam')
     // the water stops however the scene ends
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => sound.water(false))
