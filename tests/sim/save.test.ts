@@ -63,7 +63,7 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; place?: unknown; pets?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; place?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The old shop's furniture on the 13-column grid, as saves from before version 33 have it. */
 const LEGACY_ITEMS = itemsFromLayout(SPA_LAYOUT_1A)
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest, on the old grid. */
@@ -94,6 +94,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.stock.salt ??= 20
     shop.stock.polish ??= 20
     shop.lessonsPaid ??= []
+    shop.houses ??= { left: 0, right: 0 }
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
@@ -154,6 +155,47 @@ describe('the wide grid in an older shop', () => {
 
   it('furnishes a v1 shop on the old grid, then moves it once', () => {
     expect(parseSave(structuredClone(v1)).items.find(i => i.kind === 'desk')).toMatchObject({ x: 20, y: 14 })
+  })
+})
+
+describe('the houses bought', () => {
+  /** Today's fresh main shop as saved, with a bed in the inner left house and the houses given. */
+  const withBedNextDoor = (houses: unknown) => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    raw.items.push({ id: raw.nextItemId, kind: 'bed', x: 8, y: 2, flip: false })
+    raw.nextItemId++
+    raw.houses = houses
+    return raw
+  }
+
+  it('opens a shop with a bed in a bought house', () => {
+    const sim = open(withBedNextDoor({ left: 1, right: 0 }))
+    expect(sim.houses).toEqual({ left: 1, right: 0 })
+    expect(sim.items.at(-1)).toMatchObject({ kind: 'bed', x: 8, y: 2 })
+  })
+
+  it('refuses a bed in a house not bought', () => {
+    expect(() => open(withBedNextDoor({ left: 0, right: 0 }))).toThrow(SaveError)
+  })
+
+  it('reads a damaged count as no houses', () => {
+    const raw = JSON.parse(JSON.stringify(new SpaSim(opts()).toSave()))
+    raw.houses = { left: 5, right: -1 }
+    expect(parseSave(raw).houses).toEqual({ left: 0, right: 0 })
+    raw.houses = 'two'
+    expect(parseSave(raw).houses).toEqual({ left: 0, right: 0 })
+  })
+
+  it('never gives a branch a house', () => {
+    const raw = structuredClone(parseSave(structuredClone(v32))) as unknown as { chain: { branches: { houses: unknown }[] } }
+    raw.chain.branches[0].houses = { left: 1, right: 1 }
+    expect(parseSave(raw).chain!.branches[0].houses).toEqual({ left: 0, right: 0 })
+  })
+
+  it('keeps the houses through a save', () => {
+    const sim = open(withBedNextDoor({ left: 1, right: 2 }))
+    expect(viaJson(sim).houses).toEqual({ left: 1, right: 2 })
+    expect(sim.toSave().houses).toEqual({ left: 1, right: 2 })
   })
 })
 

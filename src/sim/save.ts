@@ -1,4 +1,4 @@
-import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, SHOP_X0, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, HOUSES_PER_SIDE, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, SHOP_X0, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
 import { emptyIdolBook, IDOL_IDS, type IdolBook, type IdolId } from './idols'
@@ -6,7 +6,7 @@ import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
 import { ITEM_KINDS, canTurn, itemsFromLayout, type Item, type ItemKind } from './items'
-import { SPA_LAYOUT_1A } from './layout'
+import { SPA_LAYOUT_1A, type Houses } from './layout'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
@@ -117,6 +117,8 @@ export interface SaveData {
   starter: StarterBook
   /** The shop's pets and whether Chú Sáu's litter has been taken. */
   pets: PetBook
+  /** The neighbour houses bought each side; a branch never has any. */
+  houses: Houses
   /** The real time of the last write, stamped by the session; null until then. */
   savedAt: number | null
 }
@@ -340,6 +342,8 @@ function parseShop(raw: unknown): SaveData {
   data.starter = repairStarter(data.starter)
   // shops saved before version 32 have no pets and have not been offered the litter; a branch never is
   data.pets = isPlaceId(data.place) ? branchPetBook() : repairPets(data.pets)
+  // shops saved before version 33 have bought no house; a branch never does
+  data.houses = isPlaceId(data.place) ? { left: 0, right: 0 } : repairHouses(data.houses)
   data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
   data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
   // shops saved before version 33 move onto the wide grid, once: the version is raised so a parsed save parsed again stays put
@@ -363,6 +367,11 @@ function shiftShop(data: SaveData, dx: number): void {
 export const oldShopKinds = (day: number): MainKind[] => MAIN_KINDS.filter(k => k !== 'celeb' && KINDS[k].fromDay <= day)
 
 const repairCount = (x: unknown): number => (Number.isInteger(x) && (x as number) >= 0 ? (x as number) : 0)
+/** Each side's house count as a whole number from 0 to HOUSES_PER_SIDE; anything else is no house. */
+function repairHouses(x: unknown): Houses {
+  const side = (n: unknown) => (Number.isInteger(n) && (n as number) >= 0 && (n as number) <= HOUSES_PER_SIDE ? (n as number) : 0)
+  return isObject(x) ? { left: side(x.left), right: side(x.right) } : { left: 0, right: 0 }
+}
 const repairBool = (x: unknown): boolean => x === true
 const repairNullable = (x: unknown): number | null => (isNumber(x) ? x : null)
 

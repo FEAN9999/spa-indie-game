@@ -66,7 +66,7 @@ import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, t
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
 import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
-import { SHOP_LAYOUT } from './layout'
+import { NO_HOUSES, SHOP_LAYOUT, withHouses, type Houses } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, visitMinute, type GuestBook, type RegularId } from './regulars'
@@ -210,10 +210,14 @@ export class SpaSim {
   starter: StarterBook
   /** The shop's pets; a branch's live at the main shop. */
   pets: PetBook = emptyPetBook()
+  /** The neighbour houses bought each side; a branch never has any. */
+  houses: Houses = { ...NO_HOUSES }
 
   private readonly rng: Rng
   private readonly crew: CrewHost
   private readonly autoSpawn: boolean
+  /** Floor 1's layout without its furniture or its houses. */
+  private readonly base: string[]
   /** The layout without its furniture: walls and door; the screens and desk are furniture. */
   private shell: string[]
   /** How many floors are open; the shell always holds every floor the layout has. */
@@ -237,7 +241,8 @@ export class SpaSim {
       payFor: (c, station, stars, technician) => this.payFor(c, station, stars, technician),
       takeStaffId: () => this.nextStaffId++,
     }
-    this.shell = towerOf(shellOf(layout))
+    this.base = shellOf(layout)
+    this.shell = towerOf(this.base)
     this.items = itemsFromLayout(layout)
     this.nextItemId = this.items.length + 1
     this.rebuildRoom()
@@ -919,6 +924,7 @@ export class SpaSim {
       away: this.away,
       starter: this.starter,
       pets: this.pets,
+      houses: this.houses,
       savedAt: null,
     })
   }
@@ -931,6 +937,9 @@ export class SpaSim {
     sim.place = d.place
     // furniture off the grid or on a wall or the door cannot be laid out; overlaps and paths are not checked here
     sim.floors = d.floors
+    // furniture in a house not bought is on a wall
+    sim.houses = d.houses
+    sim.rebuildShell()
     const shell = parseLayout(sim.shell)
     // an older shop may have furniture where the stairs now are: it goes first, with a refund
     const note = d.clearStairs ? clearStairs(d, shell) : null
@@ -1473,6 +1482,11 @@ export class SpaSim {
     for (const c of this.customers)
       if (c.stationId === null && ['arriving', 'toSeat', 'waiting'].includes(c.state) && !available.includes(c.service))
         c.service = c.idol !== null ? available[0] : drawService(c.kind, available, this.rng)
+  }
+
+  /** Builds the tower shell again from floor 1's layout and the houses bought. */
+  private rebuildShell(): void {
+    this.shell = towerOf(withHouses(this.base, this.houses))
   }
 
   /** Lays the floor out from the items again; whoever is on a bed or a seat that is still there stays on it. */
