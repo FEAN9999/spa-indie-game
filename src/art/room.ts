@@ -1,11 +1,10 @@
-import { TILE } from '../config'
+import { STREET_TILES, TILE } from '../config'
 import type { Grid } from '../sim/grid'
 import { MAT } from './furniture'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
-/** Street strip below the front wall, in tiles. */
-export const STREET_TILES = 2
+export { STREET_TILES }
 
 export const rect = (x: number, y: number, w: number, h: number, fill: string, extra = '') =>
   `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${fill}" ${extra}/>`

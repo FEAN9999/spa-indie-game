@@ -12,6 +12,10 @@ export const SHOP_COLS = 13 + 2 * HOUSES_PER_SIDE * HOUSE_COLS
 /** The map's origin: column 12's left edge lands at x 33, where the old shop's wall always stood, when the camera is at home. */
 export const MAP_X = 33 - SHOP_X0 * TILE
 export const MAP_Y = 210
+/** Street strip below the front wall, in tiles. */
+export const STREET_TILES = 2
+/** The closest the map zooms in; the farthest out fits every bought column across the screen, never past normal size. */
+export const ZOOM_MAX = 1.6
 
 export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
 /** What the owner can pick when making the shop. */
