@@ -102,4 +102,11 @@ describe('strings', () => {
     expect(Object.keys(hints).sort()).toEqual(['lemongrass', 'pomelo'])
     for (const line of Object.values(hints)) expect(line.length, line).toBeLessThanOrEqual(BUBBLE_MAX_CHARS)
   })
+
+  it('fills the buy card strings', () => {
+    expect(t('houseBuy', { money: formatMoney(3_000_000) })).toBe('Mua · 3.000.000 đ')
+    expect(t('houseTitleLeft2')).toBe('Mua thêm căn bên trái')
+    expect(t('buyHouseHint')).toBe('Bấm Xây dựng để kê giường sang nhà mới')
+    expect([t('saleSign1'), t('saleSign2')]).toEqual(['BÁN NHÀ', 'CHÍNH CHỦ'])
+  })
 })

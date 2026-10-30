@@ -26,6 +26,7 @@ import { createRng } from '../sim/rng'
 import { SaveError, SaveTooNewError, type SaveData } from '../sim/save'
 import { SERVICES, type ServiceId } from '../sim/services'
 import { SpaSim } from '../sim/spa'
+import type { House, Side } from '../sim/layout'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types'
@@ -48,7 +49,7 @@ import { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
 import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
-import { stripLots } from '../view/houses'
+import { houseRect, saleAt, stripLots } from '../view/houses'
 import { navIds, type NavId } from '../view/nav'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
@@ -305,7 +306,8 @@ export class SpaScene extends Phaser.Scene {
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
     // at normal size on the owner; the view is never saved
-    this.cam = new MapCamera(this, MAP_VIEW, mapBounds(this.sim.houses))
+    this.cam = new MapCamera(this, MAP_VIEW, mapBounds(this.sim.shownHouses()))
+    this.syncHouses()
     this.cam.jump({ zoom: 1, cx: this.room.tileToWorld(this.sim.owner.pos).x })
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
@@ -961,6 +963,8 @@ export class SpaScene extends Phaser.Scene {
       sound.startOfDay()
       sim.markHint('summary')
       this.chain.startDay()
+      // a new day may put a house up for sale: the bounds widen before the jump home
+      this.syncHouses()
       this.showFloor(1)
       // the day starts at normal size, on the old shop
       this.cam.jump({ zoom: 1, cx: 540, cy: 990 })
@@ -1093,6 +1097,50 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         openBtn.setAlpha(0.45)
         parts.push(this.ui.add.text(openX, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
       }
+    }
+    for (const p of parts) p.setDepth(CARD_DEPTH)
+  }
+
+  /** The houses bought and for sale on the map, and the camera's bounds over them; `justBought` plays its purchase. */
+  private syncHouses(justBought: House | null = null): void {
+    const sim = this.sim
+    this.room.setHouses(sim.houses, sim.shownHouses(), justBought)
+    this.cam.setBounds(mapBounds(sim.shownHouses()))
+  }
+
+  /** A card over the frozen shop to buy the next house on `side`, faded with what is missing when the money is short. */
+  private offerHouse(side: Side): void {
+    const sim = this.sim
+    const problem = sim.houseProblem(side)
+    if (problem !== null && problem !== 'money') return
+    const price = sim.housePrice(side)
+    const n = sim.houses[side] + 1
+    this.modal = true
+    const close = () => {
+      for (const p of parts) p.destroy()
+      this.modal = false
+    }
+    const buy = () => {
+      close()
+      if (sim.buyHouse(side)) return
+      sound.play('thud')
+      this.session.saveNow()
+    }
+    const title = `houseTitle${side === 'right' ? 'Right' : 'Left'}${n}` as StringKey
+    const parts: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [
+      this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
+      addCard(this.ui, 90, 740, 900, 680),
+      this.ui.add.text(GAME_W / 2, 790, t(title), textStyle(60, '800')).setOrigin(0.5, 0),
+      this.ui.add.text(GAME_W / 2, 890, [t('houseLine1'), t('houseLine2'), t('houseLine3')].join('\n'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
+    ]
+    // the same pair as the floor card: "Để sau" and the buy button wide enough for its price
+    const buyX = GAME_W / 2 + 165
+    parts.push(addButton(this.ui, GAME_W / 2 - 245, 1290, 300, 120, t('floorLater'), 'plain', close))
+    const buyBtn = addButton(this.ui, buyX, 1290, 460, 120, t('houseBuy', { money: formatMoney(price) }), 'primary', problem === null ? buy : () => {}, 44)
+    parts.push(buyBtn)
+    if (problem === 'money') {
+      buyBtn.setAlpha(0.45)
+      parts.push(this.ui.add.text(buyX, 1370, t('floorShort', { money: formatMoney(price - sim.money) }), textStyle(34, '600', C.lantern)).setOrigin(0.5, 0))
     }
     for (const p of parts) p.setDepth(CARD_DEPTH)
   }
@@ -1464,6 +1512,18 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'floorOpened':
         this.showFloor(e.floor)
         return
+      case 'houseBought': {
+        // the bounds take the new house in before the slide there
+        this.syncHouses(e.house)
+        const r = houseRect(e.house)
+        this.cam.slideTo(r.x + r.w / 2)
+        this.syncRoom()
+        if (!this.sim.hintDone('buyHouse')) {
+          this.queueToast(t('buyHouseHint'))
+          this.sim.markHint('buyHouse')
+        }
+        return
+      }
       case 'stairsCleared':
         // it comes as the shop loads, under the pause card, the owner card or the day's summary; update shows it once they are gone
         this.stairsNote = e
@@ -1842,6 +1902,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       // a pet takes the tap: a pat, and the owner stays put
       const pet = this.pets.petAt(over)
       if (pet !== null && !this.modal && !this.sim.paused && this.sim.servingCustomerId === null) this.pets.pat(pet)
+      return
+    }
+    // a roof for sale offers its house
+    const house = saleAt(this.sim.houses, this.sim.shownHouses(), w.x)
+    if (house) {
+      const r = houseRect(house)
+      this.cam.slideTo(r.x + r.w / 2)
+      this.offerHouse(house.side)
       return
     }
     // A seated customer's head covers the tile above the seat, so test the figure before the floor.
