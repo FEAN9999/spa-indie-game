@@ -66,7 +66,7 @@ import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, t
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
 import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
-import { SPA_LAYOUT_1A } from './layout'
+import { SHOP_LAYOUT } from './layout'
 import { findPath } from './path'
 import { cleanShopName, DEFAULT_OWNER_LOOK } from './profile'
 import { addVisit, bookOpen, dueRegular, emptyBook, isMember, loseVisit, noteServed, planDay, REGULAR_IDS, REGULARS, visitMinute, type GuestBook, type RegularId } from './regulars'
@@ -224,7 +224,7 @@ export class SpaSim {
   private nextStaffId = 1
   private untilArrivalMs = FIRST_ARRIVAL_MS
 
-  constructor({ rng, layout = SPA_LAYOUT_1A, autoSpawn = true, starter = false }: SpaSimOptions) {
+  constructor({ rng, layout = SHOP_LAYOUT, autoSpawn = true, starter = false }: SpaSimOptions) {
     this.rng = rng
     this.autoSpawn = autoSpawn
     this.starter = starter ? newStarter() : pastStarter()

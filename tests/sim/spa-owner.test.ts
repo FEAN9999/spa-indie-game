@@ -10,13 +10,13 @@ const fresh = () => new SpaSim({ rng: createRng(1), autoSpawn: false })
 describe('SpaSim owner and service', () => {
   it('tapping a floor tile walks the owner there', () => {
     const sim = fresh()
-    sim.tapTile({ x: 2, y: 14 })
-    advanceUntil(sim, () => tileEq(sim.ownerTile(), { x: 2, y: 14 }) && sim.owner.path.length === 0)
+    sim.tapTile({ x: 14, y: 14 })
+    advanceUntil(sim, () => tileEq(sim.ownerTile(), { x: 14, y: 14 }) && sim.owner.path.length === 0)
   })
 
   it('tapping a wall or furniture does nothing', () => {
     const sim = fresh()
-    for (const t of [{ x: 0, y: 5 }, { x: 8, y: 14 }, { x: 3, y: 12 }, { x: 5, y: 6 }, { x: 2, y: 2 }]) sim.tapTile(t)
+    for (const t of [{ x: 12, y: 5 }, { x: 20, y: 14 }, { x: 15, y: 12 }, { x: 17, y: 6 }, { x: 14, y: 2 }]) sim.tapTile(t)
     expect(sim.owner.path).toEqual([])
     expect(sim.owner.task).toBeNull()
   })
@@ -80,11 +80,11 @@ describe('SpaSim owner and service', () => {
   it('ignores taps while a service is pending or the day is over', () => {
     const sim = fresh()
     const c = startService(sim)
-    sim.tapTile({ x: 2, y: 14 })
+    sim.tapTile({ x: 14, y: 14 })
     expect(sim.owner.path).toEqual([])
     sim.completeService(c.id, 2)
     sim.dayOver = true
-    sim.tapTile({ x: 2, y: 14 })
+    sim.tapTile({ x: 14, y: 14 })
     expect(sim.owner.path).toEqual([])
   })
 
@@ -102,8 +102,8 @@ describe('SpaSim owner and service', () => {
   it('serves each bed from the work tile on its right', () => {
     const sim = fresh()
     expect(sim.stations.map(s => [s.bed, s.work])).toEqual([
-      [{ x: 2, y: 3 }, { x: 3, y: 3 }],
-      [{ x: 4, y: 3 }, { x: 5, y: 3 }],
+      [{ x: 14, y: 3 }, { x: 15, y: 3 }],
+      [{ x: 16, y: 3 }, { x: 17, y: 3 }],
     ])
   })
 
@@ -122,8 +122,8 @@ describe('SpaSim owner and service', () => {
   it('starts the next day with the owner back behind the reception desk', () => {
     const sim = fresh()
     const start = sim.ownerTile()
-    sim.tapTile({ x: 2, y: 14 })
-    advanceUntil(sim, () => tileEq(sim.ownerTile(), { x: 2, y: 14 }) && sim.owner.path.length === 0)
+    sim.tapTile({ x: 14, y: 14 })
+    advanceUntil(sim, () => tileEq(sim.ownerTile(), { x: 14, y: 14 }) && sim.owner.path.length === 0)
     advanceUntil(sim, () => sim.dayOver, 900_000)
     sim.startDay()
     expect(sim.ownerTile()).toEqual(start)
@@ -134,8 +134,8 @@ describe('SpaSim owner and service', () => {
   it('tapping an empty bed slot offers a bed there and leaves the owner where they are', () => {
     const sim = fresh()
     for (const y of [1, 2, 3, 4]) {
-      sim.tapTile({ x: 6, y })
-      expect(sim.drainEvents()).toContainEqual({ type: 'bedSlot', slot: { x: 6, y: 2 } })
+      sim.tapTile({ x: 18, y })
+      expect(sim.drainEvents()).toContainEqual({ type: 'bedSlot', slot: { x: 18, y: 2 } })
     }
     expect(sim.owner.path).toEqual([])
   })
@@ -143,7 +143,7 @@ describe('SpaSim owner and service', () => {
   it('brings a customer from the far end of the bench onto a bed within 8 seconds of the tap', () => {
     const sim = fresh()
     const c = seatAndWait(sim)
-    expect(c.seat).toEqual({ x: 2, y: 13 }) // the first seat is the farthest from the beds
+    expect(c.seat).toEqual({ x: 14, y: 13 }) // the first seat is the farthest from the beds
     sim.tapTile(c.seat!)
     let ms = 0
     while (c.state !== 'inService' && ms <= 20_000) {
@@ -158,7 +158,7 @@ describe('SpaSim owner and service', () => {
     const first = startService(sim)
     sim.completeService(first.id, 3)
     const c = seatAndWait(sim)
-    expect(c.seat).toEqual({ x: 2, y: 13 })
+    expect(c.seat).toEqual({ x: 14, y: 13 })
     expect(sim.ownerTile()).toEqual(sim.stations[0].work) // the owner is still beside the bed they just used
     sim.tapTile(c.seat!)
     let ms = 0
@@ -178,31 +178,31 @@ describe('SpaSim owner and service', () => {
     it('starts the day behind the moved desk, facing it', () => {
       const sim = shop()
       const desk = sim.items.find(i => i.kind === 'desk')!.id
-      expect(sim.ownerStart()).toEqual({ x: 9, y: 13 })
-      expect(sim.move(desk, 4, 9, false, true)).toBeNull()
-      expect(sim.ownerStart()).toEqual({ x: 3, y: 10 })
+      expect(sim.ownerStart()).toEqual({ x: 21, y: 13 })
+      expect(sim.move(desk, 16, 9, false, true)).toBeNull()
+      expect(sim.ownerStart()).toEqual({ x: 15, y: 10 })
       expect(sim.ownerStartFacing()).toBe('right')
       sim.startDay()
-      expect(sim.owner.pos).toEqual({ x: 3, y: 10 })
+      expect(sim.owner.pos).toEqual({ x: 15, y: 10 })
       expect(sim.owner.facing).toBe('right')
     })
 
     it('starts at the oldest desk, and at the next once it is sold', () => {
       const sim = shop()
       const old = sim.items.find(i => i.kind === 'desk')!.id
-      expect(sim.buy('desk', 4, 10, false)).toBeNull()
-      expect(sim.ownerStart()).toEqual({ x: 9, y: 13 })
+      expect(sim.buy('desk', 16, 10, false)).toBeNull()
+      expect(sim.ownerStart()).toEqual({ x: 21, y: 13 })
       expect(sim.sell(old)).toBeNull()
-      expect(sim.ownerStart()).toEqual({ x: 5, y: 9 })
+      expect(sim.ownerStart()).toEqual({ x: 17, y: 9 })
     })
 
     it('puts the receptionist at the top end of an upright desk, never straight above or below the owner', () => {
       for (const flip of [false, true]) {
         const sim = shop()
         const desk = sim.items.find(i => i.kind === 'desk')!.id
-        expect(sim.move(desk, 4, 9, flip, true)).toBeNull()
-        expect(sim.ownerStart()).toEqual({ x: flip ? 5 : 3, y: 10 })
-        expect(sim.receptionSpot()).toEqual({ x: 4, y: 8 })
+        expect(sim.move(desk, 16, 9, flip, true)).toBeNull()
+        expect(sim.ownerStart()).toEqual({ x: flip ? 17 : 15, y: 10 })
+        expect(sim.receptionSpot()).toEqual({ x: 16, y: 8 })
       }
     })
 
@@ -212,9 +212,9 @@ describe('SpaSim owner and service', () => {
       advanceUntil(sim, () => tileEq(tileOf(r.pos), sim.receptionSpot()) && r.path.length === 0)
       expect(r.facing).toBe('down')
       const desk = sim.items.find(i => i.kind === 'desk')!.id
-      expect(sim.move(desk, 4, 9, false, true)).toBeNull()
+      expect(sim.move(desk, 16, 9, false, true)).toBeNull()
       const spot = sim.receptionSpot()
-      expect(tileEq(spot, { x: 3, y: 10 })).toBe(false)
+      expect(tileEq(spot, { x: 15, y: 10 })).toBe(false)
       expect(sim.grid.desks.some(d => manhattan(d, spot) === 1)).toBe(true)
       advanceUntil(sim, () => tileEq(tileOf(r.pos), sim.receptionSpot()) && r.path.length === 0)
       expect(r.facing).toBe('down') // she stands above the desk's top end, which is below her

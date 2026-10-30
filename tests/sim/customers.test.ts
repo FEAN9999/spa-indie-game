@@ -79,7 +79,7 @@ describe('kinds of customer', () => {
     const sim = newSim(4)
     sim.money = 1_000_000
     sim.openService('mask')
-    sim.buy('maskBed', 6, 2, false)
+    sim.buy('maskBed', 18, 2, false)
     const mirror = createRng(1)
     for (let i = 0; i < 4; i++) mirror() // the look
     const kind = drawKind(4, mirror)

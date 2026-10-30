@@ -43,7 +43,7 @@ describe('mineral mud and the stone bed', () => {
     sim.services = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud']
     sim.money = 5_000_000
     for (const id of ['steam', 'stone', 'mud'] as const) sim.recipes[id].solved = true
-    for (const [kind, x, y] of [['massageBed', 1, 8], ['stoneBed', 4, 8], ['mudTub', 8, 8], ['steamTent', 5, 12]] as const) expect(sim.buy(kind, x, y, false), kind).toBeNull()
+    for (const [kind, x, y] of [['massageBed', 13, 8], ['stoneBed', 16, 8], ['mudTub', 20, 8], ['steamTent', 17, 12]] as const) expect(sim.buy(kind, x, y, false), kind).toBeNull()
     hireStaff(sim, 'technician', undefined, { massage: 1, stone: 1, steam: 1, mud: 1 })
     hireStaff(sim, 'technician', undefined, { massage: 1, stone: 1, steam: 1, mud: 1 })
     sim.stock.oil = 0
@@ -226,7 +226,7 @@ describe('running out', () => {
     const soldDuringFetch = (whoFetches: 'technician' | 'owner') => {
       const sim = fresh()
       expect(sim.openService('mask')).toBeNull()
-      expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+      expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
       const tech = whoFetches === 'technician' ? hireStaff(sim, 'technician') : null
       const c = sim.spawnCustomer({ kind: 'office', service: 'mask' })
       if (tech) advanceUntil(sim, () => tech.task?.kind === 'fetch')

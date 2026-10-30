@@ -62,7 +62,7 @@ describe('hiring', () => {
     sim.startDay()
     sim.money = -1
     expect(sim.hire(0)).toBe('money')
-    expect(sim.buy('plant', 6, 9, false)).toBe('money')
+    expect(sim.buy('plant', 18, 9, false)).toBe('money')
     expect(sim.staff).toHaveLength(0)
   })
 })
@@ -82,8 +82,8 @@ const withBeds = () => {
   sim.money = 2_000_000
   expect(sim.openService('mask')).toBeNull()
   expect(sim.openService('massage')).toBeNull()
-  expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
-  expect(sim.buy('massageBed', 8, 2, false)).toBeNull()
+  expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
+  expect(sim.buy('massageBed', 20, 2, false)).toBeNull()
   sim.drainEvents()
   return sim
 }
@@ -212,20 +212,20 @@ describe('technicians at work', () => {
     expect(sim.stats.served).toBe(1)
     expect(a.state).toBe('leaving')
     expect(sim.stations[0].customerId).toBeNull()
-    expect(tech.task).toBeNull()
+    expect(tech.task?.kind).not.toBe('serve') // free again: she may already be on her way to b
   })
 
   it('serves on a bed lying across the floor, from the work tile behind it', () => {
     const sim = dayThree()
     sim.money = 2_000_000
-    expect(sim.buy('bed', 4, 9, false, true)).toBeNull()
+    expect(sim.buy('bed', 16, 9, false, true)).toBeNull()
     for (const s of sim.stations) if (s.id !== 17) s.customerId = 999
     const [a] = seated(sim, 1)
     const tech = hireStaff(sim, 'technician')
     const ev: SimEvent[] = []
     advanceUntil(sim, () => a.state === 'inService', 60_000, ev)
     expect(a.stationId).toBe(17)
-    expect([tileOf(a), tileOf(tech)]).toEqual([{ x: 5, y: 9 }, { x: 5, y: 8 }])
+    expect([tileOf(a), tileOf(tech)]).toEqual([{ x: 17, y: 9 }, { x: 17, y: 8 }])
     advanceUntil(sim, () => ev.some(e => e.type === 'paid'), 120_000, ev)
     expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id }))
   })
@@ -269,7 +269,7 @@ describe('technicians at work', () => {
   it('gives the owner the last free bed when a technician is on the way to someone else', () => {
     const sim = dayThree()
     sim.money = 2_000_000
-    expect(sim.buy('bed', 6, 2, false)).toBeNull()
+    expect(sim.buy('bed', 18, 2, false)).toBeNull()
     const free = sim.stations[2]
     for (const s of sim.stations) if (s !== free) s.customerId = 999
     const [a, b] = seated(sim, 2)
@@ -512,8 +512,8 @@ describe('levels and wages', () => {
     const rec = hireStaff(sim, 'receptionist')
     const techs = [hireStaff(sim, 'technician'), hireStaff(sim, 'technician')]
     for (const s of sim.staff) {
-      s.pos = { x: 1, y: 8 }
-      s.path = [{ x: 2, y: 8 }]
+      s.pos = { x: 13, y: 8 }
+      s.path = [{ x: 14, y: 8 }]
       s.task = { kind: 'rest', leftMs: 100 }
       s.sinceRest = 4
       s.facing = 'left'

@@ -19,7 +19,7 @@ const boardShop = (rng?: Rng, autoSpawn = false) => {
   sim.money = 20_000_000
   expect(sim.openService('mask')).toBeNull()
   expect(sim.openService('massage')).toBeNull()
-  expect(sim.buy('massageBed', 6, 2, false)).toBeNull()
+  expect(sim.buy('massageBed', 18, 2, false)).toBeNull()
   sim.vip.boardGiven = true
   hireStaff(sim, 'technician')
   hireStaff(sim, 'technician')
@@ -131,7 +131,7 @@ describe('booking a star', () => {
     branch.vip.boardGiven = true
     hireStaff(branch, 'technician')
     hireStaff(branch, 'technician')
-    expect(branch.buy('massageBed', 8, 2, false)).toBeNull()
+    expect(branch.buy('massageBed', 20, 2, false)).toBeNull()
     expect(idolEligible(branch.vip.boardGiven, 2, branch.availableServices())).toBe(true)
     closeDay(branch)
     expect(branch.idol.booking).toBeNull()
@@ -197,7 +197,7 @@ describe('a star walking in', () => {
   it("staff never fetch a star, and hold the star's bed while the owner is here", () => {
     const sim = boardShop()
     // a second massage bed, for the office customer once the star is on the first
-    expect(sim.buy('massageBed', 8, 2, false)).toBeNull()
+    expect(sim.buy('massageBed', 20, 2, false)).toBeNull()
     const techs = sim.staff
     // in the same tick, so no technician has gone for him before the star is in
     const office = sim.spawnCustomer({ kind: 'office', service: 'massage' })
@@ -420,7 +420,7 @@ describe('a VIP and a star never in the shop together', () => {
     const [rngA, rngB] = [createRng(5), createRng(5)]
     const [sim, twin] = [boardShop(rngA), boardShop(rngB)]
     // a mask bed too, so two services stay open when the massage bed goes
-    for (const s of [sim, twin]) expect(s.buy('maskBed', 8, 2, false)).toBeNull()
+    for (const s of [sim, twin]) expect(s.buy('maskBed', 20, 2, false)).toBeNull()
     const star = seatAndWait(sim, { idol: 'sontung', service: 'massage' })
     const other = seatAndWait(twin, { idol: 'sontung', service: 'massage' })
     // on the twin the star already wants an open service, so the sale re-picks no one

@@ -1,11 +1,12 @@
-import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, SHOP_X0, STOCK_START } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
 import { emptyIdolBook, IDOL_IDS, type IdolBook, type IdolId } from './idols'
 import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy } from './events'
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
-import { DEFAULT_ITEMS, ITEM_KINDS, canTurn, type Item, type ItemKind } from './items'
+import { ITEM_KINDS, canTurn, itemsFromLayout, type Item, type ItemKind } from './items'
+import { SPA_LAYOUT_1A } from './layout'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
@@ -24,11 +25,16 @@ import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
 /** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. */
-export const SAVE_VERSION = 32
+export const SAVE_VERSION = 33
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
 export const FURNISHED_SAVE_VERSION = 30
+/** The version from which shops stand on the 37-column grid: a shop saved from before it, main or branch, moves SHOP_X0 columns right once. */
+export const WIDE_SAVE_VERSION = 33
+
+/** The old shop's furniture on the 13-column grid, where the oldest saves get theirs before the move to the wide grid. */
+const LEGACY_ITEMS: Item[] = itemsFromLayout(SPA_LAYOUT_1A)
 
 export class SaveError extends Error {}
 /** A save written by a newer version of the game: it is valid, just not readable here, so it must be left alone. */
@@ -156,7 +162,7 @@ function checkCandidates(x: unknown): void {
 
 /** Shops saved before version 3 had the default furniture and numbered their beds 0, 1, …; a bed is now known by its item id. */
 function withDefaultItems(old: Record<string, unknown>): SaveData {
-  const bedIds = DEFAULT_ITEMS.filter(i => i.kind === 'bed').map(i => i.id)
+  const bedIds = LEGACY_ITEMS.filter(i => i.kind === 'bed').map(i => i.id)
   const { stationCustomers: _, seatCustomers: __, ...rest } = old
   const owner = old.owner as Owner
   const task = owner.task?.kind === 'serve' ? { ...owner.task, stationId: bedIds[owner.task.stationId] } : owner.task
@@ -164,8 +170,8 @@ function withDefaultItems(old: Record<string, unknown>): SaveData {
     ...rest,
     owner: { ...owner, task },
     customers: (old.customers as Customer[]).map(c => ({ ...c, stationId: c.stationId === null ? null : bedIds[c.stationId] })),
-    items: structuredClone(DEFAULT_ITEMS),
-    nextItemId: DEFAULT_ITEMS.length + 1,
+    items: structuredClone(LEGACY_ITEMS),
+    nextItemId: LEGACY_ITEMS.length + 1,
   } as unknown as SaveData
 }
 
@@ -247,7 +253,7 @@ function withScreensAndDesk(raw: unknown): unknown {
   if (raw.items.some(i => i.kind === 'screen' || i.kind === 'desk')) return raw
   // a damaged save may count its ids short, so the new ones start past every one it holds
   const first = Math.max(raw.nextItemId, ...raw.items.map(i => i.id + 1))
-  const added = DEFAULT_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: first + i }))
+  const added = LEGACY_ITEMS.slice(-3).map((item, i) => ({ ...structuredClone(item), id: first + i }))
   return { ...raw, items: [...raw.items, ...added], nextItemId: first + added.length }
 }
 
@@ -257,6 +263,7 @@ function parseShop(raw: unknown): SaveData {
   // a stored parsed save keeps the flag, with `v` already rewritten, until the sim saves itself again
   const before = isObject(raw) && typeof raw.v === 'number' && raw.v < STAIRS_SAVE_VERSION
   const flagged = before || (isObject(raw) && raw.clearStairs === true)
+  const narrow = isObject(raw) && typeof raw.v === 'number' && raw.v < WIDE_SAVE_VERSION
   const data = parseVersioned(withScreensAndDesk(raw))
   // floors are a whole number from 1 to MAX_FLOORS, else one; an older save has one, and its stairs spot is cleared on load
   data.floors = !before && Number.isInteger(data.floors) && data.floors >= 1 && data.floors <= MAX_FLOORS ? data.floors : 1
@@ -335,7 +342,21 @@ function parseShop(raw: unknown): SaveData {
   data.pets = isPlaceId(data.place) ? branchPetBook() : repairPets(data.pets)
   data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
   data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
+  // shops saved before version 33 move onto the wide grid, once: the version is raised so a parsed save parsed again stays put
+  if (narrow) {
+    shiftShop(data, SHOP_X0)
+    data.v = SAVE_VERSION
+  }
   return data
+}
+
+/** Moves every tile the shop saved `dx` columns: its furniture, and where everyone stands and walks. */
+function shiftShop(data: SaveData, dx: number): void {
+  const tile = <T extends { x: number }>(t: T): T => ({ ...t, x: t.x + dx })
+  data.items = data.items.map(tile)
+  data.owner = { ...data.owner, pos: tile(data.owner.pos), path: data.owner.path.map(tile) }
+  data.customers = data.customers.map(c => ({ ...c, pos: tile(c.pos), path: c.path.map(tile), seat: c.seat && tile(c.seat) }))
+  data.staff = data.staff.map(s => ({ ...s, pos: tile(s.pos), path: s.path.map(tile) }))
 }
 
 /** Every kind but the celebrities whose day had come: the kinds an old shop has already met. */
@@ -618,7 +639,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

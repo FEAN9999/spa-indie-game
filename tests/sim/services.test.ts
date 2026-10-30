@@ -22,7 +22,7 @@ const fresh = () => {
 const withMask = () => {
   const sim = fresh()
   expect(sim.openService('mask')).toBeNull()
-  expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+  expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
   sim.drainEvents()
   return sim
 }
@@ -105,13 +105,13 @@ describe('opening Xông lá', () => {
     sim.day = 5
     sim.recipes.steam.solved = true
     expect(sim.openService('steam')).toBeNull()
-    expect(sim.buy('steamTent', 8, 8, false)).toBeNull()
+    expect(sim.buy('steamTent', 20, 8, false)).toBeNull()
     const tent = sim.items.find(i => i.kind === 'steamTent')!
     expect(sim.availableServices()).toEqual(['shampoo', 'steam'])
     const c = startService(sim, { kind: 'elder', service: 'steam' })
     expect(c.pos).toEqual(bedTile(tent))
-    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'steam', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
-    expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'steam', bed: { x: 21, y: 9 }, work: { x: 22, y: 9 } })
+    expect(sim.owner.pos).toEqual({ x: 22, y: 9 })
     expect(sim.stock).toMatchObject({ herbs: 19, towel: 19, shampoo: 20 })
   })
 })
@@ -155,12 +155,12 @@ describe('opening Đá nóng and Tắm bùn', () => {
     sim.recipes.mud.solved = true
     expect(sim.openService('mud')).toBeNull()
     sim.money = 2_000_000
-    expect(sim.buy('mudTub', 8, 8, false)).toBeNull()
+    expect(sim.buy('mudTub', 20, 8, false)).toBeNull()
     const tub = sim.items.find(i => i.kind === 'mudTub')!
     const c = startService(sim, { kind: 'picky', service: 'mud' })
     expect(c.pos).toEqual(bedTile(tub))
-    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'mud', bed: { x: 9, y: 9 }, work: { x: 10, y: 9 } })
-    expect(sim.owner.pos).toEqual({ x: 10, y: 9 })
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'mud', bed: { x: 21, y: 9 }, work: { x: 22, y: 9 } })
+    expect(sim.owner.pos).toEqual({ x: 22, y: 9 })
     expect(sim.stock).toMatchObject({ mud: 19, towel: 19, oil: 20 })
   })
 
@@ -170,9 +170,9 @@ describe('opening Đá nóng and Tắm bùn', () => {
     sim.recipes.stone.solved = true
     expect(sim.openService('stone')).toBeNull()
     sim.money = 2_000_000
-    expect(sim.buy('stoneBed', 8, 8, false)).toBeNull()
+    expect(sim.buy('stoneBed', 20, 8, false)).toBeNull()
     const c = startService(sim, { kind: 'office', service: 'stone' })
-    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'stone', work: { x: 9, y: 9 } })
+    expect(sim.stations.find(s => s.id === c.stationId)).toMatchObject({ service: 'stone', work: { x: 21, y: 9 } })
     expect(sim.stock).toMatchObject({ oil: 19, towel: 19, mud: 20 })
   })
 })
@@ -184,7 +184,7 @@ describe('a Xông lá service across a save', () => {
     sim.services = ['shampoo', 'mask', 'massage']
     sim.recipes.steam.solved = true
     expect(sim.openService('steam')).toBeNull()
-    expect(sim.buy('steamTent', 8, 8, true)).toBeNull()
+    expect(sim.buy('steamTent', 20, 8, true)).toBeNull()
     const tent = sim.items.find(i => i.kind === 'steamTent')!
     const c = startService(sim, { kind: 'elder', service: 'steam' })
     expect(sim.stock.herbs).toBe(19)
@@ -208,7 +208,7 @@ describe('customers and services', () => {
     sim.openService('mask')
     const wants = (n: number) => new Set(Array.from({ length: n }, () => sim.spawnCustomer().service))
     expect(wants(200)).toEqual(new Set(['shampoo']))
-    expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+    expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
     expect(sim.availableServices()).toEqual(['shampoo', 'mask'])
     expect(wants(200)).toEqual(new Set(['shampoo', 'mask']))
   })

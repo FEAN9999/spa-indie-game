@@ -1,6 +1,6 @@
 import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY, MERIT_BEAUTY, TROPHY_BEAUTY } from '../config'
 import type { StringKey } from '../strings/vi'
-import { SPA_LAYOUT_1A } from './layout'
+import { SHOP_LAYOUT } from './layout'
 import type { Facing, Tile, Vec } from './types'
 
 export type ItemKind =
@@ -250,7 +250,7 @@ export function shellOf(rows: string[]): string[] {
   return rows.map(r => [...r].map(ch => (ITEM_CHARS.has(ch) ? '.' : ch)).join(''))
 }
 
-export const DEFAULT_ITEMS: Item[] = itemsFromLayout(SPA_LAYOUT_1A)
+export const DEFAULT_ITEMS: Item[] = itemsFromLayout(SHOP_LAYOUT)
 
 /** The empty bed slots of the default shop, as bed top-left tiles. */
-export const BED_SLOTS: Tile[] = [...SPA_LAYOUT_1A.flatMap((r, y) => [...r].flatMap((ch, x) => (ch === 'E' ? [{ x, y }] : [])))]
+export const BED_SLOTS: Tile[] = [...SHOP_LAYOUT.flatMap((r, y) => [...r].flatMap((ch, x) => (ch === 'E' ? [{ x, y }] : [])))]

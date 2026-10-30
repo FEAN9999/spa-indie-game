@@ -6,7 +6,7 @@ export function floorOf(y: number): number {
 }
 
 /**
- * The whole tall grid from floor 1's shell: every floor walled round, with floor 1's stairs repeated above it.
+ * The whole tall grid from floor 1's shell: every floor walled round, with floor 1's stairs and walls repeated above it.
  * A shell without stairs stays one floor.
  */
 export function towerOf(shell: string[]): string[] {
@@ -14,6 +14,6 @@ export function towerOf(shell: string[]): string[] {
   if (shell.length !== FLOOR_ROWS) throw new Error(`A shell with stairs needs ${FLOOR_ROWS} rows`)
   const cols = shell[0].length
   const wall = '#'.repeat(cols)
-  const upper = [wall, wall, ...shell.slice(2, FLOOR_ROWS - 1).map(r => `#${r.slice(1, -1).replace(/[^U]/g, '.')}#`), wall]
+  const upper = [wall, wall, ...shell.slice(2, FLOOR_ROWS - 1).map(r => `#${r.slice(1, -1).replace(/[^U#]/g, '.')}#`), wall]
   return [...shell, ...Array.from({ length: MAX_FLOORS - 1 }, () => upper).flat()]
 }

@@ -3,7 +3,14 @@
 export const GAME_W = 1080
 export const GAME_H = 2160
 export const TILE = 78
-export const MAP_X = 33
+// The grid: the old 13-column shop at columns 12 to 24, with room for two houses of 6 columns either side
+export const SHOP_X0 = 12
+export const HOUSE_COLS = 6
+export const HOUSES_PER_SIDE = 2
+/** Every floor's width: the old shop's 13 columns and two houses each side. */
+export const SHOP_COLS = 13 + 2 * HOUSES_PER_SIDE * HOUSE_COLS
+/** The map's origin: column 12's left edge lands at x 33, where the old shop's wall always stood, when the camera is at home. */
+export const MAP_X = 33 - SHOP_X0 * TILE
 export const MAP_Y = 210
 
 export const LOOK_COUNTS = { skin: 4, hair: 5, hairStyle: 4, shirt: 5 } as const
@@ -273,7 +280,7 @@ export const ARRIVE_MS = 1500 // walking in from the street
 export const EXIT_MS = 1500 // walking out to the street
 export const STEP_MS = 50
 export const MAX_FRAME_MS = 250
-export const OWNER_START = { x: 9, y: 13 } as const
+export const OWNER_START = { x: 21, y: 13 } as const
 
 // Saving
 export const AUTOSAVE_MS = 10_000

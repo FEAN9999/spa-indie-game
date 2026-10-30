@@ -16,7 +16,7 @@ const withMassage = (rng?: Rng) => {
   sim.money = 2_000_000
   expect(sim.openService('mask')).toBeNull()
   expect(sim.openService('massage')).toBeNull()
-  expect(sim.buy('massageBed', 6, 2, false)).toBeNull()
+  expect(sim.buy('massageBed', 18, 2, false)).toBeNull()
   sim.drainEvents()
   return sim
 }

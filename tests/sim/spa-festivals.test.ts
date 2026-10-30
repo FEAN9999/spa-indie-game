@@ -25,7 +25,7 @@ function on(day: number, prep: (sim: SpaSim) => void = () => {}): SpaSim {
 const withMask = (sim: SpaSim) => {
   sim.money = 1_000_000
   sim.openService('mask')
-  sim.buy('maskBed', 6, 2, false)
+  sim.buy('maskBed', 18, 2, false)
 }
 
 /** The share of 400 new customers asking for a mask, each walking in with `waiting` mask customers already there. */
@@ -82,7 +82,7 @@ describe('a festival month', () => {
     const sim = on(40, withMask)
     // one bed and one waiting: only the plain draw is left, about 0.4 of mask
     expect(maskShare(sim, 1)).toBeLessThan(0.5)
-    expect(sim.buy('maskBed', 6, 8, false)).toBeNull()
+    expect(sim.buy('maskBed', 18, 8, false)).toBeNull()
     expect(maskShare(sim, 1)).toBeGreaterThan(0.5)
   })
 

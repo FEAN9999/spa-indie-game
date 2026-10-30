@@ -103,7 +103,7 @@ describe('the owner leaving', () => {
 
   it('has the owner back at the start with nothing to do', () => {
     const branch = absentBranch()
-    branch.owner.pos = { x: 3, y: 3 }
+    branch.owner.pos = { x: 15, y: 3 }
     branch.ownerArrives()
     expect(branch.ownerHere).toBe(true)
     expect(branch.owner.path).toEqual([])
@@ -177,7 +177,7 @@ describe('the crew while the owner is away', () => {
   it('fetches another massage customer past a waiting VIP, and holds the bed again when the owner returns', () => {
     const build = (here: boolean) => {
       const sim = starShop()
-      expect(sim.buy('massageBed', 8, 2, false)).toBeNull()
+      expect(sim.buy('massageBed', 20, 2, false)).toBeNull()
       const tech = hireStaff(sim, 'technician', undefined, { massage: 1 })
       sim.ownerLeaves()
       if (here) sim.ownerArrives()
@@ -202,7 +202,7 @@ describe('auto-restock', () => {
 
   it('buys oil as soon as one is taken below the low count', () => {
     const branch = stockOf()
-    expect(branch.buy('massageBed', 8, 2, false)).toBeNull()
+    expect(branch.buy('massageBed', 20, 2, false)).toBeNull()
     branch.stock.oil = 6
     const money = branch.money
     const c = branch.spawnCustomer({ kind: 'office', service: 'massage' })

@@ -36,7 +36,7 @@ describe('every bed kind in every facing, on floor 1', () => {
           sim.money = 20_000_000
           const service = serviceOfBed(kind as ItemKind)!
           if (!sim.services.includes(service)) sim.services.push(service)
-          const spot = kind === 'bed' && !turned ? { x: flip ? 8 : 6, y: 2 } : { x: 4, y: 9 }
+          const spot = kind === 'bed' && !turned ? { x: flip ? 20 : 18, y: 2 } : { x: 16, y: 9 }
           expect(sim.buy(kind as ItemKind, spot.x, spot.y, flip, turned)).toBeNull()
           const item = sim.items[sim.items.length - 1]
           expect(sim.stations.find(s => s.id === item.id)!.bed).toEqual(bedTile(item))
@@ -55,7 +55,7 @@ describe('every bed kind turned, on floor 2', () => {
         expect(sim.openFloor(2)).toBeNull()
         const service = serviceOfBed(kind as ItemKind)!
         if (!sim.services.includes(service)) sim.services.push(service)
-        expect(sim.buy(kind as ItemKind, 4, 24, flip, true)).toBeNull()
+        expect(sim.buy(kind as ItemKind, 16, 24, flip, true)).toBeNull()
         const item = sim.items[sim.items.length - 1]
         const again = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(5), autoSpawn: false })
         expect(again.items.find(i => i.id === item.id)).toEqual(item)

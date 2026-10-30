@@ -55,7 +55,7 @@ describe("planning tomorrow's event", () => {
     expect(sim.hasMachines()).toBe(false)
     sim.services.push('steam')
     expect(sim.hasMachines()).toBe(false)
-    sim.items.push({ id: 99, kind: 'steamTent', x: 8, y: 8, flip: false })
+    sim.items.push({ id: 99, kind: 'steamTent', x: 20, y: 8, flip: false })
     expect(sim.hasMachines()).toBe(true)
   })
 
@@ -229,7 +229,7 @@ describe('the inspector', () => {
     const sim = on(12)
     sim.eventBook.plan = { kind: 'inspect', day: 12, minute: 900 }
     let id = 900
-    while (sim.beauty() < INSPECT_BEAUTY) sim.items.push({ id: id++, kind: 'goldBoard', x: 0, y: 0, flip: false })
+    while (sim.beauty() < INSPECT_BEAUTY) sim.items.push({ id: id++, kind: 'goldBoard', x: 12, y: 0, flip: false })
     prep(sim)
     return sim
   }
@@ -346,8 +346,8 @@ describe('the power cut', () => {
     on(20, s => {
       s.services = ['shampoo', 'mask', 'massage', 'steam', 'stone']
       s.money = 5_000_000
-      expect(s.buy('steamTent', 8, 8, false)).toBeNull()
-      expect(s.buy('stoneBed', 4, 8, false)).toBeNull()
+      expect(s.buy('steamTent', 20, 8, false)).toBeNull()
+      expect(s.buy('stoneBed', 16, 8, false)).toBeNull()
       if (power) s.eventBook.plan = { kind: 'power', day: 20, minute: POWER_FROM_MIN }
     })
   /** Steps the shop until the clock reaches `minute`, keeping what it says. */

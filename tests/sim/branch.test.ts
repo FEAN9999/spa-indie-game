@@ -104,7 +104,7 @@ describe('opening a branch', () => {
     expect(branch.maxFloors()).toBe(1)
     expect(branch.grid.stairs).toEqual([])
     const laid = itemsFromLayout(BRANCH_LAYOUT)
-    expect(branch.items).toEqual([...laid, { id: laid.length + 1, kind: 'surfboard', x: 11, y: 10, flip: false, gift: true }])
+    expect(branch.items).toEqual([...laid, { id: laid.length + 1, kind: 'surfboard', x: 23, y: 10, flip: false, gift: true }])
   })
 
   it('shares one purse', () => {
@@ -137,10 +137,10 @@ describe("a branch's own decor", () => {
   ] as const)('lays one piece at %s, a gift that blocks nothing, on the rebuilt room, with its beauty', (place, kind) => {
     const branch = SpaSim.newBranch(place, starShop(), createRng(9))
     const pieces = branch.items.filter(i => i.kind === kind)
-    expect(pieces).toEqual([{ id: expect.any(Number), kind, x: 11, y: 10, flip: false, gift: true }])
+    expect(pieces).toEqual([{ id: expect.any(Number), kind, x: 23, y: 10, flip: false, gift: true }])
     const others = branch.items.filter(i => i.kind !== kind)
     expect(placeProblem(branch.shellGrid(), others, pieces[0], { door: branch.grid.door, floors: 1 })).toBeNull()
-    expect(isWalkable(branch.grid, { x: 11, y: 10 })).toBe(false)
+    expect(isWalkable(branch.grid, { x: 23, y: 10 })).toBe(false)
     expect(branch.beauty()).toBe(beautyOf(others) + 3)
   })
 })

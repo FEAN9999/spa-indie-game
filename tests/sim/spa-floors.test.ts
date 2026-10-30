@@ -3,7 +3,7 @@ import { FLOOR_PRICE, OWNER_START, STAIRS_MS } from '../../src/config'
 import { homeOf, staffCap, type CrewHost } from '../../src/sim/crew'
 import { floorOf } from '../../src/sim/floors'
 import { tileEq, tileOf } from '../../src/sim/grid'
-import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { SPA_LAYOUT_1A, widen } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
 import { parseSave } from '../../src/sim/save'
 import { SpaSim } from '../../src/sim/spa'
@@ -46,7 +46,7 @@ describe('opening a floor', () => {
   })
 
   it('stays one floor in a shop without stairs', () => {
-    const sim = new SpaSim({ rng: createRng(5), autoSpawn: false, layout: SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.')) })
+    const sim = new SpaSim({ rng: createRng(5), autoSpawn: false, layout: widen(SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.'))) })
     sim.day = 6
     sim.money = FLOOR_PRICE[2]
     expect(sim.maxFloors()).toBe(1)
@@ -55,7 +55,7 @@ describe('opening a floor', () => {
 
   it('is blocked when the door cannot reach the foot of the stairs', () => {
     const data = newSim().toSave()
-    data.items.push({ id: 90, kind: 'plant', x: 10, y: 10, flip: false })
+    data.items.push({ id: 90, kind: 'plant', x: 22, y: 10, flip: false })
     const sim = SpaSim.fromSave(data, { rng: createRng(5), autoSpawn: false })
     sim.day = 6
     sim.money = FLOOR_PRICE[2]
@@ -66,42 +66,44 @@ describe('opening a floor', () => {
     const raw: any = JSON.parse(JSON.stringify(newSim().toSave()))
     delete raw.floors
     raw.v = 13
+    for (const i of raw.items) i.x -= 12 // a v13 shop is still 13 columns wide
+    raw.owner.pos.x -= 12
     raw.items.push({ id: 90, kind: 'plant', x: 10, y: 10, flip: false })
     raw.nextItemId = 91
     const sim = SpaSim.fromSave(parseSave(raw), { rng: createRng(5), autoSpawn: false })
     sim.day = 6
     sim.money = FLOOR_PRICE[2]
     expect(sim.floorProblem(2)).toBe('blocked')
-    expect(sim.canPlace('bed', 6, 2, false)).toBeNull()
-    expect(sim.buy('plant', 2, 10, false)).toBeNull()
-    expect(sim.buy('plant', 6, 9, false)).toBeNull()
+    expect(sim.canPlace('bed', 18, 2, false)).toBeNull()
+    expect(sim.buy('plant', 14, 10, false)).toBeNull()
+    expect(sim.buy('plant', 18, 9, false)).toBeNull()
     expect(sim.floorProblem(2)).toBe('blocked')
   })
 })
 
 describe('the stairs', () => {
-  const foot = { x: 11, y: 10 }
+  const foot = { x: 23, y: 10 }
 
   it('takes STAIRS_MS to climb, standing on the foot meanwhile', () => {
     const sim = upstairs()
-    Object.assign(sim.owner, { pos: { ...foot }, path: [{ x: 11, y: 28 }, { x: 11, y: 29 }] })
+    Object.assign(sim.owner, { pos: { ...foot }, path: [{ x: 23, y: 28 }, { x: 23, y: 29 }] })
     sim.advance(STAIRS_MS - 50)
     expect(sim.owner.pos).toEqual(foot)
     expect(sim.owner.facing).toBe('up')
     expect(sim.owner.climbMs).toBeGreaterThan(STAIRS_MS - 150)
     sim.advance(100)
-    expect(sim.owner.pos.x).toBe(11)
+    expect(sim.owner.pos.x).toBe(23)
     expect(sim.owner.pos.y).toBeGreaterThanOrEqual(28)
     expect(sim.owner.climbMs ?? 0).toBe(0)
   })
 
   it('keeps the climb when the room changes, and drops it when the owner turns back', () => {
     const sim = upstairs()
-    Object.assign(sim.owner, { pos: { ...foot }, path: [{ x: 11, y: 28 }, { x: 11, y: 29 }], climbMs: 500 })
-    expect(sim.buy('plant', 4, 10, false)).toBeNull()
+    Object.assign(sim.owner, { pos: { ...foot }, path: [{ x: 23, y: 28 }, { x: 23, y: 29 }], climbMs: 500 })
+    expect(sim.buy('plant', 16, 10, false)).toBeNull()
     expect(sim.owner.climbMs).toBe(500)
     expect(floorOf(sim.owner.path[0].y)).toBe(2)
-    sim.tapTile({ x: 10, y: 13 })
+    sim.tapTile({ x: 22, y: 13 })
     expect(floorOf(sim.owner.path[0].y)).toBe(1)
     sim.advance(100)
     expect(sim.owner.climbMs ?? 0).toBe(0)
@@ -111,8 +113,8 @@ describe('the stairs', () => {
 describe('beds on two floors', () => {
   it('gives a customer the lowest free bed', () => {
     const sim = upstairs()
-    expect(sim.buy('bed', 2, 20, false)).toBeNull()
-    expect(sim.buy('bed', 6, 2, false)).toBeNull()
+    expect(sim.buy('bed', 14, 20, false)).toBeNull()
+    expect(sim.buy('bed', 18, 2, false)).toBeNull()
     expect(sim.stations.map(s => floorOf(s.bed.y))).toEqual([1, 1, 1, 2])
     const first = seatAndWait(sim)
     sim.tapTile(first.seat!)
@@ -124,14 +126,14 @@ describe('beds on two floors', () => {
     sim.tapTile(next.seat!)
     advanceUntil(sim, () => next.stationId !== null)
     const bed = sim.stations.find(s => s.id === next.stationId)!.bed
-    expect([bed.x, floorOf(bed.y)]).toEqual([2, 2])
+    expect([bed.x, floorOf(bed.y)]).toEqual([14, 2])
   })
 
   it('lets the owner serve a massage upstairs, and the customer walks back down and out', () => {
     const sim = upstairs()
     expect(sim.openService('mask')).toBeNull()
     expect(sim.openService('massage')).toBeNull()
-    expect(sim.buy('massageBed', 2, 20, false)).toBeNull()
+    expect(sim.buy('massageBed', 14, 20, false)).toBeNull()
     const c = seatAndWait(sim, { kind: 'office', service: 'massage' })
     sim.tapTile(c.seat!)
     advanceUntil(sim, () => c.state === 'inService')
@@ -144,16 +146,16 @@ describe('beds on two floors', () => {
       seen.push(`${t.x},${t.y}`)
       return !sim.customers.includes(c)
     })
-    expect(seen).toContain('11,28')
-    expect(seen).toContain('11,10')
-    expect(seen).toContain('6,17')
+    expect(seen).toContain('23,28')
+    expect(seen).toContain('23,10')
+    expect(seen).toContain('18,17')
   })
 
   it('sends a technician upstairs to a bed there', () => {
     const sim = upstairs()
     expect(sim.openService('mask')).toBeNull()
     expect(sim.openService('massage')).toBeNull()
-    expect(sim.buy('massageBed', 2, 20, false)).toBeNull()
+    expect(sim.buy('massageBed', 14, 20, false)).toBeNull()
     const tech = hireStaff(sim, 'technician', undefined, { massage: 1 })
     const c = seatAndWait(sim, { kind: 'office', service: 'massage' })
     const ev: SimEvent[] = []
@@ -167,7 +169,7 @@ describe('beds on two floors', () => {
 describe('seats', () => {
   it('stay on floor 1', () => {
     const sim = upstairs()
-    expect(sim.buy('bench', 2, 25, false)).toBe('seatFloor')
+    expect(sim.buy('bench', 14, 25, false)).toBe('seatFloor')
     expect(sim.seats.every(s => floorOf(s.tile.y) === 1)).toBe(true)
   })
 })
@@ -188,7 +190,7 @@ describe('staff per floor', () => {
     for (const s of sim.staff) {
       const home = homeOf({ sim } as CrewHost, s)
       expect(floorOf(home.y)).toBe(1)
-      expect(tileEq(home, { x: 11, y: 10 })).toBe(false)
+      expect(tileEq(home, { x: 23, y: 10 })).toBe(false)
       expect(tileEq(home, OWNER_START)).toBe(false)
     }
   })
@@ -270,7 +272,7 @@ describe('the rooftop', () => {
     expect(homes).toHaveLength(7)
     for (const h of homes) {
       expect(floorOf(h.y)).toBe(1)
-      expect(tileEq(h, { x: 11, y: 10 })).toBe(false)
+      expect(tileEq(h, { x: 23, y: 10 })).toBe(false)
       expect(tileEq(h, OWNER_START)).toBe(false)
     }
     expect(new Set(homes.map(h => `${h.x},${h.y}`)).size).toBe(7)
@@ -279,18 +281,18 @@ describe('the rooftop', () => {
   it('leads a customer from floor 1 to a bed on the rooftop, through floor 2', () => {
     const roof: boolean[] = []
     const low: boolean[] = []
-    const roofMs = walkMs(roofShop({ x: 6, y: 38 }), roof)
-    const lowMs = walkMs(roofShop({ x: 6, y: 2 }), low)
+    const roofMs = walkMs(roofShop({ x: 18, y: 38 }), roof)
+    const lowMs = walkMs(roofShop({ x: 18, y: 2 }), low)
     expect(roof).toContain(true)
     expect(low).not.toContain(true)
     expect(roofMs - lowMs).toBeGreaterThanOrEqual(2 * STAIRS_MS)
   })
 
   it('keeps the rooftop through a save', () => {
-    const sim = roofShop({ x: 6, y: 38 })
-    expect(sim.buy('mudTub', 2, 39, false)).toBeNull()
+    const sim = roofShop({ x: 18, y: 38 })
+    expect(sim.buy('mudTub', 14, 39, false)).toBeNull()
     const back = SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), { rng: createRng(5), autoSpawn: false })
     expect(back.floors).toBe(3)
-    expect(back.items.some(i => i.kind === 'mudTub' && i.x === 2 && i.y === 39)).toBe(true)
+    expect(back.items.some(i => i.kind === 'mudTub' && i.x === 14 && i.y === 39)).toBe(true)
   })
 })

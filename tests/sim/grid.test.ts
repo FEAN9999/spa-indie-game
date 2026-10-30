@@ -3,7 +3,7 @@ import { offFloor } from '../../src/sim/build'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, onBed, parseLayout } from '../../src/sim/grid'
 import { towerOf } from '../../src/sim/floors'
 import { DEFAULT_ITEMS, shellOf, type Item } from '../../src/sim/items'
-import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { SHOP_LAYOUT, SPA_LAYOUT_1A } from '../../src/sim/layout'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 
@@ -75,16 +75,16 @@ describe('grid', () => {
     const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
     expect(offFloor(shell, { id: 20, kind: 'mudTub', x: 10, y: 8, flip: false }, 1)).toBe(true)
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
-    expect(sim.canPlace('mudTub', 10, 8, false)).toBe('overlap')
-    expect(sim.canPlace('mudTub', 8, 8, false)).toBeNull()
+    expect(sim.canPlace('mudTub', 22, 8, false)).toBe('overlap')
+    expect(sim.canPlace('mudTub', 20, 8, false)).toBeNull()
   })
 
   it('refuses a steam tent whose work tile would be on the wall', () => {
     const shell = parseLayout(shellOf(SPA_LAYOUT_1A))
     expect(offFloor(shell, { id: 20, kind: 'steamTent', x: 10, y: 8, flip: false }, 1)).toBe(true)
     const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
-    expect(sim.canPlace('steamTent', 10, 8, false)).toBe('overlap')
-    expect(sim.canPlace('steamTent', 8, 8, false)).toBeNull()
+    expect(sim.canPlace('steamTent', 22, 8, false)).toBe('overlap')
+    expect(sim.canPlace('steamTent', 20, 8, false)).toBeNull()
   })
 
   it('rejects ragged layouts', () => {
@@ -106,10 +106,10 @@ describe('grid', () => {
 
 describe('stepping onto a bed', () => {
   it('counts a customer as on a turned bed only from the half step in front of or behind it, and on a standing bed from its side', () => {
-    const across: Item = { id: 30, kind: 'massageBed', x: 4, y: 9, flip: false, turned: true }
-    const grid = buildGrid(shellOf(SPA_LAYOUT_1A), [...DEFAULT_ITEMS, across])
-    expect([onBed(grid, { x: 5, y: 8.4 }), onBed(grid, { x: 5, y: 8.6 })]).toEqual([false, true])
-    expect(onBed(grid, { x: 2.5, y: 3 })).toBe(true) // the default shampoo bed at x 2, customer tile (2,3), stepped onto from (3,3)
+    const across: Item = { id: 30, kind: 'massageBed', x: 16, y: 9, flip: false, turned: true }
+    const grid = buildGrid(shellOf(SHOP_LAYOUT), [...DEFAULT_ITEMS, across])
+    expect([onBed(grid, { x: 17, y: 8.4 }), onBed(grid, { x: 17, y: 8.6 })]).toEqual([false, true])
+    expect(onBed(grid, { x: 14.5, y: 3 })).toBe(true) // the default shampoo bed at x 14, customer tile (14,3), stepped onto from (15,3)
   })
 })
 

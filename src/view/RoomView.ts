@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
-import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, TILE } from '../config'
+import { FLOOR_ROWS, GAME_W, MAP_X, MAP_Y, SHOP_X0, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
 import { isUpright, size, workTile, type Item } from '../sim/items'
@@ -19,37 +19,37 @@ const PART_DEPTH = 1
 /** A festival's bunting and sign hang on the back wall, over the bed slots and under everything standing in the room. */
 const FESTIVAL_DEPTH = 1.5
 /** The sign's centre and top in tiles: on floor 1's wall over the third and fourth bed spots, hung low enough to cover the clock. */
-const SIGN = { x: 7.8, top: 0.5, h: 0.72, pad: 0.36 }
+const SIGN = { x: 19.8, top: 0.5, h: 0.72, pad: 0.36 }
 /** Where the bunting starts and ends on a wall, in tiles. */
-const WALL = { left: 0.3, right: 12.7, top: 0.1 }
+const WALL = { left: 12.3, right: 24.7, top: 0.1 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** An item draws just under a character whose feet are on its bottom row, however late it was bought. */
 const ITEM_DEPTH_BIAS = -0.5
 /** The room's inner floor in tiles, right and bottom exclusive; a bench's mat is cut off at its edges. */
-const FLOOR = { left: 1, top: 2, right: 12, bottom: 17 }
+const FLOOR = { left: 13, top: 2, right: 24, bottom: 17 }
 
 /** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
-const PLAQUE = { x: 4.3, y: 17.5, bottom: 28 }
+const PLAQUE = { x: 16.3, y: 17.5, bottom: 28 }
 /**
  * The rival's sign stands on floor 1's sidewalk against the right edge, its board clear of today's line in the middle of the same band:
  * its right edge and board in pixels, its middle row in tiles.
  */
-const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
+const RIVAL_SIGN = { right: GAME_W - 16 + SHOP_X0 * TILE, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
 const DARK_DEPTH = 5000
 const DARK = { color: 0x1e2440, alpha: 0.48 }
 /** The candles' places in tiles, the same on every floor: on the desk (where the oldest desk stands today, moved in sync), on the tea table under the waiting bench, in the corner by the first bed's foot, by the stairs. */
 const CANDLES = [
-  { x: 9.5, y: 13.9 },
-  { x: 4, y: 15.3 },
-  { x: 1.5, y: 5.6 },
-  { x: 11.2, y: 11.1 },
+  { x: 21.5, y: 13.9 },
+  { x: 16, y: 15.3 },
+  { x: 13.5, y: 5.6 },
+  { x: 23.2, y: 11.1 },
 ]
 /** How far over a machine's footprint its off mark sits, in tiles. */
 const OFF_MARK_LIFT = 0.3
 
 /** The stairs' top-left tile, where the 1 × 3 'stairs' texture goes; the rope hangs on its bottom tile. */
-const STAIRS_TILE = { x: 11, y: 7 }
+const STAIRS_TILE = { x: 23, y: 7 }
 
 /** One item on screen, with a bed's lantern or a rattan bench's mat. */
 interface ItemSprite {
@@ -94,13 +94,13 @@ export class RoomView {
     private readonly scene: Phaser.Scene,
     private readonly place: PlaceId | null,
   ) {
-    this.room = scene.add.image(MAP_X, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
+    this.room = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
     this.rival = this.rivalSign()
     this.plaqueStars = scene.add.graphics()
     this.plaque = this.plaqueBoard()
-    this.dark = scene.add.rectangle(MAP_X, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
+    this.dark = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
     for (const c of CANDLES) {
       const at = { x: MAP_X + c.x * TILE, y: MAP_Y + c.y * TILE }
       this.candles.push(scene.add.image(at.x, at.y, 'fx-glow').setDepth(DARK_DEPTH + 1).setVisible(false))
@@ -111,7 +111,7 @@ export class RoomView {
     // under whoever stands on the foot below it, over whoever is on the stairs
     this.rope = scene.add.image(MAP_X + STAIRS_TILE.x * TILE, this.rowY(STAIRS_TILE.y + 2), 'stairsRope').setOrigin(0, 0).setDepth(this.rowY(STAIRS_TILE.y + 3) + ITEM_DEPTH_BIAS).setVisible(false)
     // Over whoever is on the stairs cells or lifted by a climb (they go behind it), one pixel under whoever stands on the foot, whose depth is the foot's bottom edge.
-    this.coop = scene.add.image(MAP_X + 10.75 * TILE, this.rowY(6), 'coop').setOrigin(0, 0).setDisplaySize(1.5 * TILE, 4 * TILE).setDepth(this.rowY(STAIRS_TILE.y + 4) - 1).setVisible(false)
+    this.coop = scene.add.image(MAP_X + 22.75 * TILE, this.rowY(6), 'coop').setOrigin(0, 0).setDisplaySize(1.5 * TILE, 4 * TILE).setDepth(this.rowY(STAIRS_TILE.y + 4) - 1).setVisible(false)
   }
 
   /** Floor 1's room: the place's own at a branch, or the main shop's. */

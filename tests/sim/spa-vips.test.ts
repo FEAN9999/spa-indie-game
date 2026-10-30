@@ -18,7 +18,7 @@ const withMask = (rng?: Rng) => {
   const sim = fresh(rng)
   sim.money = 2_000_000
   expect(sim.openService('mask')).toBeNull()
-  expect(sim.buy('maskBed', 6, 2, false)).toBeNull()
+  expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
   sim.drainEvents()
   return sim
 }
@@ -194,9 +194,9 @@ describe('a VIP standing', () => {
     sim.money = 2_000_000
     expect(sim.openService('mask')).toBeNull()
     // a mask bed may stand anywhere on legal floor; this one's work tile is the first free tile beside the desk from the door
-    expect(sim.buy('maskBed', 6, 13, false)).toBeNull()
+    expect(sim.buy('maskBed', 18, 13, false)).toBeNull()
     const work = sim.grid.works[sim.grid.works.length - 1]
-    expect(work).toEqual({ x: 7, y: 14 })
+    expect(work).toEqual({ x: 19, y: 14 })
     expect(sim.grid.desks.some(d => manhattan(d, work) === 1)).toBe(true)
     fillSeats(sim)
     const c = seatAndWait(sim, { vip: 'chef' })
@@ -256,7 +256,7 @@ describe('serving a VIP', () => {
   it("staff never fetch a VIP and leave her service's beds to her", () => {
     const sim = withMask()
     // a second mask bed, for the office customer once she is on the first
-    expect(sim.buy('maskBed', 8, 2, false)).toBeNull()
+    expect(sim.buy('maskBed', 20, 2, false)).toBeNull()
     const techs = [hireStaff(sim, 'technician'), hireStaff(sim, 'technician')]
     // in the same tick, so no technician has gone for him before she is in
     const office = sim.spawnCustomer({ kind: 'office', service: 'mask' })

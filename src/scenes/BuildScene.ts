@@ -3,7 +3,7 @@ import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { PET_ORIGIN, petKey } from '../art/pets'
 import { sound } from '../audio/engine'
-import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, MAX_PETS, TILE } from '../config'
+import { FLOOR_ROWS, GAME_H, GAME_W, MAP_X, MAX_PETS, SHOP_X0, TILE } from '../config'
 import { claimed, nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
@@ -43,7 +43,7 @@ interface Held {
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
 /** New pieces start on the free spot nearest the middle of the floor in view. */
-const centre = (floor: number): Tile => ({ x: 6, y: 9 + (floor - 1) * FLOOR_ROWS })
+const centre = (floor: number): Tile => ({ x: SHOP_X0 + 6, y: 9 + (floor - 1) * FLOOR_ROWS })
 const TAP_SLOP_PX = 20
 /** The catalogue or the hold row that just took the other's place ignores presses this long, so the second tap of a double tap cannot land on it. */
 const SETTLE_MS = 300

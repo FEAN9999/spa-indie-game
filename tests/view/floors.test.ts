@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRng } from '../../src/sim/rng'
-import { SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { SHOP_LAYOUT, SPA_LAYOUT_1A, widen } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
 import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
@@ -48,7 +48,7 @@ describe('climbPose', () => {
   })
 })
 
-const newSim = (layout = SPA_LAYOUT_1A) => new SpaSim({ rng: createRng(5), autoSpawn: false, layout })
+const newSim = (layout = SHOP_LAYOUT) => new SpaSim({ rng: createRng(5), autoSpawn: false, layout })
 
 describe('showPills', () => {
   it('waits for the floors day', () => {
@@ -60,7 +60,7 @@ describe('showPills', () => {
   })
 
   it('is false for a layout without stairs', () => {
-    const sim = newSim(SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.')))
+    const sim = newSim(widen(SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.'))))
     sim.day = 6
     expect(showPills(sim)).toBe(false)
   })
