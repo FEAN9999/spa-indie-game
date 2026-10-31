@@ -20,8 +20,8 @@ export function drawBanhXeoTicket(rng: Rng, hard: boolean): BanhXeoTicket {
   return { filling, crisp, extraSprouts: hard }
 }
 
-/** The share of the sectors around the pan that a swirl touched inside the ring. */
-export function spreadCoverage(points: { x: number; y: number }[]): number {
+/** The sectors around the pan that a swirl touched inside the ring, numbered from the pan's left going clockwise. */
+export function spreadSectors(points: { x: number; y: number }[]): Set<number> {
   const hit = new Set<number>()
   for (const p of points) {
     const dx = p.x - BX_PAN.x
@@ -31,7 +31,12 @@ export function spreadCoverage(points: { x: number; y: number }[]): number {
     const sector = Math.floor(((Math.atan2(dy, dx) + Math.PI) / (2 * Math.PI)) * BX_SECTORS) % BX_SECTORS
     hit.add(sector)
   }
-  return hit.size / BX_SECTORS
+  return hit
+}
+
+/** The share of the sectors around the pan that a swirl touched inside the ring. */
+export function spreadCoverage(points: { x: number; y: number }[]): number {
+  return spreadSectors(points).size / BX_SECTORS
 }
 
 /** The part of the needle's run that counts as folded right; a hard diner's band is narrower. */

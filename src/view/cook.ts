@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import type { BanhXeoTicket } from '../sim/banhXeo'
 import type { DishId, DishTicket } from '../sim/menu'
 import type { PhoTicket } from '../sim/pho'
 import { t, type StringKey } from '../strings/vi'
@@ -24,6 +25,10 @@ export function ticketLines(dish: DishId, ticket: DishTicket): StringKey[] {
   if (dish === 'pho') {
     const tk = ticket as PhoTicket
     return [tk.doneness === 'tai' ? 'phoTai' : 'phoChin', tk.onion === 'little' ? 'phoOnionLittle' : 'phoOnionLots', tk.chili ? 'phoChili' : 'phoNoChili', tk.extraHerb ? 'phoExtraHerb' : 'phoHerbLine']
+  }
+  if (dish === 'banhXeo') {
+    const tk = ticket as BanhXeoTicket
+    return [tk.filling === 'tom' ? 'bxTom' : 'bxThit', tk.crisp === 'vua' ? 'bxVua' : 'bxKy', tk.extraSprouts ? 'bxExtraGia' : 'bxGiaLine']
   }
   return []
 }
