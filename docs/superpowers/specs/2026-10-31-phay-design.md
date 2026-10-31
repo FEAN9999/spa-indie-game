@@ -111,7 +111,7 @@ Bài được tạo trong sim của tiệm chính, ngay lúc chuyện xảy ra:
   - 1.000.000 là đích rất xa, cho người chơi lâu.
 - Người theo dõi không bao giờ giảm **(em đề xuất)**.
 - Ván mới: 50 người (bạn bè) khi Phây mở.
-- **Bản lưu cũ** được tính sẵn **(em đề xuất)**: 50 + 1.000 × số sao hạng + 5.000 × số ngôi sao đã gặp + 20.000 × số lần đoạt Spa của năm, tối đa 99.000 để mốc 100.000 vẫn còn để đạt.
+- **Bản lưu cũ** được tính sẵn **(em đề xuất)**: 50 + 1.000 × số sao hạng trên 1 sao đầu + 5.000 × số ngôi sao đã gặp + 20.000 × số lần đoạt Spa của năm, tối đa 99.000 để mốc 100.000 vẫn còn để đạt.
 - **Mốc:** 1.000, 10.000, 100.000 (tích xanh cạnh tên tiệm), 1.000.000 (viền vàng quanh ảnh tiệm). Mỗi mốc có một thẻ chúc mừng, mỗi mốc một lần. Bản lưu cũ được tính sẵn thì không hiện thẻ cho những mốc đã có sẵn.
 - Người theo dõi **không đổi số khách, tiền hay sao**. **(chồng yêu chọn, cách A)**
 
