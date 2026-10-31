@@ -89,6 +89,7 @@ import type { QuestsData } from './QuestsScene'
 import type { StarterData } from './StarterScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
+import type { ChefData } from './ChefScene'
 import type { MenuData } from './MenuScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
@@ -703,11 +704,6 @@ export class SpaScene extends Phaser.Scene {
     return this.restaurant && this.chain.street ? shopAt(this.cam.view.cx, true) : 'spa'
   }
 
-  /** A card over the frozen shop about the restaurant, with one button that closes it. */
-  private restaurantCard(title: StringKey, lines: string[]): void {
-    this.choose({ kicker: t('restaurantKicker'), title: t(title), lines, buttons: [t('restaurantCardClose')] }, () => {})
-  }
-
   /** Build mode over the frozen shop under the centre; the build button opens it only while nothing else is open or being played. */
   private openBuild(): void {
     const sim = this.sim
@@ -742,12 +738,22 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('BuildScene', data)
   }
 
-  /** The staff panel over the frozen shop, opened only when build mode would be; at the restaurant, a card saying the owner cooks alone. */
+  /** The staff panel over the frozen shop, opened only when build mode would be; at the restaurant, the cook panel. */
   private openStaff(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) return
-    if (this.centreShop() === 'restaurant') {
-      this.restaurantCard('chefTitle', [t('chefLine')])
+    const restaurant = this.centreShop() === 'restaurant' ? this.chain.restaurant : null
+    if (restaurant) {
+      this.modal = true
+      const chefs: ChefData = {
+        restaurant,
+        onChange: () => this.session.saveNow(),
+        onClose: () => {
+          this.modal = false
+          this.session.saveNow()
+        },
+      }
+      this.scene.launch('ChefScene', chefs)
       return
     }
     this.modal = true
