@@ -576,8 +576,8 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 60_000 } as const
-export const DINER_TIP = [0, 5_000, 10_000, 20_000] as const
+export const DISH_PRICE = { pho: 30_000 } as const
+export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
 
 /** A third of the diners walk over from the spa; the leg is this many tiles long, at the walker's speed. */
 export const WALK_OVER_CHANCE = 1 / 3

@@ -295,10 +295,10 @@ describe('the owner working the restaurant', () => {
     expect(r.owner.task).toMatchObject({ kind: 'carry', dinerId: d.id })
     const seen: RestaurantEvent[] = []
     const paid = runUntil(r, 'dinerPaid', seen)
-    expect(paid).toMatchObject({ dinerId: d.id, amount: 60_000, tip: 20_000, tile: chair })
+    expect(paid).toMatchObject({ dinerId: d.id, amount: 30_000, tip: 10_000, tile: chair })
     expect(d.state).toBe('leaving')
-    expect(main.money).toBe(before + 80_000)
-    expect(r.stats).toEqual({ served: 1, income: 60_000, tips: 20_000, walkedAway: 0 })
+    expect(main.money).toBe(before + 40_000)
+    expect(r.stats).toEqual({ served: 1, income: 30_000, tips: 10_000, walkedAway: 0 })
     expect(d.mood).toBe('happy')
     expect(main.stats).toEqual(spa)
     expect(r.owner.task).toBeNull()
@@ -337,7 +337,7 @@ describe('the owner working the restaurant', () => {
       moods.push(d.mood)
     }
     expect(tips).toEqual([DINER_TIP[1], DINER_TIP[2], DINER_TIP[3]])
-    expect(tips).toEqual([5_000, 10_000, 20_000])
+    expect(tips).toEqual([2_500, 5_000, 10_000])
     expect(moods).toEqual(['ok', 'happy', 'happy'])
     expect(r.stats.walkedAway).toBe(0)
     expect(r.stats.served).toBe(3)
@@ -515,7 +515,7 @@ describe('the owner working the restaurant', () => {
     expect(r.cookingDinerId).toBeNull()
     const seen: RestaurantEvent[] = []
     runUntil(r, 'dinerPaid', seen)
-    expect(main.money).toBe(before + 60_000 + 10_000)
+    expect(main.money).toBe(before + 30_000 + 5_000)
     r.advance(EXIT_MS + 6_000)
     seen.push(...r.drainEvents())
     expect(r.diners).toHaveLength(0)
