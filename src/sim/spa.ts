@@ -96,7 +96,7 @@ const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
-export type HouseProblem = 'branch' | 'max' | 'day' | 'money'
+export type HouseProblem = 'max' | 'day' | 'money'
 /** `course`: no such working person, they are leaving, or the course is not on offer to them; `booked`: they already have a course tonight. */
 export type StudyProblem = 'money' | 'booked' | 'course'
 /** Where a lesson stands: not paid, tuition paid and not yet passed, or learned. */
@@ -213,7 +213,7 @@ export class SpaSim {
   starter: StarterBook
   /** The shop's pets; a branch's live at the main shop. */
   pets: PetBook = emptyPetBook()
-  /** The neighbour houses bought each side; a branch never has any. */
+  /** The neighbour houses bought each side, by this shop alone. */
   houses: Houses = { ...NO_HOUSES }
 
   private readonly rng: Rng
@@ -1388,7 +1388,6 @@ export class SpaSim {
 
   /** What stops the next house on `side` being bought now, or null. */
   houseProblem(side: Side): HouseProblem | null {
-    if (this.place !== null) return 'branch'
     if (this.houses[side] >= HOUSES_PER_SIDE) return 'max'
     if (this.day < UNLOCK_DAY.houses) return 'day'
     if (this.money < this.housePrice(side)) return 'money'

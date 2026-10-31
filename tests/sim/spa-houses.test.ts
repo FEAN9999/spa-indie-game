@@ -4,7 +4,7 @@ import { isWalkable, tileEq } from '../../src/sim/grid'
 import { findPath } from '../../src/sim/path'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
-import { advanceUntil, hireStaff, seatAndWait } from './helpers'
+import { advanceUntil, hireStaff, seatAndWait, starShop } from './helpers'
 
 const newSim = () => new SpaSim({ rng: createRng(5), autoSpawn: false })
 
@@ -66,14 +66,44 @@ describe('buying a neighbour house', () => {
     expect(sim.drainEvents()).toEqual([])
   })
 
-  it('never sells to a branch', () => {
+  it('buys a branch house from the shared purse and leaves the main shop alone', () => {
     const main = day10()
     const branch = SpaSim.newBranch('beach', main, createRng(9))
     branch.day = 12
-    branch.money = 18_000_000
-    expect(branch.houseProblem('right')).toBe('branch')
-    expect(branch.houseForSale('right')).toBe(false)
-    expect(branch.shownHouses()).toEqual({ left: 0, right: 0 })
+    expect(branch.houseForSale('right')).toBe(true)
+    expect(branch.shownHouses()).toEqual({ left: 1, right: 1 })
+    expect(branch.buyHouse('right')).toBeNull()
+    expect(main.money).toBe(15_000_000)
+    expect(branch.houses).toEqual({ left: 0, right: 1 })
+    expect(main.houses).toEqual({ left: 0, right: 0 })
+    expect(main.shownHouses()).toEqual({ left: 1, right: 1 })
+    expect(branch.drainEvents()).toContainEqual({ type: 'houseBought', house: { side: 'right', n: 1 } })
+  })
+
+  it('lets a branch stand beds and benches in its houses and walk to them', () => {
+    const branch = SpaSim.newBranch('beach', day10(), createRng(9))
+    branch.day = 12
+    expect(branch.buy('bed', 9, 2, false)).not.toBeNull()
+    expect(branch.buyHouse('left')).toBeNull()
+    expect(branch.buy('bed', 9, 2, false)).toBeNull()
+    expect(branch.buy('bench', 8, 13, false)).toBeNull()
+    expect(findPath(branch.grid, branch.grid.door, t => tileEq(t, { x: 9, y: 3 }))).not.toBeNull()
+  })
+
+  it('caps a branch at 7 technicians with all four houses', () => {
+    const branch = SpaSim.newBranch('beach', day10(), createRng(9))
+    branch.day = 12
+    for (const side of ['right', 'right', 'left', 'left'] as const) expect(branch.buyHouse(side)).toBeNull()
+    for (let i = 0; i < 7; i++) hireStaff(branch, 'technician')
+    expect(() => hireStaff(branch, 'technician')).toThrow('full')
+  })
+
+  it('runs a branch with a house to the end of the day', () => {
+    const branch = SpaSim.newBranch('oldTown', starShop(4, 30_000_000, 3, true), createRng(4))
+    expect(branch.buyHouse('right')).toBeNull()
+    expect(branch.buyHouse('left')).toBeNull()
+    hireStaff(branch, 'technician')
+    expect(() => advanceUntil(branch, () => branch.dayOver, 400_000)).not.toThrow()
   })
 
   it('walks from the door through the old wall into the new house', () => {

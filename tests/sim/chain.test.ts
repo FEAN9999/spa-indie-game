@@ -43,6 +43,18 @@ const FIRST_BADGES: SimEvent[] = [
   { type: 'badge', id: 'fullYear' },
 ]
 
+describe('a branch with a house', () => {
+  it('lets the chain move a fifth technician into a branch with a house', () => {
+    const { chain, main, beach } = withBeach()
+    for (let i = 0; i < 3; i++) hireStaff(beach, 'technician')
+    const spare = hireStaff(main, 'technician')
+    expect(chain.moveProblem(null, spare.id, 'beach')).toBe('full')
+    beach.day = 12
+    expect(beach.buyHouse('right')).toBeNull()
+    expect(chain.moveProblem(null, spare.id, 'beach')).toBeNull()
+  })
+})
+
 describe('a chain with no branch', () => {
   it('plays the main shop exactly as before over a whole day', () => {
     const bare = starShop(3, 20_000_000, 5, true)

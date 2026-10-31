@@ -77,7 +77,7 @@ function onWideGrid(shop: Shop & { owner: Walker; customers: Walker[]; staff: Wa
   shop.owner = walker(shop.owner)
   shop.customers = shop.customers.map(walker)
   shop.staff = shop.staff.map(walker) as typeof shop.staff
-  shop.v = 33
+  shop.v = SAVE_VERSION
 }
 /** A tile or item 12 columns right, where the wide grid has it. */
 const right12 = <T extends { x: number }>(t: T): T => ({ ...t, x: t.x + 12 })
@@ -121,13 +121,13 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('the wide grid in an older shop', () => {
-  it('is version 33', () => {
-    expect(SAVE_VERSION).toBe(33)
+  it('is version 34', () => {
+    expect(SAVE_VERSION).toBe(34)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
     const data = parseSave(structuredClone(v32))
-    expect(data.v).toBe(33)
+    expect(data.v).toBe(SAVE_VERSION)
     expect(data.items.map(i => i.x)).toEqual(v32.items.map(i => i.x + 12))
     expect(data.owner.pos).toEqual({ ...v32.owner.pos, x: v32.owner.pos.x + 12 })
     expect(data.owner.path).toEqual(v32.owner.path.map(t => ({ ...t, x: t.x + 12 })))
@@ -186,8 +186,18 @@ describe('the houses bought', () => {
     expect(parseSave(raw).houses).toEqual({ left: 0, right: 0 })
   })
 
-  it('never gives a branch a house', () => {
-    const raw = structuredClone(parseSave(structuredClone(v32))) as unknown as { chain: { branches: { houses: unknown }[] } }
+  it("keeps a branch's houses from version 34", () => {
+    const raw = structuredClone(parseSave(structuredClone(v32))) as unknown as { v: number; chain: { branches: { v: number; houses: unknown }[] } }
+    raw.v = 34
+    raw.chain.branches[0].v = 34
+    raw.chain.branches[0].houses = { left: 1, right: 1 }
+    expect(parseSave(raw).chain!.branches[0].houses).toEqual({ left: 1, right: 1 })
+  })
+
+  it('gives a branch saved before version 34 no house', () => {
+    const raw = structuredClone(parseSave(structuredClone(v32))) as unknown as { v: number; chain: { branches: { v: number; houses: unknown }[] } }
+    raw.v = 33
+    raw.chain.branches[0].v = 33
     raw.chain.branches[0].houses = { left: 1, right: 1 }
     expect(parseSave(raw).chain!.branches[0].houses).toEqual({ left: 0, right: 0 })
   })
