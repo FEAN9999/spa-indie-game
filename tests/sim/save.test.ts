@@ -2450,7 +2450,7 @@ describe('the restaurant in a saved chain', () => {
   const reload = (chain: Chain, seed = 7) => Chain.fromSave(parseSave(JSON.parse(JSON.stringify(chain.toSave()))), seed)
   /** `n` students seated at the restaurant with their tickets up. */
   const ordering = ({ chain, r }: Owned, n = 1) => {
-    const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student' })!)
+    const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student', dish: 'pho' })!)
     runUntil(chain, () => ds.every(d => d.state === 'ordering'))
     return ds
   }
@@ -2539,13 +2539,13 @@ describe('the restaurant in a saved chain', () => {
     expect(back.main.money).toBe(o.main.money)
     expect(r.freeSeats()).toHaveLength(o.r.freeSeats().length)
     // the next diner is numbered after the ones already seen
-    expect(r.spawnDiner({ kind: 'student' })!.id).toBe(o.r.spawnDiner({ kind: 'student' })!.id)
+    expect(r.spawnDiner({ kind: 'student', dish: 'pho' })!.id).toBe(o.r.spawnDiner({ kind: 'student', dish: 'pho' })!.id)
   })
 
   it('reloads a riding owner at the spa door and drops the walkers', () => {
     const o = owned()
     const [seated] = ordering(o)
-    const walker = o.r.spawnDiner({ kind: 'student' })!
+    const walker = o.r.spawnDiner({ kind: 'student', dish: 'pho' })!
     Object.assign(walker, { state: 'street', fromSpa: true, legMs: 7_400 })
     expect(o.street.tap('restaurant', seated.chair!)).toBeNull()
     runUntil(o.chain, () => o.street.where.at === 'riding')
@@ -2614,7 +2614,7 @@ describe('the restaurant in a saved chain', () => {
     back.drainRestaurantEvents()
     back.advance(STEP_MS)
     const ready = back.drainRestaurantEvents().filter(e => e.type === 'cookReady')
-    expect(ready).toEqual([{ type: 'cookReady', dinerId: d.id, stoveId: expect.any(Number) }])
+    expect(ready).toEqual([{ type: 'cookReady', dinerId: d.id, stoveId: expect.any(Number), dish: 'pho' }])
     expect(r.stoves.find(s => s.id === (ready[0] as { stoveId: number }).stoveId)!.dinerId).toBe(d.id)
     expect(back.cooking()).toBe(true)
   })
@@ -2652,7 +2652,7 @@ describe('the restaurant in a saved chain', () => {
     const back = Chain.fromSave(parseSave(raw), 7).restaurant!
     expect(back.items).toEqual(o.r.items)
     expect(back.diners.map(x => x.id)).toEqual([d.id])
-    expect(back.spawnDiner({ kind: 'student' })!.id).toBeGreaterThan(d.id)
+    expect(back.spawnDiner({ kind: 'student', dish: 'pho' })!.id).toBeGreaterThan(d.id)
     expect(back.buy('stove', 21, 3, false)).toBeNull()
   })
 })

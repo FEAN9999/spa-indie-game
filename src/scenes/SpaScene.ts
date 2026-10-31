@@ -95,6 +95,7 @@ import type { NewOutfitData } from './NewOutfitScene'
 import type { LitterData } from './LitterScene'
 import type { PetNameData } from './PetNameScene'
 import type { CookData } from './PhoScene'
+import type { PhoTicket } from '../sim/pho'
 import type { PhayData } from './PhayScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
@@ -631,7 +632,7 @@ export class SpaScene extends Phaser.Scene {
       extraMs: dayEase(this.sim.day).miniGameExtraMs,
       hard: KINDS[d.kind].hard,
       demo: false,
-      ticket: d.ticket,
+      ticket: d.ticket as PhoTicket,
       onDone: stars => restaurant.completeCooking(d.id, stars),
     }
     this.scene.launch('PhoScene', data)

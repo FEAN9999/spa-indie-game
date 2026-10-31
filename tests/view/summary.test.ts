@@ -110,7 +110,7 @@ describe('the chain on the summary', () => {
 
 describe('the restaurant on the summary', () => {
   it("lists the restaurant's diners, dish money and tips", () => {
-    expect(restaurantRows({ served: 4, income: 240_000, tips: 35_000, walkedAway: 1 })).toEqual([
+    expect(restaurantRows({ served: 4, income: 240_000, tips: 35_000, walkedAway: 1, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })).toEqual([
       { label: 'restaurantServed', value: 4, kind: 'count' },
       { label: 'restaurantIncome', value: 240_000, kind: 'money' },
       { label: 'restaurantTips', value: 35_000, kind: 'money' },

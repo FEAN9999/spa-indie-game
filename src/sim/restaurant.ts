@@ -1,4 +1,4 @@
-import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
 import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { placementProblem, sellRefund, type BuildProblem } from './build'
 import { drawKind, KINDS, type CustomerKind } from './customers'
@@ -6,9 +6,8 @@ import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './d
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { NO_HOUSES, type Houses } from './layout'
-import type { DishId } from './menu'
+import { DISH_IDS, DISH_STOCK, drawTicket, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock, type RestaurantStockItem } from './menu'
 import { findPath } from './path'
-import { drawPhoTicket, type PhoTicket } from './pho'
 import { randomLook, type Rng } from './rng'
 import type { RestaurantSave } from './save'
 import { moveAlong, type SpaSim } from './spa'
@@ -25,10 +24,12 @@ export type RestaurantEvent =
   /** A walk-in found every chair taken and walked on. */
   | { type: 'dinerPassed' }
   | { type: 'dinerLeft'; id: number; angry: boolean }
-  /** The owner stands at a stove with a diner's ticket: the Phở game opens. */
-  | { type: 'cookReady'; dinerId: number; stoveId: number }
+  /** The owner stands at a stove with a diner's ticket: that dish's game opens. */
+  | { type: 'cookReady'; dinerId: number; stoveId: number; dish: DishId }
   | { type: 'dinerPaid'; dinerId: number; amount: number; tip: number; tile: Tile }
   | { type: 'toast'; key: 'stovesBusy' | 'powerWait' }
+  /** An item of the stock landed on the low mark, or ran out. */
+  | { type: 'stockLow'; item: RestaurantStockItem; out: boolean }
 
 /** What the owner is doing for a diner: walking over to take the ticket, cooking at a stove, or carrying the bowl back. */
 export type DiningTask = { kind: 'order'; dinerId: number } | { kind: 'cook'; dinerId: number; stoveId: number } | { kind: 'carry'; dinerId: number }
@@ -48,7 +49,9 @@ export interface Diner extends Mover {
   /** The chair reserved for them, until they get up. */
   chair: Tile | null
   dish: DishId
-  ticket: PhoTicket
+  ticket: DishTicket
+  /** The cook who took them, or null while the owner or nobody has. */
+  chefId: number | null
   stars: Stars | null
   mood: 'happy' | 'ok' | 'angry' | null
   fromSpa: boolean
@@ -61,9 +64,13 @@ export interface RestaurantStats {
   income: number
   tips: number
   walkedAway: number
+  wages: number
+  restock: number
+  ownerCooked: number
+  chefCooked: number
 }
 
-const emptyStats = (): RestaurantStats => ({ served: 0, income: 0, tips: 0, walkedAway: 0 })
+const emptyStats = (): RestaurantStats => ({ served: 0, income: 0, tips: 0, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
 
 /** The mean wait between walk-ins at `minutes` of the day: shorter in the lunch and dinner peaks. */
 export function dinerGapMs(minutes: number): number {
@@ -80,7 +87,7 @@ export class RestaurantSim {
   owner: Mover & { task: DiningTask | null }
   /** The owner stands in this shop. */
   ownerIn = false
-  /** A Phở game is open for this diner; the restaurant's clock stands still. */
+  /** A cooking game is open for this diner; the restaurant's clock stands still. */
   cookingDinerId: number | null = null
   stoves: { id: number; work: Tile; dinerId: number | null }[] = []
   private readonly host: RestaurantHost
@@ -94,6 +101,7 @@ export class RestaurantSim {
   private nextDinerId = 1
   diners: Diner[] = []
   stats: RestaurantStats = emptyStats()
+  stock: RestaurantStock = fullRestaurantStock()
   /** True while the owner is at a branch: nobody new comes. */
   ownerAway = false
 
@@ -236,18 +244,32 @@ export class RestaurantSim {
     return diningSeats(this.items).filter(s => !this.diners.some(d => d.chair && tileEq(d.chair, s.tile)))
   }
 
-  /** The dishes the kitchen can make now: Phở while there is a stove. */
+  /** How many more diners `dish` can take: its stock and the herbs, less the portions held by diners not yet cooked for. */
+  portionsLeft(dish: DishId): number {
+    const held = this.diners.filter(d => d.state === 'street' || d.state === 'arriving' || d.state === 'toChair' || d.state === 'ordering')
+    const own = this.stock[DISH_STOCK[dish]] - held.filter(d => d.dish === dish).length
+    return Math.max(0, Math.min(own, this.stock.herbs - held.length))
+  }
+
+  /** The dishes the kitchen can make now: those with a portion left, while there is a stove. */
   sellableDishes(): DishId[] {
-    return this.items.some(i => i.kind === 'stove') ? ['pho'] : []
+    return this.items.some(i => i.kind === 'stove') ? DISH_IDS.filter(dish => this.portionsLeft(dish) > 0) : []
+  }
+
+  /** Buys RESTOCK_AMOUNT more of an item for its price, even when the purse is short. */
+  restock(item: RestaurantStockItem): void {
+    this.host.purse.money -= RESTAURANT_RESTOCK_PRICE[item]
+    this.stock[item] += RESTOCK_AMOUNT
+    this.stats.restock += RESTAURANT_RESTOCK_PRICE[item]
   }
 
   /** Test hook: a diner at the door now, whatever the timer says; null when every chair is taken. */
-  spawnDiner(opts: { kind?: CustomerKind; look?: Look } = {}): Diner | null {
+  spawnDiner(opts: { kind?: CustomerKind; look?: Look; dish?: DishId } = {}): Diner | null {
     const seat = this.freeSeats()[0]
     if (!seat) return null
     const look = opts.look ?? randomLook(this.rng)
     const kind = opts.kind ?? drawKind(this.day, this.rng)
-    return this.addDiner(look, kind, seat, false)
+    return this.addDiner(look, kind, seat, false, opts.dish)
   }
 
   /** A paying spa customer may walk over to eat: true when a diner is now on the street. */
@@ -377,19 +399,36 @@ export class RestaurantSim {
   private step(dt: number): void {
     this.updateOwner(dt)
     for (const d of [...this.diners]) this.updateDiner(d, dt)
+    if (this.ownerAway) this.restockAlone()
     if (this.autoSpawn && !this.ownerAway && !this.host.clock.isClosed) {
       this.untilDinerMs -= dt
       if (this.untilDinerMs <= 0) {
         this.untilDinerMs = arrivalGapMs(dinerGapMs(this.host.clock.minutes), this.rng())
-        const seat = this.freeSeats()[0]
-        if (seat) this.spawnDiner()
+        if (this.sellableDishes().length === 0) return
+        if (this.freeSeats()[0]) this.spawnDiner()
         else this.events.push({ type: 'dinerPassed' })
       }
     }
   }
 
-  /** A diner for `seat`: on the street for the walk over, else at the door; the ticket is drawn last. */
-  private addDiner(look: Look, kind: CustomerKind, seat: DiningSeat, fromSpa: boolean): Diner {
+  /** With the owner at a branch, every item at the low mark or under is bought again if the purse can pay. */
+  private restockAlone(): void {
+    for (const item of RESTAURANT_STOCK_ITEMS) if (this.stock[item] <= LOW_STOCK && this.host.purse.money >= RESTAURANT_RESTOCK_PRICE[item]) this.restock(item)
+  }
+
+  /** The diner's dish item and a herb leave the stock as their dish is started; the view hears when one is low or gone. */
+  private takePortion(d: Diner): void {
+    for (const item of [DISH_STOCK[d.dish], 'herbs'] as const) {
+      const left = --this.stock[item]
+      if (left === LOW_STOCK) this.events.push({ type: 'stockLow', item, out: false })
+      else if (left === 0) this.events.push({ type: 'stockLow', item, out: true })
+    }
+  }
+
+  /** A diner for `seat`: on the street for the walk over, else at the door; the dish is drawn from what sells, then the ticket. */
+  private addDiner(look: Look, kind: CustomerKind, seat: DiningSeat, fromSpa: boolean, chosen?: DishId): Diner {
+    const dishes = this.sellableDishes()
+    const dish = chosen ?? (dishes.length > 1 ? dishes[Math.floor(this.rng() * dishes.length)] : (dishes[0] ?? 'pho'))
     const patience = Math.round(PATIENCE_MS * KINDS[kind].patience)
     const d: Diner = {
       id: this.nextDinerId++,
@@ -403,8 +442,9 @@ export class RestaurantSim {
       patienceMs: patience,
       patienceMaxMs: patience,
       chair: { ...seat.tile },
-      dish: 'pho',
-      ticket: drawPhoTicket(this.rng, KINDS[kind].hard),
+      dish,
+      ticket: drawTicket(dish, this.rng, KINDS[kind].hard),
+      chefId: null,
       stars: null,
       mood: null,
       fromSpa,
@@ -498,6 +538,7 @@ export class RestaurantSim {
       }
       stove.dinerId = diner.id
       this.setState(diner, 'waitingFood')
+      this.takePortion(diner)
       this.waitToasted = false
       this.owner.task = { kind: 'cook', dinerId: diner.id, stoveId: stove.id }
       this.owner.path = path
@@ -508,7 +549,7 @@ export class RestaurantSim {
         return
       }
       this.cookingDinerId = diner.id
-      this.events.push({ type: 'cookReady', dinerId: diner.id, stoveId: task.stoveId })
+      this.events.push({ type: 'cookReady', dinerId: diner.id, stoveId: task.stoveId, dish: diner.dish })
     } else {
       this.owner.task = null
       this.setState(diner, 'eating')

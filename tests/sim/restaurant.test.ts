@@ -143,7 +143,7 @@ describe('the restaurant diners', () => {
 
   it('seats a walk-in, shows a ticket and runs down patience only while ordering', () => {
     const { main, r } = setup()
-    const d = r.spawnDiner({ kind: 'student' })!
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
     expect(d.state).toBe('arriving')
     for (let t = 0; d.state !== 'ordering'; t += 50) {
       expect(t).toBeLessThan(20_000)
@@ -217,7 +217,7 @@ describe('the restaurant diners', () => {
 
   it('freezes ticket patience in a power cut', () => {
     const { main, r } = setup()
-    const d = r.spawnDiner({ kind: 'student' })!
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
     for (let t = 0; d.state !== 'ordering'; t += 50) {
       expect(t).toBeLessThan(20_000)
       advance(main, r, 50)
@@ -232,7 +232,7 @@ describe('the restaurant diners', () => {
 
   it('walks out angry when nobody takes the ticket', () => {
     const { main, r } = setup()
-    const d = r.spawnDiner({ kind: 'student' })!
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
     advance(main, r, 8_000 + d.patienceMaxMs)
     expect(r.drainEvents()).toContainEqual({ type: 'dinerLeft', id: d.id, angry: true })
     expect(r.stats.walkedAway).toBe(1)
@@ -245,7 +245,7 @@ describe('the restaurant diners', () => {
 
 /** Spawns `n` students and runs until each sits with its ticket. */
 const seatDiners = (r: RestaurantSim, n: number): Diner[] => {
-  const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student' })!)
+  const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student', dish: 'pho' })!)
   for (let t = 0; ds.some(d => d.state !== 'ordering'); t += 50) {
     expect(t).toBeLessThan(30_000)
     r.advance(50)
@@ -298,7 +298,7 @@ describe('the owner working the restaurant', () => {
     expect(paid).toMatchObject({ dinerId: d.id, amount: 30_000, tip: 10_000, tile: chair })
     expect(d.state).toBe('leaving')
     expect(main.money).toBe(before + 40_000)
-    expect(r.stats).toEqual({ served: 1, income: 30_000, tips: 10_000, walkedAway: 0 })
+    expect(r.stats).toEqual({ served: 1, income: 30_000, tips: 10_000, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
     expect(d.mood).toBe('happy')
     expect(main.stats).toEqual(spa)
     expect(r.owner.task).toBeNull()
@@ -531,12 +531,12 @@ describe('the owner working the restaurant', () => {
   it('sends away a diner still coming in or walking to a chair when the owner leaves town', () => {
     const { r } = setup()
     r.ownerArrives()
-    const walking = r.spawnDiner({ kind: 'student' })!
+    const walking = r.spawnDiner({ kind: 'student', dish: 'pho' })!
     for (let t = 0; walking.state !== 'toChair'; t += 50) {
       expect(t).toBeLessThan(5_000)
       r.advance(50)
     }
-    const coming = r.spawnDiner({ kind: 'student' })!
+    const coming = r.spawnDiner({ kind: 'student', dish: 'pho' })!
     expect(coming.state).toBe('arriving')
     r.drainEvents()
     r.leaveTown()
@@ -544,7 +544,7 @@ describe('the owner working the restaurant', () => {
     r.advance(EXIT_MS + 8_000)
     expect(r.drainEvents().some(e => e.type === 'dinerLeft' || e.type === 'dinerArrived')).toBe(false)
     expect(r.diners).toHaveLength(0)
-    expect(r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0 })
+    expect(r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
     expect(walking.mood).toBeNull()
     expect(coming.mood).toBeNull()
   })
@@ -560,7 +560,7 @@ describe('the owner working the restaurant', () => {
     expect(r.busy()).toBe(true)
     r.advance(EXIT_MS + 6_000)
     expect(r.diners).toHaveLength(0)
-    expect(r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0 })
+    expect(r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
     expect(r.stoves.every(s => s.dinerId === null)).toBe(true)
   })
 })

@@ -36,7 +36,7 @@ const floorTile = (grid: Grid, away = 3): Tile => {
 
 /** `n` students seated at the restaurant with their tickets up. */
 const ordering = ({ chain, r }: Owned, n = 1): Diner[] => {
-  const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student' })!)
+  const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student', dish: 'pho' })!)
   runUntil(chain, () => ds.every(d => d.state === 'ordering'))
   return ds
 }
@@ -234,7 +234,7 @@ describe('the owner between the two shops', () => {
     const o = owned()
     const [d] = ordering(o)
     toStove(o, d)
-    expect(o.chain.drainRestaurantEvents()).toContainEqual({ type: 'cookReady', dinerId: d.id, stoveId: expect.any(Number) })
+    expect(o.chain.drainRestaurantEvents()).toContainEqual({ type: 'cookReady', dinerId: d.id, stoveId: expect.any(Number), dish: 'pho' })
     const minutes = o.main.clock.minutes
     expect(o.chain.advance(1000)).toBe(0)
     expect(o.main.clock.minutes).toBe(minutes)
@@ -304,13 +304,13 @@ describe('the restaurant on the chain\'s day', () => {
   it('starts each day with the owner in the spa', () => {
     const o = owned()
     rideOverTo(o)
-    o.r.stats = { served: 1, income: 60_000, tips: 20_000, walkedAway: 1 }
+    o.r.stats = { served: 1, income: 60_000, tips: 20_000, walkedAway: 1, wages: 5_000, restock: 40_000, ownerCooked: 1, chefCooked: 0 }
     o.chain.startDay()
     expect(o.street.where).toEqual({ at: 'spa' })
     expect(o.main.ownerNextDoor).toBe(false)
     expect(o.r.ownerIn).toBe(false)
     expect(o.r.ownerAway).toBe(false)
-    expect(o.r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0 })
+    expect(o.r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
   })
 
   it('walks a paying spa customer over through the chain', () => {
