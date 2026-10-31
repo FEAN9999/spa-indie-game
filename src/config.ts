@@ -567,3 +567,23 @@ export const AWAY_MAX_HOURS = 8
 export const AWAY_DAY_SHARE = 0.25
 /** The pay is worked from the mean profit of this many finished days. */
 export const AWAY_PROFIT_DAYS = 3
+
+/** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
+export const FEED_START_FOLLOWERS = 50
+export const FEED_MAX_POSTS = 50
+/** Posts of each sort a day may make. */
+export const FEED_DAY_CAP = { praise: 3, complaint: 3 }
+/** The chance a happy guest posts. */
+export const FEED_PRAISE_CHANCE = 1 / 3
+/** The follower counts that are cheered once. */
+export const FEED_MILESTONES = [1_000, 10_000, 100_000, 1_000_000]
+/** An old save's followers: the start, then so much per rank star, idol met and year's win, at most max. */
+export const FEED_SEED = { base: 50, star: 1_000, idol: 5_000, win: 20_000, max: 99_000 }
+/** likes = fixed + share x followers x (0.6 + 0.8 r). */
+export const FEED_REACH = { praise: [3, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const
+/** An idol's or a KOL's likes are their own fans: lo + (hi - lo) r. */
+export const FEED_FANS = { idol: [20_000, 60_000], kol: [5_000, 15_000] } as const
+/** followers += round(likes x gain). */
+export const FEED_GAIN = { praise: 0.15, complaint: 0, shop: 0.1, vip: 0.1, rival: 0, ward: 0.05, idol: 0.04, kol: 0.08 }
+/** extra = round(likes x this): the comments not shown. */
+export const FEED_EXTRA_COMMENTS = 0.03
