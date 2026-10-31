@@ -1,7 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { PET_ORIGIN, petKey } from '../art/pets'
-import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, PET_NAME_MAX } from '../config'
 import { BREEDS, type BreedId } from '../sim/pets'
 import { formatMoney } from '../strings/format'

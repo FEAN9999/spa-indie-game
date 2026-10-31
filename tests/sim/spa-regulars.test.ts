@@ -303,7 +303,7 @@ describe('the owner window', () => {
       advanceUntil(sim, () => first.state === 'inService')
       return { sim, tech, first }
     }
-    const { sim, tech, first } = setup()
+    const { sim, tech } = setup()
     const reg = seatAndWait(sim, { regular: 'hanh' })
     const stranger = seatAndWait(sim)
     expect(stranger.stateMs).toBeLessThanOrEqual(reg.stateMs)

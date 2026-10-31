@@ -6,7 +6,7 @@ import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS } from '../../src/sim/services'
 import { SpaSim } from '../../src/sim/spa'
 import type { SimEvent } from '../../src/sim/types'
-import { advanceUntil, seatAndWait, startService } from './helpers'
+import { advanceUntil, startService } from './helpers'
 
 const kindsOnDay = (day: number): Set<CustomerKind> => {
   const rng = createRng(day)
