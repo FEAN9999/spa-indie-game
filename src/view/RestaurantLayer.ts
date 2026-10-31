@@ -12,6 +12,7 @@ import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
 import { houseRect } from './houses'
+import { LAMPS } from './lamps'
 import { addGlow, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
 import { DOOR_X, doorWalk, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
@@ -50,6 +51,8 @@ interface ItemSprite {
   /** A stove's dark burner drawn over its flame in a power cut, and its warm glow at night; null for other pieces. */
   off: Phaser.GameObjects.Ellipse | null
   glow: Phaser.GameObjects.Image | null
+  /** One glow per lamp of a lamp piece, lit at night like the spa's. */
+  lamps: Phaser.GameObjects.Image[]
 }
 
 /** The bottom-centre of a restaurant tile in world pixels (the restaurant has one floor). */
@@ -170,7 +173,7 @@ export class RestaurantLayer {
 
   destroy(): void {
     for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight]) img.destroy()
-    for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow]) p?.destroy()
+    for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow, ...s.lamps]) p?.destroy()
     for (const s of this.diners.values()) this.dropDiner(s)
     this.owner?.container.destroy()
     this.items.clear()
@@ -182,7 +185,7 @@ export class RestaurantLayer {
     const ids = new Set(items.map(i => i.id))
     for (const [id, s] of this.items) {
       if (ids.has(id)) continue
-      for (const p of [s.body, s.off, s.glow]) p?.destroy()
+      for (const p of [s.body, s.off, s.glow, ...s.lamps]) p?.destroy()
       this.items.delete(id)
     }
     for (const item of items) {
@@ -194,11 +197,19 @@ export class RestaurantLayer {
           body,
           off: stove ? this.scene.add.ellipse(0, 0, 1, 1, hex(C.deepBrown)).setVisible(false) : null,
           glow: stove ? addGlow(this.scene, 0, 0, STOVE_GLOW_SCALE).setTint(hex(RESTAURANT_LAMP)) : null,
+          lamps: [],
         }
         this.items.set(item.id, s)
       }
       placeItemBody(s.body, item, restaurantX, y => MAP_Y + y * TILE)
       s.body.setVisible(this.floor1 && item.id !== this.hidden)
+      const spots = LAMPS[s.body.texture.key] ?? []
+      while (s.lamps.length > spots.length) s.lamps.pop()!.destroy()
+      while (s.lamps.length < spots.length) s.lamps.push(addGlow(this.scene, 0, 0, 1))
+      spots.forEach((spot, i) => {
+        const top = s.body.getTopLeft()
+        s.lamps[i].setPosition(top.x + (s.body.flipX ? s.body.width / TILE - spot.x : spot.x) * TILE, top.y + spot.y * TILE).setScale(spot.s)
+      })
       const flame = FLAME[s.body.texture.key]
       if (flame && s.off && s.glow) {
         const top = s.body.getTopLeft()
@@ -298,6 +309,7 @@ export class RestaurantLayer {
     this.doorLight.setAlpha(lamps).setVisible(lit && this.floor1)
     for (const s of this.items.values()) {
       s.glow?.setAlpha(lamps).setVisible(lit && s.body.visible)
+      for (const g of s.lamps) g.setAlpha(lamps).setVisible(lit && s.body.visible)
       s.off?.setVisible(powerOut && s.body.visible)
     }
   }
