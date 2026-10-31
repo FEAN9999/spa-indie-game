@@ -347,13 +347,15 @@ Ghi chú tìm hiểu ở scratchpad phiên này (`nha-hang-oss.md`).
 
 ## 10. Số khởi đầu (`src/config.ts`)
 
+Cập nhật khi giao lô A (31/10): master đã tăng mọi giá mua một lần lên 1,5 lần và giảm nửa giá dịch vụ spa. Nhà hàng làm theo: giá mua một lần × 1,5, tiền món và tiền boa giảm nửa. Bảng dưới là số mới, thay cho số cũ ở các mục trên.
+
 | Tên | Giá trị | Ghi chú |
 |---|---|---|
-| Giá nhà hàng | 5.000.000 đ | từ ngày 10 |
-| Giá căn nhà hàng | 3.000.000 đ, 6.000.000 đ | căn sát, căn xa |
-| Giá tầng nhà hàng | 2.000.000 đ, 4.000.000 đ | tầng 2, sân thượng |
-| Giá món | Phở 60.000, Bánh xèo 55.000, Chè 35.000 đ | |
-| Boa theo sao | 0, 5.000, 10.000, 20.000 đ | 0 khi khách bỏ về |
+| Giá nhà hàng | 7.500.000 đ | từ ngày 10 (cũ 5.000.000) |
+| Giá căn nhà hàng | 4.500.000 đ, 9.000.000 đ | căn sát, căn xa (cũ 3tr, 6tr) |
+| Giá tầng nhà hàng | 3.000.000 đ, 6.000.000 đ | tầng 2, sân thượng (cũ 2tr, 4tr) |
+| Giá món | Phở 30.000, Bánh xèo 28.000, Chè 18.000 đ | cũ 60k, 55k, 35k; Bánh xèo và Chè chốt ở lô B |
+| Boa theo sao | 0, 2.500, 5.000, 10.000 đ | 0 khi khách bỏ về |
 | Khách spa sang ăn | 1/3 | |
 | Khách đi đường | trung bình 1 khách mỗi 45 phút trong game, gấp 2,5 lần vào 11–13 giờ và 17–20 giờ | em đề xuất |
 | `EAT_MS` | 8.000 | khách ăn |
@@ -361,7 +363,7 @@ Ghi chú tìm hiểu ở scratchpad phiên này (`nha-hang-oss.md`).
 | Chặng khách đi trên phố | 37 ô theo tốc độ đi của khách | |
 | Màn nấu | khoảng 25 giây | |
 | Đầu bếp tối đa | 2 + 2 × (tầng − 1) + số căn | tối đa 10 |
-| Bếp, bàn, ghế mua thêm | 400.000, 150.000, 60.000 đ | em đề xuất |
+| Bếp, bàn, ghế mua thêm | 600.000, 225.000, 90.000 đ | cũ 400k, 150k, 60k |
 | Nguyên liệu nhập 20 phần | phở 400.000, bánh xèo 360.000, chè 240.000, rau thơm 80.000 đ | em đề xuất |
 
 ## 11. Để người làm tự quyết
