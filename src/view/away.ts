@@ -29,7 +29,7 @@ export function awayTime(ms: number): string {
 export function awayLines(r: AwayResult): string[] {
   const money = formatMoney(Math.round(r.profit / 1000) * 1000)
   const rule = r.places.length > 1 ? t('awayRuleChain', { money }) : r.days === 1 ? t('awayRuleOne', { money }) : t('awayRule', { days: r.days, money })
-  const from = r.places.length > 1 ? t('awayShops', { n: r.places.length }) : r.places[0] === 'restaurant' ? t('awayFrom', { place: t('restaurantKicker') }) : r.places[0] ? t('awayFrom', { place: placeName(r.places[0]) }) : null
+  const from = r.places.length > 1 ? t('awayShops', { n: r.places.length }) : r.places[0] === 'restaurant' ? t('awayFromRestaurant') : r.places[0] ? t('awayFrom', { place: placeName(r.places[0]) }) : null
   return [...(from ? [from] : []), rule, ...(r.capped ? [t('awayCapped', { hours: AWAY_MAX_HOURS })] : []), t('awayStill')]
 }
 

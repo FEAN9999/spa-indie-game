@@ -41,7 +41,7 @@ describe('awayLines', () => {
   })
   it('names the restaurant when it alone paid', () => {
     expect(awayLines(result({ places: ['restaurant'], days: 2, profit: 400_000 }))).toEqual([
-      'Từ chi nhánh Nhà hàng',
+      'Từ nhà hàng',
       'Mỗi giờ vắng bằng 1/4 lãi một ngày (lãi trung bình 2 ngày gần nhất: 400.000 đ).',
       still,
     ])

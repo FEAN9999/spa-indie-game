@@ -658,6 +658,7 @@ export const vi = {
   awayRuleOne: 'Mỗi giờ vắng bằng 1/4 lãi một ngày (lãi ngày gần nhất: {money}).',
   awayShops: 'Cả {n} tiệm',
   awayFrom: 'Từ chi nhánh {place}',
+  awayFromRestaurant: 'Từ nhà hàng',
   awayRuleChain: 'Mỗi giờ vắng bằng 1/4 lãi một ngày của mỗi tiệm (cộng lãi trung bình các tiệm: {money}).',
   awayCapped: 'Vắng hơn {hours} giờ thì vẫn tính {hours} giờ.',
   awayStill: 'Lịch, giờ trong ngày, nhiệm vụ và kho vẫn như lúc tắt game.',
