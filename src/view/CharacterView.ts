@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser'
 import { CHIBI_PX, PART_ANCHORS } from '../art/chibi'
 import { OUTFIT_HAS_HAT, OUTFIT_PANTS, type DressedId } from '../art/outfits'
-import { PANTS, type CharacterColors } from '../art/palette'
+import { C, PANTS, type CharacterColors } from '../art/palette'
 import { TILE } from '../config'
 import type { CustomerKind } from '../sim/customers'
 import type { IdolId } from '../sim/idols'
@@ -26,6 +26,21 @@ const LIE_HEAD_Y = -1.45 * TILE
 
 /** From the feet to the top of the hair. */
 export const CHARACTER_HEIGHT_PX = 51 * U
+
+/** The top of a waiting customer's patience bar, from their feet. */
+export const PATIENCE_BAR_TOP = -CHARACTER_HEIGHT_PX - 12
+
+/** Draws a patience bar centred on x over feet at footY, `left` (0 to 1) of it still full: green, then mustard, then red. */
+export function drawPatienceBar(g: Phaser.GameObjects.Graphics, x: number, footY: number, left: number): void {
+  const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+  const f = Math.max(0, left)
+  const color = hex(f > 0.5 ? C.green : f > 0.25 ? C.mustard : C.lantern)
+  const bx = x - 36
+  const by = footY + PATIENCE_BAR_TOP + 4
+  g.fillStyle(hex(C.paper), 1).fillRoundedRect(bx - 4, by - 4, 80, 20, 10)
+  g.lineStyle(3, hex(C.ink)).strokeRoundedRect(bx - 4, by - 4, 80, 20, 10)
+  g.fillStyle(color, 1).fillRoundedRect(bx, by, Math.max(12, 72 * f), 12, 6)
+}
 
 /** What each kind of customer wears, untinted, on the body, over the face or on the hair; a piece shows from each side it has a texture for. */
 export const WORN: Record<CustomerKind, { key: string; on: 'body' | 'face' | 'hair' }[]> = {

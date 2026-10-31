@@ -12,7 +12,7 @@ import type { Stars } from '../sim/rank'
 import type { Tile, Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
-import { mapBounds } from './camera'
+import { mapBounds, type Rect } from './camera'
 import { FESTIVAL_COLORS } from './festivals'
 import { deskCandle, retagFloors } from './floors'
 import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerFloor, saleTextureKey } from './houses'
@@ -65,9 +65,9 @@ const CANDLES = [
 ]
 /** The day's light lies over the room and everyone in it, under the power cut's dark; the lamps' glows and the shop's warm light over it. */
 const NIGHT_DEPTH = DARK_DEPTH - 3
-const LAMP_DEPTH = DARK_DEPTH - 2
+export const LAMP_DEPTH = DARK_DEPTH - 2
 /** At night the lit shop's rows are lifted by this much warm light over the street's. */
-const WASH_ALPHA = 0.07
+export const WASH_ALPHA = 0.07
 /** Each texture's lamps, in its own tiles from its top-left (mirrored when it is flipped), with the glow's scale. */
 const LAMPS: Record<string, { x: number; y: number; s: number }[]> = {
   lantern: [{ x: 0.5, y: 0.55, s: 0.6 }],
@@ -79,13 +79,30 @@ const LAMPS: Record<string, { x: number; y: number; s: number }[]> = {
 /** Floor 2's lantern on the back wall, in tiles. */
 const WALL_LANTERN = { x: SHOP_X0 + 6.5, y: 0.74, s: 0.7 }
 /** The door's light spilling onto floor 1's sidewalk: its row in tiles, and the glow's scale. */
-const DOOR_LIGHT = { y: FLOOR_ROWS + 0.4, s: 1.2 }
+export const DOOR_LIGHT = { y: FLOOR_ROWS + 0.4, s: 1.2 }
 
 /** How far over a machine's footprint its off mark sits, in tiles. */
 const OFF_MARK_LIFT = 0.3
 
 /** The stairs' top-left tile, where the 1 × 3 'stairs' texture goes; the rope hangs on its bottom tile. */
 const STAIRS_TILE = { x: 23, y: 7 }
+
+/** A warm glow at (x, y) in world pixels, hidden until it is lit. */
+export function addGlow(scene: Phaser.Scene, x: number, y: number, scale: number): Phaser.GameObjects.Image {
+  return scene.add.image(x, y, 'fx-glow').setScale(scale).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+}
+
+/** Puts an item's picture on its tiles, `colX` and `rowY` giving the world x of a column's left edge and the world y of a row's top: its texture, its bottom-centre, its depth among those standing in the room, and its flip. */
+export function placeItemBody(body: Phaser.GameObjects.Image, item: Item, colX: (x: number) => number, rowY: (y: number) => number): void {
+  const { w, h } = size(item)
+  const bottom = rowY(item.y + h)
+  const key = itemTexture(item.kind, item.turned)
+  if (body.texture.key !== key) body.setTexture(key)
+  // an upright piece draws on its top row's depth, so whoever stands on its lower rows is in front of it
+  const depth = isUpright(item) ? rowY(item.y + 1) : bottom
+  const layer = layerOf(item.kind)
+  body.setPosition(colX(item.x + w / 2), bottom).setDepth(layer === 'rug' ? RUG_DEPTH : layer === 'wall' ? WALL_DEPTH : depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
+}
 
 /** One item on screen, with a bed's lantern or a rattan bench's mat. */
 interface ItemSprite {
@@ -167,14 +184,14 @@ export class RoomView {
   }
 
   /**
-   * Lays each bought house's floor beside the room and each house for sale's roof with its sign, and widens the power cut's dark to the
-   * bought houses. `justBought` lifts its roof off in a puff of dust and fades the new house in.
+   * Lays each bought house's floor beside the room and each house for sale's roof with its sign, and lays the power cut's dark and the
+   * day's light over `light`, the bought houses unless given. `justBought` lifts its roof off in a puff of dust and fades the new house in.
    */
-  setHouses(bought: Houses, shown: Houses, justBought: House | null = null): void {
+  setHouses(bought: Houses, shown: Houses, justBought: House | null = null, light: Rect = mapBounds(bought)): void {
     this.houses = bought
     const b = mapBounds(bought)
-    this.dark.setPosition(b.x, b.y).setSize(b.w, this.room.height)
-    this.night.setPosition(b.x, b.y).setSize(b.w, this.room.height)
+    this.dark.setPosition(light.x, light.y).setSize(light.w, this.room.height)
+    this.night.setPosition(light.x, light.y).setSize(light.w, this.room.height)
     this.wash.setPosition(b.x, b.y).setSize(b.w, FLOOR_ROWS * TILE)
     const just = justBought && houseKey(justBought)
     for (const h of housesBetween(NO_HOUSES, bought)) {
@@ -285,7 +302,7 @@ export class RoomView {
 
   /** A warm glow at (x, y) in world pixels, hidden until setDaylight lights it. */
   private glow(x: number, y: number, scale: number): Phaser.GameObjects.Image {
-    return this.scene.add.image(x, y, 'fx-glow').setScale(scale).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+    return addGlow(this.scene, x, y, scale)
   }
 
   /** One glow per lamp on every item and bed lantern shown; setDaylight lights them. */
@@ -415,15 +432,8 @@ export class RoomView {
     retagFloors(this.items, items)
     for (const item of items) {
       const s = this.items.get(item.id) ?? this.addItem(item)
-      const { w, h } = size(item)
-      const bottom = this.rowY(item.y + h)
-      const key = itemTexture(item.kind, item.turned)
-      if (s.body.texture.key !== key) s.body.setTexture(key)
+      placeItemBody(s.body, item, x => MAP_X + x * TILE, y => this.rowY(y))
       s.turned = item.turned === true
-      // an upright piece draws on its top row's depth, so whoever stands on its lower rows is in front of it
-      const depth = isUpright(item) ? this.rowY(item.y + 1) : bottom
-      const layer = layerOf(item.kind)
-      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(layer === 'rug' ? RUG_DEPTH : layer === 'wall' ? WALL_DEPTH : depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
       if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY((floorOf(item.y) - 1) * FLOOR_ROWS))
       else if (s.part) this.placeMat(s.part, item)

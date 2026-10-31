@@ -1,8 +1,8 @@
-import { MAP_X, MAP_Y, RESTAURANT_X0, SHOP_X0, TILE } from '../config'
+import { ARRIVE_MS, EXIT_MS, MAP_X, MAP_Y, RESTAURANT_X0, SHOP_X0, TILE } from '../config'
 import type { ShopSide } from '../sim/dining'
 import type { Houses } from '../sim/layout'
 import type { Diner } from '../sim/restaurant'
-import type { Tile, Vec } from '../sim/types'
+import type { Facing, Tile, Vec } from '../sim/types'
 import { mapBounds, type Rect } from './camera'
 
 /** The world x of the left edge of restaurant column `col`: its grid is drawn RESTAURANT_X0 columns to the right of the spa's. */
@@ -61,4 +61,34 @@ export function ticketDots(diners: Diner[], visible: Rect): number[] {
     .filter(d => d.state === 'ordering')
     .map(d => restaurantX(d.pos.x + 0.5))
     .filter(x => x < visible.x || x >= visible.x + visible.w)
+}
+
+/** How far along the sidewalk from a door someone arriving starts, or someone leaving ends, in tiles. */
+const STREET_SIDE_TILES = 4.5
+
+/** Where someone walking in or out of a shop is drawn: a world point, the way they face, and how faded in they are. */
+export interface StreetPlacement {
+  x: number
+  y: number
+  facing: Facing
+  alpha: number
+}
+
+/** Someone `stateMs` into arriving or exiting by the door whose bottom-centre is `door`: along the sidewalk from the left or the right side and up through the door, or the reverse. */
+export function doorWalk(state: 'arriving' | 'exiting', stateMs: number, door: Vec, fromLeft: boolean): StreetPlacement {
+  const walkY = door.y + 0.9 * TILE
+  const sideX = door.x + (fromLeft ? -1 : 1) * STREET_SIDE_TILES * TILE
+  const across: Facing = fromLeft ? 'right' : 'left'
+  const back: Facing = fromLeft ? 'left' : 'right'
+  const lerp = (a: number, b: number, k: number) => a + (b - a) * k
+  if (state === 'arriving') {
+    const k = Math.min(1, stateMs / ARRIVE_MS)
+    const alpha = Math.min(1, k / 0.2)
+    if (k < 0.7) return { x: lerp(sideX, door.x, k / 0.7), y: walkY, facing: across, alpha }
+    return { x: door.x, y: lerp(walkY, door.y, (k - 0.7) / 0.3), facing: 'up', alpha }
+  }
+  const k = Math.min(1, stateMs / EXIT_MS)
+  const alpha = Math.min(1, (1 - k) / 0.2)
+  if (k < 0.3) return { x: door.x, y: lerp(door.y, walkY, k / 0.3), facing: 'down', alpha }
+  return { x: lerp(door.x, sideX, (k - 0.3) / 0.7), y: walkY, facing: back, alpha }
 }
