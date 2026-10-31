@@ -11,6 +11,8 @@ import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
+import { addPost, emptyFeed, openFeed, seededFeed } from '../../src/sim/feed'
+import type { PostDraft } from '../../src/sim/feed'
 import { emptyEventBook, makeHot } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
@@ -64,7 +66,7 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; place?: unknown; restaurant?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; day: number; reviews: number[]; reviewIds?: unknown; feed?: unknown; rank?: { stars: number; wins: number }; idol?: { idols: Record<string, { visits: number }> }; place?: unknown; restaurant?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The old shop's furniture on the 13-column grid, as saves from before version 33 have it. */
 const LEGACY_ITEMS = itemsFromLayout(SPA_LAYOUT_1A)
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest, on the old grid. */
@@ -97,6 +99,8 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.lessonsPaid ??= []
     shop.houses ??= { left: 0, right: 0 }
     shop.restaurant ??= null
+    shop.reviewIds ??= shop.reviews.map(() => 0)
+    shop.feed ??= (shop.place ?? null) !== null ? emptyFeed() : seededFeed({ day: shop.day, rankStars: shop.rank?.stars ?? 1, idolsMet: Object.values(shop.idol?.idols ?? {}).filter(i => i.visits > 0).length, wins: shop.rank?.wins ?? 0 })
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
@@ -605,7 +609,7 @@ describe('save version 5', () => {
       ev.length = 0
       return paid.length >= 2
     }, 120_000, ev)
-    expect(paid.slice(0, 2)).toEqual([40_000, 40_000])
+    expect(paid.slice(0, 2)).toEqual([20_000, 20_000])
   })
 
   it('keeps the services and what each customer wants through a round trip', () => {
@@ -1202,7 +1206,7 @@ describe('save version 14', () => {
   it('clears the stairs spot of a v13 shop and refunds it', () => {
     const sim = open(v13)
     expect(sim.items.some(i => i.id === 14 || i.id === 15)).toBe(false)
-    expect(sim.money).toBe(v13.money + 450_000)
+    expect(sim.money).toBe(v13.money + 675_000)
     expect(sim.book.gifts).toEqual(['vyPainting'])
     const c = sim.customers.find(x => x.id === 1)!
     expect(c.state).toBe('leaving')
@@ -1213,7 +1217,7 @@ describe('save version 14', () => {
     expect(sim.grid.cells[sim.owner.pos.y][sim.owner.pos.x]).toBe('floor')
     const events = sim.drainEvents()
     expect(events.some(e => e.type === 'serviceReady')).toBe(false)
-    expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 450_000, gifts: 1, rebuy: null }])
+    expect(events.filter(e => e.type === 'stairsCleared')).toEqual([{ type: 'stairsCleared', count: 2, refund: 675_000, gifts: 1, rebuy: null }])
     const saved = sim.toSave()
     expect(saved.v).toBe(SAVE_VERSION)
     expect('clearStairs' in saved).toBe(false)
@@ -1236,8 +1240,8 @@ describe('save version 14', () => {
     const sim = open(raw)
     expect(sim.items.map(i => i.id)).toContain(100)
     expect(sim.items.map(i => i.id)).not.toContain(101)
-    expect(sim.money).toBe(raw.money + 450_000)
-    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, gifts: 0, rebuy: null }])
+    expect(sim.money).toBe(raw.money + 675_000)
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 675_000, gifts: 0, rebuy: null }])
   })
 
   it('moves the last shampoo bed instead of selling it, and sends its customer home quietly', () => {
@@ -1287,7 +1291,7 @@ describe('save version 14', () => {
     expect(stored.clearStairs).toBe(true)
     const sim = open(stored)
     expect(sim.items.some(i => i.id === 100)).toBe(false)
-    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 450_000, gifts: 0, rebuy: null }])
+    expect(stairsEvents(sim)).toEqual([{ type: 'stairsCleared', count: 1, refund: 675_000, gifts: 0, rebuy: null }])
     const saved = sim.toSave()
     expect('clearStairs' in saved).toBe(false)
     expect(stairsEvents(open(saved))).toEqual([])
@@ -2464,13 +2468,13 @@ describe('the restaurant in a saved chain', () => {
       chain.advance(100)
       for (const e of chain.active().drainEvents()) counts[e.type] = (counts[e.type] ?? 0) + 1
     }
-    // recorded from this save before the restaurant was added to the code
+    // recorded from this save on master's code, which has no restaurant (re-recorded after the doubled arrivals of 2a44a02)
     expect({ money: chain.main.money, day: chain.main.day, served: chain.main.stats.served, customers: chain.main.customers.length, counts }).toEqual({
       money: 1730000,
       day: 3,
       served: 0,
       customers: 3,
-      counts: { customerArrived: 5, noSeat: 2, customerLeft: 2 },
+      counts: { customerArrived: 7, noSeat: 4, customerLeft: 4 },
     })
     expect(chain.main.clock.minutes).toBeCloseTo(768, 6)
   })
@@ -2614,5 +2618,40 @@ describe('the restaurant in a saved chain', () => {
     expect(back.diners.map(x => x.id)).toEqual([d.id])
     expect(back.spawnDiner({ kind: 'student' })!.id).toBeGreaterThan(d.id)
     expect(back.buy('stove', 21, 3, false)).toBeNull()
+  })
+})
+
+describe('save version 36', () => {
+  const draft: PostDraft = { kind: 'praise', name: 'Lan', face: null, tick: false, stars: 5, text: 'Spa xịn', pic: null, comments: [['A', 'Ngon']], complaint: null, boostable: true, notify: false }
+  it('opens a v35 shop with every review id 0 and the feed an old shop would have', () => {
+    const old = structuredClone(v35) as unknown as { reviews: number[]; day: number }
+    old.reviews = [5, 4, 5]
+    old.day = 20
+    const sim = open(old)
+    expect(sim.reviewIds).toEqual([0, 0, 0])
+    expect(sim.feed).toEqual(seededFeed({ day: 20, rankStars: sim.rank.stars, idolsMet: IDOL_IDS.filter(id => sim.idol.idols[id].visits > 0).length, wins: sim.rank.wins }))
+    expect(sim.feed.open).toBe(true)
+  })
+  it('writes the version and keeps the posts, the last read, the followers and the boosts through a save', () => {
+    const sim = open(v35)
+    openFeed(sim.feed)
+    addPost(sim.feed, draft, 3, 100, createRng(1))
+    addPost(sim.feed, draft, 3, 110, createRng(2))
+    sim.feed.lastSeen = 1
+    sim.feed.followers += 500
+    sim.feed.boosts = [{ day: 3, tier: 'small', post: 2 }]
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
+    const back = viaJson(sim)
+    expect(back.feed).toEqual(sim.feed)
+    expect(back.feed.posts).toHaveLength(2)
+    expect([back.feed.lastSeen, back.feed.followers, back.feed.boosts]).toEqual([1, sim.feed.followers, [{ day: 3, tier: 'small', post: 2 }]])
+  })
+  it('repairs bad review ids by padding or trimming to the reviews', () => {
+    const raw = (reviews: number[], reviewIds: unknown) => ({ ...structuredClone(v35), reviews, reviewIds })
+    expect(parseSave(raw([5, 4, 3], [7, 8])).reviewIds).toEqual([0, 7, 8])
+    expect(parseSave(raw([5, 4], [6, 7, 8])).reviewIds).toEqual([7, 8])
+    expect(parseSave(raw([5, 4], 'x')).reviewIds).toEqual([0, 0])
+    expect(parseSave(raw([5, 4], [1.5, 2])).reviewIds).toEqual([0, 0])
+    expect(parseSave(raw([5, 4], [1, 2])).reviewIds).toEqual([1, 2])
   })
 })

@@ -51,7 +51,7 @@ const PIN_FILL: Record<PinState, string> = { here: C.teal, open: C.teal, can: C.
 /** The sheet under the map, from y 1440: a figure in a disc at the left, the words right of it. */
 const SHEET = { y: 1440, discX: 170, discDy: 110, discR: 92, textX: 290, textW: 720, rowsW: 680, titleDy: 30, statusDy: 84, rowsDy: 120, gap: 14 }
 const FIGURE = { scale: 1.3, feet: 80 }
-const WARN = { x: 100, y: 1790, w: 880, h: 60, size: 27 }
+const WARN = { y: 1790, h: 60 }
 const BUTTON = { y: 1915, w: 640, wide: 720, h: 116, size: 44 }
 const TOAST_Y = 2080
 /** The price taken, floated by the top bar's money over the dim. */
@@ -226,16 +226,11 @@ export class ChainScene extends Phaser.Scene {
 
     // the rows wrap, and are drawn smaller when they would run into the line or the button under them
     const top = y0 + SHEET.rowsDy
-    const bottom = (sheet.warn || sheet.short ? WARN.y : BUTTON.y - BUTTON.h / 2) - SHEET.gap
+    const bottom = (sheet.short ? WARN.y : BUTTON.y - BUTTON.h / 2) - SHEET.gap
     const rows = this.keep(this.add.text(left, top, sheet.rows.join('\n'), { ...textStyle(30, '600', C.soft), wordWrap: { width: SHEET.rowsW } }))
     rows.setScale(Math.min(1, (bottom - top) / rows.height))
 
-    if (sheet.warn) {
-      const strip = this.keep(this.add.graphics())
-      strip.fillStyle(hex(C.lantern), 0.14).fillRoundedRect(WARN.x, WARN.y, WARN.w, WARN.h, WARN.h / 2)
-      strip.lineStyle(3, hex(C.lanternDark)).strokeRoundedRect(WARN.x, WARN.y, WARN.w, WARN.h, WARN.h / 2)
-      this.keep(fit(this.add.text(MID, WARN.y + WARN.h / 2, sheet.warn, textStyle(WARN.size, '800', C.lanternDark)).setOrigin(0.5), WARN.w - 40))
-    } else if (sheet.short) this.keep(this.add.text(MID, WARN.y + WARN.h / 2, sheet.short, textStyle(30, '800', C.lanternDark)).setOrigin(0.5))
+    if (sheet.short) this.keep(this.add.text(MID, WARN.y + WARN.h / 2, sheet.short, textStyle(30, '800', C.lanternDark)).setOrigin(0.5))
 
     this.button(place, state, sheet.button)
   }

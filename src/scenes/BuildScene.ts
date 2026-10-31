@@ -402,6 +402,11 @@ export class BuildScene extends Phaser.Scene {
     this.petBox(x, top, C.cream)
     this.keep(this.add.image(x, CARD_BOTTOM - SALE.feet, petKey(breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y))
     this.cardLine(x, CARD_BOTTOM - SALE.name, BREED_NAME[breed], 28, '800')
+    // a branch's pets live at the main shop, so it takes in none itself
+    if (sim.place !== null) {
+      this.cardLine(x, CARD_BOTTOM - SALE.price + 16, t('petAtMain'), 24, '800', C.lantern)
+      return
+    }
     const buy = () => {
       if (full) this.toast(t('petsFull', { max: MAX_PETS }))
       else if (!can) this.toast(t(PROBLEM_TEXT.money, { money: formatMoney(price - sim.money) }))

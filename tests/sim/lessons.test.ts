@@ -19,7 +19,7 @@ describe('who can learn', () => {
     noMassage.services = ['shampoo', 'mask']
     expect(noMassage.lessonProblem('scrub')).toBe('order')
     expect(starShop(3).lessonProblem('scrub')).toBeNull()
-    expect(starShop(3, 699_999).lessonProblem('scrub')).toBe('money')
+    expect(starShop(3, 1_049_999).lessonProblem('scrub')).toBe('money')
     expect(starShop(3, -1).lessonProblem('scrub')).toBe('debt')
     const chain = new Chain(starShop(3), 11)
     chain.open('beach')
@@ -52,9 +52,9 @@ describe('paying once', () => {
   })
 
   it('takes nothing and stays "no" when short', () => {
-    const sim = starShop(3, 699_999)
+    const sim = starShop(3, 1_049_999)
     expect(sim.payLesson('scrub')).toBe('money')
-    expect(sim.money).toBe(699_999)
+    expect(sim.money).toBe(1_049_999)
     expect(sim.lessonState('scrub')).toBe('no')
   })
 })
@@ -182,17 +182,17 @@ describe('served by staff', () => {
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
     expect(c.service).toBe('scrub')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(170_000, 3))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(85_000, 3))
     expect(main.stock.salt).toBe(salt - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
 
 describe('Ngâm chân thảo mộc', () => {
-  it('needs 4 stars, massage open and 850.000 đ', () => {
+  it('needs 4 stars, massage open and 1.275.000 đ', () => {
     expect(starShop(3).lessonProblem('foot')).toBe('stars')
     expect(starShop(4).lessonProblem('foot')).toBeNull()
-    expect(starShop(4, 849_999).lessonProblem('foot')).toBe('money')
+    expect(starShop(4, 1_274_999).lessonProblem('foot')).toBe('money')
   })
 
   it('takes the tuition once, gives a Ghế ngâm chân and leaves the herbs alone', () => {
@@ -200,7 +200,7 @@ describe('Ngâm chân thảo mộc', () => {
     const herbs = sim.stock.herbs
     const money = sim.money
     sim.payLesson('foot')
-    expect(money - sim.money).toBe(850_000)
+    expect(money - sim.money).toBe(1_275_000)
     sim.passLesson('foot')
     expect(sim.book.gifts.filter(g => g === 'footChair')).toHaveLength(1)
     expect(sim.stock.herbs).toBe(herbs)
@@ -252,24 +252,24 @@ describe('Ngâm chân thảo mộc', () => {
     const events: SimEvent[] = []
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(190_000, 4))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(90_000, 4))
     expect(main.stock.herbs).toBe(herbs - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
 
 describe('Sơn móng', () => {
-  it('needs 5 stars, massage open and 1.000.000 đ', () => {
+  it('needs 5 stars, massage open and 1.500.000 đ', () => {
     expect(starShop(4).lessonProblem('nails')).toBe('stars')
     expect(starShop(5).lessonProblem('nails')).toBeNull()
-    expect(starShop(5, 999_999).lessonProblem('nails')).toBe('money')
+    expect(starShop(5, 1_499_999).lessonProblem('nails')).toBe('money')
   })
 
   it('takes the tuition once, gives a Bàn làm móng and starts the polish at 20', () => {
     const sim = starShop(5)
     const money = sim.money
     expect(sim.payLesson('nails')).toBeNull()
-    expect(money - sim.money).toBe(1_000_000)
+    expect(money - sim.money).toBe(1_500_000)
     sim.passLesson('nails')
     expect(sim.book.gifts.filter(g => g === 'nailDesk')).toHaveLength(1)
     expect(sim.stock.polish).toBe(20)
@@ -290,7 +290,7 @@ describe('Sơn móng', () => {
   })
 
   it('opens at the uptown branch only with its desk there, and never brings more customers', () => {
-    const chain = new Chain(starShop(5), 11)
+    const chain = new Chain(starShop(5, 25_000_000), 11)
     chain.open('uptown')
     const uptown = chain.shop('uptown')!
     chain.main.payLesson('nails')
@@ -323,7 +323,7 @@ describe('Sơn móng', () => {
     const events: SimEvent[] = []
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(220_000, 5))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(100_000, 5))
     expect(main.stock.polish).toBe(polish - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })

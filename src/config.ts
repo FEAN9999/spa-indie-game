@@ -49,8 +49,8 @@ export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 40000, mask: 60000, massage: 90000, steam: 110000, stone: 130000, mud: 160000, scrub: 170000, foot: 190000, nails: 220000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000, foot: 850000, nails: 1000000 } as const
+export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -268,9 +268,9 @@ export const STOCK_START = 20
 export const CHAIN_FROM_STARS = 3
 /** Where a branch can open: the main shop's stars and the price, how much faster customers come, and what its services cost against the plain price. */
 export const PLACES = {
-  beach: { stars: 3, price: 5_000_000, arrival: 1.2, priceFactor: 1.0 },
-  oldTown: { stars: 4, price: 8_000_000, arrival: 1.0, priceFactor: 1.2 },
-  uptown: { stars: 5, price: 12_000_000, arrival: 0.8, priceFactor: 1.6 },
+  beach: { stars: 3, price: 7_500_000, arrival: 1.2, priceFactor: 1.0 },
+  oldTown: { stars: 4, price: 12_000_000, arrival: 1.0, priceFactor: 1.2 },
+  uptown: { stars: 5, price: 18_000_000, arrival: 0.8, priceFactor: 1.6 },
 }
 /** The weights of the kinds each place draws. */
 export const PLACE_KINDS: Record<keyof typeof PLACES, Record<string, number>> = {
@@ -314,13 +314,13 @@ export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6
 export const FLOOR_ROWS = 18
 export const MAX_FLOORS = 3
 /** What opening floor 2 and the rooftop costs. */
-export const FLOOR_PRICE: Record<number, number> = { 2: 2_000_000, 3: 4_000_000 }
+export const FLOOR_PRICE: Record<number, number> = { 2: 3_000_000, 3: 6_000_000 }
 /** How long someone spends on the stairs between two floors. */
 export const STAIRS_MS = 1000
 /** Each floor beyond the first lets the shop hire this many more technicians. */
 export const STAFF_PER_FLOOR = 2
 /** What the neighbour house next to the shop costs, then the far one, on either side. */
-export const HOUSE_PRICE = [3_000_000, 6_000_000] as const
+export const HOUSE_PRICE = [4_500_000, 9_000_000] as const
 /** Each neighbour house bought lets the shop hire this many more technicians. */
 export const STAFF_PER_HOUSE = 1
 
@@ -353,9 +353,9 @@ export const MAX_TIER = 3
 /** The tier a rare technician starts with in their specialty. */
 export const RARE_TIER = 2
 /** What a night course costs, by the tier it starts from. */
-export const STUDY_PRICE = [100000, 200000, 400000] as const
+export const STUDY_PRICE = [150000, 300000, 600000] as const
 /** What a Tiếp khách course costs, by the friendliness it starts from, less 1. */
-export const GREET_STUDY_PRICE = [50000, 100000, 200000, 400000] as const
+export const GREET_STUDY_PRICE = [75000, 150000, 300000, 600000] as const
 export const WAGE_BASE = 20000
 export const WAGE_PER_DOT = 2500
 export const LEVEL_WAGE_RAISE = 2500
@@ -439,7 +439,7 @@ export const HUM_MS = 3000
 /** How long a speech bubble stays, for a greeting and for a story line. */
 export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
 /** What one try at the recipe bench costs. */
-export const RECIPE_TRY_COST = 20000
+export const RECIPE_TRY_COST = 30000
 /** Chance that a regular tells a recipe hint on a visit. */
 export const RECIPE_HINT_CHANCE = 0.5
 
@@ -607,3 +607,33 @@ export const PHO_BAND_HARD_SHRINK = 0.05
 export const PHO_BOIL_NEAR = 0.08
 /** This many good cuts earn a star. */
 export const PHO_GOOD_CUTS = 3
+
+/** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
+export const FEED_START_FOLLOWERS = 50
+export const FEED_MAX_POSTS = 50
+/** Posts of each sort a day may make. */
+export const FEED_DAY_CAP = { praise: 3, complaint: 3 }
+/** The chance a happy guest posts. */
+export const FEED_PRAISE_CHANCE = 1 / 3
+/** The follower counts that are cheered once. */
+export const FEED_MILESTONES = [1_000, 10_000, 100_000, 1_000_000]
+/** An old save's followers: the start, then so much per rank star past the first (every shop starts at 1), idol met and year's win, at most max. */
+export const FEED_SEED = { base: 50, star: 1_000, idol: 5_000, win: 20_000, max: 99_000 }
+/** likes = fixed + share x min(followers, FEED_REACH_CAP) x (0.6 + 0.8 r). */
+export const FEED_REACH = { praise: [40, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const
+/** Followers past this bring no more likes, so a plain shop grows by a steady amount a day past it and 100.000 needs stars and boosts. */
+export const FEED_REACH_CAP = 8_000
+/** An idol's or a KOL's likes are their own fans: lo + (hi - lo) r. */
+export const FEED_FANS = { idol: [20_000, 60_000], kol: [5_000, 15_000] } as const
+/** followers += round(likes x gain). */
+export const FEED_GAIN = { praise: 0.4, complaint: 0, shop: 0.1, vip: 0.1, rival: 0, ward: 0.05, idol: 0.04, kol: 0.08 }
+/** extra = round(likes x this): the comments not shown. */
+export const FEED_EXTRA_COMMENTS = 0.03
+/** What answering a complaint does: a right or plain reply sets the customer's scores to `stars` and wins `followers`; a rude one makes `likes` times the likes and `comments` more comments. */
+export const FEED_REPLY = { right: { stars: 4, followers: 40 }, plain: { stars: 3, followers: 10 }, rude: { likes: 1.5, comments: 20 } } as const
+/** What a Phây boost costs and does: price = share x the recent profit, up to a multiple of 10.000 and never under `min`; the next day the main shop's gap between customers is divided by `arrival`, tips are multiplied by `tip`, and the post and the shop win `followers`. */
+export const BOOST = {
+  small: { share: 0.225, min: 150_000, arrival: 1.15, tip: 1.1, followers: 200 },
+  medium: { share: 0.6, min: 450_000, arrival: 1.3, tip: 1.2, followers: 600 },
+  large: { share: 1.2, min: 900_000, arrival: 1.5, tip: 1.3, followers: 1800 },
+} as const

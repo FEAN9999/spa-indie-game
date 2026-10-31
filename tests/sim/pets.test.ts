@@ -6,7 +6,7 @@ describe('pets', () => {
   it('has four cats and four dogs, the litter breeds the cheapest', () => {
     expect(BREED_IDS.filter(b => BREEDS[b].kind === 'cat')).toEqual(['muop', 'mun', 'tamthe', 'xiem'])
     expect(BREED_IDS.filter(b => BREEDS[b].kind === 'dog')).toEqual(['chota', 'phuquoc', 'corgi', 'poodle'])
-    expect([BREEDS.muop.price, BREEDS.chota.price, BREEDS.poodle.price]).toEqual([300_000, 300_000, 2_000_000])
+    expect([BREEDS.muop.price, BREEDS.chota.price, BREEDS.poodle.price]).toEqual([450_000, 450_000, 3_000_000])
   })
 
   it('cleans a name like the shop name, at most 12 letters', () => {

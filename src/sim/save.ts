@@ -22,6 +22,7 @@ import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_RO
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
 import { repairStarter, type StarterBook } from './starter'
+import { emptyFeed, repairFeed, type FeedBook } from './feed'
 import { branchPetBook, repairPets, type PetBook } from './pets'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
@@ -92,6 +93,8 @@ export interface SaveData {
   money: number
   /** Only the last RATING_WINDOW reviews, the ones the rating uses. */
   reviews: number[]
+  /** The customer id behind each of `reviews`, the same length; 0 for a review saved before the ids. */
+  reviewIds: number[]
   stats: DayStats
   dayOver: boolean
   servingCustomerId: number | null
@@ -147,6 +150,8 @@ export interface SaveData {
   pets: PetBook
   /** The neighbour houses bought each side, by this shop alone. */
   houses: Houses
+  /** The Phây feed; only the main shop's is real, a branch shares it and saves an empty one. */
+  feed: FeedBook
   /** The real time of the last write, stamped by the session; null until then. */
   savedAt: number | null
 }
@@ -461,6 +466,12 @@ function parseShop(raw: unknown): SaveData {
   data.pets = isPlaceId(data.place) ? branchPetBook() : repairPets(data.pets)
   // shops saved before version 33 have bought no house, and a branch saved before version 34 none either
   data.houses = isPlaceId(data.place) && oldBranchHouses ? { left: 0, right: 0 } : repairHouses(data.houses)
+  // shops saved before version 36 get the feed they would have had; a branch's is empty, it shares the main shop's
+  const idolsMet = IDOL_IDS.filter(id => data.idol.idols[id].visits > 0).length
+  data.feed = isPlaceId(data.place) ? emptyFeed() : repairFeed(data.feed, { day: data.day, rankStars: data.rank.stars, idolsMet, wins: data.rank.wins })
+  // each review has its customer's id: the newest are kept, and a short list is padded at the front with 0
+  const ids: number[] = Array.isArray(data.reviewIds) && data.reviewIds.every(Number.isInteger) ? data.reviewIds : []
+  data.reviewIds = [...Array<number>(Math.max(data.reviews.length - ids.length, 0)).fill(0), ...ids.slice(Math.max(ids.length - data.reviews.length, 0))]
   data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
   data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
   // shops saved before version 33 move onto the wide grid, once: the version is raised so a parsed save parsed again stays put

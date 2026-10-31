@@ -152,7 +152,7 @@ describe('a branch at its place', () => {
     const branch = beachOf(main)
     expect(ownerServes(branch, 3).amount).toBe(SERVICES.shampoo.price)
     const town = SpaSim.newBranch('oldTown', main, createRng(2))
-    expect(ownerServes(town, 3).amount).toBe(48_000)
+    expect(ownerServes(town, 3).amount).toBe(24_000)
   })
 
   it('shuts the main-only features and asks for its arrivals', () => {

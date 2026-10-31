@@ -99,6 +99,14 @@ export function hotLine(sim: SpaSim): TodayLine | null {
   return { icon: EVENT_ICON.hot, text: left === 1 ? t('todayHotLast') : t('todayHot', { n: left }) }
 }
 
+/** The Phây logo, for the morning a boosted post runs. */
+const BOOST_ICON = { texture: 'icon-heart', disc: C.teal }
+
+/** Today's line while a post bought yesterday is boosted: the main shop's alone. */
+export function boostLine(sim: SpaSim): TodayLine | null {
+  return sim.boostTier() ? { icon: BOOST_ICON, text: t('todayBoost') } : null
+}
+
 type Inspected = Extract<SimEvent, { type: 'inspected' }>
 
 /** The inspection card's three rows: each check, what the inspector saw, and whether it passed. */

@@ -97,17 +97,6 @@ describe('buying the restaurant', () => {
     expect(main.onCustomerGone).not.toBeNull()
     expect(chain.restaurant).toBe(r)
   })
-
-  it('counts the restaurant diners who would leave when the owner goes to a branch', () => {
-    const o = owned()
-    const [d] = ordering(o)
-    o.r.spawnDiner({ kind: 'student' })
-    expect(d.state).toBe('ordering')
-    expect(o.chain.leaveCount()).toBe(o.main.leaversIfOwnerGoes() + 2)
-    expect(o.chain.open('beach')).toBeNull()
-    expect(o.chain.goTo('beach')).toBeNull()
-    expect(o.chain.leaveCount()).toBe(o.chain.active().leaversIfOwnerGoes())
-  })
 })
 
 describe('the owner between the two shops', () => {

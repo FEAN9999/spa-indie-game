@@ -93,7 +93,9 @@ describe('when regulars come', () => {
       }
     }
     const arrivals = steps.filter(s => s.events.some(e => e.type === 'customerArrived'))
-    const first = arrivals.find(s => s.minutes >= 540)!
+    // with every seat taken she stays due, so hers is the first arrival at or after 540 that finds a seat
+    const first = arrivals.find(s => s.events.some(e => e.type === 'regularArrived'))!
+    expect(first.minutes).toBeGreaterThanOrEqual(540)
     expect(arrivals.filter(s => s.minutes < 540).length).toBeGreaterThan(0)
     expect(first.events.filter(e => e.type === 'customerArrived')).toHaveLength(1)
     expect(first.events).toContainEqual(expect.objectContaining({ type: 'regularArrived', regular: 'hanh', first: true }))

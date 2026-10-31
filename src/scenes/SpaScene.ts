@@ -13,6 +13,7 @@ import { PROBLEM_TEXT } from '../sim/build'
 import { Chain } from '../sim/chain'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
+import { markRead, takeCheer, unreadCount, type Post } from '../sim/feed'
 import { monthOf } from '../sim/calendar'
 import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
@@ -55,6 +56,8 @@ import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
 import { houseRect, saleAt, stripLots } from '../view/houses'
 import { navIds, type NavId } from '../view/nav'
+import { milestoneCard } from '../view/phayCards'
+import { NOTICE_MS, nextNotice, noticeLine, phayButtonShown } from '../view/phay'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
 import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
@@ -72,7 +75,7 @@ import { StaffLayer } from '../view/StaffLayer'
 import { PetLayer } from '../view/PetLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, whenTapped } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import { ZoomButtons } from '../view/ZoomButtons'
 import type { AwayData } from './AwayScene'
@@ -92,6 +95,7 @@ import type { NewOutfitData } from './NewOutfitScene'
 import type { LitterData } from './LitterScene'
 import type { PetNameData } from './PetNameScene'
 import type { CookData } from './PhoScene'
+import type { PhayData } from './PhayScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -116,6 +120,8 @@ const LATE_TOAST_MS = 2200
 /** The gold card under the top bar (a new badge, a festival), from the sketch; a line that wraps makes it taller. */
 const BADGE_CARD = { x: 110, y: 236, w: 860, h: 200, r: 50, medalX: 230, medalY: 336, textX: 330, textW: 610, bottomPad: 26, discR: 64, icon: 104 }
 const BADGE_FADE_MS = 250
+/** Phây's notice, a cream bar sliding down to the gold card's spot. */
+const NOTICE = { y: 300, w: 900, h: 130, r: 65, slide: 60, iconX: -390, textX: -330, textW: 740, headY: -28, lineY: 20 }
 /** A VIP's star twinkles: its scale swings this far around 0.5 on this period. */
 const STAR_TWINKLE = 0.04
 const STAR_TWINKLE_MS = 1200
@@ -236,6 +242,10 @@ export class SpaScene extends Phaser.Scene {
   private badgeQueue: (BadgeId | GoldCard)[] = []
   /** The scene time the badge banner on screen is gone. */
   private badgeUntil = 0
+  /** The last post id already noticed or folded into the red count; set on entering a shop, never saved, so posts there on load never notify. */
+  private phayNotified = 0
+  /** The Phây notice on screen, if any. */
+  private phayNotice: Phaser.GameObjects.Container | null = null
   /** An old shop's "already has" toast, held until no summary covers the shop. */
   private foundToast: string | null = null
   /** What clearing an older shop's stairs spot did, held until no card, summary or mini-game covers the shop, so its toasts are seen. */
@@ -305,6 +315,9 @@ export class SpaScene extends Phaser.Scene {
     }
     this.chain = switched?.chain ?? this.openChain(saved)
     this.sim = this.chain.active()
+    this.phayNotified = this.chain.main.feed.nextId - 1
+    this.phayNotice?.destroy()
+    this.phayNotice = null
     this.mainCards = switched?.mainCards ?? { badgeQueue: [], inspectNote: null }
     // back at the main shop, its cards come out from where they were kept
     if (this.sim.place === null) {
@@ -327,7 +340,7 @@ export class SpaScene extends Phaser.Scene {
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.pets = new PetLayer(this, this.room)
-    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
+    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => this.openPhay(null), () => navIds(this.chain))
     this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this.ui)
     this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
@@ -876,6 +889,96 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('QuestsScene', data)
   }
 
+  /** The Phây panel over the frozen chain, opened only when the quest panel would be; opening it reads every post. `focusId` is the post to show first. */
+  private openPhay(focusId: number | null): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing() || !this.chain.main.feed.open) return
+    this.modal = true
+    const main = this.chain.main
+    markRead(main.feed)
+    const data: PhayData = {
+      feed: main.feed,
+      shopName: main.shopName,
+      ownerLook: main.ownerLook,
+      ownerOutfit: main.ownerOutfit,
+      focusId,
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+      // the complaint's customer is the main shop's, wherever the owner stands
+      replyLine: (postId, reply) => main.replyLine(postId, reply),
+      onAnswer: (postId, reply) => {
+        main.answerPost(postId, reply)
+        this.session.saveNow()
+      },
+      // boosts are the main shop's: its day, its price, and tomorrow's crowd at the main shop
+      day: main.day,
+      money: () => main.money,
+      boostPrice: tier => main.boostPrice(tier),
+      onBoost: (postId, tier) => {
+        main.boostPost(postId, tier)
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('PhayScene', data)
+  }
+
+  /**
+   * When nothing else asks for the player: a follower mark's gold card first, then the newest post that wants a notice.
+   * The older posts waiting are folded into the red count.
+   */
+  private pumpPhay(): void {
+    const feed = this.chain.main.feed
+    if (feed.cheer.length > 0) {
+      this.badgeQueue.push(milestoneCard(takeCheer(feed)!))
+      return
+    }
+    const post = nextNotice(feed, this.phayNotified)
+    this.phayNotified = feed.nextId - 1
+    if (post) this.showPhayNotice(post)
+  }
+
+  /** A cream bar with the phone, "Phây · vừa xong" and one line of the post slides down from the top for NOTICE_MS; a tap opens Phây at the post. It holds the shop's cards back like a gold card. */
+  private showPhayNotice(post: Post): void {
+    const n = NOTICE
+    const bg = this.ui.add
+      .graphics()
+      .fillStyle(hex(C.cream), 1)
+      .fillRoundedRect(-n.w / 2, -n.h / 2, n.w, n.h, n.r)
+      .lineStyle(5, hex(C.ink))
+      .strokeRoundedRect(-n.w / 2, -n.h / 2, n.w, n.h, n.r)
+    const icon = this.ui.add.image(n.iconX, 0, 'icon-phone').setScale(0.9)
+    const head = this.ui.add.text(n.textX, n.headY, t('phayNoticeHead'), textStyle(26, '800', C.soft)).setOrigin(0, 0.5)
+    const line = this.ui.add.text(n.textX, n.lineY, noticeLine(post), textStyle(34, '800')).setOrigin(0, 0.5)
+    line.setScale(Math.min(1, n.textW / line.width))
+    const zone = this.ui.add.zone(0, 0, n.w, n.h).setInteractive()
+    const box = this.ui.add
+      .container(GAME_W / 2, n.y - n.slide, [bg, icon, head, line, zone])
+      .setDepth(HUD_DEPTH + 60)
+      .setAlpha(0)
+    const close = () => {
+      this.ui.tweens.killTweensOf(box)
+      box.destroy()
+      if (this.phayNotice === box) this.phayNotice = null
+    }
+    whenTapped(zone, () => {
+      close()
+      this.badgeUntil = this.time.now
+      this.openPhay(post.id)
+    })
+    this.phayNotice = box
+    this.badgeUntil = this.time.now + NOTICE_MS
+    this.ui.tweens.chain({
+      targets: box,
+      tweens: [
+        { y: n.y, alpha: 1, duration: 250, ease: 'Cubic.easeOut' },
+        { alpha: 0, delay: NOTICE_MS - 500, duration: 250 },
+      ],
+      onComplete: close,
+    })
+  }
+
   /** Shows the toast once the one before it has had LATE_TOAST_MS on screen, after any toast already queued here. */
   private queueToast(text: string): void {
     const now = this.time.now
@@ -1339,6 +1442,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       // a card opened by this frame's events (a bed slot's) goes first; a badge card waits for whichever card is up, rather than play under it
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && !this.playing()) this.showInspection()
       if (!this.modal) this.pumpBadges()
+      if (!this.modal && this.shopFree()) this.pumpPhay()
       if (!this.modal && this.shopFree()) this.showNewOutfits()
       if (!this.modal && this.shopFree() && this.sim.litterDue() && this.litterLaterDay !== this.sim.day) this.showLitter()
       // once, when the main shop has the stars for a chain: the card that opens it, after whatever cards came first
@@ -1396,6 +1500,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.restaurant?.sync(this.chain, this.viewFloor, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
     this.hud.update(this.modal)
     this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
+    // Phây is the main shop's, shared by its branches; the button gives way to the gold card and the morning banner, which use its spot
+    const feed = this.chain.main.feed
+    this.hud.setPhay(phayButtonShown(feed.open, this.time.now < this.badgeUntil, this.time.now < this.hud.lastBannerAt + BANNER_MS), unreadCount(feed), this.sim.place !== null)
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()

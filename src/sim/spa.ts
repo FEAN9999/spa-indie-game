@@ -2,10 +2,14 @@ import {
   JOLLY_TIP,
   ANGRY_REVIEW,
   ARRIVE_MS,
+  BOOST,
   DAY_END_MIN,
   DAY_MINUTES,
   DAYS_PER_MONTH,
   EXIT_MS,
+  FEED_EXTRA_COMMENTS,
+  FEED_PRAISE_CHANCE,
+  FEED_REPLY,
   EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
   FESTIVAL_PATIENCE,
@@ -55,6 +59,10 @@ import {
   HOUSES_PER_SIDE,
 } from '../config'
 import { PET_NAME_IDEAS, t } from '../strings/vi'
+import { IDOL_TEXT } from '../strings/idols'
+import { managerName, PHAY_KOL_NAME, PHAY_WARD_NAME } from '../strings/phay'
+import { REGULAR_TEXT } from '../strings/regulars'
+import { VIP_TEXT } from '../strings/vips'
 import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placementProblem, sellRefund, type BuildProblem } from './build'
 import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
@@ -80,6 +88,8 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
+import { addPost, boostedToday, boostPrice, dayRoom, emptyFeed, growFollowers, MAX_BOOSTS, openFeed, REPLY_KINDS, type BoostTier, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
+import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -93,6 +103,8 @@ import type { Feature } from './unlocks'
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
+export type AnswerProblem = 'branch' | 'missing' | 'notComplaint' | 'answered'
+export type BoostProblem = 'branch' | 'missing' | 'notBoostable' | 'boosted' | 'today' | 'money'
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
@@ -140,9 +152,6 @@ export function moveAlong(m: Mover, speed: number, dtMs: number): void {
   }
 }
 
-/** Where a customer is while the shop has not yet put them on a bed. */
-const WAITING_STATES: CustomerState[] = ['arriving', 'toSeat', 'waiting']
-
 export interface SpaSimOptions {
   rng: Rng
   layout?: string[]
@@ -164,6 +173,8 @@ export class SpaSim {
   /** Where this shop is: null for the main shop. */
   place: PlaceId | null = null
   reviews: number[] = []
+  /** The customer behind each review, in step with `reviews`. */
+  reviewIds: number[] = []
   clock = new DayClock()
   day = 1
   stats: DayStats = emptyStats()
@@ -221,6 +232,8 @@ export class SpaSim {
   pets: PetBook = emptyPetBook()
   /** The neighbour houses bought each side, by this shop alone. */
   houses: Houses = { ...NO_HOUSES }
+  /** The Phây feed: the main shop's, the same object on every branch. */
+  feed: FeedBook = emptyFeed()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -247,7 +260,7 @@ export class SpaSim {
       emit: e => this.emit(e),
       walkTo: (m, isGoal) => this.walkTo(m, isGoal),
       sendToBed: (c, station) => this.sendToBed(c, station),
-      payFor: (c, station, stars, technician) => this.payFor(c, station, stars, technician),
+      payFor: (c, station, stars, technician, sloppy) => this.payFor(c, station, stars, technician, sloppy),
       takeStaffId: () => this.nextStaffId++,
     }
     this.base = shellOf(layout)
@@ -278,6 +291,7 @@ export class SpaSim {
     branch.ownerOutfit = main.ownerOutfit
     branch.profileDone = main.profileDone
     branch.purse = main.purse
+    branch.feed = main.feed
     branch.pets = branchPetBook()
     const decor = PLACE_DECOR[place]
     branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
@@ -313,14 +327,7 @@ export class SpaSim {
     return task?.kind === 'serve' ? this.customers.find(c => c.id === task.customerId && c.state === 'toStation') : undefined
   }
 
-  /** How many customers would be sent away if the owner left now: none with a technician, else everyone arriving, walking to a seat or waiting, and the one the owner is walking to a bed. */
-  leaversIfOwnerGoes(): number {
-    if (this.hasTechnician()) return 0
-    const toBed = this.walkingToBed()
-    return this.customers.filter(c => c === toBed || WAITING_STATES.includes(c.state)).length
-  }
-
-  /** The owner goes: a walk to a bed is undone, the owner's task ends, and with no technician the shop's customers leave quietly. */
+  /** The owner goes: a walk to a bed is undone and the owner's task ends; the shop's customers stay and wait. */
   ownerLeaves(): void {
     const walking = this.walkingToBed()
     if (walking) {
@@ -335,7 +342,6 @@ export class SpaSim {
     this.owner.task = null
     this.owner.path = []
     this.ownerHere = false
-    if (!this.hasTechnician()) this.leaveQuietly()
   }
 
   private oldestDesk(): Item | undefined {
@@ -383,16 +389,6 @@ export class SpaSim {
     for (const s of this.seats) s.customerId = null
     for (const s of this.stations) s.customerId = null
     repairAfterLoad(this.crew)
-  }
-
-  /** Customers not yet in service walk out with no review, no count and no lost visit. */
-  private leaveQuietly(): void {
-    for (const c of this.customers) {
-      if (!WAITING_STATES.includes(c.state)) continue
-      this.freeSeat(c)
-      c.mood = null
-      this.startLeaving(c)
-    }
   }
 
   /** The owner's look and the shop's name, chosen when the shop is made. */
@@ -556,7 +552,8 @@ export class SpaSim {
   /** What the gap between two customers is multiplied by today: shorter in a festival or a hot day, once when both. */
   eventArrivalFactor(): number {
     if (this.place !== null) return 1
-    return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1)
+    const boost = this.boostTier()
+    return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1) / (boost ? BOOST[boost].arrival : 1)
   }
 
   /** What the gap between two customers is multiplied by: a branch's place sets its own, the main shop has the events'. */
@@ -567,7 +564,7 @@ export class SpaSim {
   /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival or a hot day, to go with the crowd. */
   private eventPatienceFactor(): number {
     if (this.place !== null) return 1
-    return festivalOf(this.day) || this.hotToday() ? FESTIVAL_PATIENCE : 1
+    return festivalOf(this.day) || this.hotToday() || this.boostTier() !== null ? FESTIVAL_PATIENCE : 1
   }
 
   /**
@@ -713,7 +710,7 @@ export class SpaSim {
     const c = this.customers.find(x => x.id === customerId)
     const station = c && this.stations.find(s => s.id === c.stationId)
     if (!c || c.state !== 'inService' || !station) return
-    this.payFor(c, station, stars, null)
+    this.payFor(c, station, stars, null, false)
     this.servingCustomerId = null
     this.owner.task = null
   }
@@ -723,14 +720,14 @@ export class SpaSim {
    * and an idol IDOL_PRICE_FACTOR times, but both tip on the plain graded one.
    * Anyone else pays FESTIVAL_PRICE times the graded price for the festival service, and tips on that.
    */
-  private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
+  private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null, sloppy: boolean): void {
     const plain = this.place ? placePrice(SERVICES[c.service].price, this.place) : rankPrice(SERVICES[c.service].price, this.rank.stars)
     const base = !c.vip && !c.idol && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
     const price = c.idol ? plain * IDOL_PRICE_FACTOR : c.vip ? plain * VIP_PRICE_FACTOR : base
     const spec = KINDS[c.kind]
     // a customer served while the power is out tips half again
     const tip = Math.round(
-      tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)) * (this.powerOut() ? POWER_TIP_FACTOR : 1),
+      tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)) * (this.powerOut() ? POWER_TIP_FACTOR : 1) * this.boostTipFactor(),
     )
     this.money += price + tip
     this.stats.income += price
@@ -748,7 +745,9 @@ export class SpaSim {
     }
     // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
     const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
-    this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading))
+    const score = reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading)
+    this.addReview(c, score)
+    this.postReview(c, score, technician === null ? 'owner' : sloppy ? 'sloppy' : 'tech')
     if (stars === 3 && rivalToday(this.eventBook, this.day)) this.rivalScored()
     // a VIP has her own page in the book, not a place among the kinds served; so has an idol, whose 3 stars make the shop hot from the next morning
     if (c.vip) {
@@ -764,6 +763,7 @@ export class SpaSim {
       if (stars === 3) {
         makeHot(this.eventBook, this.day, 'kol')
         this.emit({ type: 'kolPosted', customerId: c.id })
+        this.postKol(c)
       } else this.emit({ type: 'kolLeft', customerId: c.id })
     }
     let hearts = 0
@@ -848,6 +848,7 @@ export class SpaSim {
     this.money += reward
     this.stats.quests += reward
     this.emit({ type: 'rivalBeaten', reward })
+    this.postRival('beaten')
   }
 
   /**
@@ -871,6 +872,7 @@ export class SpaSim {
       this.book.gifts.push('certificate')
     }
     this.emit({ type: 'inspected', checks, low: lowItem ? { item: lowItem, count: this.stock[lowItem] } : null, lost, beauty, reward, cert })
+    if (cert) this.postWard()
   }
 
   /** Customers who want `service` and have not reached a bed yet. */
@@ -916,6 +918,7 @@ export class SpaSim {
       minutes: this.clock.minutes,
       money: this.money,
       reviews: this.reviews.slice(-RATING_WINDOW),
+      reviewIds: this.reviewIds.slice(-RATING_WINDOW),
       stats: this.stats,
       dayOver: this.dayOver,
       servingCustomerId: this.servingCustomerId,
@@ -951,6 +954,8 @@ export class SpaSim {
       starter: this.starter,
       pets: this.pets,
       houses: this.houses,
+      // a branch shares the main shop's feed and saves none
+      feed: this.place === null ? this.feed : emptyFeed(),
       savedAt: null,
     })
   }
@@ -994,11 +999,13 @@ export class SpaSim {
     // the starter chain is the main shop's: a branch's has always passed
     sim.starter = d.place === null ? d.starter : pastStarter()
     sim.pets = d.place === null ? d.pets : branchPetBook()
+    sim.feed = d.feed
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
     sim.money = d.money
     sim.reviews = d.reviews
+    sim.reviewIds = d.reviewIds
     sim.stats = d.stats
     sim.dayOver = d.dayOver
     sim.servingCustomerId = d.servingCustomerId
@@ -1068,6 +1075,7 @@ export class SpaSim {
     if (book.plan && book.plan.day < this.day) book.plan = null
     book.count = 0
     book.inspected = false
+    this.feed.boosts = this.feed.boosts.filter(b => b.day >= this.day)
     this.progress.dayStart = structuredClone(this.progress.total)
     if (dayOfMonth(this.day) === 1) this.rank.month = { from: this.day, served: this.progress.total.served, lost: this.progress.total.lost }
     this.checkBadges()
@@ -1083,10 +1091,15 @@ export class SpaSim {
         if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day), ended })
       }
     }
+    if (this.questsOpen()) openFeed(this.feed)
     // told after the quests are rolled, so the service is the one the month settled on
     const festival = festivalOf(this.day)
-    if (festival && festival !== festivalOf(this.day - 1)) this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
+    if (festival && festival !== festivalOf(this.day - 1)) {
+      this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
+      this.postNews({ kind: 'festival', festival })
+    }
     if (book.plan?.day === this.day) this.emit({ type: 'eventToday', plan: { ...book.plan } })
+    if (rivalToday(book, this.day)) this.postRival('morning')
     if (hotCardToday(book, this.day)) this.emit({ type: 'hotStarted', until: book.hotUntil })
   }
 
@@ -1211,6 +1224,7 @@ export class SpaSim {
     this.pets.owned.push(pet)
     // a full shop has no room for the litter: it counts as taken
     if (this.pets.owned.length >= MAX_PETS) this.pets.litter = true
+    this.postNews({ kind: 'pet', name: pet.name, breed })
     return pet
   }
 
@@ -1401,6 +1415,7 @@ export class SpaSim {
     this.floors = floor
     this.changeRoom()
     this.emit({ type: 'floorOpened', floor })
+    this.postNews({ kind: 'floor', floor })
     return null
   }
 
@@ -1433,6 +1448,7 @@ export class SpaSim {
     this.rebuildShell()
     this.changeRoom()
     this.emit({ type: 'houseBought', house: { side, n } })
+    this.postNews({ kind: 'house', place: this.place })
     return null
   }
 
@@ -1633,7 +1649,7 @@ export class SpaSim {
     const before = this.clock.minutes
     this.clock.advance(dt)
 
-    if (this.autoSpawn && !this.clock.isClosed && (this.ownerHere || this.hasTechnician())) {
+    if (this.autoSpawn && !this.clock.isClosed) {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
         // a regular whose hour has come takes the place of a stranger, but only when a seat is left for her once
@@ -1684,7 +1700,6 @@ export class SpaSim {
     this.updateOwnerTask()
     for (const s of this.staff) updateStaff(this.crew, s, dt)
     if (!this.ownerHere) {
-      if (!this.hasTechnician()) this.leaveQuietly()
       for (const item of this.lowStock()) if (this.money >= RESTOCK_PRICE[item]) this.restock(item)
     }
     this.checkBadges()
@@ -1693,15 +1708,18 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday(), this.day)
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday() || this.boostTier() !== null, this.day)
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (this.place === null && isJudgeDay(this.day)) {
-        this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
+        const month = judgeMonth(this.rank, this.rankNow().input, this.day)
+        this.money += month.reward
+        if (month.after > month.before) this.postNews({ kind: 'rank', stars: month.after })
         if (isYearEnd(this.day)) {
           const year = judgeYear(this.rank, this.day)
           if (year) {
             this.money += year.reward
             this.book.gifts.push(...year.gifts)
+            if (year.place <= 3) this.postNews({ kind: 'year', place: year.place })
           }
         }
       }
@@ -1866,6 +1884,8 @@ export class SpaSim {
     this.freeSeat(c)
     c.mood = 'angry'
     this.addReview(c, ANGRY_REVIEW)
+    const powerDay = this.eventBook.plan?.kind === 'power' && this.eventBook.plan.day === this.day
+    this.postReview(c, ANGRY_REVIEW, this.missingStock(c.service) ? 'stock' : powerDay && MACHINES.includes(c.service) ? 'power' : 'wait')
     if (c.regular) loseVisit(this.book, c.regular)
     // Mi Mi walking out costs nothing (spec 7.5): no angry customer on the summary, no lost one for the quests or the clean day
     if (c.kol) this.emit({ type: 'kolLeft', customerId: c.id })
@@ -1892,8 +1912,175 @@ export class SpaSim {
     if (c.kol) return
     for (let i = 0; i < (c.vip || c.idol ? VIP_REVIEWS : KINDS[c.kind].reviews); i++) {
       this.reviews.push(score)
+      this.reviewIds.push(c.id)
       this.emit({ type: 'review', customerId: c.id, score })
     }
+  }
+
+  /** The stream each kind of shop news draws from, so news filed on one day never draws alike. */
+  private static readonly NEWS_SALT: Record<ShopNews['kind'], number> = { rank: 7, year: 8, festival: 9, branch: 10, house: 11, floor: 12, pet: 13 }
+
+  /** A stream of its own for the Phây feed, so no post moves the shop's draws. */
+  private feedRng(salt: number): Rng {
+    return createRng(this.day * 9431 + this.nextId + salt)
+  }
+
+  /** The feed's stream for one guest's post: the guest's id is mixed in, so two guests paying between the same two arrivals never draw alike (salts stay under 16). */
+  private guestRng(c: Customer, salt: number): Rng {
+    return this.feedRng(salt + c.id * 16)
+  }
+
+  /** The stream for the words answering post `postId` draws; the post id stands in for the guest's (salts stay under 16). */
+  private postRng(postId: number, salt: number): Rng {
+    return createRng(this.day * 9431 + postId * 16 + salt)
+  }
+
+  /** The shop's own line answering a complaint with `reply`, exactly as answerPost posts it today. */
+  replyLine(postId: number, reply: ReplyKind): string {
+    const complaint = this.feed.posts.find(p => p.id === postId)?.complaint
+    return complaint ? replyText(reply, complaint.reason, this.postRng(postId, 3)) : ''
+  }
+
+  /**
+   * Answers a complaint in the feed. Call it on the main shop (`chain.main`): the guest was its own.
+   * Right or plain turns every score of that guest still in the window into 4 or 3 and the post with it, and wins followers;
+   * rude changes no score and makes the post drama. Phây never touches money, guests or arrivals.
+   */
+  answerPost(postId: number, reply: ReplyKind): AnswerProblem | null {
+    if (this.place !== null) return 'branch'
+    const post = this.feed.posts.find(p => p.id === postId)
+    if (!post) return 'missing'
+    const complaint = post.complaint
+    if (!complaint) return 'notComplaint'
+    if (complaint.answered !== null) return 'answered'
+    complaint.answered = reply
+    const rng = this.postRng(postId, 3)
+    const shop: [string, string] = [this.shopName, replyText(reply, complaint.reason, rng)]
+    if (reply === 'rude') {
+      post.comments = [shop, dramaComment(rng)]
+      post.likes = Math.round(post.likes * FEED_REPLY.rude.likes)
+      post.extra = Math.round(post.likes * FEED_EXTRA_COMMENTS) + FEED_REPLY.rude.comments
+      return null
+    }
+    const { stars, followers } = FEED_REPLY[reply]
+    if (complaint.customerId !== 0) {
+      this.reviewIds.forEach((id, i) => {
+        if (id === complaint.customerId) this.reviews[i] = stars
+      })
+    }
+    post.stars = stars
+    post.comments = [shop, [post.name, answerText(reply, complaint.manager, rng)]]
+    growFollowers(this.feed, followers)
+    return null
+  }
+
+  /** What a boost of `tier` costs the main shop today: its share of the recent profit, rounded up, never under the minimum. */
+  boostPrice(tier: BoostTier): number {
+    return boostPrice(tier, awayMean(this.away))
+  }
+
+  /** The tier of the boost running today, bought yesterday: the main shop's alone, a branch sees the same feed and none of it. */
+  boostTier(): BoostTier | null {
+    if (this.place !== null) return null
+    return this.feed.boosts.find(b => b.day === this.day)?.tier ?? null
+  }
+
+  /** What today's boost multiplies a tip by. */
+  private boostTipFactor(): number {
+    const tier = this.boostTier()
+    return tier ? BOOST[tier].tip : 1
+  }
+
+  /**
+   * Pays to boost a boostable post: the post's likes jump, the shop wins followers, and tomorrow the main shop gets more customers, more patience and bigger tips.
+   * One boost a day, bought on the main shop (`chain.main`); the price comes from the shared purse and no stat counts it.
+   */
+  boostPost(postId: number, tier: BoostTier): BoostProblem | null {
+    if (this.place !== null) return 'branch'
+    const post = this.feed.posts.find(p => p.id === postId)
+    if (!post) return 'missing'
+    if (!post.boostable) return 'notBoostable'
+    if (post.boosted !== null) return 'boosted'
+    if (boostedToday(this.feed, this.day)) return 'today'
+    const price = this.boostPrice(tier)
+    if (this.money < price) return 'money'
+    this.money -= price
+    post.boosted = tier
+    post.likes += BOOST[tier].followers * 4
+    this.feed.boosts = this.feed.boosts.filter(b => b.day >= this.day)
+    this.feed.boosts.push({ day: this.day + 1, tier, post: postId })
+    this.feed.boosts.splice(0, this.feed.boosts.length - MAX_BOOSTS)
+    growFollowers(this.feed, BOOST[tier].followers)
+    return null
+  }
+
+  /** The regulars met, by name, who may comment under a post of `name`'s. */
+  private friendsOf(name: string): string[] {
+    return REGULAR_IDS.filter(id => this.book.regulars[id].met).map(id => REGULAR_TEXT[id].name).filter(n => n !== name)
+  }
+
+  /** Files a post of this customer's in the feed, with the likes and comments Phây draws for it. */
+  private filePost(c: Customer, kind: PostDraft['kind'], name: string, fields: Partial<PostDraft> & Pick<PostDraft, 'text'>): void {
+    const friends = this.friendsOf(name)
+    const face = { look: { ...c.look }, kind: c.kind, regular: c.regular, vip: c.vip, idol: c.idol }
+    const draft: PostDraft = { kind, name, face, tick: false, stars: null, pic: null, comments: commentsFor(kind, friends, this.guestRng(c, 5)), complaint: null, boostable: false, notify: false, ...fields }
+    addPost(this.feed, draft, this.day, this.clock.minutes, this.guestRng(c, 6))
+  }
+
+  /** What a customer posts about their visit: a complaint at 2 or less, a star's photo or a VIP's word when pleased, else sometimes praise. Branches post nothing. */
+  private postReview(c: Customer, score: number, why: ComplaintReason): void {
+    if (this.place !== null || !this.feed.open || c.kol) return
+    const idol = c.idol ? IDOL_TEXT[c.idol].name : null
+    const own = c.vip ? VIP_TEXT[c.vip].name : c.regular ? REGULAR_TEXT[c.regular].name : strangerName(c.kind, this.guestRng(c, 4))
+    if (score <= 2) {
+      if (!dayRoom(this.feed, this.day, 'complaint')) return
+      const shuffle = this.guestRng(c, 2)
+      const replies = [...REPLY_KINDS]
+      for (let i = replies.length - 1; i > 0; i--) {
+        const j = Math.floor(shuffle() * (i + 1))
+        ;[replies[i], replies[j]] = [replies[j], replies[i]]
+      }
+      const text = idol ? managerText(idol, why, this.guestRng(c, 3)) : complaintText(why, c.service, this.guestRng(c, 3))
+      this.filePost(c, 'complaint', idol ? managerName(idol) : own, { text, stars: score === 1 ? 1 : 2, complaint: { reason: why, customerId: c.id, replies, answered: null, manager: idol !== null }, notify: true })
+    } else if (c.idol) {
+      this.filePost(c, 'idol', IDOL_TEXT[c.idol].name, { text: idolText(c.idol, c.service, this.shopName, this.guestRng(c, 3)), pic: 'idol', tick: true, notify: true, boostable: true })
+    } else if (c.vip) {
+      this.filePost(c, 'vip', own, { text: vipText(c.vip, c.service, this.guestRng(c, 3)), boostable: true })
+    } else if (score === 5 && dayRoom(this.feed, this.day, 'praise')) {
+      // the first praise of a day always posts, the rest by chance
+      if (this.feed.today.day === this.day && this.feed.today.praise > 0 && this.guestRng(c, 1)() >= FEED_PRAISE_CHANCE) return
+      this.filePost(c, 'praise', own, { text: praiseText(c.service, c.kind, this.guestRng(c, 3)), stars: 5, boostable: true })
+    }
+  }
+
+  /** Files a post with no guest behind it, once Phây is open: its text, comments and likes all come from the one stream `salt` picks (7 to 15, below any guest's). */
+  private filePiece(salt: number, kind: PostDraft['kind'], name: string, text: (rng: Rng) => string, fields: Partial<PostDraft> = {}): void {
+    if (!this.feed.open) return
+    const rng = this.feedRng(salt)
+    const draft: PostDraft = { kind, name, face: null, tick: false, stars: null, text: text(rng), pic: null, comments: commentsFor(kind, this.friendsOf(name), rng), complaint: null, boostable: false, notify: false, ...fields }
+    addPost(this.feed, draft, this.day, this.clock.minutes, rng)
+  }
+
+  /** The shop's own news in the feed, from the main shop or a branch alike. */
+  postNews(news: ShopNews): void {
+    const pic = news.kind === 'rank' ? 'plaque' : news.kind === 'year' ? 'cup' : null
+    this.filePiece(SpaSim.NEWS_SALT[news.kind], 'shop', this.shopName, rng => shopText(news, this.shopName, rng), { pic, boostable: true })
+  }
+
+  /** SPA MỚI's teasing, or its post when the shop beats its challenge. */
+  private postRival(when: 'morning' | 'beaten'): void {
+    this.filePiece(when === 'morning' ? 14 : 15, 'rival', t('rivalSignName'), rng => rivalText(when, rng))
+  }
+
+  /** Phường 3's word on the inspector's certificate; the inspector and the rival never come on the same day, so they share a stream. */
+  private postWard(): void {
+    this.filePiece(14, 'ward', PHAY_WARD_NAME, rng => wardText(this.shopName, rng), { tick: true, pic: 'cert' })
+  }
+
+  /** Mi Mi's video after her 3 stars. */
+  private postKol(c: Customer): void {
+    if (this.place !== null || !this.feed.open) return
+    this.filePost(c, 'kol', PHAY_KOL_NAME, { text: kolText(c.service, this.guestRng(c, 3)), pic: 'video', tick: true, notify: true })
   }
 
   private setState(c: Customer, state: CustomerState): void {

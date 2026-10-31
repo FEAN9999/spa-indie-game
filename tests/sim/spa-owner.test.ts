@@ -43,14 +43,14 @@ describe('SpaSim owner and service', () => {
     sim.drainEvents()
     const before = sim.money
     sim.completeService(c.id, 3)
-    expect(sim.money).toBe(before + 50_000)
+    expect(sim.money).toBe(before + 25_000)
     expect(sim.drainEvents()).toEqual(
       expect.arrayContaining([
-        { type: 'paid', customerId: c.id, amount: 40_000, tip: 10_000, tile: sim.stations[0].bed },
+        { type: 'paid', customerId: c.id, amount: 20_000, tip: 5_000, tile: sim.stations[0].bed },
         { type: 'review', customerId: c.id, score: 5 },
       ]),
     )
-    expect(sim.stats).toMatchObject({ served: 1, income: 40_000, tips: 10_000 })
+    expect(sim.stats).toMatchObject({ served: 1, income: 20_000, tips: 5_000 })
     expect(sim.stations[0].customerId).toBeNull()
     expect(sim.servingCustomerId).toBeNull()
     expect(c.state).toBe('leaving')

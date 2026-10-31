@@ -16,9 +16,9 @@ describe('economy', () => {
   })
 
   it('brings customers faster when the rating is higher', () => {
-    expect(arrivalIntervalMs(null)).toBe(15000)
-    expect(arrivalIntervalMs(5)).toBe(11000)
-    expect(arrivalIntervalMs(1)).toBe(19000)
+    expect(arrivalIntervalMs(null)).toBe(7000)
+    expect(arrivalIntervalMs(5)).toBe(5000)
+    expect(arrivalIntervalMs(1)).toBe(9000)
   })
 
   it('spaces customers at random around the average gap, never closer than 2 s or longer than 2.5 times the average', () => {

@@ -20,7 +20,7 @@ export interface CrewHost {
   emit(e: SimEvent): void
   walkTo(m: Mover, isGoal: (t: Tile) => boolean): Tile[] | null
   sendToBed(c: Customer, station: Station): void
-  payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void
+  payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null, sloppy: boolean): void
   takeStaffId(): number
 }
 
@@ -331,11 +331,12 @@ function updateTechnician(h: CrewHost, s: Staff, dt: number): void {
   task.leftMs -= dt
   if (task.leftMs > 0) return
   let stars = staffStars(starSkill(s, c.service), h.rng())
-  if (s.trait === 'quick' && h.rng() < SLOPPY_CHANCE && stars > 1) {
+  const sloppy = s.trait === 'quick' && h.rng() < SLOPPY_CHANCE && stars > 1
+  if (sloppy) {
     stars = (stars - 1) as Stars
     h.emit({ type: 'sloppy', staffId: s.id })
   }
-  h.payFor(c, station, stars, s)
+  h.payFor(c, station, stars, s, sloppy)
   finishWork(h, s, earnXp(h, s), true)
 }
 

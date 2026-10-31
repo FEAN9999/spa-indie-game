@@ -32,9 +32,9 @@ describe('building the shop', () => {
     const screen = idOf(sim, 'screen')
     expect(sim.move(screen, 21, 8, false, true)).toBeNull()
     expect(sim.sell(screen)).toBeNull()
-    expect(sim.money).toBe(2_000_000 + 100_000)
+    expect(sim.money).toBe(2_000_000 + 150_000)
     expect(sim.buy('screen', 13, 6, false)).toBeNull()
-    expect(sim.money).toBe(2_000_000 + 100_000 - 200_000)
+    expect(sim.money).toBe(2_000_000 + 150_000 - 300_000)
   })
   it('keeps the desk on floor 1, its spot free, and one desk in the shop', () => {
     const sim = shop()
@@ -47,14 +47,14 @@ describe('building the shop', () => {
     expect(sim.canPlace('desk', 16, 28, false)).toBe('deskFloor')
     expect(sim.buy('desk', 16, 10, false)).toBeNull()
     expect(sim.sell(desk)).toBeNull()
-    expect(sim.money).toBe(10_000_000 - 400_000 + 200_000)
+    expect(sim.money).toBe(10_000_000 - 600_000 + 300_000)
     expect(t(PROBLEM_TEXT.lastDesk)).toBe('Tiệm cần ít nhất một quầy lễ tân')
     expect(t(PROBLEM_TEXT.deskFloor)).toBe('Quầy lễ tân chỉ đặt ở tầng 1')
   })
   it('buys a bed by the back wall and serves on it', () => {
     const sim = shop()
     expect(sim.buy('bed', 18, 2, false)).toBeNull()
-    expect(sim.money).toBe(2_000_000 - 300_000)
+    expect(sim.money).toBe(2_000_000 - 450_000)
     expect(sim.stations.map(s => s.id)).toEqual([1, 2, 17])
     expect(sim.drainEvents()).toEqual([{ type: 'roomChanged' }])
     const c = serveOnNewBed(sim)
@@ -159,7 +159,7 @@ describe('building the shop', () => {
     expect(sim.items).toHaveLength(16)
     expect(sim.drainEvents()).toEqual([])
     expect(sim.sell(idOf(sim, 'lotus'))).toBeNull()
-    expect(sim.money).toBe(175_000)
+    expect(sim.money).toBe(212_500)
   })
 
   it('moves the furniture for free and keeps its id', () => {

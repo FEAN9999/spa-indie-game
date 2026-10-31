@@ -8,7 +8,7 @@ import { closingCard, figureOf, mapSub, noTechCard, pinLabel, pinState, placeNam
 import { hireStaff, starShop } from '../sim/helpers'
 
 /** A 3-star main shop with `money` in the purse and 1.840.000 đ made today; the owner is there. */
-const atMain = (money = 6_000_000, stars: 3 | 4 | 5 = 3) => {
+const atMain = (money = 8_500_000, stars: 3 | 4 | 5 = 3) => {
   const chain = new Chain(starShop(stars, money), 7)
   chain.main.stats.income = 1_840_000
   return chain
@@ -83,7 +83,7 @@ describe('the no-technician notice', () => {
       icon: { texture: 'icon-staff', disc: C.mustard },
       head: 'Chi nhánh Bãi biển',
       name: 'Chưa có thợ',
-      line: 'Vào Nhân viên để thuê người. Lúc chủ tiệm vắng mà chưa có thợ, tiệm treo biển Tạm nghỉ.',
+      line: 'Vào Nhân viên để thuê người. Lúc chủ tiệm vắng mà chưa có thợ, khách ngồi chờ lâu sẽ bỏ về.',
       quiet: true,
     })
   })
@@ -93,38 +93,38 @@ describe('the map pins', () => {
   it('shows the owner at the main shop, the beach to open and the next places locked at 3 stars', () => {
     const chain = atMain()
     expect([pinState(chain, null), pinLabel(chain, null)]).toEqual(['here', '+1.840.000 đ hôm nay'])
-    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['can', 'Mở được · 5.000.000 đ'])
-    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['lock', 'Cần 4★ · 8.000.000 đ'])
-    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['lock', 'Cần 5★ · 12.000.000 đ'])
+    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['can', 'Mở được · 7.500.000 đ'])
+    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['lock', 'Cần 4★ · 12.000.000 đ'])
+    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['lock', 'Cần 5★ · 18.000.000 đ'])
   })
 
   it('keeps the beach to open, button off, while the purse is short', () => {
     expect(pinState(atMain(4_000_000), 'beach')).toBe('can')
   })
 
-  it("labels an open branch with its profit today, or Tạm nghỉ while it has no technician", () => {
+  it("labels an open branch with its profit today, or Chưa có thợ while it has no technician", () => {
     const { chain, beach } = withBeach()
-    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['open', 'Tạm nghỉ'])
+    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['open', 'Chưa có thợ'])
     hireStaff(beach, 'technician')
     beach.stats.income = 300_000
     expect(pinLabel(chain, 'beach')).toBe('+300.000 đ hôm nay')
   })
 
-  it('puts the owner on the branch she went to, and rests the main shop she left with no technician', () => {
+  it('puts the owner on the branch she went to, and marks the main shop she left as having no technician', () => {
     const { chain } = withBeach()
     chain.goTo('beach')
     expect([pinState(chain, 'beach'), pinState(chain, null)]).toEqual(['here', 'open'])
-    expect(pinLabel(chain, null)).toBe('Tạm nghỉ')
+    expect(pinLabel(chain, null)).toBe('Chưa có thợ')
     hireStaff(chain.main, 'technician')
     expect(pinLabel(chain, null)).toBe('+1.840.000 đ hôm nay')
   })
 
   it('opens the old town and uptown at 5 stars with the money, and locks uptown at 4', () => {
     const chain = atMain(20_000_000, 5)
-    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['can', 'Mở được · 8.000.000 đ'])
-    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['can', 'Mở được · 12.000.000 đ'])
+    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['can', 'Mở được · 12.000.000 đ'])
+    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['can', 'Mở được · 18.000.000 đ'])
     const four = atMain(20_000_000, 4)
-    expect([pinState(four, 'uptown'), pinLabel(four, 'uptown')]).toEqual(['lock', 'Cần 5★ · 12.000.000 đ'])
+    expect([pinState(four, 'uptown'), pinLabel(four, 'uptown')]).toEqual(['lock', 'Cần 5★ · 18.000.000 đ'])
   })
 })
 
@@ -141,22 +141,21 @@ describe('the sheet under the map', () => {
       title: 'Bãi biển',
       status: 'Mở được · tiệm gốc đang 3★',
       rows: ['Khách riêng: Khách du lịch · lượng khách ×1,2', 'Giá dịch vụ ×1,0', '1 tầng, bày sẵn như tiệm ngày đầu, thêm ván lướt sóng.'],
-      button: { text: 'Mở chi nhánh · 5.000.000 đ', on: true },
+      button: { text: 'Mở chi nhánh · 7.500.000 đ', on: true },
       short: null,
-      warn: null,
     })
   })
 
   it('turns the button off and says what is missing while the purse is short', () => {
-    const sheet = sheetOf(atMain(4_000_000), 'beach')
-    expect(sheet.button).toEqual({ text: 'Mở chi nhánh · 5.000.000 đ', on: false })
+    const sheet = sheetOf(atMain(6_500_000), 'beach')
+    expect(sheet.button).toEqual({ text: 'Mở chi nhánh · 7.500.000 đ', on: false })
     expect(sheet.short).toBe('Còn thiếu 1.000.000 đ')
   })
 
   it("tells an open branch's day, staff and stock, and goes there until closing time", () => {
     const { chain } = withBeach()
     const sheet = sheetOf(chain, 'beach')
-    expect(sheet.status).toBe('Tạm nghỉ · chưa có thợ')
+    expect(sheet.status).toBe('Mở cửa · chưa có thợ')
     expect(sheet.rows).toEqual(expect.arrayContaining(['Hôm nay: 0 khách · 0 bỏ về', 'Lãi hôm nay: 0 đ', '0/3 thợ · 0/1 lễ tân', 'Kho đủ']))
     expect(sheet.button).toEqual({ text: 'Đến tiệm', on: true })
     chain.main.clock.minutes = DAY_END_MIN
@@ -181,15 +180,6 @@ describe('the sheet under the map', () => {
     expect(sheetOf(chain, 'beach').button).toEqual({ text: 'Chủ tiệm đang ở đây', on: false })
   })
 
-  it('warns that the customers of a shop with no technician leave if the owner goes', () => {
-    const { chain, beach } = withBeach()
-    chain.goTo('beach')
-    for (let i = 0; i < 3; i++) beach.spawnCustomer({ kind: 'office', service: 'shampoo' })
-    expect(sheetOf(chain, null).warn).toBe('Rời Bãi biển: 3 khách đang chờ sẽ về, không đánh giá')
-    hireStaff(beach, 'technician')
-    expect(sheetOf(chain, null).warn).toBeNull()
-  })
-
   it("gives the main shop's rank, its day and its staff", () => {
     expect(sheetOf(atMain(), null)).toEqual({
       title: 'Tiệm gốc',
@@ -197,29 +187,26 @@ describe('the sheet under the map', () => {
       rows: ['Hôm nay: 0 khách · 0 bỏ về', 'Lãi hôm nay: +1.840.000 đ', '0/3 thợ · 0/1 lễ tân', 'Kho đủ'],
       button: { text: 'Chủ tiệm đang ở đây', on: false },
       short: null,
-      warn: null,
     })
   })
 
   it('locks a place until the main shop has its stars, with its own customer and room', () => {
     expect(sheetOf(atMain(), 'oldTown')).toEqual({
       title: 'Phố cổ',
-      status: 'Mở khi tiệm gốc đạt 4★ · 8.000.000 đ',
+      status: 'Mở khi tiệm gốc đạt 4★ · 12.000.000 đ',
       rows: ['Khách riêng: Khách Tây ba lô · lượng khách ×1,0', 'Giá dịch vụ ×1,2', '1 tầng, bày sẵn như tiệm ngày đầu, thêm dây đèn lồng Hội An.'],
       button: { text: 'Cần 4★', on: false },
       short: null,
-      warn: null,
     })
   })
 
   it('shows uptown ready to open at 5 stars, short of the price', () => {
-    expect(sheetOf(atMain(10_000_000, 5), 'uptown')).toEqual({
+    expect(sheetOf(atMain(16_000_000, 5), 'uptown')).toEqual({
       title: 'Khu cao cấp',
       status: 'Mở được · tiệm gốc đang 5★',
       rows: ['Khách riêng: Quý bà · lượng khách ×0,8', 'Giá dịch vụ ×1,6', '1 tầng, bày sẵn như tiệm ngày đầu, thêm chậu lan hồ điệp.'],
-      button: { text: 'Mở chi nhánh · 12.000.000 đ', on: false },
+      button: { text: 'Mở chi nhánh · 18.000.000 đ', on: false },
       short: 'Còn thiếu 2.000.000 đ',
-      warn: null,
     })
   })
 

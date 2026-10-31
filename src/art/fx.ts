@@ -417,5 +417,21 @@ export function fxTextures(): Record<string, string> {
         `<rect x="3" y="20" width="34" height="23" rx="6" fill="${C.mustard}" ${ICON}/>` +
         `<circle cx="20" cy="29.5" r="3.2" fill="${C.ink}"/><rect x="18.6" y="30" width="2.8" height="7" rx="1.2" fill="${C.ink}"/>`,
     ),
+    // Phây, from the sketch: the phone on its button with a heart on the screen; the tick in a checked name's disc; a like's heart; a comment's bubble; the video's play mark
+    'icon-phone': svgDoc(
+      [-32, -32, 64, 64],
+      1,
+      `<path d="M-15,-26 H15 Q21,-26 21,-20 V20 Q21,26 15,26 H-15 Q-21,26 -21,20 V-20 Q-21,-26 -15,-26Z" fill="${C.tealPale}" ${EVENT}/>` +
+        `<path d="M-6,17 H6" ${EVENT}/>` +
+        `<path d="M0,6 C-11,-1 -10,-10 -4,-9.5 C-2,-9 0,-7 0,-5.5 C0,-7 2,-9 4,-9.5 C10,-10 11,-1 0,6Z" fill="${C.lotus}" stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"/>`,
+    ),
+    'icon-tick': svgDoc([-16, -16, 32, 32], 1, `<path d="M-8,0 L-2.5,6 L9,-6" fill="none" stroke="${C.paper}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`),
+    'icon-heart': svgDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.lotus}" ${OUTLINE}/>`),
+    'icon-comment': svgDoc(
+      [0, 0, 56, 52],
+      1,
+      `<path d="M10,5 H46 Q52,5 52,11 V33 Q52,39 46,39 H24 L13,48 L15,39 H10 Q4,39 4,33 V11 Q4,5 10,5Z" fill="${C.cream}" ${OUTLINE}/>`,
+    ),
+    'icon-play': svgDoc([-24, -24, 48, 48], 1, `<path d="M-9,-16 L16,0 L-9,16Z" fill="${C.paper}" stroke="${C.paper}" stroke-width="3" stroke-linejoin="round"/>`),
   }
 }

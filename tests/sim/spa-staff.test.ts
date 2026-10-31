@@ -79,7 +79,7 @@ const seated = (sim: SpaSim, n: number): Customer[] => Array.from({ length: n },
 /** Day three with mask and massage open, a bed for each and a second shampoo bed already there. */
 const withBeds = () => {
   const sim = dayThree()
-  sim.money = 2_000_000
+  sim.money = 3_000_000
   expect(sim.openService('mask')).toBeNull()
   expect(sim.openService('massage')).toBeNull()
   expect(sim.buy('maskBed', 18, 2, false)).toBeNull()
@@ -208,7 +208,7 @@ describe('technicians at work', () => {
       ev.push(...sim.drainEvents())
     }
     expect(Math.abs(ms - workMs(3))).toBeLessThanOrEqual(200)
-    expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id, amount: 40_000 }))
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id, amount: 20_000 }))
     expect(sim.stats.served).toBe(1)
     expect(a.state).toBe('leaving')
     expect(sim.stations[0].customerId).toBeNull()
@@ -239,7 +239,7 @@ describe('technicians at work', () => {
     const paid = ev.find(e => e.type === 'paid' && e.customerId === a.id)
     const review = ev.find(e => e.type === 'review' && e.customerId === a.id)
     if (paid?.type !== 'paid' || review?.type !== 'review') throw new Error('no payment')
-    expect(paid.tip).toBe(Math.round(tipFor(40_000, (review.score - 2) as 1 | 2 | 3) * tipFactor(0, tech.stats.friendly)))
+    expect(paid.tip).toBe(Math.round(tipFor(20_000, (review.score - 2) as 1 | 2 | 3) * tipFactor(0, tech.stats.friendly)))
   })
 
   it('never takes the customer the owner tapped', () => {
@@ -358,7 +358,7 @@ describe('the receptionist', () => {
     expect(c.greet).toBe(4)
     sim.drainEvents()
     sim.completeService(c.id, 3)
-    expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 12_000 }))
+    expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 6_000 }))
   })
 
   it('waits at the desk facing the door', () => {
@@ -606,8 +606,8 @@ describe('studying', () => {
     const tech = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     const costs = { ...sim.stats }
     expect(sim.study(tech.id, 'mask')).toBeNull()
-    expect(sim.money).toBe(300_000)
-    expect(tech.study).toEqual({ course: 'mask', paid: 200_000 })
+    expect(sim.money).toBe(200_000)
+    expect(tech.study).toEqual({ course: 'mask', paid: 300_000 })
     expect(sim.stats).toEqual(costs)
   })
 
@@ -623,7 +623,7 @@ describe('studying', () => {
 
     const poor = hireStaff(sim, 'technician', stats, {}, 'calm')
     const money = sim.money
-    sim.money = 99_000
+    sim.money = 149_000
     expect(sim.studyProblem(poor.id, 'mask')).toBe('money')
     expect(sim.study(poor.id, 'mask')).toBe('money')
     sim.money = -5000
@@ -711,7 +711,7 @@ describe('studying', () => {
     sim.study(tech.id, 'mask')
     const copy = reload(sim)
     expect(copy.staff[0].tiers.mask).toBe(1)
-    expect(copy.staff[0].study).toEqual({ course: 'mask', paid: 200_000 })
+    expect(copy.staff[0].study).toEqual({ course: 'mask', paid: 300_000 })
     advanceUntil(copy, () => copy.dayOver, 400_000)
     copy.startDay()
     expect(copy.staff[0].tiers.mask).toBe(2)
@@ -736,14 +736,14 @@ describe('studying', () => {
     sim.study(tech.id, 'mask')
     sim.money = -50_000
     sim.fire(tech.id)
-    expect(sim.money).toBe(150_000)
+    expect(sim.money).toBe(250_000)
     expect(tech.study).toBeNull()
 
     const other = hireStaff(sim, 'technician', stats, { mask: 1 }, 'calm')
     advanceUntil(sim, () => sim.dayOver, 400_000)
     sim.money = 500_000
     sim.study(other.id, 'mask')
-    expect(sim.money).toBe(300_000)
+    expect(sim.money).toBe(200_000)
     sim.fire(other.id)
     expect(sim.money).toBe(500_000)
     expect(sim.staff.some(s => s.id === other.id)).toBe(false)
@@ -793,7 +793,7 @@ describe('personality in the shop', () => {
     sim.services = ['shampoo', 'mask']
     const tech = hireStaff(sim, 'technician', { skill: 3, speed: 3, friendly: 4, stamina: 3 }, {}, 'studious')
     expect(sim.study(tech.id, 'mask')).toBeNull()
-    expect(sim.money).toBe(430_000)
+    expect(sim.money).toBe(395_000)
   })
 })
 

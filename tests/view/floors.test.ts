@@ -71,17 +71,17 @@ describe('pills', () => {
     const sim = newSim()
     const ps = pills(sim, 1)
     expect(ps.map(p => [p.floor, p.state])).toEqual([[1, 'viewed'], [2, 'locked'], [3, 'locked']])
-    expect(ps[1].price).toBe(2_000_000)
+    expect(ps[1].price).toBe(3_000_000)
   })
 
-  it('shows a third, locked pill for the rooftop at 4.000.000 đ', () => {
+  it('shows a third, locked pill for the rooftop at 6.000.000 đ', () => {
     const sim = newSim()
     sim.day = 6
     sim.floors = 1
     const ps = pills(sim, 1)
     expect(ps.map(p => p.floor)).toEqual([1, 2, 3])
     expect(ps.map(p => p.state)).toEqual(['viewed', 'locked', 'locked'])
-    expect(ps.map(p => p.price)).toEqual([0, 2_000_000, 4_000_000])
+    expect(ps.map(p => p.price)).toEqual([0, 3_000_000, 6_000_000])
   })
 
   it('opens the rooftop pill once the rooftop is open', () => {

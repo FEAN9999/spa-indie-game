@@ -79,12 +79,12 @@ describe('items', () => {
     const g = buildGrid(shellOf(SPA_LAYOUT_1A), [{ id: 9, kind: 'massageBed', x: 6, y: 2, flip: true }])
     expect([g.cells[3][6], g.cells[3][5], g.beds.length, g.works.length]).toEqual(['bed', 'work', 1, 1])
     expect(ITEM_KINDS.slice(0, 3)).toEqual(['bed', 'maskBed', 'massageBed'])
-    expect(ITEMS.maskBed).toMatchObject({ w: 1, h: 3, price: 350000, beauty: 0, group: 'bed' })
-    expect(ITEMS.massageBed).toMatchObject({ price: 450000, name: 'itemMassageBed' })
+    expect(ITEMS.maskBed).toMatchObject({ w: 1, h: 3, price: 525000, beauty: 0, group: 'bed' })
+    expect(ITEMS.massageBed).toMatchObject({ price: 675000, name: 'itemMassageBed' })
   })
 
   it('gives the 2×2 steam tent its bed and work tiles by its width, either way round', () => {
-    expect(ITEMS.steamTent).toEqual({ w: 2, h: 2, price: 500000, beauty: 0, group: 'bed', name: 'itemSteamTent' })
+    expect(ITEMS.steamTent).toEqual({ w: 2, h: 2, price: 750000, beauty: 0, group: 'bed', name: 'itemSteamTent' })
     expect(ITEM_KINDS.slice(0, 4)).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent'])
     const tent = { id: 9, kind: 'steamTent' as const, x: 8, y: 8, flip: false }
     expect(footprint(tent)).toEqual([{ x: 8, y: 8 }, { x: 9, y: 8 }, { x: 8, y: 9 }, { x: 9, y: 9 }])
@@ -94,8 +94,8 @@ describe('items', () => {
   })
 
   it('gives the 1×3 stone bed the massage bed tiles and the 2×3 mud tub a work tile beside its second row, either way round', () => {
-    expect(ITEMS.stoneBed).toEqual({ w: 1, h: 3, price: 550000, beauty: 0, group: 'bed', name: 'itemStoneBed' })
-    expect(ITEMS.mudTub).toEqual({ w: 2, h: 3, price: 700000, beauty: 0, group: 'bed', name: 'itemMudTub' })
+    expect(ITEMS.stoneBed).toEqual({ w: 1, h: 3, price: 825000, beauty: 0, group: 'bed', name: 'itemStoneBed' })
+    expect(ITEMS.mudTub).toEqual({ w: 2, h: 3, price: 1050000, beauty: 0, group: 'bed', name: 'itemMudTub' })
     expect(ITEM_KINDS.slice(0, 6)).toEqual(['bed', 'maskBed', 'massageBed', 'steamTent', 'stoneBed', 'mudTub'])
     const stone = { id: 9, kind: 'stoneBed' as const, x: 6, y: 2, flip: false }
     const massage = { ...stone, kind: 'massageBed' as const }
@@ -117,9 +117,9 @@ describe('items', () => {
   })
 
   it("knows every kind's price, beauty and set", () => {
-    expect(ITEMS.teaChest).toMatchObject({ price: 250000, beauty: 5, set: 'saigon' })
-    expect(ITEMS.areca).toMatchObject({ price: 80000, beauty: 3, set: 'bamboo' })
-    expect(ITEMS.bed).toMatchObject({ price: 300000, beauty: 0 })
+    expect(ITEMS.teaChest).toMatchObject({ price: 375000, beauty: 5, set: 'saigon' })
+    expect(ITEMS.areca).toMatchObject({ price: 120000, beauty: 3, set: 'bamboo' })
+    expect(ITEMS.bed).toMatchObject({ price: 450000, beauty: 0 })
     expect(ITEMS.bed.set).toBeUndefined()
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'saigon')).toHaveLength(6)
     expect(ITEM_KINDS.filter(k => ITEMS[k].set === 'bamboo')).toHaveLength(6)
@@ -195,21 +195,21 @@ describe('keepsakes', () => {
 
 describe('the salt bed', () => {
   it('is a 1×3 bed listed right after the mud tub', () => {
-    expect(ITEMS.scrubBed).toEqual({ w: 1, h: 3, price: 600_000, beauty: 0, group: 'bed', name: 'itemScrubBed' })
+    expect(ITEMS.scrubBed).toEqual({ w: 1, h: 3, price: 900_000, beauty: 0, group: 'bed', name: 'itemScrubBed' })
     expect(ITEM_KINDS.indexOf('scrubBed')).toBe(ITEM_KINDS.indexOf('mudTub') + 1)
   })
 })
 
 describe('the foot chair', () => {
   it('is a 1×2 bed listed right after the salt bed', () => {
-    expect(ITEMS.footChair).toEqual({ w: 1, h: 2, price: 650_000, beauty: 0, group: 'bed', name: 'itemFootChair' })
+    expect(ITEMS.footChair).toEqual({ w: 1, h: 2, price: 975_000, beauty: 0, group: 'bed', name: 'itemFootChair' })
     expect(ITEM_KINDS.indexOf('footChair')).toBe(ITEM_KINDS.indexOf('scrubBed') + 1)
   })
 })
 
 describe('the nail desk', () => {
   it('is a 2×2 bed listed right after the foot chair', () => {
-    expect(ITEMS.nailDesk).toEqual({ w: 2, h: 2, price: 750_000, beauty: 0, group: 'bed', name: 'itemNailDesk' })
+    expect(ITEMS.nailDesk).toEqual({ w: 2, h: 2, price: 1_125_000, beauty: 0, group: 'bed', name: 'itemNailDesk' })
     expect(ITEM_KINDS.indexOf('nailDesk')).toBe(ITEM_KINDS.indexOf('footChair') + 1)
   })
 

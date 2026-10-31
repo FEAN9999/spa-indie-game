@@ -4,7 +4,7 @@ import { staffCap } from './crew'
 import { housesBought } from './layout'
 import { dayProfit } from './economy'
 import { PLACE_IDS, type PlaceId } from './places'
-import { RestaurantSim, type DinerState, type RestaurantEvent } from './restaurant'
+import { RestaurantSim, type RestaurantEvent } from './restaurant'
 import { createRng } from './rng'
 import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
@@ -36,8 +36,6 @@ export interface ChainDayRow {
 const HELD: readonly SimEvent['type'][] = ['badge', 'questDone', 'goalDone', 'festivalQuestDone', 'inspected', 'kolPosted', 'rivalBeaten', 'heart', 'gift', 'bookPage', 'recipeHint', 'dayEnded']
 
 const WAITING: readonly CustomerState[] = ['arriving', 'toSeat', 'waiting']
-/** The diners who leave quietly when the owner goes to a branch, but for the one whose bowl she carries. */
-const DINERS_LEAVING: readonly DinerState[] = ['street', 'arriving', 'toChair', 'ordering', 'waitingFood']
 
 /** The main shop and its branches: one clock, one purse, and the owner in one of them. */
 export class Chain {
@@ -141,6 +139,7 @@ export class Chain {
     this.wireIncoming(branch)
     this.branches = PLACE_IDS.flatMap(id => (id === place ? [branch] : this.branches.filter(b => b.place === id)))
     this.sync()
+    this.main.postNews({ kind: 'branch', place })
     return null
   }
 
@@ -152,6 +151,7 @@ export class Chain {
       try {
         const branch = SpaSim.fromSave(b, { rng: createRng(seed + 1 + PLACE_IDS.indexOf(b.place!)) })
         branch.purse = chain.main.purse
+        branch.feed = chain.main.feed
         chain.wireIncoming(branch)
         chain.branches.push(branch)
       } catch (e) {
@@ -370,14 +370,6 @@ export class Chain {
   /** Each shop's profit today, the main shop first. */
   dayRows(): ChainDayRow[] {
     return [this.main, ...this.branches].map(s => ({ place: s.place, profit: dayProfit(s.stats) }))
-  }
-
-  /** How many customers would leave the owner's shop if she went now; from the main shop, the restaurant's diners too. */
-  leaveCount(): number {
-    const r = this.restaurant
-    if (this.at !== null || !r) return this.active().leaversIfOwnerGoes()
-    const carried = r.owner.task?.kind === 'carry' ? r.owner.task.dinerId : null
-    return this.main.leaversIfOwnerGoes() + r.diners.filter(d => d.id !== carried && DINERS_LEAVING.includes(d.state)).length
   }
 
   /** The main shop's cards kept while the owner was away, in order; taking them empties the list. */

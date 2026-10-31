@@ -1,5 +1,5 @@
 import type { SpaSim } from '../sim/spa'
-import { eventLine, hotLine } from './events'
+import { boostLine, eventLine, hotLine } from './events'
 import { festivalLine } from './festivals'
 import { goalLine } from './starter'
 
@@ -9,9 +9,9 @@ export interface TodayLine {
   text: string
 }
 
-/** What today is about, the first that applies: an event, the festival, a hot day, then the starter goal. */
+/** What today is about, the first that applies: an event, the festival, a boosted post, a hot day, then the starter goal. */
 export function todayLine(sim: SpaSim): TodayLine | null {
-  return eventLine(sim) ?? festivalLine(sim) ?? hotLine(sim) ?? goalLine(sim)
+  return eventLine(sim) ?? festivalLine(sim) ?? boostLine(sim) ?? hotLine(sim) ?? goalLine(sim)
 }
 
 /** Today's line while the shop is in view: none once the day is over, while a panel covers the shop, or at a branch, as festivals and events are the main shop's. */

@@ -104,13 +104,13 @@ describe("the shop's grade", () => {
       events.push(...sim.drainEvents())
       return events.find((e): e is Extract<SimEvent, { type: 'paid' }> => e.type === 'paid')!.amount
     }
-    expect(paid(1)).toBe(40000)
-    expect(paid(2)).toBe(42000)
+    expect(paid(1)).toBe(20000)
+    expect(paid(2)).toBe(21000)
     const festival = (sim: SpaSim) => {
       ;(sim as unknown as { festivalServiceToday: () => string }).festivalServiceToday = () => 'shampoo'
     }
-    expect(paid(2, festival)).toBe(Math.round(42000 * FESTIVAL_PRICE))
-    expect(paid(2, (_s, c) => (c.vip = VIP_IDS[0]))).toBe(42000 * VIP_PRICE_FACTOR)
+    expect(paid(2, festival)).toBe(Math.round(21000 * FESTIVAL_PRICE))
+    expect(paid(2, (_s, c) => (c.vip = VIP_IDS[0]))).toBe(21000 * VIP_PRICE_FACTOR)
   })
 
   it('reads the month so far for the tab', () => {

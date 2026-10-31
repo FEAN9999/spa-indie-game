@@ -23,7 +23,7 @@ function on(day: number, prep: (sim: SpaSim) => void = () => {}): SpaSim {
 
 /** Mask open with one mask chair, before the month's quest is rolled. */
 const withMask = (sim: SpaSim) => {
-  sim.money = 1_000_000
+  sim.money = 1_500_000
   sim.openService('mask')
   sim.buy('maskBed', 18, 2, false)
 }

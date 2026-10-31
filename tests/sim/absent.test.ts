@@ -71,34 +71,13 @@ describe('the owner leaving', () => {
     expect(branch.owner.path).toEqual([])
   })
 
-  it('sends the waiting away quietly when there is no technician', () => {
+  it('keeps the waiting customers when the owner leaves with no technician', () => {
     const main = starShop()
-    const cs = [
-      main.spawnCustomer({ kind: 'office', service: 'shampoo' }),
-      main.spawnCustomer({ kind: 'office', service: 'shampoo' }),
-      main.spawnCustomer({ regular: 'hanh', service: 'shampoo' }),
-    ]
+    const cs = [main.spawnCustomer({ kind: 'office', service: 'shampoo' }), main.spawnCustomer({ kind: 'office', service: 'shampoo' })]
     advanceUntil(main, () => cs.every(c => c.state === 'waiting'))
-    const book = structuredClone(main.book.regulars.hanh)
-    const before = { reviews: [...main.reviews], angry: main.stats.angry, walked: main.stats.walkedAway, lost: main.progress.total.lost }
-    expect(main.leaversIfOwnerGoes()).toBe(3)
     main.ownerLeaves()
-    for (const c of cs) {
-      expect(c.state).toBe('leaving')
-      expect(c.mood).toBeNull()
-    }
-    expect(main.reviews).toEqual(before.reviews)
-    expect(main.stats.angry).toBe(before.angry)
-    expect(main.stats.walkedAway).toBe(before.walked)
-    expect(main.progress.total.lost).toBe(before.lost)
-    expect(main.book.regulars.hanh).toEqual(book)
-  })
-
-  it('counts nobody who would leave when a technician stays', () => {
-    const branch = beachOf()
-    hireStaff(branch, 'technician')
-    seatAndWait(branch)
-    expect(branch.leaversIfOwnerGoes()).toBe(0)
+    main.advance(1000)
+    expect(cs.map(c => c.state)).toEqual(['waiting', 'waiting'])
   })
 
   it('has the owner back at the start with nothing to do', () => {
@@ -114,12 +93,14 @@ describe('the owner leaving', () => {
 })
 
 describe('a shop with its owner away', () => {
-  it('rests with no technician: nobody arrives and it ends empty', () => {
+  it('still brings customers with no technician, who leave angry when nobody serves them', () => {
     const branch = beachOf(starShop(3, 20_000_000, 1, true))
     branch.ownerLeaves()
-    branch.advance(10 * 60_000)
-    expect(branch.drainEvents().some(e => e.type === 'customerArrived')).toBe(false)
-    expect(branch.customers).toEqual([])
+    branch.advance(100_000)
+    expect(branch.drainEvents().some(e => e.type === 'customerArrived')).toBe(true)
+    expect(branch.stats.served).toBe(0)
+    expect(branch.stats.angry).toBeGreaterThan(0)
+    expect(branch.reviews).toContain(1)
   })
 
   it('serves with a technician and the main shop is paid', () => {
@@ -135,7 +116,7 @@ describe('a shop with its owner away', () => {
     expect(main.money).toBe(before + paid - branch.stats.restock)
   })
 
-  it('sends the waiting away at once when the last technician is let go, while the one in service finishes', () => {
+  it('keeps the waiting customer when the last technician is let go, while the one in service finishes', () => {
     const branch = beachOf()
     const tech = hireStaff(branch, 'technician')
     branch.ownerLeaves()
@@ -146,8 +127,7 @@ describe('a shop with its owner away', () => {
     branch.drainEvents()
     branch.fire(tech.id)
     branch.advance(STEP_MS)
-    expect(second.state).toBe('leaving')
-    expect(second.mood).toBeNull()
+    expect(second.state).toBe('waiting')
     expect(first.state).toBe('inService')
     const events: SimEvent[] = []
     advanceUntil(branch, () => !branch.customers.includes(first), 120_000, events)

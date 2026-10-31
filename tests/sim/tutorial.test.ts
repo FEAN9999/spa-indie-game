@@ -237,7 +237,7 @@ describe('the floor hint', () => {
     const sim = fresh()
     sim.markHint('tapCustomer')
     sim.day = 6
-    sim.money = 2_000_000
+    sim.money = 3_000_000
     expect(pickHint(sim)).toBeNull()
     sim.openFloor(2)
     expect(pickHint(sim)).toEqual({ hint: 'openFloor' })
