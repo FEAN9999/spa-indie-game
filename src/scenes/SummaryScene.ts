@@ -3,11 +3,12 @@ import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
 import type { ChainDayRow } from '../sim/chain'
+import type { RestaurantStats } from '../sim/restaurant'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { starterNotes } from '../view/starter'
-import { chainSummaryRows, summaryLayout, summaryRows, type SummaryRow } from '../view/summary'
+import { chainSummaryRows, restaurantRows, summaryLayout, summaryRows, type SummaryRow } from '../view/summary'
 import { signedMoney } from '../view/chain'
 import { textStyle } from '../view/text'
 import { summaryNotes } from '../view/vip'
@@ -18,6 +19,8 @@ export interface SummaryData {
   firstDay: boolean
   /** The day's profit per shop; empty when there is no branch, and the summary is then as it always was. */
   chain: ChainDayRow[]
+  /** The restaurant's day, shown in its own block; null at a branch day and before it is bought. Its money is in the purse already and in none of the rows above. */
+  restaurant: RestaurantStats | null
 }
 
 const COUNT_MS = 800
@@ -37,7 +40,7 @@ export class SummaryScene extends Phaser.Scene {
   }
 
   create() {
-    const { sim, onNewDay, firstDay, chain } = this.params
+    const { sim, onNewDay, firstDay, chain, restaurant } = this.params
     sound.endOfDay()
     const s = sim.stats
     const rating = sim.rating()
@@ -60,7 +63,8 @@ export class SummaryScene extends Phaser.Scene {
       return this.add.text(GAME_W / 2, 0, note.text, { ...style, align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0).setDepth(1)
     })
     const notesH = texts.reduce((sum, text) => sum + text.height, 0) + NOTE_GAP * Math.max(0, texts.length - 1)
-    const L = summaryLayout(kinds, chain.length, notesH)
+    const restaurantLines = restaurant ? restaurantRows(restaurant) : []
+    const L = summaryLayout(kinds, chain.length, notesH, restaurantLines.length)
     let noteY = L.notesTop
     for (const text of texts) {
       text.setY(noteY)
@@ -115,6 +119,23 @@ export class SummaryScene extends Phaser.Scene {
         this.add.text(920, y, signedMoney(line.value), textStyle(last ? 44 : 40, '800', color)).setOrigin(1, 0.5)
         y += L.chainRowH
       })
+    }
+    if (restaurantLines.length > 0) {
+      // the restaurant's own block under the chain's: a heading and a line each for diners, dish money and tips
+      const h = (restaurantLines.length + 1) * L.chainRowH + 20
+      card
+        .fillStyle(hex(C.tealPale), 1)
+        .fillRoundedRect(120, L.restaurantTop, 840, h, 34)
+        .lineStyle(4, hex(C.teal))
+        .strokeRoundedRect(120, L.restaurantTop, 840, h, 34)
+      let y = L.restaurantTop + 10 + L.chainRowH / 2
+      this.add.text(GAME_W / 2, y, t('summaryRestaurant'), textStyle(38, '800', C.tealDark)).setOrigin(0.5)
+      y += L.chainRowH
+      for (const line of restaurantLines) {
+        this.add.text(160, y, t(line.label), textStyle(36, '600')).setOrigin(0, 0.5)
+        this.add.text(920, y, line.kind === 'money' ? formatMoney(line.value) : String(line.value), textStyle(40, '800')).setOrigin(1, 0.5)
+        y += L.chainRowH
+      }
     }
     this.tweens.addCounter({
       from: 0,

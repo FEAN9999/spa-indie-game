@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { DayStats } from '../../src/sim/types'
 import { GAME_H } from '../../src/config'
-import { chainSummaryRows, summaryLayout, summaryRows, type SummaryRow } from '../../src/view/summary'
+import { chainSummaryRows, restaurantRows, summaryLayout, summaryRows, type SummaryRow } from '../../src/view/summary'
 
 const stats = (over: Partial<DayStats>): DayStats => ({
   served: 0,
@@ -105,5 +105,32 @@ describe('the chain on the summary', () => {
     const l = summaryLayout(kinds, 2, 120)
     expect(l.notesTop).toBe(l.chainTop + 4 * 58 + 20 + 20)
     expect(l.buttonY).toBe(l.notesTop + 120 + 95)
+  })
+})
+
+describe('the restaurant on the summary', () => {
+  it("lists the restaurant's diners, dish money and tips", () => {
+    expect(restaurantRows({ served: 4, income: 240_000, tips: 35_000, walkedAway: 1 })).toEqual([
+      { label: 'restaurantServed', value: 4, kind: 'count' },
+      { label: 'restaurantIncome', value: 240_000, kind: 'money' },
+      { label: 'restaurantTips', value: 35_000, kind: 'money' },
+    ])
+  })
+
+  it('lays out a card with the restaurant block below the chain block', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money']
+    const l = summaryLayout(kinds, 1, 0, 3)
+    expect(l.restaurantTop).toBeGreaterThanOrEqual(l.chainTop + 3 * l.chainRowH)
+    expect(l.buttonY - l.restaurantTop).toBeGreaterThanOrEqual(4 * l.chainRowH)
+    expect(l.top + l.cardH).toBeLessThanOrEqual(GAME_H - 40)
+    const alone = summaryLayout(kinds, 0, 0, 3)
+    expect([alone.top, alone.rowH, alone.headingH, alone.chainRowH]).toEqual([200, 66, 50, 58])
+    expect(alone.top + alone.cardH).toBeLessThanOrEqual(GAME_H - 40)
+  })
+
+  it('keeps the card as it was with no restaurant', () => {
+    const kinds: SummaryRow['kind'][] = ['count', 'heading', 'money']
+    expect(summaryLayout(kinds, 0, 0, 0)).toEqual(summaryLayout(kinds, 0, 0))
+    expect(summaryLayout(kinds, 2, 120, 0)).toEqual(summaryLayout(kinds, 2, 120))
   })
 })

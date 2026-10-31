@@ -1743,6 +1743,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
           sim: this.sim,
           firstDay: !this.sim.hintDone('summary'),
           chain: this.chain.branches.length ? this.chain.dayRows() : [],
+          // read now, before the new day's startDay clears it; null once the owner is at a branch
+          restaurant: this.chain.restaurant?.stats ?? null,
           onNewDay: () => this.showRankCards(),
         }
         this.scene.launch('SummaryScene', data)
