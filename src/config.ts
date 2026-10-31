@@ -577,7 +577,7 @@ export const FEED_DAY_CAP = { praise: 3, complaint: 3 }
 export const FEED_PRAISE_CHANCE = 1 / 3
 /** The follower counts that are cheered once. */
 export const FEED_MILESTONES = [1_000, 10_000, 100_000, 1_000_000]
-/** An old save's followers: the start, then so much per rank star, idol met and year's win, at most max. */
+/** An old save's followers: the start, then so much per rank star past the first (every shop starts at 1), idol met and year's win, at most max. */
 export const FEED_SEED = { base: 50, star: 1_000, idol: 5_000, win: 20_000, max: 99_000 }
 /** likes = fixed + share x min(followers, FEED_REACH_CAP) x (0.6 + 0.8 r). */
 export const FEED_REACH = { praise: [40, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const

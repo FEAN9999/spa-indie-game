@@ -152,7 +152,7 @@ export function seededFeed(old: FeedSeedInfo): FeedBook {
   if (old.day < UNLOCK_DAY.quests) return feed
   const { base, star, idol, win, max } = FEED_SEED
   feed.open = true
-  feed.followers = Math.min(base + star * old.rankStars + idol * old.idolsMet + win * old.wins, max)
+  feed.followers = Math.min(base + star * Math.max(0, old.rankStars - 1) + idol * old.idolsMet + win * old.wins, max)
   feed.milestones = FEED_MILESTONES.filter(m => feed.followers >= m)
   return feed
 }

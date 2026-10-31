@@ -98,8 +98,6 @@ import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Mover, Ow
 import type { Feature } from './unlocks'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
-/** The stream each kind of shop news draws from, so news filed on one day never draws alike. */
-const NEWS_SALT: Record<ShopNews['kind'], number> = { rank: 7, year: 8, festival: 9, branch: 10, house: 11, floor: 12, pet: 13 }
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
@@ -1889,6 +1887,9 @@ export class SpaSim {
     }
   }
 
+  /** The stream each kind of shop news draws from, so news filed on one day never draws alike. */
+  private static readonly NEWS_SALT: Record<ShopNews['kind'], number> = { rank: 7, year: 8, festival: 9, branch: 10, house: 11, floor: 12, pet: 13 }
+
   /** A stream of its own for the Phây feed, so no post moves the shop's draws. */
   private feedRng(salt: number): Rng {
     return createRng(this.day * 9431 + this.nextId + salt)
@@ -1949,7 +1950,7 @@ export class SpaSim {
   /** The shop's own news in the feed, from the main shop or a branch alike. */
   postNews(news: ShopNews): void {
     const pic = news.kind === 'rank' ? 'plaque' : news.kind === 'year' ? 'cup' : null
-    this.filePiece(NEWS_SALT[news.kind], 'shop', this.shopName, rng => shopText(news, this.shopName, rng), { pic, boostable: true })
+    this.filePiece(SpaSim.NEWS_SALT[news.kind], 'shop', this.shopName, rng => shopText(news, this.shopName, rng), { pic, boostable: true })
   }
 
   /** SPA MỚI's teasing, or its post when the shop beats its challenge. */

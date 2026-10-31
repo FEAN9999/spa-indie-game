@@ -105,7 +105,13 @@ describe('seededFeed', () => {
 
   it('counts an old save, marking passed milestones without a cheer', () => {
     const f = seededFeed({ day: 40, rankStars: 4, idolsMet: 2, wins: 0 })
-    expect([f.open, f.followers, f.milestones, f.cheer]).toEqual([true, 14_050, [1000, 10_000], []])
+    expect([f.open, f.followers, f.milestones, f.cheer]).toEqual([true, 13_050, [1000, 10_000], []])
+  })
+
+  it('counts rank stars past the first, so a one-star shop still has its 1.000 card to earn', () => {
+    const f = seededFeed({ day: 30, rankStars: 1, idolsMet: 0, wins: 0 })
+    expect([f.open, f.followers, f.milestones]).toEqual([true, 50, []])
+    expect(seededFeed({ day: 30, rankStars: 2, idolsMet: 0, wins: 0 }).followers).toBe(1_050)
   })
 
   it('caps a huge history', () => {
@@ -144,8 +150,8 @@ describe('repairFeed', () => {
 
   it('takes seeded followers when the saved count is negative or not a number', () => {
     const o = { day: 40, rankStars: 4, idolsMet: 2, wins: 0 }
-    expect(repairFeed({ open: true, followers: -5, posts: [] }, o).followers).toBe(14_050)
-    expect(repairFeed({ open: true, followers: 'many', posts: [] }, o).followers).toBe(14_050)
+    expect(repairFeed({ open: true, followers: -5, posts: [] }, o).followers).toBe(13_050)
+    expect(repairFeed({ open: true, followers: 'many', posts: [] }, o).followers).toBe(13_050)
     expect(repairFeed({ open: true, followers: 777, posts: [] }, o).followers).toBe(777)
   })
 
