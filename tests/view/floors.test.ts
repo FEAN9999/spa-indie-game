@@ -167,4 +167,9 @@ describe('clampToFloor', () => {
     expect(clampToFloor({ ...screen, y: 33 }, 2, 13)).toEqual({ ...screen, y: 31 })
     expect(clampToFloor({ id: 2, kind: 'screen', x: 10, y: 8, flip: false }, 1, 13)).toEqual({ id: 2, kind: 'screen', x: 8, y: 8, flip: false })
   })
+  it("hangs a wall piece on its floor's lower wall row wherever it is carried", () => {
+    const mirror: Item = { id: 3, kind: 'inkBamboo', x: 30, y: 9, flip: false }
+    expect(clampToFloor(mirror, 1, 37)).toEqual({ ...mirror, x: 30, y: 1 })
+    expect(clampToFloor({ ...mirror, x: 36, y: 0 }, 2, 37)).toEqual({ ...mirror, x: 35, y: 19 })
+  })
 })

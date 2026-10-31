@@ -3,18 +3,18 @@ import { itemTexture } from '../art/furniture'
 import { C } from '../art/palette'
 import { PET_ORIGIN, petKey } from '../art/pets'
 import { sound } from '../audio/engine'
-import { EDGE_SCROLL, EDGE_SCROLL_SPEED, GAME_H, GAME_W, MAP_X, MAX_PETS, TAP_SLOP_PX, TILE } from '../config'
+import { EDGE_SCROLL, EDGE_SCROLL_SPEED, FLOOR_ROWS, GAME_H, GAME_W, MAP_X, MAX_PETS, TAP_SLOP_PX, TILE } from '../config'
 import { claimed, nearestSpot, PROBLEM_TEXT, type BuildProblem } from '../sim/build'
 import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
-import { footprint, ITEMS, nextFacing, setProgress, size, type Item, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
+import { footprint, ITEMS, layerOf, nextFacing, SET_IDS, setProgress, size, type Item, type ItemGroup, type ItemKind, type Layer } from '../sim/items'
 import { BREEDS, type BreedId, type Pet } from '../sim/pets'
 import type { SpaSim } from '../sim/spa'
 import type { Tile, Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
 import { BREED_NAME, t, type StringKey } from '../strings/vi'
 import { buildArea, dragTile, MAP_VIEW } from '../view/camera'
-import { catalogPage, petPage, type CatalogEntry } from '../view/catalog'
+import { catalogPage, DECOR_FILTERS, petPage, type CatalogEntry, type DecorFilter } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
 import { carryTo, clampToFloor, pills, showPills } from '../view/floors'
 import type { MapCamera } from '../view/MapCamera'
@@ -107,10 +107,18 @@ const OWNED = { feet: 164, name: 118, breed: 86, rename: 60, give: 20 }
 const SALE = { feet: 134, name: 88, price: 50 }
 /** The pet on its own card, a little smaller to leave room for the buttons. */
 const OWNED_SCALE = 0.9
-const SETS: { id: SetId; name: StringKey }[] = [
-  { id: 'saigon', name: 'setSaigon' },
-  { id: 'bamboo', name: 'setBamboo' },
-]
+const FILTER_NAME: Record<DecorFilter, StringKey> = {
+  all: 'filterAll',
+  saigon: 'setSaigon',
+  bamboo: 'setBamboo',
+  zen: 'setZen',
+  retro: 'setRetro',
+  garden: 'setGarden',
+  wall: 'filterWall',
+  rug: 'filterRug',
+}
+/** The Trang trí filter on the info line: its arrows' size, and the room its name has between them. */
+const FILTER = { arrowW: 64, arrowH: 64, nameW: 400, gap: 8 }
 
 const cardText = (size: number, weight: '600' | '800') => ({
   ...textStyle(size, weight),
@@ -128,6 +136,8 @@ export class BuildScene extends Phaser.Scene {
   private params!: BuildData
   private tab: Tab = 'bed'
   private page = 0
+  /** The Trang trí tab's filter, kept from one opening of build mode to the next. */
+  private filter: DecorFilter = 'all'
   private held: Held | null = null
   /** The finger that went down above the panel, where it went down on screen and on the map, and the held piece's tile then; `pick` while nothing is held and the press may still pick something up. */
   private drag: { p: Phaser.Input.Pointer; x: number; y: number; down: Vec; from: Tile | null; pick: boolean } | null = null
@@ -158,6 +168,8 @@ export class BuildScene extends Phaser.Scene {
     // the oldest gift waits first on its own tab
     const gift = data.sim.book.gifts[0]
     this.tab = gift ? ITEMS[gift].group : 'bed'
+    // a waiting gift is in no set and is no wall piece or rug, so its card shows only unfiltered
+    if (gift) this.filter = 'all'
     this.page = 0
     this.held = null
     this.drag = null
@@ -262,7 +274,7 @@ export class BuildScene extends Phaser.Scene {
       shown.entries.forEach((entry, i) => ('pet' in entry ? this.petCard(entry.pet, cardX(i, shown.entries.length), top) : this.breedCard(entry.breed, cardX(i, shown.entries.length), top)))
     } else {
       this.showScore(INFO_Y - lift)
-      const shown = catalogPage(this.tab, this.page, sim.services, sim.book.gifts)
+      const shown = catalogPage(this.tab, this.page, sim.services, sim.book.gifts, this.filter)
       this.page = shown.page
       pages = shown.pages
       shown.entries.forEach((entry, i) => this.card(entry, cardX(i, shown.entries.length), top))
@@ -274,16 +286,30 @@ export class BuildScene extends Phaser.Scene {
     }
   }
 
-  /** One line: the beauty on the left, the old Saigon set in the middle, the bamboo set on the right. */
+  /** One line: the beauty on the left; on the Trang trí tab, the filter on the right, with its set's progress. */
   private showScore(y: number): void {
     const { sim } = this.params
-    const sets = SETS.map(s => {
-      const have = setProgress(sim.items, s.id)
-      return have === 6 ? t('setDone', { name: t(s.name) }) : t('setProgress', { name: t(s.name), have })
-    })
     this.keep(this.add.text(EDGE + 16, y, t('beautyTotal', { n: Math.round(sim.beauty()) }), textStyle(32)).setOrigin(0, 0.5))
-    this.keep(this.add.text(MID, y, sets[0], textStyle(32, '600')).setOrigin(0.5))
-    this.keep(this.add.text(GAME_W - EDGE - 16, y, sets[1], textStyle(32, '600')).setOrigin(1, 0.5))
+    if (this.tab !== 'decor') return
+    const name = t(FILTER_NAME[this.filter])
+    const set = SET_IDS.find(id => id === this.filter)
+    const have = set ? setProgress(sim.items, set) : 0
+    const label = !set ? name : have === 6 ? t('setDone', { name }) : t('setProgress', { name, have })
+    const right = GAME_W - EDGE - FILTER.arrowW / 2
+    const mid = right - FILTER.arrowW / 2 - FILTER.gap - FILTER.nameW / 2
+    const left = mid - FILTER.nameW / 2 - FILTER.gap - FILTER.arrowW / 2
+    const text = this.keep(this.add.text(mid, y, label, textStyle(32, '600')).setOrigin(0.5))
+    text.setScale(Math.min(1, FILTER.nameW / text.width))
+    this.button(left, y, FILTER.arrowW, FILTER.arrowH, t('prevPage'), 'plain', () => this.turnFilter(-1), 48)
+    this.button(right, y, FILTER.arrowW, FILTER.arrowH, t('nextPage'), 'plain', () => this.turnFilter(1), 48)
+  }
+
+  /** The next or the previous Trang trí filter, round past either end, from its first page. */
+  private turnFilter(by: number): void {
+    const n = DECOR_FILTERS.length
+    this.filter = DECOR_FILTERS[(DECOR_FILTERS.indexOf(this.filter) + by + n) % n]
+    this.page = 0
+    this.showCatalog()
   }
 
   /**
@@ -424,7 +450,9 @@ export class BuildScene extends Phaser.Scene {
       return
     }
     const { floor } = this.params.room
-    const start = this.centre()
+    const middle = this.centre()
+    // a wall piece starts on the wall above the middle, so it is not hung on a far wall out of view
+    const start = layerOf(kind) === 'wall' ? { x: middle.x, y: (floor - 1) * FLOOR_ROWS + 1 } : middle
     const spot = nearestSpot(sim.grid, start, s => floorOf(s.y + ITEMS[kind].h - 1) === floor && sim.canPlace(kind, s.x, s.y, false) === null) ?? start
     // not in the shop yet, so it has no id of its own
     this.hold({ item: { id: 0, kind, ...spot, flip: false, gift }, buying: true })
@@ -442,9 +470,11 @@ export class BuildScene extends Phaser.Scene {
     if (!cam.isVisible(w.x, w.y)) return undefined
     const tile = room.worldToTile(w.x, w.y)
     // the top of a tall piece covers the tile behind it
-    const drawn = room.itemAt(w.x, w.y)
     // a point above or below the floor in view would land on the rows of the next floor
-    return (room.onFloor(tile.y) ? sim.items.find(i => footprint(i).some(f => tileEq(f, tile))) : undefined) ?? sim.items.find(i => i.id === drawn)
+    const on = (layer: Layer) => (room.onFloor(tile.y) ? sim.items.find(i => layerOf(i.kind) === layer && footprint(i).some(f => tileEq(f, tile))) : undefined)
+    // a rug is picked up only where nothing else is: what stands on it, or hangs or is drawn over it, comes first
+    const drawn = room.itemAt(w.x, w.y, id => sim.items.some(i => i.id === id && layerOf(i.kind) !== 'rug'))
+    return on('floor') ?? on('wall') ?? sim.items.find(i => i.id === drawn) ?? on('rug')
   }
 
   /** A tap or a drag on the map: picks up the item under the point, unless a customer is using it. */
@@ -478,7 +508,7 @@ export class BuildScene extends Phaser.Scene {
     this.ghost!.setTexture(itemTexture(item.kind, item.turned)).setPosition(MAP_X + (item.x + w / 2) * TILE, room.rowY(item.y + h) - GHOST_LIFT_PX).setFlipX(item.flip)
     const fits = this.params.sim.canPlace(item.kind, item.x, item.y, item.flip, buying ? undefined : item.id, item.turned ?? false) === null
     this.tint.clear().fillStyle(hex(fits ? C.teal : C.lantern), TINT_ALPHA)
-    for (const s of claimed(item)) this.tint.fillRect(MAP_X + s.x * TILE, room.rowY(s.y), TILE, TILE)
+    for (const s of layerOf(item.kind) === 'floor' ? claimed(item) : footprint(item)) this.tint.fillRect(MAP_X + s.x * TILE, room.rowY(s.y), TILE, TILE)
   }
 
   /** "Thôi", "Xoay", "Bán" for a piece the shop owns, and "Đặt". */

@@ -5,7 +5,7 @@ import { C } from '../art/palette'
 import { FLOOR_ROWS, GAME_W, HOUSE_PRICE, MAP_X, MAP_Y, SHOP_X0, TILE } from '../config'
 import { FESTIVALS, type FestivalId } from '../sim/festivals'
 import { floorOf } from '../sim/floors'
-import { isUpright, size, workTile, type Item } from '../sim/items'
+import { isUpright, layerOf, size, workTile, type Item } from '../sim/items'
 import { NO_HOUSES, type House, type Houses } from '../sim/layout'
 import type { PlaceId } from '../sim/places'
 import type { Stars } from '../sim/rank'
@@ -20,8 +20,14 @@ import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 import { daylight } from './daylight'
 
+/** Rugs lie on the floor and the bought houses, under the mats, the bed slots and the stairs. */
+const RUG_DEPTH = 0.8
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
 const PART_DEPTH = 1
+/** Wall pieces hang over the wall and its mats and slots, under the beds' lanterns. */
+const WALL_DEPTH = 1.2
+/** A bed's lantern hangs in front of any wall piece behind it. */
+const LANTERN_DEPTH = 1.3
 /** A festival's bunting and sign hang on the back wall, over the bed slots and under everything standing in the room. */
 const FESTIVAL_DEPTH = 1.5
 /** The sign's centre and top in tiles: on floor 1's wall over the third and fourth bed spots, hung low enough to cover the clock. */
@@ -416,7 +422,8 @@ export class RoomView {
       s.turned = item.turned === true
       // an upright piece draws on its top row's depth, so whoever stands on its lower rows is in front of it
       const depth = isUpright(item) ? this.rowY(item.y + 1) : bottom
-      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
+      const layer = layerOf(item.kind)
+      s.body.setPosition(MAP_X + (item.x + w / 2) * TILE, bottom).setDepth(layer === 'rug' ? RUG_DEPTH : layer === 'wall' ? WALL_DEPTH : depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
       const work = workTile(item)
       if (work) s.part?.setPosition(MAP_X + work.x * TILE, this.rowY((floorOf(item.y) - 1) * FLOOR_ROWS))
       else if (s.part) this.placeMat(s.part, item)
@@ -450,11 +457,11 @@ export class RoomView {
     this.placeLamps()
   }
 
-  /** The item whose picture covers the point, the one drawn in front where several do; null when none does. */
-  itemAt(x: number, y: number): number | null {
+  /** The item whose picture covers the point, the one drawn in front where several do, among those `allow` lets through; null when none does. */
+  itemAt(x: number, y: number, allow: (id: number) => boolean = () => true): number | null {
     let front: { id: number; depth: number } | null = null
     for (const [id, s] of this.items) {
-      if (s.floor === this.floor && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
+      if (s.floor === this.floor && allow(id) && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
     }
     return front?.id ?? null
   }
@@ -463,7 +470,7 @@ export class RoomView {
     const add = this.scene.add
     const body = add.image(0, 0, itemTexture(item.kind, item.turned)).setOrigin(0.5, 1)
     const partKey = item.kind === 'bed' ? 'lantern' : item.kind === 'bench' ? 'benchMat' : null
-    const part = partKey ? add.image(0, 0, partKey).setOrigin(0, 0).setDepth(PART_DEPTH) : null
+    const part = partKey ? add.image(0, 0, partKey).setOrigin(0, 0).setDepth(partKey === 'lantern' ? LANTERN_DEPTH : PART_DEPTH) : null
     const s = { body, part, floor: floorOf(item.y), turned: item.turned === true, lantern: partKey === 'lantern' }
     this.items.set(item.id, s)
     return s

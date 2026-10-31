@@ -1,6 +1,6 @@
 import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
-import { ITEMS, size, type Item, type ItemKind } from '../sim/items'
+import { ITEMS, layerOf, size, type Item, type ItemKind } from '../sim/items'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
@@ -62,14 +62,14 @@ export function carryTo(item: Item, floor: number): Item {
   return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }
 }
 
-/** The same piece moved the least that puts all of its size within the `cols` columns and the rows of `floor`. */
+/** The same piece moved the least that puts all of its size within the `cols` columns and the rows of `floor`; a wall piece hangs on the floor's lower wall row. */
 export function clampToFloor(item: Item, floor: number, cols: number): Item {
   const { w, h } = size(item)
   const top = (floor - 1) * FLOOR_ROWS
   return {
     ...item,
     x: Math.min(Math.max(item.x, 0), cols - w),
-    y: Math.min(Math.max(item.y, top), top + FLOOR_ROWS - h),
+    y: layerOf(item.kind) === 'wall' ? top + 1 : Math.min(Math.max(item.y, top), top + FLOOR_ROWS - h),
   }
 }
 
