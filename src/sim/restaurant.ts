@@ -1,13 +1,14 @@
-import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, FLOOR_PRICE, HOUSE_PRICE, HOUSES_PER_SIDE, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
 import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
-import { placementProblem, sellRefund, type BuildProblem } from './build'
+import { doorReach, placementProblem, sellRefund, type BuildProblem } from './build'
 import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
 import { drawKind, KINDS, type CustomerKind } from './customers'
 import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './dining'
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
-import { housesBought, NO_HOUSES, type Houses } from './layout'
+import { floorOf } from './floors'
+import { housesBought, NO_HOUSES, type House, type Houses, type Side } from './layout'
 import { DISH_IDS, DISH_STOCK, drawTicket, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock, type RestaurantStockItem } from './menu'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
@@ -33,6 +34,10 @@ export type RestaurantEvent =
   | { type: 'toast'; key: 'stovesBusy' | 'powerWait' }
   /** An item of the stock landed on the low mark, or ran out. */
   | { type: 'stockLow'; item: RestaurantStockItem; out: boolean }
+  /** A side house was bought and its tiles opened on every floor. */
+  | { type: 'houseBought'; house: House }
+  /** A floor above was opened. */
+  | { type: 'floorOpened'; floor: number }
 
 /** What the owner is doing for a diner: walking over to take the ticket, cooking at a stove, or carrying the bowl back. */
 export type DiningTask = { kind: 'order'; dinerId: number } | { kind: 'cook'; dinerId: number; stoveId: number } | { kind: 'carry'; dinerId: number }
@@ -88,8 +93,8 @@ export function dinerGapMs(minutes: number): number {
 export class RestaurantSim {
   items: Item[]
   grid: Grid
-  readonly floors = 1
-  readonly houses: Houses = NO_HOUSES
+  floors = 1
+  houses: Houses = NO_HOUSES
   owner: Mover & { task: DiningTask | null }
   /** The owner stands in this shop. */
   ownerIn = false
@@ -168,6 +173,9 @@ export class RestaurantSim {
     const r = new RestaurantSim(options)
     r.items = d.items
     r.nextItemId = d.nextItemId
+    r.houses = d.houses
+    r.floors = d.floors
+    r.shell = null
     r.grid = buildGrid(r.shellGrid(), r.items, r.floors)
     r.rebuildStoves()
     r.diners = d.diners.filter(x => x.state !== 'street')
@@ -220,9 +228,70 @@ export class RestaurantSim {
     return this.host.day
   }
 
-  /** The bare room, walls and door and stairs, parsed once. */
+  /** The bare room, walls and door and stairs and the houses bought, parsed once and again when a house is bought. */
   shellGrid(): Grid {
-    return (this.shell ??= diningShellGrid())
+    return (this.shell ??= diningShellGrid(this.houses))
+  }
+
+  /** How many floors the tower has: every floor with stairs. */
+  maxFloors(): number {
+    return Math.max(1, this.grid.feet.length)
+  }
+
+  /** What stops floor `floor` being opened now, or null: it is open or not in the tower, the floor below is not open yet, the door cannot reach the foot of the stairs below, or the purse is short. */
+  floorProblem(floor: number): 'max' | 'order' | 'blocked' | 'money' | null {
+    if (floor <= this.floors || floor > this.maxFloors()) return 'max'
+    if (floor > this.floors + 1) return 'order'
+    if (!doorReach(this.grid, this.grid.door)(this.grid.feet[floor - 2])) return 'blocked'
+    if (this.money < FLOOR_PRICE[floor]) return 'money'
+    return null
+  }
+
+  /** Takes the price and opens the floor. */
+  openFloor(floor: number): 'max' | 'order' | 'blocked' | 'money' | null {
+    const problem = this.floorProblem(floor)
+    if (problem) return problem
+    this.host.purse.money -= FLOOR_PRICE[floor]
+    this.floors = floor
+    this.changeRoom()
+    this.events.push({ type: 'floorOpened', floor })
+    return null
+  }
+
+  /** The price of the next house on `side`, the spa's. */
+  housePrice(side: Side): number {
+    return HOUSE_PRICE[Math.min(this.houses[side], HOUSES_PER_SIDE - 1)]
+  }
+
+  /** What stops the next house on `side` being bought now, or null. */
+  houseProblem(side: Side): 'max' | 'money' | null {
+    if (this.houses[side] >= HOUSES_PER_SIDE) return 'max'
+    if (this.money < this.housePrice(side)) return 'money'
+    return null
+  }
+
+  /** The next house on `side` when it is up for sale, whether or not the purse can pay for it yet; null when the side is full. */
+  houseForSale(side: Side): House | null {
+    return this.houseProblem(side) === 'max' ? null : { side, n: (this.houses[side] + 1) as 1 | 2 }
+  }
+
+  /** Takes the price and opens the next house on `side` on every floor. */
+  buyHouse(side: Side): 'max' | 'money' | null {
+    const problem = this.houseProblem(side)
+    if (problem) return problem
+    this.host.purse.money -= this.housePrice(side)
+    const n = (this.houses[side] + 1) as 1 | 2
+    this.houses = { ...this.houses, [side]: n }
+    this.shell = null
+    this.changeRoom()
+    this.events.push({ type: 'houseBought', house: { side, n } })
+    return null
+  }
+
+  /** The houses the map shows: those bought, and the next one on each side while it is for sale. */
+  shownHouses(): Houses {
+    const shown = (side: Side) => this.houses[side] + (this.houseForSale(side) ? 1 : 0)
+    return { left: shown('left'), right: shown('right') }
   }
 
   beauty(): number {
@@ -291,7 +360,9 @@ export class RestaurantSim {
 
   /** The chairs at a table that no diner holds. */
   freeSeats(): DiningSeat[] {
-    return diningSeats(this.items).filter(s => !this.diners.some(d => d.chair && tileEq(d.chair, s.tile)))
+    return diningSeats(this.items)
+      .filter(s => !this.diners.some(d => d.chair && tileEq(d.chair, s.tile)))
+      .sort((a, b) => floorOf(a.tile.y) - floorOf(b.tile.y))
   }
 
   /** How many more diners `dish` can take: its stock and the herbs, less the portions held by diners not yet cooked for. */
