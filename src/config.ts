@@ -572,3 +572,16 @@ export const AWAY_PROFIT_DAYS = 3
 
 /** What the restaurant's three working pieces cost; its decor pieces carry their prices in ITEMS. */
 export const RESTAURANT_FURNITURE = { stove: 400_000, diningTable: 150_000, diningChair: 60_000 } as const
+
+/** Phở: the cooking game's time limit, the four dotted cut lines (x, in game pixels), how close a swipe must land and how long it must be. */
+export const PHO_LIMIT_MS = 25_000
+export const PHO_CUT_X = [345, 480, 615, 750]
+export const PHO_CUT_TOL = 36
+export const PHO_CUT_MIN_SPAN = 270
+/** Holding the boil fills the needle in this long; the doneness bands sit on it, a hard customer's band shrinks by the shrink on each edge, and a release this close outside a band is "near". */
+export const PHO_BOIL_MS = 2_400
+export const PHO_BAND = { tai: [0.42, 0.6], chin: [0.62, 0.8] } as const
+export const PHO_BAND_HARD_SHRINK = 0.05
+export const PHO_BOIL_NEAR = 0.08
+/** This many good cuts earn a star. */
+export const PHO_GOOD_CUTS = 3
