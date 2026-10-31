@@ -1,20 +1,22 @@
-import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { ARRIVE_MS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
 import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { placementProblem, sellRefund, type BuildProblem } from './build'
+import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
 import { drawKind, KINDS, type CustomerKind } from './customers'
 import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './dining'
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
-import { NO_HOUSES, type Houses } from './layout'
+import { housesBought, NO_HOUSES, type Houses } from './layout'
 import { DISH_IDS, DISH_STOCK, drawTicket, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock, type RestaurantStockItem } from './menu'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
 import type { RestaurantSave } from './save'
 import { moveAlong, type SpaSim } from './spa'
+import { staffStars, walkSpeed } from './staff'
 import type { Customer, Look, Mover, Tile } from './types'
 
-/** What the restaurant takes from the spa: the purse, the clock, the day and the power cut. */
-export type RestaurantHost = Pick<SpaSim, 'purse' | 'clock' | 'day' | 'powerOut'>
+/** What the restaurant takes from the spa: the purse, the clock, the day, the power cut and the staff, whose names a cook may not take. */
+export type RestaurantHost = Pick<SpaSim, 'purse' | 'clock' | 'day' | 'powerOut' | 'staff'>
 
 /** What the view hears from the restaurant; it grows with the diners and the cooking. */
 export type RestaurantEvent =
@@ -102,8 +104,15 @@ export class RestaurantSim {
   diners: Diner[] = []
   stats: RestaurantStats = emptyStats()
   stock: RestaurantStock = fullRestaurantStock()
-  /** True while the owner is at a branch: nobody new comes. */
+  /** True while the owner is at a branch: nobody new comes unless a cook works. */
   ownerAway = false
+  chefs: Chef[] = []
+  nextChefId = 1
+  /** Today's people to hire as cooks, drawn on `candidatesDay` (0: never). */
+  candidates: ChefCandidate[] = []
+  candidatesDay = 0
+  /** The day's wages are paid; a cook let go now just leaves. */
+  dayClosed = false
 
   constructor({ host, rng, autoSpawn }: { host: RestaurantHost; rng: Rng; autoSpawn: boolean }) {
     this.host = host
@@ -272,11 +281,84 @@ export class RestaurantSim {
     return this.addDiner(look, kind, seat, false, opts.dish)
   }
 
+  /** Today's cooks to hire: CANDIDATES_PER_DAY new ones once a day, with names no cook or spa staff has. */
+  todayCandidates(): ChefCandidate[] {
+    if (this.candidatesDay !== this.day) {
+      const taken = [...this.chefs.map(c => c.name), ...this.host.staff.map(s => s.name)]
+      this.candidates = []
+      for (let i = 0; i < CANDIDATES_PER_DAY; i++) {
+        const c = makeChefCandidate(this.rng, taken)
+        taken.push(c.name)
+        this.candidates.push(c)
+      }
+      this.candidatesDay = this.day
+    }
+    return this.candidates
+  }
+
+  chefCap(): number {
+    return chefCap(this.floors, housesBought(this.houses))
+  }
+
+  /** What stops a candidate being hired now, whichever `index`: money is negative, or the cooks not leaving fill the cap; null if nothing. */
+  hireProblem(index: number): 'money' | 'full' | null {
+    if (this.money < 0) return 'money'
+    return this.chefs.filter(c => !c.leaving).length >= this.chefCap() ? 'full' : null
+  }
+
+  /** Free and at once: the new cook stands on the door tile and walks home. */
+  hire(index: number): 'money' | 'full' | null {
+    const problem = this.hireProblem(index)
+    if (problem) return problem
+    const [c] = this.candidates.splice(index, 1)
+    const chef: Chef = { ...c, stats: { ...c.stats }, tiers: { ...c.tiers }, id: this.nextChefId++, pos: { ...this.grid.door }, facing: 'up', path: [], task: null, leaving: false }
+    const home = this.chefHome(chef)
+    chef.path = this.walkTo(chef, t => tileEq(t, home)) ?? []
+    this.chefs.push(chef)
+    return null
+  }
+
+  /**
+   * Lets a cook go: today's wage is still paid, and after the close they just leave. A cook cooking or carrying finishes that diner first;
+   * any other gives back the diner they took and walks out at once.
+   */
+  fire(id: number): void {
+    const c = this.chefs.find(x => x.id === id)
+    if (!c || c.leaving) return
+    if (this.dayClosed) {
+      this.chefs = this.chefs.filter(x => x !== c)
+      return
+    }
+    c.leaving = true
+    this.stats.wages += c.wage
+    if (c.task?.kind === 'cook' || c.task?.kind === 'carry') return
+    for (const d of this.diners) if (d.chefId === c.id) d.chefId = null
+    this.chefExits(c)
+  }
+
+  /** Some cook is working and not leaving. */
+  hasChefs(): boolean {
+    return this.chefs.some(c => !c.leaving)
+  }
+
+  /** Where a cook waits: the work tile of a stove picked by their id. */
+  chefHome(c: Chef): Tile {
+    return this.stoves[c.id % this.stoves.length].work
+  }
+
+  /** The day is over: every cook still here is paid, the wages leave the purse, and those let go leave the payroll. */
+  closeDay(): void {
+    for (const c of this.chefs) if (!c.leaving) this.stats.wages += c.wage
+    this.host.purse.money -= this.stats.wages
+    this.chefs = this.chefs.filter(c => !c.leaving)
+    this.dayClosed = true
+  }
+
   /** A paying spa customer may walk over to eat: true when a diner is now on the street. */
   walkOver(c: Customer): boolean {
     if (c.mood !== 'happy' && c.mood !== 'ok') return false
     if (c.vip || c.idol || c.kol) return false
-    if (this.ownerAway || this.host.clock.isClosed) return false
+    if ((this.ownerAway && !this.hasChefs()) || this.host.clock.isClosed) return false
     const seat = this.freeSeats()[0]
     if (!seat || this.sellableDishes().length === 0) return false
     if (this.rng() >= WALK_OVER_CHANCE) return false
@@ -289,19 +371,26 @@ export class RestaurantSim {
     return this.diners.length > 0 || this.cookingDinerId !== null
   }
 
-  /** Everyone goes at once, the chairs and stoves are free and the owner has nothing to do. */
+  /** Everyone goes at once, the chairs and stoves are free and the owner and the cooks have nothing to do. */
   clearOut(): void {
     this.diners = []
     this.cookingDinerId = null
     for (const s of this.stoves) s.dinerId = null
     this.owner.task = null
     this.owner.path = []
+    for (const c of this.chefs) {
+      c.task = null
+      c.path = []
+    }
   }
 
+  /** A new day: each cook stands at home with nothing to do. */
   startDay(): void {
     this.stats = emptyStats()
     this.clearOut()
     this.untilDinerMs = FIRST_ARRIVAL_MS
+    for (const c of this.chefs) c.pos = { ...this.chefHome(c) }
+    this.dayClosed = false
   }
 
   /** The owner is back: at the door, with nothing to do. */
@@ -332,17 +421,24 @@ export class RestaurantSim {
     return this.owner.task !== null || this.cookingDinerId !== null
   }
 
-  /** The owner goes to a branch: the dish being carried is served at once, everyone who waits for the owner leaves quietly. */
+  /**
+   * The owner goes to a branch: the dish being carried is served at once, and the diner of her own ticket or stove leaves quietly. With a cook working,
+   * everyone else stays for the cooks; with none, everyone who waits for the owner leaves quietly too.
+   */
   leaveTown(): void {
     this.ownerAway = true
     this.ownerIn = false
     this.cookingDinerId = null
-    const carried = this.owner.task?.kind === 'carry' ? this.owner.task.dinerId : null
+    const task = this.owner.task
+    const carried = task?.kind === 'carry' ? task.dinerId : null
+    const own = task?.kind === 'order' || task?.kind === 'cook' ? task.dinerId : null
+    const stay = this.hasChefs()
     this.owner.task = null
     this.owner.path = []
-    for (const s of this.stoves) s.dinerId = null
+    for (const s of this.stoves) if (s.dinerId === own) s.dinerId = null
     for (const d of [...this.diners]) {
       if (d.id === carried) this.setState(d, 'eating')
+      else if (d.chefId !== null || (stay && d.id !== own)) continue
       else if (d.state === 'street') this.diners = this.diners.filter(x => x !== d)
       else if (d.state !== 'eating' && d.state !== 'leaving' && d.state !== 'exiting') this.startLeaving(d)
     }
@@ -351,7 +447,7 @@ export class RestaurantSim {
   /** A tap on the floor: take a waiting diner's ticket, or walk to a tile. */
   tapTile(t: Tile): void {
     if (!this.ownerIn || this.ownerBusy()) return
-    const diner = this.diners.find(d => d.state === 'ordering' && d.chair && tileEq(d.chair, t))
+    const diner = this.diners.find(d => d.state === 'ordering' && d.chefId === null && d.chair && tileEq(d.chair, t))
     if (diner) {
       if (this.host.powerOut()) {
         this.events.push({ type: 'toast', key: 'powerWait' })
@@ -380,6 +476,7 @@ export class RestaurantSim {
     this.cookingDinerId = null
     for (const s of this.stoves) if (s.dinerId === dinerId) s.dinerId = null
     diner.stars = stars
+    this.stats.ownerCooked++
     this.owner.task = { kind: 'carry', dinerId }
     this.owner.path = this.walkTo(this.owner, besideSeat(this.grid, diner.chair)) ?? []
   }
@@ -398,9 +495,10 @@ export class RestaurantSim {
 
   private step(dt: number): void {
     this.updateOwner(dt)
+    for (const c of [...this.chefs]) this.updateChef(c, dt)
     for (const d of [...this.diners]) this.updateDiner(d, dt)
     if (this.ownerAway) this.restockAlone()
-    if (this.autoSpawn && !this.ownerAway && !this.host.clock.isClosed) {
+    if (this.autoSpawn && (!this.ownerAway || this.hasChefs()) && !this.host.clock.isClosed) {
       this.untilDinerMs -= dt
       if (this.untilDinerMs <= 0) {
         this.untilDinerMs = arrivalGapMs(dinerGapMs(this.host.clock.minutes), this.rng())
@@ -556,6 +654,87 @@ export class RestaurantSim {
     }
   }
 
+  /**
+   * A cook on their own: idle, they take the first waiting ticket nobody holds while the power is on and a stove is free, else walk home (or out, when let go);
+   * then take the portion and claim a stove, cook for their time while the power is on, roll the stars and carry the dish over.
+   */
+  private updateChef(c: Chef, dt: number): void {
+    moveAlong(c, walkSpeed(c.stats.speed), dt)
+    const task = c.task
+    if (!task) {
+      this.chefIdle(c)
+      return
+    }
+    if (task.kind === 'exit') {
+      if (c.path.length > 0) return
+      if (!tileEq(tileOf(c.pos), this.grid.door)) c.path = this.walkTo(c, t => tileEq(t, this.grid.door)) ?? []
+      if (c.path.length === 0) this.chefs = this.chefs.filter(x => x !== c)
+      return
+    }
+    const diner = this.diners.find(d => d.id === task.dinerId)
+    if (diner?.state !== (task.kind === 'order' ? 'ordering' : 'waitingFood')) {
+      c.task = null
+      c.path = []
+      return
+    }
+    if (c.path.length > 0) return
+    if (task.kind === 'order') {
+      const stove = this.stoves.find(s => s.dinerId === null)
+      const path = stove && this.walkTo(c, t => tileEq(t, stove.work))
+      if (!stove || !path) {
+        diner.chefId = null
+        c.task = null
+        return
+      }
+      stove.dinerId = diner.id
+      this.setState(diner, 'waitingFood')
+      this.takePortion(diner)
+      c.task = { kind: 'cook', dinerId: diner.id, stoveId: stove.id, leftMs: cookMs(c, diner.dish) }
+      c.path = path
+    } else if (task.kind === 'cook') {
+      if (this.host.powerOut()) return
+      task.leftMs -= dt
+      if (task.leftMs > 0) return
+      const stars = staffStars(chefSkill(c, diner.dish), this.rng())
+      for (const s of this.stoves) if (s.id === task.stoveId) s.dinerId = null
+      c.task = { kind: 'carry', dinerId: diner.id, stars }
+      c.path = this.walkTo(c, besideSeat(this.grid, diner.chair!)) ?? []
+    } else {
+      diner.stars = task.stars
+      this.setState(diner, 'eating')
+      this.stats.chefCooked++
+      c.task = null
+      const home = this.chefHome(c)
+      c.path = this.walkTo(c, t => tileEq(t, home)) ?? []
+    }
+  }
+
+  /** A cook with nothing to do: out if let go, else the first free ticket, else home. */
+  private chefIdle(c: Chef): void {
+    if (c.leaving) {
+      this.chefExits(c)
+      return
+    }
+    if (!this.host.powerOut() && this.stoves.some(s => s.dinerId === null)) {
+      const ownerTarget = this.owner.task?.kind === 'order' ? this.owner.task.dinerId : null
+      const diner = this.diners.find(d => d.state === 'ordering' && d.chefId === null && d.id !== ownerTarget)
+      const path = diner && this.walkTo(c, besideSeat(this.grid, diner.chair!))
+      if (diner && path) {
+        diner.chefId = c.id
+        c.task = { kind: 'order', dinerId: diner.id }
+        c.path = path
+        return
+      }
+    }
+    const home = this.chefHome(c)
+    if (c.path.length === 0 && !tileEq(tileOf(c.pos), home)) c.path = this.walkTo(c, t => tileEq(t, home)) ?? []
+  }
+
+  private chefExits(c: Chef): void {
+    c.task = { kind: 'exit' }
+    c.path = this.walkTo(c, t => tileEq(t, this.grid.door)) ?? []
+  }
+
   /** The diner the owner works for is gone: the owner stops, and the stove is free. */
   private dropTask(): void {
     this.owner.task = null
@@ -588,7 +767,7 @@ export class RestaurantSim {
   private changeRoom(): void {
     this.grid = buildGrid(this.shellGrid(), this.items, this.floors)
     this.rebuildStoves()
-    for (const m of [this.owner, ...this.diners]) {
+    for (const m of [this.owner, ...this.diners, ...this.chefs]) {
       const goal = m.path[m.path.length - 1]
       if (goal) m.path = this.walkTo(m, t => tileEq(t, goal)) ?? []
     }

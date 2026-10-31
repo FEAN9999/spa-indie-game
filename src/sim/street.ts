@@ -122,10 +122,10 @@ export class Street {
     return side === 'spa' ? this.spa : this.restaurant
   }
 
-  /** A tap that asks for the owner: a waiting spa customer or a diner with a ticket up, or a floor tile. */
+  /** A tap that asks for the owner: a waiting spa customer or a diner with a ticket up that no cook has taken, or a floor tile. */
   private wanted(side: ShopSide, t: Tile): boolean {
     if (side === 'spa') return this.spa.customers.some(c => c.state === 'waiting' && c.seat !== null && tileEq(c.seat, t)) || isWalkable(this.spa.grid, t)
-    return this.restaurant.diners.some(d => d.state === 'ordering' && d.chair !== null && tileEq(d.chair, t)) || isWalkable(this.restaurant.grid, t)
+    return this.restaurant.diners.some(d => d.state === 'ordering' && d.chefId === null && d.chair !== null && tileEq(d.chair, t)) || isWalkable(this.restaurant.grid, t)
   }
 
   private busy(side: ShopSide): boolean {

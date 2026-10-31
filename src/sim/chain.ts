@@ -173,6 +173,7 @@ export class Chain {
       const saved = { ...rs, ownerAt: chain.at === null ? rs.ownerAt : ('spa' as const) }
       const restaurant = RestaurantSim.fromSave(saved, { host: chain.main, rng: createRng(seed + RESTAURANT_RNG_SALT), autoSpawn: chain.main.autoSpawn })
       restaurant.ownerAway = chain.at !== null
+      restaurant.dayClosed = chain.main.dayOver
       chain.wire(restaurant, Street.fromSave(chain.main, restaurant, saved.ownerAt))
     }
     // the events a shop queued while loading are routed like those of a shop the owner is away from; the owner's own shop keeps hers
@@ -242,6 +243,8 @@ export class Chain {
     }
     if (this.street) {
       this.street.advance(ran)
+      // the cooks are paid when the main shop's day ends, once
+      if (this.main.dayOver && !this.street.restaurant.dayClosed) this.street.restaurant.closeDay()
       this.restaurantEvents.push(...this.street.restaurant.drainEvents())
     }
     return ran

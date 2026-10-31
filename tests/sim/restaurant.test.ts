@@ -298,7 +298,7 @@ describe('the owner working the restaurant', () => {
     expect(paid).toMatchObject({ dinerId: d.id, amount: 30_000, tip: 10_000, tile: chair })
     expect(d.state).toBe('leaving')
     expect(main.money).toBe(before + 40_000)
-    expect(r.stats).toEqual({ served: 1, income: 30_000, tips: 10_000, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
+    expect(r.stats).toEqual({ served: 1, income: 30_000, tips: 10_000, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 1, chefCooked: 0 })
     expect(d.mood).toBe('happy')
     expect(main.stats).toEqual(spa)
     expect(r.owner.task).toBeNull()
