@@ -1,11 +1,13 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { SCOOTER_BOX } from '../art/fx'
-import { C, customerColors, ownerColors } from '../art/palette'
+import { C, customerColors, ownerColors, staffColors } from '../art/palette'
 import { RESTAURANT_LAMP } from '../art/restaurant'
 import { ARRIVE_MS, FLOOR_ROWS, HOUSE_COLS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TILE } from '../config'
 import type { Chain } from '../sim/chain'
+import type { Chef } from '../sim/chefs'
 import type { Item } from '../sim/items'
+import type { DishId } from '../sim/menu'
 import type { Diner, RestaurantSim } from '../sim/restaurant'
 import { floorOf } from '../sim/floors'
 import type { Facing, Tile, Vec } from '../sim/types'
@@ -30,7 +32,10 @@ const MARK_DEPTH = 9000
 /** The bottom of the ticket, just above the patience bar. */
 const TICKET_BOTTOM = PATIENCE_BAR_TOP - 4
 /** The ticket held up: a paper slip this size in pixels. */
-const TICKET = { key: 'rest-ticket', w: 40, h: 50 }
+const TICKET = { w: 40, h: 50 }
+/** Each dish's ticket texture and the colour of its header. */
+const ticketKey = (dish: DishId): string => `rest-ticket-${dish}`
+const TICKET_HEADER: Record<DishId, string> = { pho: C.terracotta, banhXeo: C.mustard, che: C.leaf }
 /** The bike beside the owner as on the choice card, where she is drawn 2.4 times bigger; she sits this far behind its middle and over the ground. */
 const BIKE = { scale: 1 / 2.4, seatX: 7, seatY: -27 }
 /** Each stove picture's lit burner, in its own tiles from its top-left, and how far the cover over it reaches. */
@@ -67,6 +72,7 @@ export class RestaurantLayer {
   private readonly restLots: Phaser.GameObjects.Image[] = []
   private readonly items = new Map<number, ItemSprite>()
   private readonly diners = new Map<number, DinerSprite>()
+  private readonly chefs = new Map<number, CharacterView>()
   private owner: CharacterView | null = null
   private ownerKey = ''
   private readonly bike: Phaser.GameObjects.Image
@@ -90,14 +96,16 @@ export class RestaurantLayer {
     this.bike = add.image(0, WALK_Y, 'fx-bike').setOrigin(-bx / bw, -by / bh).setScale(BIKE.scale).setDepth(WALK_Y).setVisible(false)
     this.wash = add.rectangle(BLOCK.x, MAP_Y, BLOCK.w, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
     this.doorLight = addGlow(scene, DOOR.x, MAP_Y + DOOR_LIGHT.y * TILE, DOOR_LIGHT.s)
-    if (!scene.textures.exists(TICKET.key)) {
+    for (const dish of Object.keys(TICKET_HEADER) as DishId[]) {
+      const key = ticketKey(dish)
+      if (scene.textures.exists(key)) continue
       const { w, h } = TICKET
       const g = scene.make.graphics({}, false)
       g.fillStyle(hex(C.paper), 1).fillRoundedRect(2, 2, w - 4, h - 4, 6).lineStyle(3, hex(C.ink)).strokeRoundedRect(2, 2, w - 4, h - 4, 6)
-      g.fillStyle(hex(C.terracotta), 1).fillRect(5, 5, w - 10, 9)
+      g.fillStyle(hex(TICKET_HEADER[dish]), 1).fillRect(5, 5, w - 10, 9)
       g.lineStyle(3, hex(C.soft))
       for (const y of [22, 30, 38]) g.lineBetween(9, y, y === 38 ? w - 18 : w - 9, y)
-      g.generateTexture(TICKET.key, w, h)
+      g.generateTexture(key, w, h)
       g.destroy()
     }
   }
@@ -114,6 +122,7 @@ export class RestaurantLayer {
     this.upper.setVisible(!this.floor1)
     this.syncItems(r?.items ?? [])
     this.syncDiners(r?.diners ?? [], dt)
+    this.syncChefs(r?.chefs ?? [], dt)
     this.syncOwner(chain, dt)
     this.syncLight(r !== null, minutes, powerOut)
   }
@@ -175,9 +184,11 @@ export class RestaurantLayer {
     for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight]) img.destroy()
     for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow, ...s.lamps]) p?.destroy()
     for (const s of this.diners.values()) this.dropDiner(s)
+    for (const v of this.chefs.values()) v.container.destroy()
     this.owner?.container.destroy()
     this.items.clear()
     this.diners.clear()
+    this.chefs.clear()
   }
 
   /** One picture per piece, made once and moved; a stove also gets its flame cover and glow. */
@@ -236,7 +247,7 @@ export class RestaurantLayer {
         s = {
           view: new CharacterView(this.scene, customerColors(d.look, d.kind)),
           bar: this.scene.add.graphics().setDepth(MARK_DEPTH),
-          ticket: this.scene.add.image(0, 0, TICKET.key).setOrigin(0.5, 1).setDepth(MARK_DEPTH).setVisible(false),
+          ticket: this.scene.add.image(0, 0, ticketKey(d.dish)).setOrigin(0.5, 1).setDepth(MARK_DEPTH).setVisible(false),
         }
         this.diners.set(d.id, s)
       }
@@ -250,7 +261,30 @@ export class RestaurantLayer {
       const ordering = d.state === 'ordering' && this.floor1
       s.bar.clear()
       if (ordering) drawPatienceBar(s.bar, p.x, p.y, d.patienceMs / d.patienceMaxMs)
-      s.ticket.setVisible(ordering).setPosition(p.x, p.y + TICKET_BOTTOM)
+      s.ticket.setTexture(ticketKey(d.dish)).setVisible(ordering).setPosition(p.x, p.y + TICKET_BOTTOM)
+    }
+  }
+
+  /** Each cook's figure, made when they are hired and gone when they leave; they walk like the owner and face the stove while they cook. */
+  private syncChefs(chefs: Chef[], dt: number): void {
+    const ids = new Set(chefs.map(c => c.id))
+    for (const [id, view] of this.chefs) {
+      if (ids.has(id)) continue
+      view.container.destroy()
+      this.chefs.delete(id)
+    }
+    for (const c of chefs) {
+      let view = this.chefs.get(c.id)
+      if (!view) {
+        view = new CharacterView(this.scene, staffColors(c.look))
+        this.chefs.set(c.id, view)
+      }
+      const at = tileWorld(c.pos)
+      const facing: Facing = c.task?.kind === 'cook' && c.path.length === 0 ? 'up' : c.facing
+      view.setFacing(facing)
+      view.setPose(c.path.length > 0 ? 'walk' : 'stand')
+      view.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(1).setVisible(this.floor1)
+      view.update(dt)
     }
   }
 

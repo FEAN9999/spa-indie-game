@@ -117,6 +117,16 @@ describe('the restaurant on the summary', () => {
     ])
   })
 
+  it("adds the cooks' wages and the restock to the restaurant block when there are any", () => {
+    const stats = { served: 4, income: 240_000, tips: 35_000, walkedAway: 0, wages: 30_000, restock: 0, ownerCooked: 0, chefCooked: 0 }
+    expect(restaurantRows(stats).map(r => r.label)).toEqual(['restaurantServed', 'restaurantIncome', 'restaurantTips', 'restaurantWages'])
+    expect(restaurantRows({ ...stats, wages: 0, restock: 200_000 }).map(r => r.label)).toEqual(['restaurantServed', 'restaurantIncome', 'restaurantTips', 'restockCost'])
+    expect(restaurantRows({ ...stats, restock: 200_000 }).slice(3)).toEqual([
+      { label: 'restaurantWages', value: 30_000, kind: 'money' },
+      { label: 'restockCost', value: 200_000, kind: 'money' },
+    ])
+  })
+
   it('lays out a card with the restaurant block below the chain block', () => {
     const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money']
     const l = summaryLayout(kinds, 1, 0, 3)

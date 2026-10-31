@@ -40,12 +40,14 @@ export function chainSummaryRows(rows: ChainDayRow[]): { label: string; value: n
   ]
 }
 
-/** The restaurant block's rows: the diners, the dish money and the tips. Its money is in the purse already and stays out of the spa's rows and profit. */
+/** The restaurant block's rows: the diners, the dish money and the tips, then the cooks' wages and the stock bought when there are any. Its money is in the purse already and stays out of the spa's rows and profit. */
 export function restaurantRows(stats: RestaurantStats): { label: StringKey; value: number; kind: 'count' | 'money' }[] {
   return [
     { label: 'restaurantServed', value: stats.served, kind: 'count' },
     { label: 'restaurantIncome', value: stats.income, kind: 'money' },
     { label: 'restaurantTips', value: stats.tips, kind: 'money' },
+    ...(stats.wages > 0 ? [{ label: 'restaurantWages' as const, value: stats.wages, kind: 'money' as const }] : []),
+    ...(stats.restock > 0 ? [{ label: 'restockCost' as const, value: stats.restock, kind: 'money' as const }] : []),
   ]
 }
 

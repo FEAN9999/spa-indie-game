@@ -121,7 +121,7 @@ export class SummaryScene extends Phaser.Scene {
       })
     }
     if (restaurantLines.length > 0) {
-      // the restaurant's own block under the chain's: a heading and a line each for diners, dish money and tips; or, when the card is too tall for that, one line
+      // the restaurant's own block under the chain's: a heading and a line each for diners, dish money, tips and, when there are any, wages and stock; or, when the card is too tall for that, one line
       const h = (L.restaurantOneLine ? 1 : restaurantLines.length + 1) * L.chainRowH + 20
       card
         .fillStyle(hex(C.tealPale), 1)
