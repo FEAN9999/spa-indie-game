@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { placeableIn, type ShopSide } from '../../src/sim/dining'
 import { ITEMS, ITEM_KINDS, type ItemGroup, type ItemKind } from '../../src/sim/items'
 import type { ServiceId } from '../../src/sim/services'
-import { catalogPage, DECOR_FILTERS, petPage, type DecorFilter } from '../../src/view/catalog'
+import { buildTabs, catalogPage, DECOR_FILTERS, petPage, type DecorFilter } from '../../src/view/catalog'
 
 const ALL_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails']
 const kinds = (p: ReturnType<typeof catalogPage>) => p.entries.map(e => e.kind)
@@ -120,6 +120,20 @@ describe('build mode catalogue', () => {
   it('shows no restaurant piece on the spa decor tab', () => {
     const { pages } = catalogPage('decor', 0, ALL_SERVICES, [])
     for (let p = 0; p < pages; p++) for (const kind of kinds(catalogPage('decor', p, ALL_SERVICES, []))) expect(placeableIn(kind, 'spa'), kind).toBe(true)
+  })
+
+  it('offers the dining pieces and the shared decor at the restaurant', () => {
+    expect(kinds(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['stove', 'diningTable', 'diningChair'])
+    expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(1)
+    const { pages } = catalogPage('decor', 0, ALL_SERVICES, [], 'all', 'restaurant')
+    const decor = Array.from({ length: pages }, (_, p) => kinds(catalogPage('decor', p, ALL_SERVICES, [], 'all', 'restaurant'))).flat()
+    expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant']))
+    for (const k of ['bed', 'bench', 'desk'] as const) expect(decor).not.toContain(k)
+  })
+
+  it('gives build mode the spa tabs at the spa and the dining and decor tabs at the restaurant', () => {
+    expect(buildTabs('spa')).toEqual(['bed', 'seat', 'decor', 'pets'])
+    expect(buildTabs('restaurant')).toEqual(['dining', 'decor'])
   })
 
   it('shows a gift bed first on the bed tab, not on the decor tab', () => {

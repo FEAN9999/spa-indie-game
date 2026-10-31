@@ -7,12 +7,13 @@ import { ARRIVE_MS, FLOOR_ROWS, HOUSE_COLS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TIL
 import type { Chain } from '../sim/chain'
 import type { Item } from '../sim/items'
 import type { Diner, RestaurantSim } from '../sim/restaurant'
-import type { Facing, Vec } from '../sim/types'
+import { floorOf } from '../sim/floors'
+import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
 import { houseRect } from './houses'
 import { addGlow, DOOR_LIGHT, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
-import { DOOR_X, doorWalk, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
+import { DOOR_X, doorWalk, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The restaurant's block: its 13 columns from SHOP_X0 of its own grid, like the spa's old shop. */
@@ -71,6 +72,10 @@ export class RestaurantLayer {
   /** What the last sync drew from, for the hit tests. */
   private restaurant: RestaurantSim | null = null
   private floor1 = true
+  /** The piece build mode is carrying, kept hidden across syncs. */
+  private hidden: number | null = null
+  /** Build mode's floor: the restaurant has only floor 1. */
+  readonly floor = 1
 
   constructor(private readonly scene: Phaser.Scene) {
     const add = scene.add
@@ -127,6 +132,47 @@ export class RestaurantLayer {
     )
   }
 
+  // build mode's room, as RoomView has it for the spa
+  /** World x of the left edge of restaurant column `x`. */
+  colX(x: number): number {
+    return restaurantX(x)
+  }
+
+  /** World y of the top of grid row `y`. */
+  rowY(y: number): number {
+    return MAP_Y + y * TILE
+  }
+
+  /** Whether grid row `y` is on floor 1, the restaurant's only floor. */
+  onFloor(y: number): boolean {
+    return floorOf(y) === this.floor
+  }
+
+  /** Bottom-centre of the tile, in world pixels. */
+  tileToWorld(t: Vec): Vec {
+    return tileWorld(t)
+  }
+
+  worldToTile(x: number, y: number): Tile {
+    return restaurantTileAt({ x, y })
+  }
+
+  /** Hides one piece while build mode carries it; null shows every piece. */
+  hide(id: number | null): void {
+    this.hidden = id
+    for (const [key, s] of this.items) s.body.setVisible(this.floor1 && key !== id)
+  }
+
+  /** The piece whose picture covers the point, the one drawn in front where several do, among those `allow` lets through; null when none does. */
+  itemAt(x: number, y: number, allow: (id: number) => boolean = () => true): number | null {
+    if (!this.floor1) return null
+    let front: { id: number; depth: number } | null = null
+    for (const [id, s] of this.items) {
+      if (allow(id) && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
+    }
+    return front?.id ?? null
+  }
+
   destroy(): void {
     for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight]) img.destroy()
     for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow]) p?.destroy()
@@ -157,7 +203,7 @@ export class RestaurantLayer {
         this.items.set(item.id, s)
       }
       placeItemBody(s.body, item, restaurantX, y => MAP_Y + y * TILE)
-      s.body.setVisible(this.floor1)
+      s.body.setVisible(this.floor1 && item.id !== this.hidden)
       const flame = FLAME[s.body.texture.key]
       if (flame && s.off && s.glow) {
         const top = s.body.getTopLeft()
@@ -256,8 +302,8 @@ export class RestaurantLayer {
     this.wash.setAlpha(WASH_ALPHA * lamps).setVisible(lit && this.floor1)
     this.doorLight.setAlpha(lamps).setVisible(lit && this.floor1)
     for (const s of this.items.values()) {
-      s.glow?.setAlpha(lamps).setVisible(lit && this.floor1)
-      s.off?.setVisible(powerOut && this.floor1)
+      s.glow?.setAlpha(lamps).setVisible(lit && s.body.visible)
+      s.off?.setVisible(powerOut && s.body.visible)
     }
   }
 }

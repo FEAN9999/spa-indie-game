@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, MAP_Y, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
+import { AUTOSAVE_MS, BUBBLE_MS, DISH_PRICE, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, MAP_Y, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -683,7 +683,17 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('OwnerScene', data)
   }
 
-  /** Build mode over the frozen shop; the build button opens it only while nothing else is open or being played. */
+  /** The shop under the screen's centre, which Build, Dịch vụ, Nhân viên and the floor pills act on: always the spa at a branch or before the restaurant is bought. */
+  private centreShop(): ShopSide {
+    return this.restaurant && this.chain.street ? shopAt(this.cam.view.cx, true) : 'spa'
+  }
+
+  /** A card over the frozen shop about the restaurant, with one button that closes it. */
+  private restaurantCard(title: StringKey, lines: string[]): void {
+    this.choose({ kicker: t('restaurantKicker'), title: t(title), lines, buttons: [t('restaurantCardClose')] }, () => {})
+  }
+
+  /** Build mode over the frozen shop under the centre; the build button opens it only while nothing else is open or being played. */
   private openBuild(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) return
@@ -691,9 +701,15 @@ export class SpaScene extends Phaser.Scene {
     const intro = !sim.hintDone('openBuild')
     sim.markHint('openBuild')
     if (sim.floors > 1) sim.markHint('openFloor')
+    const shop = this.centreShop()
+    const restaurant = shop === 'restaurant' ? this.chain.restaurant : null
+    // the restaurant has only floor 1, which build mode works on
+    if (restaurant && this.viewFloor !== 1) this.showFloor(1)
     const data: BuildData = {
       sim,
-      room: this.room,
+      place: restaurant ?? sim,
+      shop,
+      room: restaurant ? this.restaurant! : this.room,
       intro,
       onChange: () => {
         this.syncRoom()
@@ -711,10 +727,14 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('BuildScene', data)
   }
 
-  /** The staff panel over the frozen shop, opened only when build mode would be. */
+  /** The staff panel over the frozen shop, opened only when build mode would be; at the restaurant, a card saying the owner cooks alone. */
   private openStaff(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) return
+    if (this.centreShop() === 'restaurant') {
+      this.restaurantCard('chefTitle', [t('chefLine')])
+      return
+    }
     this.modal = true
     const intro = !sim.hintDone('openStaff')
     sim.markHint('openStaff')
@@ -734,10 +754,14 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('StaffScene', data)
   }
 
-  /** The services panel over the frozen shop, opened only when build mode would be. */
+  /** The services panel over the frozen shop, opened only when build mode would be; at the restaurant, its menu. */
   private openServices(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) return
+    if (this.centreShop() === 'restaurant') {
+      this.restaurantCard('menuTitle', [t('menuPho', { money: formatMoney(DISH_PRICE.pho) }), t('menuSoon')])
+      return
+    }
     this.modal = true
     const intro = !sim.hintDone('openServices')
     sim.markHint('openServices')
@@ -1096,7 +1120,9 @@ export class SpaScene extends Phaser.Scene {
       this.floorBar.hide()
       return
     }
-    this.floorBar.show(pills(sim, this.viewFloor), sim.ownerLook)
+    const shown = pills(sim, this.viewFloor)
+    // over the restaurant a locked floor offers nothing to buy: its pill shows no price
+    this.floorBar.show(this.centreShop() === 'restaurant' ? shown.map(p => (p.state === 'locked' ? { ...p, price: 0 } : p)) : shown, sim.ownerLook)
   }
 
   /** The strip shows whenever the map is free and wider than the screen, drawn from where this frame left the view. */
@@ -1130,10 +1156,11 @@ export class SpaScene extends Phaser.Scene {
     })
   }
 
-  /** A viewed or open pill brings its floor into view; a locked one offers to open it. Nothing while waiting on an update check, which hides the pills on its next frame. */
+  /** A viewed or open pill brings its floor into view, for the whole street; a locked one offers to open it, or over the restaurant says it has no upper floors. Nothing while waiting on an update check, which hides the pills on its next frame. */
   private tapFloor(floor: number): void {
     if (this.holding) return
     if (floor <= this.sim.floors) this.showFloor(floor)
+    else if (this.centreShop() === 'restaurant') this.hud.toast(t('restaurantNoFloors'))
     else this.offerFloor(floor)
   }
 
@@ -1368,6 +1395,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.restaurant?.sync(this.chain, this.viewFloor, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
     this.hud.update(this.modal)
+    this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()

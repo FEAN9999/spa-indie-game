@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
-import { GAME_W } from '../config'
+import { GAME_W, MAP_Y } from '../config'
+import type { ShopSide } from '../sim/dining'
 import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { placeName } from './chain'
@@ -33,6 +34,8 @@ const DOT_R = 13
 const plateR = (n: number) => (n === 5 ? 56 : PLATE_R)
 /** The branch ribbon: its top and height; the pill is the text's width plus `pad`, with the pin at its left and the text 27 px right of centre. */
 const RIBBON = { y: 198, h: 64, font: 31, pad: 90, textX: 27, textW: 860 }
+/** The shop label: its top-right corner at the map's top-right, its height, and the padding beside its words. */
+const SHOP_LABEL = { right: GAME_W - 24, top: MAP_Y + 24, h: 56, font: 30, pad: 24 }
 
 /** The guest-book button, in the top bar's second row. */
 export const BOOK_BUTTON = { x: 870, y: 152 }
@@ -79,6 +82,9 @@ export class Hud {
   /** The branch ribbon, and the words it was drawn with. */
   private ribbon: Phaser.GameObjects.Container | null = null
   private ribbonKey = ''
+  /** The Spa or Nhà hàng pill, and the shop it was drawn for. */
+  private shopLabel: Phaser.GameObjects.Container | null = null
+  private shopLabelSide: ShopSide | null = null
   private toastBox: Phaser.GameObjects.Container | null = null
   /** When the last toast went up, in scene time. */
   lastToastAt = -Infinity
@@ -274,6 +280,22 @@ export class Hud {
     const pin = add.image(-w / 2 + 40, RIBBON.h / 2, 'icon-chain').setScale(0.7)
     label.setPosition(RIBBON.textX, RIBBON.h / 2)
     this.ribbon = add.container(GAME_W / 2, RIBBON.y, [bg, pin, label]).setDepth(DEPTH)
+  }
+
+  /** A small pill at the map's top-right naming the shop under the centre, "Spa" or "Nhà hàng"; null hides it. Redrawn only on a change. */
+  setShopLabel(side: ShopSide | null): void {
+    if (side === this.shopLabelSide) return
+    this.shopLabelSide = side
+    this.shopLabel?.destroy()
+    this.shopLabel = null
+    if (side === null) return
+    const add = this.scene.add
+    const { h, font, pad } = SHOP_LABEL
+    const label = add.text(0, h / 2, t(side === 'spa' ? 'shopLabelSpa' : 'shopLabelRestaurant'), textStyle(font, '800')).setOrigin(1, 0.5)
+    const w = label.width + 2 * pad
+    label.setX(-pad)
+    const bg = add.graphics().fillStyle(hex(C.cream), 1).fillRoundedRect(-w, 0, w, h, h / 2).lineStyle(4, hex(C.ink)).strokeRoundedRect(-w, 0, w, h, h / 2)
+    this.shopLabel = add.container(SHOP_LABEL.right, SHOP_LABEL.top, [bg, label]).setDepth(DEPTH)
   }
 
   /** Whether a button takes a tap: the quest button from the first day of a shop on the starter chain. */

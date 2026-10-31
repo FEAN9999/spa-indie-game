@@ -420,6 +420,11 @@ export class RoomView {
     return MAP_Y + (y - (this.floor - 1) * FLOOR_ROWS) * TILE
   }
 
+  /** World x of the left edge of grid column `x`. */
+  colX(x: number): number {
+    return MAP_X + x * TILE
+  }
+
   /** Creates, moves, turns, flips and removes the item sprites to match `items`, and shows the bed slots that are open. */
   sync(items: Item[], slots: { tile: Tile; open: boolean }[]): void {
     const ids = new Set(items.map(i => i.id))

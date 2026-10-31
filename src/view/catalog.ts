@@ -13,6 +13,14 @@ export const DECOR_FILTERS: DecorFilter[] = ['all', ...SET_IDS, 'wall', 'rug']
 const passes = (kind: ItemKind, filter: DecorFilter): boolean =>
   filter === 'wall' || filter === 'rug' ? layerOf(kind) === filter : ITEMS[kind].set === filter
 
+/** A build-mode tab: a furniture group, or the shop's pets. */
+export type BuildTab = ItemGroup | 'pets'
+
+/** Build mode's tabs, left to right: the spa's beds, seats, decor and pets; the restaurant's dining pieces and the decor it shares. */
+export function buildTabs(shop: ShopSide): BuildTab[] {
+  return shop === 'restaurant' ? ['dining', 'decor'] : ['bed', 'seat', 'decor', 'pets']
+}
+
 /** A card in the catalogue: a kind to buy, or a regular's gift waiting to be put down. */
 export interface CatalogEntry {
   kind: ItemKind
