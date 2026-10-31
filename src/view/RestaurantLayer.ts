@@ -2,7 +2,7 @@ import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { SCOOTER_BOX } from '../art/fx'
 import { C, customerColors, ownerColors, staffColors } from '../art/palette'
-import { RESTAURANT_LAMP } from '../art/restaurant'
+import { RESTAURANT_LAMP, ROOF_LANTERNS } from '../art/restaurant'
 import { ARRIVE_MS, FLOOR_ROWS, HOUSE_COLS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TILE } from '../config'
 import type { Chain } from '../sim/chain'
 import type { Chef } from '../sim/chefs'
@@ -13,6 +13,7 @@ import { floorOf } from '../sim/floors'
 import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
+import { climbPose } from './floors'
 import { houseRect } from './houses'
 import { LAMPS } from './lamps'
 import { addGlow, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
@@ -44,6 +45,8 @@ const FLAME: Record<string, { x: number; y: number; rx: number; ry: number }> = 
   'decor-stove-turned': { x: 0.69, y: 1.55, rx: 0.13, ry: 0.045 },
 }
 const STOVE_GLOW_SCALE = 0.7
+/** The glow over each of the rooftop's lanterns. */
+const ROOF_GLOW_SCALE = 0.5
 
 interface DinerSprite {
   view: CharacterView
@@ -58,10 +61,9 @@ interface ItemSprite {
   glow: Phaser.GameObjects.Image | null
   /** One glow per lamp of a lamp piece, lit at night like the spa's. */
   lamps: Phaser.GameObjects.Image[]
+  /** The floor the piece stands on. */
+  floor: number
 }
-
-/** The bottom-centre of a restaurant tile in world pixels (the restaurant has one floor). */
-const tileWorld = (t: Vec): Vec => ({ x: restaurantX(t.x + 0.5), y: MAP_Y + (t.y + 1) * TILE })
 
 /** The restaurant on the main shop's street: the old house or the bought room with its furniture, the closed lots, the diners and their tickets, the owner in it or on her bike, and its lights. */
 export class RestaurantLayer {
@@ -78,13 +80,14 @@ export class RestaurantLayer {
   private readonly bike: Phaser.GameObjects.Image
   private readonly wash: Phaser.GameObjects.Rectangle
   private readonly doorLight: Phaser.GameObjects.Image
+  /** One glow per lantern strung over the rooftop, lit at night while it is on view. */
+  private readonly roofGlows: Phaser.GameObjects.Image[]
   /** What the last sync drew from, for the hit tests. */
   private restaurant: RestaurantSim | null = null
-  private floor1 = true
   /** The piece build mode is carrying, kept hidden across syncs. */
   private hidden: number | null = null
-  /** Build mode's floor: the restaurant has only floor 1. */
-  readonly floor = 1
+  /** The floor on view, from 1; only setFloor changes it. */
+  floor = 1
 
   constructor(private readonly scene: Phaser.Scene) {
     const add = scene.add
@@ -96,6 +99,7 @@ export class RestaurantLayer {
     this.bike = add.image(0, WALK_Y, 'fx-bike').setOrigin(-bx / bw, -by / bh).setScale(BIKE.scale).setDepth(WALK_Y).setVisible(false)
     this.wash = add.rectangle(BLOCK.x, MAP_Y, BLOCK.w, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
     this.doorLight = addGlow(scene, DOOR.x, MAP_Y + DOOR_LIGHT.y * TILE, DOOR_LIGHT.s)
+    this.roofGlows = ROOF_LANTERNS.map(l => addGlow(scene, BLOCK.x + l.x * TILE, MAP_Y + l.y * TILE, ROOF_GLOW_SCALE).setTint(hex(RESTAURANT_LAMP)))
     for (const dish of Object.keys(TICKET_HEADER) as DishId[]) {
       const key = ticketKey(dish)
       if (scene.textures.exists(key)) continue
@@ -110,21 +114,25 @@ export class RestaurantLayer {
     }
   }
 
+  /** Shows `floor`: its room, and the pieces standing on it; the people on it follow on the next sync. */
+  setFloor(floor: number): void {
+    this.floor = floor
+    this.syncRoom()
+    this.syncItems(this.restaurant?.items ?? [])
+  }
+
   /** Draws the street's restaurant as the chain has it, on the floor in view, in the light of `minutes`; `dt` moves the figures' legs. */
-  sync(chain: Chain, viewFloor: number, minutes: number, powerOut: boolean, dt: number): void {
+  sync(chain: Chain, minutes: number, powerOut: boolean, dt: number): void {
     const r = chain.restaurant
     this.restaurant = r
-    this.floor1 = viewFloor === 1
     const shown = chain.main.shownHouses()
     this.spaLots.forEach((lot, i) => lot.setVisible(i + 1 > shown.right))
-    const key = r ? 'rest-room' : 'rest-old'
-    if (this.front.texture.key !== key) this.front.setTexture(key)
-    this.upper.setVisible(!this.floor1)
+    this.syncRoom()
     this.syncItems(r?.items ?? [])
     this.syncDiners(r?.diners ?? [], dt)
     this.syncChefs(r?.chefs ?? [], dt)
     this.syncOwner(chain, dt)
-    this.syncLight(r !== null, minutes, powerOut)
+    this.syncLight(r, minutes, powerOut)
   }
 
   /** The old house is still for sale and the point is on it. */
@@ -132,13 +140,13 @@ export class RestaurantLayer {
     return this.restaurant === null && world.x >= BLOCK.x && world.x < BLOCK.x + BLOCK.w && world.y >= MAP_Y && world.y < MAP_Y + this.front.height
   }
 
-  /** The diner holding a ticket up whose figure covers the point, on floor 1; null when none does. */
+  /** The diner holding a ticket up whose figure covers the point, on the floor in view; null when none does. */
   dinerAt(world: Vec): Diner | null {
-    if (!this.restaurant || !this.floor1) return null
+    if (!this.restaurant) return null
     return (
       this.restaurant.diners.find(d => {
-        if (d.state !== 'ordering') return false
-        const at = tileWorld(d.pos)
+        if (d.state !== 'ordering' || floorOf(d.pos.y) !== this.floor) return false
+        const at = this.tileToWorld(d.pos)
         return Math.abs(world.x - at.x) <= TILE / 2 && world.y <= at.y && world.y >= at.y - CHARACTER_HEIGHT_PX
       }) ?? null
     )
@@ -150,38 +158,38 @@ export class RestaurantLayer {
     return restaurantX(x)
   }
 
-  /** World y of the top of grid row `y`. */
+  /** World y of the top of grid row `y`, on the floor in view. */
   rowY(y: number): number {
-    return MAP_Y + y * TILE
+    return MAP_Y + (y - (this.floor - 1) * FLOOR_ROWS) * TILE
   }
 
-  /** Whether grid row `y` is on floor 1, the restaurant's only floor. */
+  /** Whether grid row `y` is on the floor in view. */
   onFloor(y: number): boolean {
     return floorOf(y) === this.floor
   }
 
   /** Bottom-centre of the tile, in world pixels. */
   tileToWorld(t: Vec): Vec {
-    return tileWorld(t)
+    return { x: restaurantX(t.x + 0.5), y: this.rowY(t.y + 1) }
   }
 
   worldToTile(x: number, y: number): Tile {
-    return restaurantTileAt({ x, y })
+    return restaurantTileAt({ x, y }, this.floor)
   }
 
   /** Hides one piece while build mode carries it; null shows every piece. */
   hide(id: number | null): void {
     this.hidden = id
-    for (const [key, s] of this.items) s.body.setVisible(this.floor1 && key !== id)
+    for (const [key, s] of this.items) s.body.setVisible(s.floor === this.floor && key !== id)
   }
 
   /** The piece whose picture covers the point, the one drawn in front where several do, among those `allow` lets through; null when none does. */
   itemAt(x: number, y: number, allow: (id: number) => boolean = () => true): number | null {
-    return this.floor1 ? frontmostAt(this.items, x, y, allow) : null
+    return frontmostAt(this.items, x, y, id => this.items.get(id)!.floor === this.floor && allow(id))
   }
 
   destroy(): void {
-    for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight]) img.destroy()
+    for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
     for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow, ...s.lamps]) p?.destroy()
     for (const s of this.diners.values()) this.dropDiner(s)
     for (const v of this.chefs.values()) v.container.destroy()
@@ -189,6 +197,15 @@ export class RestaurantLayer {
     this.items.clear()
     this.diners.clear()
     this.chefs.clear()
+  }
+
+  /** The room of the floor in view: floor 1's bought room or the old house, an open upper floor's own room, or the closed upper floor over floor 1's front. */
+  private syncRoom(): void {
+    const r = this.restaurant
+    const open = r !== null && this.floor > 1 && this.floor <= r.floors
+    const key = open ? `rest-room-${this.floor}` : r ? 'rest-room' : 'rest-old'
+    if (this.front.texture.key !== key) this.front.setTexture(key)
+    this.upper.setVisible(this.floor > 1 && !open)
   }
 
   /** One picture per piece, made once and moved; a stove also gets its flame cover and glow. */
@@ -209,11 +226,13 @@ export class RestaurantLayer {
           off: stove ? this.scene.add.ellipse(0, 0, 1, 1, hex(C.deepBrown)).setVisible(false) : null,
           glow: stove ? addGlow(this.scene, 0, 0, STOVE_GLOW_SCALE).setTint(hex(RESTAURANT_LAMP)) : null,
           lamps: [],
+          floor: 1,
         }
         this.items.set(item.id, s)
       }
-      placeItemBody(s.body, item, restaurantX, y => MAP_Y + y * TILE)
-      s.body.setVisible(this.floor1 && item.id !== this.hidden)
+      s.floor = floorOf(item.y)
+      placeItemBody(s.body, item, restaurantX, y => this.rowY(y))
+      s.body.setVisible(s.floor === this.floor && item.id !== this.hidden)
       const spots = LAMPS[s.body.texture.key] ?? []
       while (s.lamps.length > spots.length) s.lamps.pop()!.destroy()
       while (s.lamps.length < spots.length) s.lamps.push(addGlow(this.scene, 0, 0, 1))
@@ -256,9 +275,10 @@ export class RestaurantLayer {
       const walking = d.state === 'street' || d.state === 'arriving' || d.state === 'exiting' || d.path.length > 0
       s.view.setFacing(p.facing)
       s.view.setPose(seated ? 'sit' : walking ? 'walk' : 'stand')
-      s.view.container.setPosition(p.x, p.y).setDepth(seated ? p.y + 1 : p.y).setAlpha(p.alpha).setVisible(this.floor1)
+      const shown = this.dinerFloor(d) === this.floor
+      s.view.container.setPosition(p.x, p.y).setDepth(seated ? p.y + 1 : p.y).setAlpha(p.alpha).setVisible(shown)
       s.view.update(dt)
-      const ordering = d.state === 'ordering' && this.floor1
+      const ordering = d.state === 'ordering' && shown
       s.bar.clear()
       if (ordering) drawPatienceBar(s.bar, p.x, p.y, d.patienceMs / d.patienceMaxMs)
       s.ticket.setTexture(ticketKey(d.dish)).setVisible(ordering && d.chefId === null).setPosition(p.x, p.y + TICKET_BOTTOM)
@@ -279,22 +299,36 @@ export class RestaurantLayer {
         view = new CharacterView(this.scene, staffColors(c.look))
         this.chefs.set(c.id, view)
       }
-      const at = tileWorld(c.pos)
+      const at = this.tileToWorld(c.pos)
+      // on the stairs, they rise toward the next floor and fade, here on the floor they are leaving
+      const climb = climbPose(c)
+      if (climb) at.y -= climb.lift * TILE
       const facing: Facing = c.task?.kind === 'cook' && c.path.length === 0 ? 'up' : c.facing
       view.setFacing(facing)
       view.setPose(c.path.length > 0 ? 'walk' : 'stand')
-      view.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(1).setVisible(this.floor1)
+      view.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(climb?.alpha ?? 1).setVisible(floorOf(c.pos.y) === this.floor)
       view.update(dt)
     }
   }
 
-  /** Where a diner is drawn: walking over from the spa, in or out by the door, or on their tile inside. */
+  /** The floor a diner is drawn on: the street, where they walk over and in or out by the door, counts as floor 1. */
+  private dinerFloor(d: Diner): number {
+    return d.state === 'street' || d.state === 'arriving' || d.state === 'exiting' ? 1 : floorOf(d.pos.y)
+  }
+
+  /** Where a diner is drawn: walking over from the spa, in or out by the door, or on their tile inside, rising and fading on the stairs. */
   private placeDiner(d: Diner): StreetPlacement {
     if (d.state === 'street') return { x: walkerX(d), y: WALK_Y, facing: 'right', alpha: 1 }
     // one who walked over from the spa is at the door already, and only goes up through it
     if (d.state === 'arriving' && d.fromSpa) return { x: DOOR.x, y: WALK_Y + (DOOR.y - WALK_Y) * Math.min(1, d.stateMs / ARRIVE_MS), facing: 'up', alpha: 1 }
     if (d.state === 'arriving' || d.state === 'exiting') return doorWalk(d.state, d.stateMs, DOOR, d.id % 2 === 1)
-    return { ...tileWorld(d.pos), facing: d.facing, alpha: 1 }
+    const p = { ...this.tileToWorld(d.pos), facing: d.facing, alpha: 1 }
+    const climb = climbPose(d)
+    if (climb) {
+      p.y -= climb.lift * TILE
+      p.alpha = climb.alpha
+    }
+    return p
   }
 
   private dropDiner(s: DinerSprite): void {
@@ -315,32 +349,39 @@ export class RestaurantLayer {
     const owner = this.owner
     const r = chain.restaurant
     const ride = chain.street?.rideProgress() ?? null
-    this.bike.setVisible(ride !== null && this.floor1)
+    this.bike.setVisible(ride !== null && this.floor === 1)
     if (ride) {
       const dir = ride.to === 'restaurant' ? 1 : -1
       const x = rideX(ride.to, ride.k)
       this.bike.setX(x).setFlipX(dir < 0)
       owner.setFacing(dir > 0 ? 'right' : 'left')
       owner.setPose('sit')
-      owner.container.setPosition(x - BIKE.seatX * dir, WALK_Y + BIKE.seatY).setDepth(WALK_Y + 1).setAlpha(1).setVisible(this.floor1)
+      owner.container.setPosition(x - BIKE.seatX * dir, WALK_Y + BIKE.seatY).setDepth(WALK_Y + 1).setAlpha(1).setVisible(this.floor === 1)
     } else if (r?.ownerIn) {
       const o = r.owner
-      const at = tileWorld(o.pos)
+      const at = this.tileToWorld(o.pos)
+      const climb = climbPose(o)
+      if (climb) at.y -= climb.lift * TILE
       // at the stove she faces it while she cooks
       const facing: Facing = o.task?.kind === 'cook' && o.path.length === 0 ? 'up' : o.facing
       owner.setFacing(facing)
       owner.setPose(o.path.length > 0 ? 'walk' : 'stand')
-      owner.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(1).setVisible(this.floor1)
+      owner.container.setPosition(at.x, at.y).setDepth(at.y).setAlpha(climb?.alpha ?? 1).setVisible(floorOf(o.pos.y) === this.floor)
     } else owner.container.setVisible(false)
     owner.update(dt)
   }
 
-  /** At night the bought restaurant's warm wash, a glow over each stove and the door's light, unless the power is out; in a power cut every stove's flame is out. */
-  private syncLight(owned: boolean, minutes: number, powerOut: boolean): void {
+  /**
+   * At night the bought restaurant's warm wash and the door's light on floor 1, a glow over each stove and lamp on the floor in view,
+   * and one over each of the rooftop's lanterns while it is open and on view, unless the power is out; in a power cut every stove's flame is out.
+   */
+  private syncLight(r: RestaurantSim | null, minutes: number, powerOut: boolean): void {
     const lamps = daylight(minutes).lamps
-    const lit = owned && lamps > 0 && !powerOut
-    this.wash.setAlpha(WASH_ALPHA * lamps).setVisible(lit && this.floor1)
-    this.doorLight.setAlpha(lamps).setVisible(lit && this.floor1)
+    const lit = r !== null && lamps > 0 && !powerOut
+    this.wash.setAlpha(WASH_ALPHA * lamps).setVisible(lit && this.floor === 1)
+    this.doorLight.setAlpha(lamps).setVisible(lit && this.floor === 1)
+    const roof = lit && this.floor === 3 && r.floors >= 3
+    for (const g of this.roofGlows) g.setAlpha(lamps).setVisible(roof)
     for (const s of this.items.values()) {
       s.glow?.setAlpha(lamps).setVisible(lit && s.body.visible)
       for (const g of s.lamps) g.setAlpha(lamps).setVisible(lit && s.body.visible)

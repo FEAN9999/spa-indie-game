@@ -1,4 +1,4 @@
-import { ARRIVE_MS, EXIT_MS, MAP_X, MAP_Y, RESTAURANT_X0, SHOP_X0, TILE } from '../config'
+import { ARRIVE_MS, EXIT_MS, FLOOR_ROWS, MAP_X, MAP_Y, RESTAURANT_X0, SHOP_X0, TILE } from '../config'
 import type { ShopSide } from '../sim/dining'
 import type { Houses } from '../sim/layout'
 import type { Diner } from '../sim/restaurant'
@@ -8,9 +8,9 @@ import { mapBounds, type Rect } from './camera'
 /** The world x of the left edge of restaurant column `col`: its grid is drawn RESTAURANT_X0 columns to the right of the spa's. */
 export const restaurantX = (col: number): number => MAP_X + (RESTAURANT_X0 + col) * TILE
 
-/** The restaurant tile under a world point: restaurantX's inverse, and the row RoomView.worldToTile gives on floor 1 (the restaurant has one floor). */
-export function restaurantTileAt(world: Vec): Tile {
-  return { x: Math.floor((world.x - restaurantX(0)) / TILE), y: Math.floor((world.y - MAP_Y) / TILE) }
+/** The restaurant tile under a world point on `floor`: restaurantX's inverse, and the row RoomView.worldToTile gives on that floor. */
+export function restaurantTileAt(world: Vec, floor = 1): Tile {
+  return { x: Math.floor((world.x - restaurantX(0)) / TILE), y: Math.floor((world.y - MAP_Y) / TILE) + (floor - 1) * FLOOR_ROWS }
 }
 
 /** The right edge of the restaurant's main block: its 13 columns from SHOP_X0, as the spa's mapBounds ends on its own. */
@@ -55,7 +55,7 @@ export function stripBlocks(spaShown: Houses): StripBlock[] {
   ]
 }
 
-/** The world x of each diner holding a ticket out of view sideways, unless a cook has taken them (the restaurant has one floor, so there is no floor to check). */
+/** The world x of each diner holding a ticket out of view sideways, unless a cook has taken them, on whichever floor they sit. */
 export function ticketDots(diners: Diner[], visible: Rect): number[] {
   return diners
     .filter(d => d.state === 'ordering' && d.chefId === null)

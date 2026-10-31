@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { MAP_Y, MAP_X, RESTAURANT_X0, SHOP_X0, TILE } from '../../src/config'
+import { FLOOR_ROWS, MAP_Y, MAP_X, RESTAURANT_X0, SHOP_X0, TILE } from '../../src/config'
 import type { Diner } from '../../src/sim/restaurant'
 import { NO_HOUSES } from '../../src/sim/layout'
 import { mapBounds } from '../../src/view/camera'
@@ -30,6 +30,13 @@ describe('the street', () => {
       expect(restaurantTileAt({ x: restaurantX(t.x + 0.5), y: MAP_Y + (t.y + 0.5) * TILE })).toEqual(t)
     }
     expect(restaurantX(0)).toBe(MAP_X + RESTAURANT_X0 * TILE)
+  })
+
+  it('maps a world point to a restaurant tile on the viewed floor', () => {
+    const w = { x: restaurantX(14.5), y: MAP_Y + 7.5 * TILE }
+    const t = restaurantTileAt(w)
+    expect(restaurantTileAt(w, 1)).toEqual(t)
+    expect(restaurantTileAt(w, 2)).toEqual({ x: t.x, y: t.y + FLOOR_ROWS })
   })
 
   it('rides from one door to the other', () => {

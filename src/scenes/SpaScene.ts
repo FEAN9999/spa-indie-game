@@ -1207,6 +1207,7 @@ export class SpaScene extends Phaser.Scene {
   private showFloor(floor: number): void {
     this.viewFloor = floor
     this.room.setFloor(floor, this.sim.floors, this.sim.maxFloors())
+    this.restaurant?.setFloor(floor)
     this.syncRoom()
   }
 
@@ -1518,7 +1519,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
-    this.restaurant?.sync(this.chain, this.viewFloor, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
+    this.restaurant?.sync(this.chain, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
     this.hud.update(this.modal)
     this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
     // Phây is the main shop's, shared by its branches; the button gives way to the gold card and the morning banner, which use its spot
@@ -1889,7 +1890,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         return
       case 'dinerPaid':
         sound.play('coin')
-        if (this.viewFloor === 1) this.floatMoneyAt(this, restaurantX(e.tile.x + 0.5), MAP_Y + (e.tile.y + 1) * TILE - 130, e.amount + e.tip, FX_DEPTH + 10)
+        if (this.restaurant && floorOf(e.tile.y) === this.viewFloor) this.floatMoneyAt(this, restaurantX(e.tile.x + 0.5), this.restaurant.rowY(e.tile.y + 1) - 130, e.amount + e.tip, FX_DEPTH + 10)
         return
       case 'toast':
         this.hud.toast(t(e.key))
@@ -2176,11 +2177,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (pet !== null && !this.modal && !this.sim.paused && !this.playing()) this.pets.pat(pet)
       return
     }
-    // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on its floor
+    // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on the floor in view
     const r = this.chain.restaurant
     if (this.restaurant && (shopAt(w.x, r !== null) === 'restaurant' || this.restaurant.oldHouseHit(w))) {
       if (!r) this.offerRestaurant()
-      else if (this.viewFloor === 1) this.streetTap('restaurant', this.restaurant.dinerAt(w)?.chair ?? restaurantTileAt(w))
+      else this.streetTap('restaurant', this.restaurant.dinerAt(w)?.chair ?? restaurantTileAt(w, this.viewFloor))
       return
     }
     // a roof for sale offers its house
