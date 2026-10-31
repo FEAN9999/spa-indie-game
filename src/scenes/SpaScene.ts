@@ -828,6 +828,14 @@ export class SpaScene extends Phaser.Scene {
         main.answerPost(postId, reply)
         this.session.saveNow()
       },
+      // boosts are the main shop's: its day, its price, and tomorrow's crowd at the main shop
+      day: main.day,
+      money: () => main.money,
+      boostPrice: tier => main.boostPrice(tier),
+      onBoost: (postId, tier) => {
+        main.boostPost(postId, tier)
+        this.session.saveNow()
+      },
     }
     this.scene.launch('PhayScene', data)
   }

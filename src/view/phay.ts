@@ -1,7 +1,8 @@
+import { BOOST } from '../config'
 import { clockLabel } from '../sim/clock'
-import type { FeedBook, Post } from '../sim/feed'
+import type { BoostTier, FeedBook, Post } from '../sim/feed'
 import { formatCount } from '../strings/format'
-import { t } from '../strings/vi'
+import { t, type StringKey } from '../strings/vi'
 
 /** The phone button under the top bar, in the zoom buttons' column; at a branch it sits under the ribbon. */
 export const PHAY_BUTTON = { x: 1010, y: 280, r: 44, branchY: 330 }
@@ -81,6 +82,25 @@ export function phayButtonShown(open: boolean, cardUp: boolean, bannerUp: boolea
 /** A complaint still waiting for the shop's answer gets the Trả lời button; one saved without its replies never does. */
 export function replyButtonShown(post: Post): boolean {
   return post.complaint !== null && post.complaint.answered === null
+}
+
+/** A boostable post not yet boosted gets the Đẩy bài button; complaints are never boostable, so it never meets Trả lời. */
+export function boostButtonShown(post: Post): boolean {
+  return post.boostable && post.boosted === null
+}
+
+/** A boosted post's label: Đang đẩy from the day it is bought through the day it runs, Đã đẩy after (or when the save never named the post). */
+export function boostLabel(post: Post, feed: FeedBook, day: number): string | null {
+  if (post.boosted === null) return null
+  return feed.boosts.some(b => b.post === post.id && b.day >= day) ? t('phayBoosting') : t('phayBoosted')
+}
+
+export const BOOST_NAME: Record<BoostTier, StringKey> = { small: 'phayBoostSmall', medium: 'phayBoostMedium', large: 'phayBoostLarge' }
+
+/** What a tier brings the next day: the extra customers in percent and the tip factor with a decimal comma. */
+export function boostGain(tier: BoostTier): string {
+  const { arrival, tip } = BOOST[tier]
+  return t('phayBoostGain', { n: Math.round((arrival - 1) * 100), tip: String(tip).replace('.', ',') })
 }
 
 /** How long a notice stays down, fades included. */

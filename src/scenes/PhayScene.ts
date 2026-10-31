@@ -2,17 +2,17 @@ import * as Phaser from 'phaser'
 import { C, customerColors, ownerColors, type CharacterColors } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
-import type { FeedBook, Post, PostPic, ReplyKind } from '../sim/feed'
+import { BOOST_TIERS, boostedToday, type BoostTier, type FeedBook, type Post, type PostPic, type ReplyKind } from '../sim/feed'
 import { REASON_LINE } from '../sim/feedText'
 import type { OutfitId } from '../sim/outfits'
 import type { Look } from '../sim/types'
-import { formatCount } from '../strings/format'
+import { formatCount, formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
-import { clampScroll, dragTo, inWindow, postTime, replyButtonShown, shortCount, stackPosts, type Hold } from '../view/phay'
+import { BOOST_NAME, boostButtonShown, boostGain, boostLabel, clampScroll, dragTo, inWindow, postTime, replyButtonShown, shortCount, stackPosts, type Hold } from '../view/phay'
 import { starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
-import { addButton, whenTapped } from '../view/ui'
+import { addButton, addToast, whenTapped } from '../view/ui'
 
 export interface PhayData {
   feed: FeedBook
@@ -26,10 +26,24 @@ export interface PhayData {
   replyLine: (postId: number, reply: ReplyKind) => string
   /** Answers complaint `postId` with `reply` and saves the shop. */
   onAnswer: (postId: number, reply: ReplyKind) => void
+  /** The main shop's day, for the boost label and the one boost a day. */
+  day: number
+  /** The shared purse now, to dim the boosts it cannot pay. */
+  money: () => number
+  /** What a boost of `tier` costs today. */
+  boostPrice: (tier: BoostTier) => number
+  /** Boosts post `postId` with `tier` and saves the shop. */
+  onBoost: (postId: number, tier: BoostTier) => void
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const fit = <T extends Phaser.GameObjects.Text>(text: T, w: number): T => text.setScale(Math.min(1, w / text.width))
+/** Centred words wrapped at `w`, for a card. */
+const centred = (size: number, weight: '600' | '800', color: string, w: number): Phaser.Types.GameObjects.Text.TextStyle => ({
+  ...textStyle(size, weight, color),
+  align: 'center',
+  wordWrap: { width: w },
+})
 
 /** The phone over the shop and its screen, from the sketch. */
 const FRAME = { x: 26, y: 30, w: 1028, h: 2100, r: 80 }
@@ -64,11 +78,19 @@ const TICK_AT = 100_000
 const GOLD_AT = 1_000_000
 /** Posts this far past the window's edges are built ahead, so a drag meets them ready. */
 const BUILD_MARGIN = 600
-/** An unanswered complaint's Trả lời button, its middle this far left of the card's right edge, on the likes row grown to hold it. */
+/** An unanswered complaint's Trả lời button, or a boostable post's Đẩy bài, its middle this far left of the card's right edge, on the likes row grown to hold it. */
 const REPLY_BUTTON = { w: 240, h: 88, dx: 150, rowH: 104 }
 const ROW_H = 64
+/** A boosted post's Đang đẩy or Đã đẩy at its card's top right, its left this far in from the right edge; the name stops short of it. */
+const BOOST_LABEL = { w: 170, h: 48, dx: 200, size: 26 }
+/** A card over the panel: its width and corners, and its Để sau button and the room under it. */
+const CARD = { w: 960, r: 60, later: { w: 300, h: 100, size: 38 }, bottom: 60 }
 /** The reply card, from the sketch: from its top, the title's and the stars' middles and the complaint's top; the replies' boxes and the gaps. */
-const REPLY_CARD = { w: 960, r: 60, titleY: 90, starsY: 160, textY: 205, textW: 800, replyW: 840, replyPad: 40, replyTextW: 760, replyMinH: 88, replyGap: 24, later: { w: 300, h: 100, size: 38 }, bottom: 60 }
+const REPLY_CARD = { titleY: 90, starsY: 160, textY: 205, textW: 800, replyW: 840, replyPad: 40, replyTextW: 760, replyMinH: 88, replyGap: 24 }
+/** The boost card, from the sketch: the title's middle and the words' top from its top; the tiers' rows, the name's and the gain's middles in a row, and the gap. */
+const BOOST_CARD = { titleY: 90, textY: 154, textW: 820, rowW: 840, rowH: 130, rowR: 36, rowPad: 50, nameY: 46, gainY: 92, gainW: 750, rowGap: 20 }
+/** The toast inside the phone, over the list's foot. */
+const TOAST_Y = LIST_BOTTOM - 130
 
 const PIC_BG: Record<PostPic, string> = { idol: C.seaPale, video: C.pinkPale, plaque: C.goldPale, cup: C.goldPale, cert: C.tealPale }
 
@@ -92,9 +114,10 @@ export class PhayScene extends Phaser.Scene {
   private scroll = 0
   private drag: (Hold & { id: number }) | null = null
   private listCam!: Phaser.Cameras.Scene2D.Camera
-  /** Draws the reply card over the list, which the list's camera would otherwise cover; shown only while the card is up. */
+  /** Draws a card or a toast over the list, which the list's camera would otherwise cover; shown only while one is up. */
   private cardCam!: Phaser.Cameras.Scene2D.Camera
   private card: Phaser.GameObjects.Container | null = null
+  private toastBox: Phaser.GameObjects.Container | null = null
   /** One hidden text per style, to count a post's wrapped lines before it is built; the heights by line count. */
   private measurers = new Map<string, { text: Phaser.GameObjects.Text; h: number[] }>()
 
@@ -109,6 +132,7 @@ export class PhayScene extends Phaser.Scene {
     this.scroll = 0
     this.drag = null
     this.card = null
+    this.toastBox = null
     this.measurers = new Map()
   }
 
@@ -133,7 +157,9 @@ export class PhayScene extends Phaser.Scene {
     this.listCam = this.cameras.add(SCREEN.x, LIST_TOP, SCREEN.w, LIST_BOTTOM - LIST_TOP).setScroll(SCREEN.x, LIST_TOP)
     this.listCam.ignore(this.children.list.filter(o => o !== this.list))
     this.cameras.main.ignore(this.list)
+    // the top camera draws only what is put on top later, a card or a toast
     this.cardCam = this.cameras.add(0, 0, GAME_W, GAME_H).setVisible(false)
+    this.cardCam.ignore(this.children.list)
     this.setScroll(this.scroll)
     this.listenForDrags()
   }
@@ -207,7 +233,9 @@ export class PhayScene extends Phaser.Scene {
     if (box && card) {
       box.add(card)
       this.avatar(box, p, x + 74, y + AVATAR_R)
-      const nameW = POST_W - NAME_X - PAD - (p.tick ? 3 * TICK_R : 0)
+      const label = boostLabel(p, this.params.feed, this.params.day)
+      if (label) box.add(this.boostLabel(label, x + POST_W - BOOST_LABEL.dx, y + 4))
+      const nameW = POST_W - NAME_X - PAD - (p.tick ? 3 * TICK_R : 0) - (label ? BOOST_LABEL.dx : 0)
       const name = fit(this.add.text(x + NAME_X, y + 26, p.name, textStyle(36, '800', p.kind === 'rival' ? C.lantern : C.ink)).setOrigin(0, 0.5), nameW)
       box.add(name)
       if (p.tick) box.add(this.tick(name.x + name.displayWidth + 12 + TICK_R, name.y, TICK_R, p.kind === 'idol'))
@@ -227,8 +255,9 @@ export class PhayScene extends Phaser.Scene {
       y += 6 + PIC_H + 24
     }
 
-    // the likes, then the comments' count; an unanswered complaint's Trả lời button at the row's right, the row grown to hold it
-    const rowH = unanswered ? REPLY_BUTTON.rowH : ROW_H
+    // the likes, then the comments' count; an unanswered complaint's Trả lời button or a boostable post's Đẩy bài at the row's right, the row grown to hold it
+    const boostable = boostButtonShown(p)
+    const rowH = unanswered || boostable ? REPLY_BUTTON.rowH : ROW_H
     const row = y + rowH / 2 - 8
     if (box) {
       box.add(this.add.image(x + 50, row, 'icon-heart').setScale(0.65))
@@ -239,6 +268,7 @@ export class PhayScene extends Phaser.Scene {
         box.add(this.add.text(x + 344, row, t('phayComments', { n: shortCount(comments) }), textStyle(28, '600', C.soft)).setOrigin(0, 0.5))
       }
       if (unanswered) box.add(this.replyButton(p, x + POST_W - REPLY_BUTTON.dx, row))
+      else if (boostable) box.add(this.boostButton(p, x + POST_W - REPLY_BUTTON.dx, row))
     }
     y += rowH
 
@@ -282,64 +312,173 @@ export class PhayScene extends Phaser.Scene {
     })
   }
 
+  /** A boosted post's gold Đang đẩy, or the sand Đã đẩy once its day is over, its top left at x, y. */
+  private boostLabel(label: string, x: number, y: number): Phaser.GameObjects.GameObject[] {
+    const { w, h, size } = BOOST_LABEL
+    const running = label === t('phayBoosting')
+    const g = this.add
+      .graphics()
+      .fillStyle(hex(running ? C.goldPale : C.sand), 1)
+      .fillRoundedRect(x, y, w, h, h / 2)
+      .lineStyle(3, hex(running ? C.mustardDark : C.soft))
+      .strokeRoundedRect(x, y, w, h, h / 2)
+    const text = fit(this.add.text(x + w / 2, y + h / 2, label, textStyle(size, '800', running ? C.mustardDark : C.soft)).setOrigin(0.5), w - 24)
+    return [g, text]
+  }
+
+  /** The Đẩy bài pill centred on x, y: teal, opening the boost card; sand once a post was boosted today, when a tap only says so. */
+  private boostButton(p: Post, x: number, y: number): Phaser.GameObjects.Container {
+    const { w, h } = REPLY_BUTTON
+    const done = boostedToday(this.params.feed, this.params.day)
+    const bg = this.add
+      .graphics()
+      .fillStyle(hex(done ? C.sand : C.teal), 1)
+      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+      .lineStyle(4, hex(done ? C.soft : C.ink))
+      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    const label = this.add.text(0, 0, t('phayBoost'), textStyle(32, '800', done ? C.soft : C.paper)).setOrigin(0.5)
+    return whenTapped(this.add.container(x, y, [bg, label]).setSize(w, h).setInteractive(), () => {
+      sound.play('tap')
+      if (done) this.toast(t('phayBoostToday'))
+      else this.openBoost(p)
+    })
+  }
+
   /**
-   * The card over the panel: the customer's name, stars, complaint and its reason, the three replies in the complaint's order, each
-   * showing the very line that gets posted, and Để sau. A reply answers, saves and redraws the panel at this post.
+   * A card over the panel, centred: a dim layer under it takes every tap; `fill` lays its words and buttons from the card's top and
+   * returns where Để sau goes, which closes it.
    */
-  private openReply(p: Post): void {
-    const complaint = p.complaint
-    if (!complaint || this.card) return
+  private openCard(fill: (body: Phaser.GameObjects.Container, mid: number) => number): void {
     const mid = GAME_W / 2
-    const R = REPLY_CARD
-    // over everything, so nothing under the card takes a tap
     const card = this.add.container(0, 0, [this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.4).setOrigin(0).setInteractive()])
     const body = this.add.container(0, 0)
     card.add(body)
     const bg = this.add.graphics()
     body.add(bg)
-    body.add(fit(this.add.text(mid, R.titleY, t('phayReplyTitle', { name: p.name }), textStyle(48)).setOrigin(0.5), R.w - 120))
-    if (p.stars !== null) this.starRow(body, mid - (4 * STAR_DX + 2 * STAR_R) / 2, R.starsY, p.stars)
-    const centred = (size: number, weight: '600' | '800', color: string) => ({ ...textStyle(size, weight, color), align: 'center', wordWrap: { width: R.textW } })
-    let y = R.textY
-    const said = this.add.text(mid, y, `"${p.text}"`, centred(32, '600', C.soft)).setOrigin(0.5, 0)
-    body.add(said)
-    y += said.height + 12
-    const reason = this.add.text(mid, y, REASON_LINE[complaint.reason], centred(28, '800', C.lanternDark)).setOrigin(0.5, 0)
-    body.add(reason)
-    y += reason.height + 44
-    for (const reply of complaint.replies) {
-      const line = this.add
-        .text(-R.replyW / 2 + R.replyPad, 0, this.params.replyLine(p.id, reply), { ...textStyle(32, '800'), wordWrap: { width: R.replyTextW } })
-        .setOrigin(0, 0.5)
-      const h = Math.max(R.replyMinH, line.height + R.replyPad)
-      const box = this.add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
-      body.add(whenTapped(this.add.container(mid, y + h / 2, [box, line]).setSize(R.replyW, h).setInteractive(), () => this.answer(p, reply)))
-      y += h + R.replyGap
-    }
-    y += 20
-    body.add(addButton(this, mid, y + R.later.h / 2, R.later.w, R.later.h, t('phayReplyLater'), 'plain', () => this.closeReply(), R.later.size))
-    const cardH = y + R.later.h + R.bottom
-    bg.fillStyle(hex(C.paper), 1).fillRoundedRect(mid - R.w / 2, 0, R.w, cardH, R.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(mid - R.w / 2, 0, R.w, cardH, R.r)
+    const y = fill(body, mid)
+    const L = CARD.later
+    body.add(addButton(this, mid, y + L.h / 2, L.w, L.h, t('phayReplyLater'), 'plain', () => this.closeCard(), L.size))
+    const cardH = y + L.h + CARD.bottom
+    bg.fillStyle(hex(C.paper), 1).fillRoundedRect(mid - CARD.w / 2, 0, CARD.w, cardH, CARD.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(mid - CARD.w / 2, 0, CARD.w, cardH, CARD.r)
     body.y = Math.round((GAME_H - cardH) / 2)
-
-    // the list's camera draws over the main one, so the card has a camera of its own, above both
-    this.cameras.main.ignore(card)
-    this.listCam.ignore(card)
-    this.cardCam.ignore(this.children.list.filter(o => o !== card))
-    this.cardCam.setVisible(true)
     this.card = card
     this.drag = null
+    this.onTop(card)
   }
 
-  private closeReply(): void {
+  private closeCard(): void {
     this.card?.destroy()
     this.card = null
-    this.cardCam.setVisible(false)
+    this.syncTop()
+  }
+
+  /** The list's camera draws over the main one, so a card or a toast is drawn by the top camera alone, which shows while one is up. */
+  private onTop(obj: Phaser.GameObjects.GameObject): void {
+    this.cameras.main.ignore(obj)
+    this.listCam.ignore(obj)
+    this.syncTop()
+  }
+
+  private syncTop(): void {
+    this.cardCam.setVisible(this.card !== null || this.toastBox !== null)
+  }
+
+  /** A toast inside the phone, over the list's foot, replacing the one up. */
+  private toast(text: string): void {
+    this.toastBox?.destroy()
+    const box = addToast(this, GAME_W / 2, TOAST_Y, text)
+    box.once(Phaser.GameObjects.Events.DESTROY, () => {
+      if (this.toastBox !== box) return
+      this.toastBox = null
+      this.syncTop()
+    })
+    this.toastBox = box
+    this.onTop(box)
+  }
+
+  /**
+   * The reply card: the customer's name, stars, complaint and its reason, the three replies in the complaint's order, each
+   * showing the very line that gets posted, and Để sau. A reply answers, saves and redraws the panel at this post.
+   */
+  private openReply(p: Post): void {
+    const complaint = p.complaint
+    if (!complaint || this.card) return
+    const R = REPLY_CARD
+    this.openCard((body, mid) => {
+      body.add(fit(this.add.text(mid, R.titleY, t('phayReplyTitle', { name: p.name }), textStyle(48)).setOrigin(0.5), CARD.w - 120))
+      if (p.stars !== null) this.starRow(body, mid - (4 * STAR_DX + 2 * STAR_R) / 2, R.starsY, p.stars)
+      let y = R.textY
+      const said = this.add.text(mid, y, `"${p.text}"`, centred(32, '600', C.soft, R.textW)).setOrigin(0.5, 0)
+      body.add(said)
+      y += said.height + 12
+      const reason = this.add.text(mid, y, REASON_LINE[complaint.reason], centred(28, '800', C.lanternDark, R.textW)).setOrigin(0.5, 0)
+      body.add(reason)
+      y += reason.height + 44
+      for (const reply of complaint.replies) {
+        const line = this.add
+          .text(-R.replyW / 2 + R.replyPad, 0, this.params.replyLine(p.id, reply), { ...textStyle(32, '800'), wordWrap: { width: R.replyTextW } })
+          .setOrigin(0, 0.5)
+        const h = Math.max(R.replyMinH, line.height + R.replyPad)
+        const box = this.add
+          .graphics()
+          .fillStyle(hex(C.cream), 1)
+          .fillRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
+          .lineStyle(4, hex(C.ink))
+          .strokeRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
+        body.add(whenTapped(this.add.container(mid, y + h / 2, [box, line]).setSize(R.replyW, h).setInteractive(), () => this.answer(p, reply)))
+        y += h + R.replyGap
+      }
+      return y + 20
+    })
+  }
+
+  /**
+   * The boost card: the post's words, what a boost does, a row per tier with what tomorrow brings and today's price, dimmed and
+   * inert when the purse is short, what the price follows, and Để sau. A tier boosts, saves and redraws the panel at this post.
+   */
+  private openBoost(p: Post): void {
+    if (this.card) return
+    const B = BOOST_CARD
+    this.openCard((body, mid) => {
+      body.add(fit(this.add.text(mid, B.titleY, t('phayBoostTitle'), textStyle(50)).setOrigin(0.5), CARD.w - 120))
+      let y = B.textY
+      const said = this.add.text(mid, y, `"${p.text}"`, centred(30, '600', C.soft, B.textW)).setOrigin(0.5, 0)
+      body.add(said)
+      y += said.height + 12
+      const what = this.add.text(mid, y, t('phayBoostLine'), centred(30, '600', C.ink, B.textW)).setOrigin(0.5, 0)
+      body.add(what)
+      y += what.height + 36
+      for (const tier of BOOST_TIERS) {
+        const price = this.params.boostPrice(tier)
+        const can = this.params.money() >= price
+        const ink = can ? C.ink : C.soft
+        const bg = this.add
+          .graphics()
+          .fillStyle(hex(!can ? C.sand : tier === 'medium' ? C.goldPale : C.cream), 1)
+          .fillRoundedRect(-B.rowW / 2, -B.rowH / 2, B.rowW, B.rowH, B.rowR)
+          .lineStyle(4, hex(ink))
+          .strokeRoundedRect(-B.rowW / 2, -B.rowH / 2, B.rowW, B.rowH, B.rowR)
+        const left = -B.rowW / 2 + B.rowPad
+        const top = -B.rowH / 2
+        const name = this.add.text(left, top + B.nameY, t(BOOST_NAME[tier]), textStyle(38, '800', ink)).setOrigin(0, 0.5)
+        const gain = fit(this.add.text(left, top + B.gainY, boostGain(tier), textStyle(28, '600', C.soft)).setOrigin(0, 0.5), B.gainW)
+        const cost = this.add.text(B.rowW / 2 - B.rowPad + 10, top + B.nameY, formatMoney(price), textStyle(36, '800', can ? C.teal : C.soft)).setOrigin(1, 0.5)
+        const row = this.add.container(mid, y + B.rowH / 2, [bg, name, gain, cost])
+        // a tier the purse cannot pay takes no tap; the dim layer under the card swallows it
+        body.add(can ? whenTapped(row.setSize(B.rowW, B.rowH).setInteractive(), () => this.boost(p, tier)) : row)
+        y += B.rowH + B.rowGap
+      }
+      const note = this.add.text(mid, y + 6, t('phayBoostPriceNote'), centred(26, '600', C.soft, B.textW)).setOrigin(0.5, 0)
+      body.add(note)
+      return y + 6 + note.height + 36
+    })
+  }
+
+  /** Boosts through the shop, which saves, then opens the panel again with the post, now Đang đẩy, at the top. */
+  private boost(p: Post, tier: BoostTier): void {
+    sound.play('tap')
+    this.params.onBoost(p.id, tier)
+    this.scene.restart({ ...this.params, focusId: p.id })
   }
 
   /** Answers through the shop, which saves, then opens the panel again with the post, now the exchange, at the top. */

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { addPost, emptyFeed } from '../../src/sim/feed'
 import type { FeedBook, PostDraft } from '../../src/sim/feed'
 import { milestoneCard } from '../../src/view/phayCards'
-import { clampScroll, DRAG_PX, dragTo, inWindow, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, replyButtonShown, shortCount, stackPosts, unreadLabel } from '../../src/view/phay'
+import { boostButtonShown, boostGain, boostLabel, clampScroll, DRAG_PX, dragTo, inWindow, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, replyButtonShown, shortCount, stackPosts, unreadLabel } from '../../src/view/phay'
 
 describe('the Phây button', () => {
   it('sits under the top bar on the right, lower at a branch under the ribbon', () => expect(PHAY_BUTTON).toEqual({ x: 1010, y: 280, r: 44, branchY: 330 }))
@@ -164,5 +164,47 @@ describe('the Trả lời button', () => {
   it('never shows on a complaint saved without its replies, nor on praise', () => {
     expect(replyButtonShown(post({ kind: 'complaint', stars: 2, complaint: null }))).toBe(false)
     expect(replyButtonShown(post({ kind: 'praise', stars: 5 }))).toBe(false)
+  })
+})
+
+describe('the Đẩy bài button and label', () => {
+  const feed = () => {
+    const f = { ...emptyFeed(), open: true }
+    addPost(f, draft({ kind: 'shop', boostable: true }), 8, 0, () => 0.5)
+    addPost(f, draft({ kind: 'shop', boostable: true }), 8, 1, () => 0.5)
+    return f
+  }
+
+  it('shows Đẩy bài under a boostable post not yet boosted, never on a plain one', () => {
+    const f = feed()
+    expect(boostButtonShown(f.posts[0])).toBe(true)
+    expect(boostButtonShown({ ...f.posts[0], boosted: 'small' })).toBe(false)
+    expect(boostButtonShown({ ...f.posts[0], boostable: false })).toBe(false)
+  })
+
+  it('says Đang đẩy from the day bought through the day it runs', () => {
+    const f = feed()
+    f.posts[1].boosted = 'medium'
+    f.boosts = [{ day: 9, tier: 'medium', post: f.posts[1].id }]
+    expect(boostLabel(f.posts[1], f, 8)).toBe('Đang đẩy')
+    expect(boostLabel(f.posts[1], f, 9)).toBe('Đang đẩy')
+  })
+
+  it('says Đã đẩy once the entry is gone or names another post, and nothing on a post never boosted', () => {
+    const f = feed()
+    f.posts[0].boosted = 'small'
+    expect(boostLabel(f.posts[0], f, 12)).toBe('Đã đẩy')
+    f.boosts = [{ day: 13, tier: 'large', post: f.posts[1].id }]
+    expect(boostLabel(f.posts[0], f, 12)).toBe('Đã đẩy')
+    // an entry saved before posts were named reads as post 0
+    f.boosts = [{ day: 13, tier: 'small', post: 0 }]
+    expect(boostLabel(f.posts[0], f, 12)).toBe('Đã đẩy')
+    expect(boostLabel(f.posts[1], f, 12)).toBeNull()
+  })
+
+  it("tells each tier's next day: more customers and bigger tips", () => {
+    expect(boostGain('small')).toBe('Mai +15% khách, boa ×1,1')
+    expect(boostGain('medium')).toBe('Mai +30% khách, boa ×1,2')
+    expect(boostGain('large')).toBe('Mai +50% khách, boa ×1,3')
   })
 })

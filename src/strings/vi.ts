@@ -700,6 +700,7 @@ export const vi = {
   todayRivalDone: 'Đã giữ được khách',
   todayHot: 'Đang hot · còn {n} ngày',
   todayHotLast: 'Đang hot · còn hôm nay',
+  todayBoost: 'Hôm nay bài đẩy đang chạy, khách đông hơn',
   kolArrivedToast: 'Mi Mi tới rồi · làm cho Mi Mi 3 sao nhé',
   kolPostedToast: 'Mi Mi khen hết lời',
   kolLeftToast: 'Mi Mi về rồi, không đăng bài',
@@ -881,6 +882,17 @@ export const vi = {
   phayReply: 'Trả lời',
   phayReplyTitle: 'Trả lời {name}',
   phayReplyLater: 'Để sau',
+  phayBoost: 'Đẩy bài',
+  phayBoostToday: 'Hôm nay đã đẩy một bài rồi. Mai đẩy tiếp nha.',
+  phayBoosting: 'Đang đẩy',
+  phayBoosted: 'Đã đẩy',
+  phayBoostTitle: 'Đẩy bài này?',
+  phayBoostLine: 'Bài hiện với nhiều người hơn. Ngày mai khách tới đông hơn. Mỗi ngày đẩy được một bài.',
+  phayBoostSmall: 'Nhỏ',
+  phayBoostMedium: 'Vừa',
+  phayBoostLarge: 'Lớn',
+  phayBoostGain: 'Mai +{n}% khách, boa ×{tip}',
+  phayBoostPriceNote: 'Giá theo lãi trung bình 3 ngày gần nhất của tiệm',
 } as const
 
 export type StringKey = keyof typeof vi

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
-import { EVENT_ICON } from '../../src/view/events'
+import { boostLine, EVENT_ICON } from '../../src/view/events'
 import { festivalLine } from '../../src/view/festivals'
 import { todayLine, todayShown } from '../../src/view/today'
 
@@ -76,6 +76,36 @@ describe("today's line", () => {
 
   it('has nothing to say on a plain day', () => {
     expect(todayLine(on(13))).toBeNull()
+  })
+})
+
+describe("today's line for a boosted post", () => {
+  const boosted = (day: number) => (s: SpaSim) => (s.feed.boosts = [{ day, tier: 'small', post: 1 }])
+  const LINE = 'Hôm nay bài đẩy đang chạy, khách đông hơn'
+
+  it('says nothing on a plain day, nor the day the boost is bought', () => {
+    expect(boostLine(on(13))).toBeNull()
+    expect(boostLine(on(12, boosted(13)))).toBeNull()
+  })
+
+  it('tells the main shop on the day the boost runs', () => {
+    expect(boostLine(on(13, boosted(13)))?.text).toBe(LINE)
+    expect(todayLine(on(13, boosted(13)))?.text).toBe(LINE)
+  })
+
+  it('says nothing at a branch, which the boost does not reach', () => {
+    const main = on(13, boosted(13))
+    expect(boostLine(SpaSim.newBranch('beach', main, createRng(2)))).toBeNull()
+  })
+
+  it('comes after the festival and before a hot day', () => {
+    const festive = on(38, boosted(38))
+    expect(todayLine(festive)).toEqual(festivalLine(festive))
+    const hot = on(13, s => {
+      boosted(13)(s)
+      s.eventBook.hotUntil = 14
+    })
+    expect(todayLine(hot)?.text).toBe(LINE)
   })
 })
 
