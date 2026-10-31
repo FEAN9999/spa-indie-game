@@ -177,6 +177,23 @@ describe('the owner between the two shops', () => {
     expect(o.r.owner.task).toEqual({ kind: 'order', dinerId: b.id })
   })
 
+  it('keeps the diner tap when a wall of her destination is tapped while walking out or riding', () => {
+    const o = owned()
+    const [d] = ordering(o)
+    const wall = { x: 0, y: 0 }
+    expect(o.r.grid.cells[wall.y][wall.x]).toBe('wall')
+    expect(o.street.tap('restaurant', d.chair!)).toBeNull()
+    o.chain.advance(100)
+    expect(o.street.where.at).toBe('leaving')
+    expect(o.street.tap('restaurant', wall)).toBeNull()
+    expect(o.street.where).toMatchObject({ at: 'leaving', tap: d.chair })
+    runUntil(o.chain, () => o.street.where.at === 'riding')
+    expect(o.street.tap('restaurant', wall)).toBeNull()
+    expect(o.street.where).toMatchObject({ at: 'riding', to: 'restaurant', tap: d.chair })
+    runUntil(o.chain, () => o.street.where.at === 'restaurant')
+    expect(o.r.owner.task).toEqual({ kind: 'order', dinerId: d.id })
+  })
+
   it('refuses to leave mid-carry', () => {
     const o = owned()
     const c = spaWaiting(o)
@@ -269,10 +286,10 @@ describe('the restaurant on the chain\'s day', () => {
     for (let t = 0; t < 120_000; t += 100) {
       o.chain.advance(100)
       seen.push(...o.chain.drainRestaurantEvents())
-      if (!o.r.diners.includes(a)) expect(o.main.money).toBe(before + 80_000)
+      if (!o.r.diners.includes(a)) expect(o.main.money).toBe(before + 40_000)
     }
-    expect(seen).toContainEqual({ type: 'dinerPaid', dinerId: a.id, amount: 60_000, tip: 20_000, tile: expect.anything() })
-    expect(o.main.money).toBe(before + 80_000)
+    expect(seen).toContainEqual({ type: 'dinerPaid', dinerId: a.id, amount: 30_000, tip: 10_000, tile: expect.anything() })
+    expect(o.main.money).toBe(before + 40_000)
     expect(o.r.diners).toHaveLength(0)
     expect(o.r.stats.walkedAway).toBe(0)
     expect(seen.some(e => e.type === 'dinerLeft' && e.angry)).toBe(false)

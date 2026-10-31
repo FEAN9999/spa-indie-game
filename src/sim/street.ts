@@ -53,11 +53,11 @@ export class Street {
         this.shop(side).owner.path = []
         this.where = { at: side }
         this.shop(side).tapTile(t)
-      } else w.tap = t
+      } else if (this.wanted(side, t)) w.tap = t
       return null
     }
     if (w.at === 'riding') {
-      if (w.to === side) w.tap = t
+      if (w.to === side && this.wanted(side, t)) w.tap = t
       return null
     }
     if (!this.wanted(side, t)) return null
