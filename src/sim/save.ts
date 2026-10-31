@@ -35,8 +35,10 @@ import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, ty
 export const RESTAURANT_SAVE_VERSION = 37
 /** The save that first has the restaurant's cooks, stock and lessons: origin/master's SAVE_VERSION + 1 at merge time. */
 export const RESTAURANT_B_SAVE_VERSION = 38
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons. */
-export const SAVE_VERSION = RESTAURANT_B_SAVE_VERSION
+/** The save that first has the restaurant's houses, floors and upstairs: origin/master's SAVE_VERSION + 1 at merge time. */
+export const RESTAURANT_C_SAVE_VERSION = 39
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors. */
+export const SAVE_VERSION = RESTAURANT_C_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -64,8 +66,9 @@ export interface ChainSave {
 export interface RestaurantSave {
   items: Item[]
   nextItemId: number
-  /** No houses and one floor until the restaurant grows; kept for then. */
+  /** The houses bought on each side, opened on every floor; none until the restaurant grows (a save from before RESTAURANT_C_SAVE_VERSION has none). */
   houses: Houses
+  /** How many floors are open, 1 to MAX_FLOORS; one in a save from before RESTAURANT_C_SAVE_VERSION. Furniture upstairs, diners and cooks on the stairs are saved with their tile rows. */
   floors: number
   diners: Diner[]
   nextDinerId: number
@@ -329,7 +332,7 @@ function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[], cooks: boolea
   const state = x.state as DinerState
   const chair = state === 'leaving' || state === 'exiting' ? null : isTile(x.chair) ? { x: x.chair.x, y: x.chair.y } : undefined
   if (chair === undefined || (chair && !seats.some(s => tileEq(s.tile, chair)))) return null
-  return {
+  return climb<Diner>({
     id: x.id as number,
     look: repairLook(x.look),
     kind: CUSTOMER_KINDS.includes(x.kind as never) ? (x.kind as Diner['kind']) : 'office',
@@ -340,6 +343,7 @@ function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[], cooks: boolea
     pos: { x: x.pos.x, y: x.pos.y },
     facing: repairFacing(x.facing),
     path: repairPath(x.path),
+    climbMs: x.climbMs as number | undefined,
     chair,
     dish,
     chefId: cooks && Number.isInteger(x.chefId) ? (x.chefId as number) : null,
@@ -348,7 +352,7 @@ function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[], cooks: boolea
     mood: x.mood === 'happy' || x.mood === 'ok' || x.mood === 'angry' ? x.mood : null,
     fromSpa: x.fromSpa === true,
     legMs: x.legMs,
-  }
+  })
 }
 
 /** A task of the owner's for a diner, or none. */
@@ -389,15 +393,22 @@ function repairChef(x: unknown, shell: Grid): Chef | null {
   const c = repairChefCandidate(x)
   if (!c || !isObject(x) || !Number.isInteger(x.id)) return null
   const here = isObject(x.pos) && isNumber(x.pos.x) && isNumber(x.pos.y) && inBounds(shell, { x: Math.round(x.pos.x), y: Math.round(x.pos.y) })
-  return {
+  return climb<Chef>({
     ...c,
     id: x.id as number,
     pos: here ? { x: (x.pos as Tile).x, y: (x.pos as Tile).y } : { ...shell.door },
     facing: repairFacing(x.facing),
     path: repairPath(x.path),
+    climbMs: x.climbMs as number | undefined,
     task: repairChefTask(x.task),
     leaving: x.leaving === true,
-  }
+  })
+}
+
+/** A climb in progress is a time from zero up, else nothing. */
+const climb = <T extends { climbMs?: number }>(m: T): T => {
+  if (!(isNumber(m.climbMs) && m.climbMs >= 0)) delete m.climbMs
+  return m
 }
 
 /** Each item's count as a whole number from 0 up, else STOCK_START. */
@@ -416,13 +427,15 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
   if (!isObject(raw) || !isNumber(raw.v) || raw.v < RESTAURANT_SAVE_VERSION || !isObject(raw.restaurant)) return null
   const r = raw.restaurant
   const cooks = raw.v >= RESTAURANT_B_SAVE_VERSION
-  const shell = diningShellGrid()
+  const houses = repairHouses(r.houses)
+  const floors = Number.isInteger(r.floors) && (r.floors as number) >= 1 && (r.floors as number) <= MAX_FLOORS ? (r.floors as number) : 1
+  const shell = diningShellGrid(houses)
   const items: Item[] = []
   for (const i of Array.isArray(r.items) ? r.items : []) {
     if (!isObject(i) || !Number.isInteger(i.id) || !(ITEM_KINDS as unknown[]).includes(i.kind) || !Number.isInteger(i.x) || !Number.isInteger(i.y) || typeof i.flip !== 'boolean') continue
     const kind = i.kind as ItemKind
     const item: Item = { id: i.id as number, kind, x: i.x as number, y: i.y as number, flip: i.flip, ...(i.turned === true && canTurn(kind) && { turned: true }) }
-    if (!items.some(o => o.id === item.id) && placementProblem('restaurant', shell, items, item, { door: shell.door, floors: 1 }) === null) items.push(item)
+    if (!items.some(o => o.id === item.id) && placementProblem('restaurant', shell, items, item, { door: shell.door, floors }) === null) items.push(item)
   }
   const seats = diningSeats(items)
   const diners: Diner[] = []
@@ -443,8 +456,8 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
   return {
     items,
     nextItemId: Math.max(isNumber(r.nextItemId) ? r.nextItemId : 1, ...items.map(i => i.id + 1)),
-    houses: repairHouses(r.houses),
-    floors: Number.isInteger(r.floors) && (r.floors as number) >= 1 && (r.floors as number) <= MAX_FLOORS ? (r.floors as number) : 1,
+    houses,
+    floors,
     diners,
     nextDinerId: Math.max(isNumber(r.nextDinerId) ? r.nextDinerId : 1, ...diners.map(d => d.id + 1)),
     untilArrivalMs: isNumber(r.untilArrivalMs) ? r.untilArrivalMs : FIRST_ARRIVAL_MS,
@@ -458,12 +471,13 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
       ownerCooked: repairCount(stats.ownerCooked),
       chefCooked: repairCount(stats.chefCooked),
     },
-    owner: {
+    owner: climb({
       pos: here ? { x: (o.pos as Tile).x, y: (o.pos as Tile).y } : { ...shell.door },
       facing: repairFacing(o.facing),
       path: repairPath(o.path),
+      climbMs: o.climbMs as number | undefined,
       task: repairDiningTask(o.task),
-    },
+    }),
     ownerIn: r.ownerIn === true,
     cookingDinerId: Number.isInteger(r.cookingDinerId) ? (r.cookingDinerId as number) : null,
     ownerAt: r.ownerAt === 'restaurant' || r.ownerAt === 'street' ? r.ownerAt : 'spa',
@@ -501,11 +515,6 @@ function parseShop(raw: unknown): SaveData {
   data.floors = !before && Number.isInteger(data.floors) && data.floors >= 1 && data.floors <= MAX_FLOORS ? data.floors : 1
   if (flagged) data.clearStairs = true
   else delete data.clearStairs
-  // a climb in progress is a time from zero up, else nothing
-  const climb = <T extends { climbMs?: number }>(m: T): T => {
-    if (!(isNumber(m.climbMs) && m.climbMs >= 0)) delete m.climbMs
-    return m
-  }
   // stock counts are whole numbers from zero up, else a full shelf; money spent restocking is a number, else nothing
   const stock: Record<string, unknown> = isObject(data.stock) ? data.stock : {}
   data.stock = Object.fromEntries(STOCK_ITEMS.map(i => [i, Number.isInteger(stock[i]) && (stock[i] as number) >= 0 ? stock[i] : STOCK_START])) as Record<StockItem, number>
@@ -884,7 +893,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

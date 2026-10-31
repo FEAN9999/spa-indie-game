@@ -9,7 +9,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
 import { fullRestaurantStock } from '../../src/sim/menu'
 import { addPost, emptyFeed, openFeed, seededFeed } from '../../src/sim/feed'
@@ -19,7 +19,8 @@ import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
 import { floorOf, towerOf } from '../../src/sim/floors'
 import { shellOf } from '../../src/sim/items'
-import { SHOP_LAYOUT, SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { NO_HOUSES, SHOP_LAYOUT, SPA_LAYOUT_1A } from '../../src/sim/layout'
+import { ROOF_START } from '../../src/sim/dining'
 import { SpaSim } from '../../src/sim/spa'
 import { isPast, pastStarter, STARTER_GOAL_IDS } from '../../src/sim/starter'
 import { noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS } from '../../src/sim/staff'
@@ -60,6 +61,7 @@ import v32 from '../fixtures/save-v32.json'
 import v35 from '../fixtures/save-v35.json'
 import v37 from '../fixtures/save-v37.json'
 import v38 from '../fixtures/save-v38.json'
+import v39 from '../fixtures/save-v39.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -130,9 +132,9 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('the wide grid in an older shop', () => {
-  it("is version 38, the restaurant's cooks, stock and lessons", () => {
-    expect(SAVE_VERSION).toBe(RESTAURANT_B_SAVE_VERSION)
-    expect(RESTAURANT_B_SAVE_VERSION).toBe(38)
+  it("is version 39, the restaurant's houses and floors", () => {
+    expect(SAVE_VERSION).toBe(RESTAURANT_C_SAVE_VERSION)
+    expect(RESTAURANT_C_SAVE_VERSION).toBe(39)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2739,6 +2741,88 @@ describe('the restaurant in a saved chain', () => {
 
   it('refuses a save newer than the game', () => {
     expect(() => parseSave({ ...structuredClone(v38), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  })
+
+  /** A grown restaurant: the right house, floors 2 and 3 (the rooftop's umbrella table set out), a table and chair in the house on floor 2, an upstairs diner and a cook on the stairs. */
+  const grown = () => {
+    const o = owned()
+    o.main.money = 100_000_000
+    expect(o.r.buyHouse('right')).toBeNull()
+    expect(o.r.openFloor(2)).toBeNull()
+    expect(o.r.openFloor(3)).toBeNull()
+    expect(o.r.buy('diningTable', 27, 28, false)).toBeNull()
+    expect(o.r.buy('diningChair', 27, 27, false)).toBeNull()
+    expect(o.r.hire(0)).toBeNull()
+    for (let n = 0; n < 8; n++) expect(o.r.spawnDiner({ kind: 'student', dish: 'pho' })).not.toBeNull()
+    const upstairs = o.r.spawnDiner({ kind: 'student', dish: 'pho' })!
+    expect(floorOf(upstairs.chair!.y)).toBe(2)
+    const [cook] = o.r.chefs
+    cook.pos = { ...o.r.grid.feet[0] }
+    cook.path = [{ x: o.r.grid.feet[0].x, y: 28 }]
+    cook.climbMs = 400
+    return { ...o, upstairs, cook }
+  }
+
+  it('reads a v38 restaurant with one floor and no houses', () => {
+    const data = parseSave(structuredClone(v38))
+    const r = data.restaurant!
+    expect([r.floors, r.houses, r.items.length]).toEqual([1, NO_HOUSES, v38.restaurant.items.length])
+    expect(Chain.fromSave(data, 7).restaurant!.items).toHaveLength(v38.restaurant.items.length)
+  })
+
+  it('round-trips a grown restaurant: houses, floors, upstairs furniture, an upstairs diner and a cook mid-climb', () => {
+    const { chain, r, upstairs, cook } = grown()
+    expect(r.items.some(i => i.kind === 'umbrellaTable')).toBe(true)
+    const saved = JSON.parse(JSON.stringify(chain.toSave())) as { v: number }
+    expect(saved.v).toBe(SAVE_VERSION)
+    const back = Chain.fromSave(parseSave(saved), 7).restaurant!
+    expect(back.items).toEqual(r.items)
+    expect(back.items.filter(i => floorOf(i.y) === 2).map(i => i.kind)).toEqual(['diningTable', 'diningChair'])
+    expect(ROOF_START.every(p => back.items.some(i => i.kind === p.kind && i.x === p.x && i.y === p.y))).toBe(true)
+    expect([back.houses, back.floors]).toEqual([{ left: 0, right: 1 }, 3])
+    expect(back.diners.map(d => [d.id, d.chair])).toEqual(r.diners.map(d => [d.id, d.chair]))
+    expect(back.diners.find(d => d.id === upstairs.id)!.chair).toEqual(upstairs.chair)
+    expect(floorOf(back.diners.find(d => d.id === upstairs.id)!.chair!.y)).toBe(2)
+    expect(back.chefs.find(c => c.id === cook.id)!.climbMs).toBe(400)
+    expect(back.chefs.map(c => c.id)).toEqual(r.chefs.map(c => c.id))
+  })
+
+  it('keeps a valid climb on the owner, diners and cooks and drops a damaged one', () => {
+    const { chain, r, upstairs, cook } = grown()
+    r.owner.climbMs = 250
+    upstairs.climbMs = 120
+    const raw = JSON.parse(JSON.stringify(chain.toSave())) as { restaurant: { owner: { climbMs?: unknown }; diners: { id: number; climbMs?: unknown }[]; chefs: { climbMs?: unknown }[] } }
+    const kept = parseSave(structuredClone(raw)).restaurant!
+    expect([kept.owner.climbMs, kept.diners.find(d => d.id === upstairs.id)!.climbMs, kept.chefs[0].climbMs]).toEqual([250, 120, cook.climbMs])
+    raw.restaurant.owner.climbMs = -1
+    raw.restaurant.diners.find(d => d.id === upstairs.id)!.climbMs = 'x'
+    raw.restaurant.chefs[0].climbMs = null
+    const damaged = parseSave(raw).restaurant!
+    expect([damaged.owner.climbMs, damaged.diners.find(d => d.id === upstairs.id)!.climbMs, damaged.chefs[0].climbMs]).toEqual([undefined, undefined, undefined])
+  })
+
+  it('drops only the item that breaks the grown room', () => {
+    const { chain } = grown()
+    const raw = JSON.parse(JSON.stringify(chain.toSave())) as Saved & { restaurant: { floors: number } }
+    raw.restaurant!.floors = 2
+    raw.restaurant!.items = raw.restaurant!.items.filter(i => !(i.kind === 'umbrellaTable' || floorOf(i.y) === 3))
+    raw.restaurant!.items.push({ id: 95, kind: 'diningTable', x: 20, y: 44, flip: false })
+    const back = parseSave(raw).restaurant!
+    expect(back.floors).toBe(2)
+    expect(back.items.some(i => i.id === 95)).toBe(false)
+    expect(back.items).toEqual(raw.restaurant!.items.filter(i => i.id !== 95))
+  })
+
+  it('reads the v39 fixture with its houses, three floors and the rooftop umbrella table', () => {
+    const data = parseSave(structuredClone(v39))
+    expect(data.v).toBe(RESTAURANT_C_SAVE_VERSION)
+    const r = Chain.fromSave(data, 7).restaurant!
+    expect([r.houses, r.floors]).toEqual([v39.restaurant.houses, 3])
+    expect(r.houses.left + r.houses.right).toBeGreaterThan(0)
+    expect(r.items).toHaveLength(v39.restaurant.items.length)
+    const umbrella = r.items.filter(i => i.kind === 'umbrellaTable')
+    expect(umbrella.map(i => [i.x, i.y])).toEqual([[ROOF_START[0].x, ROOF_START[0].y]])
+    expect(r.diners.some(d => floorOf(d.chair!.y) === 2)).toBe(true)
   })
 })
 

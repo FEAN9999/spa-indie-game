@@ -1,0 +1,1129 @@
+{
+  "v": 39,
+  "place": null,
+  "chain": {
+    "at": null,
+    "told": false,
+    "branches": []
+  },
+  "restaurant": {
+    "items": [
+      {
+        "kind": "stove",
+        "x": 15,
+        "y": 2,
+        "flip": false,
+        "id": 1
+      },
+      {
+        "kind": "stove",
+        "x": 18,
+        "y": 2,
+        "flip": false,
+        "id": 2
+      },
+      {
+        "kind": "servingCounter",
+        "x": 13,
+        "y": 5,
+        "flip": false,
+        "id": 3
+      },
+      {
+        "kind": "servingCounter",
+        "x": 19,
+        "y": 5,
+        "flip": false,
+        "id": 4
+      },
+      {
+        "kind": "diningTable",
+        "x": 14,
+        "y": 8,
+        "flip": false,
+        "id": 5
+      },
+      {
+        "kind": "diningTable",
+        "x": 19,
+        "y": 8,
+        "flip": false,
+        "id": 6
+      },
+      {
+        "kind": "diningChair",
+        "x": 14,
+        "y": 7,
+        "flip": false,
+        "id": 7
+      },
+      {
+        "kind": "diningChair",
+        "x": 15,
+        "y": 7,
+        "flip": false,
+        "id": 8
+      },
+      {
+        "kind": "diningChair",
+        "x": 14,
+        "y": 9,
+        "flip": false,
+        "id": 9
+      },
+      {
+        "kind": "diningChair",
+        "x": 15,
+        "y": 9,
+        "flip": false,
+        "id": 10
+      },
+      {
+        "kind": "diningChair",
+        "x": 19,
+        "y": 7,
+        "flip": false,
+        "id": 11
+      },
+      {
+        "kind": "diningChair",
+        "x": 20,
+        "y": 7,
+        "flip": false,
+        "id": 12
+      },
+      {
+        "kind": "diningChair",
+        "x": 19,
+        "y": 9,
+        "flip": false,
+        "id": 13
+      },
+      {
+        "kind": "diningChair",
+        "x": 20,
+        "y": 9,
+        "flip": false,
+        "id": 14
+      },
+      {
+        "kind": "ingredientShelf",
+        "x": 13,
+        "y": 2,
+        "flip": false,
+        "id": 15
+      },
+      {
+        "kind": "ingredientShelf",
+        "x": 14,
+        "y": 2,
+        "flip": false,
+        "id": 16
+      },
+      {
+        "kind": "ingredientShelf",
+        "x": 23,
+        "y": 2,
+        "flip": false,
+        "id": 17
+      },
+      {
+        "kind": "sink",
+        "x": 21,
+        "y": 2,
+        "flip": false,
+        "id": 18
+      },
+      {
+        "kind": "cashierCounter",
+        "x": 20,
+        "y": 14,
+        "flip": false,
+        "id": 19
+      },
+      {
+        "kind": "umbrellaTable",
+        "x": 15,
+        "y": 44,
+        "flip": false,
+        "id": 20
+      },
+      {
+        "kind": "diningChair",
+        "x": 15,
+        "y": 43,
+        "flip": false,
+        "id": 21
+      },
+      {
+        "kind": "diningChair",
+        "x": 16,
+        "y": 43,
+        "flip": false,
+        "id": 22
+      },
+      {
+        "kind": "diningChair",
+        "x": 15,
+        "y": 45,
+        "flip": false,
+        "id": 23
+      },
+      {
+        "kind": "diningChair",
+        "x": 16,
+        "y": 45,
+        "flip": false,
+        "id": 24
+      },
+      {
+        "id": 25,
+        "kind": "diningTable",
+        "x": 27,
+        "y": 28,
+        "flip": false
+      },
+      {
+        "id": 26,
+        "kind": "diningChair",
+        "x": 27,
+        "y": 27,
+        "flip": false
+      }
+    ],
+    "nextItemId": 27,
+    "houses": {
+      "left": 0,
+      "right": 1
+    },
+    "floors": 3,
+    "diners": [
+      {
+        "id": 1,
+        "look": {
+          "skin": 2,
+          "hair": 4,
+          "hairStyle": 2,
+          "shirt": 0
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 14,
+          "y": 7
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "little",
+          "chili": false,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 2,
+        "look": {
+          "skin": 0,
+          "hair": 3,
+          "hairStyle": 2,
+          "shirt": 2
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 15,
+          "y": 7
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "tai",
+          "onion": "little",
+          "chili": false,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 3,
+        "look": {
+          "skin": 3,
+          "hair": 1,
+          "hairStyle": 2,
+          "shirt": 0
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 14,
+          "y": 9
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "tai",
+          "onion": "little",
+          "chili": true,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 4,
+        "look": {
+          "skin": 1,
+          "hair": 3,
+          "hairStyle": 2,
+          "shirt": 1
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 15,
+          "y": 9
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "tai",
+          "onion": "lots",
+          "chili": false,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 5,
+        "look": {
+          "skin": 0,
+          "hair": 2,
+          "hairStyle": 1,
+          "shirt": 1
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 19,
+          "y": 7
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "lots",
+          "chili": true,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 6,
+        "look": {
+          "skin": 0,
+          "hair": 3,
+          "hairStyle": 0,
+          "shirt": 0
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 20,
+          "y": 7
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "lots",
+          "chili": false,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 7,
+        "look": {
+          "skin": 3,
+          "hair": 3,
+          "hairStyle": 3,
+          "shirt": 2
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 19,
+          "y": 9
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "little",
+          "chili": true,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 8,
+        "look": {
+          "skin": 2,
+          "hair": 2,
+          "hairStyle": 1,
+          "shirt": 2
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 20,
+          "y": 9
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "lots",
+          "chili": false,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      },
+      {
+        "id": 9,
+        "look": {
+          "skin": 1,
+          "hair": 0,
+          "hairStyle": 3,
+          "shirt": 3
+        },
+        "kind": "student",
+        "state": "arriving",
+        "stateMs": 0,
+        "pos": {
+          "x": 18,
+          "y": 17
+        },
+        "facing": "up",
+        "path": [],
+        "patienceMs": 60000,
+        "patienceMaxMs": 60000,
+        "chair": {
+          "x": 27,
+          "y": 27
+        },
+        "dish": "pho",
+        "ticket": {
+          "doneness": "chin",
+          "onion": "lots",
+          "chili": true,
+          "extraHerb": false
+        },
+        "chefId": null,
+        "stars": null,
+        "mood": null,
+        "fromSpa": false,
+        "legMs": 0
+      }
+    ],
+    "nextDinerId": 10,
+    "untilArrivalMs": 3000,
+    "stats": {
+      "served": 0,
+      "income": 0,
+      "tips": 0,
+      "walkedAway": 0,
+      "wages": 0,
+      "restock": 0,
+      "ownerCooked": 0,
+      "chefCooked": 0
+    },
+    "owner": {
+      "pos": {
+        "x": 18,
+        "y": 17
+      },
+      "facing": "up",
+      "path": [],
+      "task": null
+    },
+    "ownerIn": false,
+    "cookingDinerId": null,
+    "stock": {
+      "phoKit": 20,
+      "batter": 20,
+      "cheKit": 20,
+      "herbs": 20
+    },
+    "chefs": [
+      {
+        "name": "Minh",
+        "look": {
+          "skin": 3,
+          "hair": 2,
+          "hairStyle": 1,
+          "shirt": 2
+        },
+        "stats": {
+          "skill": 2,
+          "speed": 3
+        },
+        "wage": 35000,
+        "rare": false,
+        "tiers": {
+          "pho": 1,
+          "banhXeo": 0,
+          "che": 0
+        },
+        "id": 1,
+        "pos": {
+          "x": 23,
+          "y": 10
+        },
+        "facing": "up",
+        "path": [
+          {
+            "x": 23,
+            "y": 28
+          }
+        ],
+        "task": null,
+        "leaving": false,
+        "climbMs": 400
+      }
+    ],
+    "nextChefId": 2,
+    "candidates": [
+      {
+        "name": "Ngọc",
+        "look": {
+          "skin": 1,
+          "hair": 1,
+          "hairStyle": 0,
+          "shirt": 4
+        },
+        "stats": {
+          "skill": 2,
+          "speed": 3
+        },
+        "wage": 35000,
+        "rare": false,
+        "tiers": {
+          "pho": 0,
+          "banhXeo": 1,
+          "che": 0
+        }
+      },
+      {
+        "name": "Nam",
+        "look": {
+          "skin": 3,
+          "hair": 1,
+          "hairStyle": 0,
+          "shirt": 1
+        },
+        "stats": {
+          "skill": 3,
+          "speed": 3
+        },
+        "wage": 40000,
+        "rare": false,
+        "tiers": {
+          "pho": 0,
+          "banhXeo": 1,
+          "che": 0
+        }
+      }
+    ],
+    "candidatesDay": 10,
+    "learned": [],
+    "away": {
+      "profits": [],
+      "ok": false,
+      "tipSeen": false
+    },
+    "ownerAt": "spa"
+  },
+  "day": 10,
+  "floors": 1,
+  "minutes": 480,
+  "money": 86185000,
+  "reviews": [],
+  "reviewIds": [],
+  "stats": {
+    "served": 0,
+    "angry": 0,
+    "walkedAway": 0,
+    "income": 0,
+    "tips": 0,
+    "wages": 0,
+    "restock": 0,
+    "gifts": 0,
+    "quests": 0,
+    "ownerServed": 0
+  },
+  "dayOver": false,
+  "servingCustomerId": null,
+  "owner": {
+    "pos": {
+      "x": 21,
+      "y": 13
+    },
+    "facing": "down",
+    "path": [],
+    "task": null
+  },
+  "customers": [],
+  "items": [
+    {
+      "kind": "bed",
+      "x": 14,
+      "y": 2,
+      "flip": false,
+      "id": 1
+    },
+    {
+      "kind": "bed",
+      "x": 16,
+      "y": 2,
+      "flip": false,
+      "id": 2
+    },
+    {
+      "kind": "cabinet",
+      "x": 21,
+      "y": 2,
+      "flip": false,
+      "id": 3
+    },
+    {
+      "kind": "plant",
+      "x": 23,
+      "y": 5,
+      "flip": false,
+      "id": 4
+    },
+    {
+      "kind": "shelf",
+      "x": 14,
+      "y": 7,
+      "flip": false,
+      "id": 5
+    },
+    {
+      "kind": "lotus",
+      "x": 21,
+      "y": 7,
+      "flip": false,
+      "id": 6
+    },
+    {
+      "kind": "vase",
+      "x": 23,
+      "y": 11,
+      "flip": false,
+      "id": 7
+    },
+    {
+      "kind": "planter",
+      "x": 14,
+      "y": 12,
+      "flip": false,
+      "id": 8
+    },
+    {
+      "kind": "bench",
+      "x": 14,
+      "y": 13,
+      "flip": false,
+      "id": 9
+    },
+    {
+      "kind": "tea",
+      "x": 15,
+      "y": 15,
+      "flip": false,
+      "id": 10
+    },
+    {
+      "kind": "plant",
+      "x": 13,
+      "y": 16,
+      "flip": false,
+      "id": 11
+    },
+    {
+      "kind": "slippers",
+      "x": 16,
+      "y": 16,
+      "flip": false,
+      "id": 12
+    },
+    {
+      "kind": "plant",
+      "x": 23,
+      "y": 16,
+      "flip": false,
+      "id": 13
+    },
+    {
+      "kind": "screen",
+      "x": 13,
+      "y": 6,
+      "flip": false,
+      "id": 14
+    },
+    {
+      "kind": "screen",
+      "x": 19,
+      "y": 6,
+      "flip": false,
+      "id": 15
+    },
+    {
+      "kind": "desk",
+      "x": 20,
+      "y": 14,
+      "flip": false,
+      "id": 16
+    }
+  ],
+  "nextItemId": 17,
+  "nextId": 1,
+  "untilArrivalMs": 3000,
+  "shopName": "Tiệm Spa",
+  "ownerLook": {
+    "skin": 0,
+    "hair": 0,
+    "hairStyle": 0,
+    "shirt": 0
+  },
+  "profileDone": true,
+  "hints": [],
+  "staff": [],
+  "candidates": [],
+  "candidatesDay": 0,
+  "nextStaffId": 1,
+  "services": [
+    "shampoo",
+    "mask",
+    "massage"
+  ],
+  "lessonsPaid": [],
+  "stock": {
+    "shampoo": 20,
+    "towel": 20,
+    "mask": 20,
+    "oil": 20,
+    "herbs": 20,
+    "mud": 20,
+    "salt": 20,
+    "polish": 20
+  },
+  "book": {
+    "regulars": {
+      "hanh": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "vy": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "sau": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "khoa": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "tu": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "ba": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "thao": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      },
+      "lan": {
+        "meetDay": null,
+        "met": false,
+        "points": 0,
+        "hearts": 0,
+        "visitAt": null
+      }
+    },
+    "served": {
+      "student": 0,
+      "office": 0,
+      "picky": 0,
+      "elder": 0,
+      "celeb": 0
+    },
+    "kindsMet": [],
+    "gifts": [],
+    "extraCustomer": false,
+    "extraAt": null,
+    "boardGiven": false
+  },
+  "vip": {
+    "vips": {
+      "singer": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "miss": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "star": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      },
+      "chef": {
+        "visits": 0,
+        "best": 0,
+        "photo": false
+      }
+    },
+    "booking": null,
+    "nextDay": 0,
+    "everBooked": false,
+    "boardGiven": false
+  },
+  "idol": {
+    "idols": {
+      "sontung": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "taylor": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "gd": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "jennie": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "hieuthuhai": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "weeknd": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "taeyang": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "bieber": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      },
+      "daesung": {
+        "visits": 0,
+        "best": 0,
+        "photo": false,
+        "thanked": false
+      }
+    },
+    "booking": null,
+    "nextDay": 0,
+    "everBooked": false,
+    "wallGiven": false
+  },
+  "recipes": {
+    "steam": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    },
+    "stone": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    },
+    "mud": {
+      "solved": false,
+      "tries": [],
+      "heard": []
+    }
+  },
+  "progress": {
+    "total": {
+      "served": 0,
+      "earned": 0,
+      "tips": 0,
+      "owner3": 0,
+      "staff": 0,
+      "lost": 0,
+      "hearts": 0,
+      "courses": 0,
+      "services": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0,
+        "scrub": 0,
+        "foot": 0,
+        "nails": 0
+      }
+    },
+    "dayStart": {
+      "served": 0,
+      "earned": 0,
+      "tips": 0,
+      "owner3": 0,
+      "staff": 0,
+      "lost": 0,
+      "hearts": 0,
+      "courses": 0,
+      "services": {
+        "shampoo": 0,
+        "mask": 0,
+        "massage": 0,
+        "steam": 0,
+        "stone": 0,
+        "mud": 0,
+        "scrub": 0,
+        "foot": 0,
+        "nails": 0
+      }
+    },
+    "recent": [],
+    "life": {
+      "dailies": 0,
+      "bestServed": 0,
+      "bestProfit": 0,
+      "cleanDay": false,
+      "record": null
+    },
+    "questDay": 0,
+    "daily": [],
+    "yesterday": [],
+    "swaps": 0,
+    "monthFrom": 0,
+    "monthly": null,
+    "lastMonthKind": null,
+    "seenDay": 0
+  },
+  "badges": {},
+  "festival": {
+    "keepsakes": []
+  },
+  "events": {
+    "nextDay": 10,
+    "last": null,
+    "plan": null,
+    "hotUntil": 0,
+    "hotDays": 2,
+    "hotBy": "kol",
+    "hotCardDay": 0,
+    "count": 0,
+    "inspected": false,
+    "certGiven": false
+  },
+  "rank": {
+    "stars": 3,
+    "month": {
+      "from": 1,
+      "served": 0,
+      "lost": 0
+    },
+    "scores": [],
+    "last": null,
+    "lastYear": null,
+    "wins": 0,
+    "meritGiven": false
+  },
+  "ownerOutfit": "baba",
+  "outfitsSeen": [
+    "baba"
+  ],
+  "away": {
+    "profits": [],
+    "ok": false,
+    "tipSeen": false
+  },
+  "starter": {
+    "at": 11,
+    "doneDay": null,
+    "bought": 0,
+    "opened": {},
+    "maskNext": false
+  },
+  "pets": {
+    "owned": [],
+    "nextId": 1,
+    "litter": false
+  },
+  "houses": {
+    "left": 0,
+    "right": 0
+  },
+  "feed": {
+    "open": false,
+    "posts": [],
+    "nextId": 1,
+    "lastSeen": 0,
+    "followers": 0,
+    "milestones": [],
+    "cheer": [],
+    "today": {
+      "day": 0,
+      "praise": 0,
+      "complaint": 0
+    },
+    "boosts": []
+  },
+  "savedAt": null
+}
