@@ -57,7 +57,7 @@ import {
 } from '../config'
 import { PET_NAME_IDEAS, t } from '../strings/vi'
 import { IDOL_TEXT } from '../strings/idols'
-import { managerName, PHAY_KOL_NAME } from '../strings/phay'
+import { managerName, PHAY_KOL_NAME, PHAY_WARD_NAME } from '../strings/phay'
 import { REGULAR_TEXT } from '../strings/regulars'
 import { VIP_TEXT } from '../strings/vips'
 import { newBadges, type BadgeShop, type Badges } from './badges'
@@ -85,8 +85,8 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
-import { addPost, dayRoom, emptyFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft } from './feed'
-import { commentsFor, complaintText, idolText, kolText, managerText, praiseText, strangerName, vipText } from './feedText'
+import { addPost, dayRoom, emptyFeed, openFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft } from './feed'
+import { commentsFor, complaintText, idolText, kolText, managerText, praiseText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -98,6 +98,8 @@ import type { Customer, CustomerState, DayStats, Facing, HintId, Look, Mover, Ow
 import type { Feature } from './unlocks'
 
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
+/** The stream each kind of shop news draws from, so news filed on one day never draws alike. */
+const NEWS_SALT: Record<ShopNews['kind'], number> = { rank: 7, year: 8, festival: 9, branch: 10, house: 11, floor: 12, pet: 13 }
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type HireProblem = 'money' | 'full'
@@ -820,6 +822,7 @@ export class SpaSim {
     this.money += reward
     this.stats.quests += reward
     this.emit({ type: 'rivalBeaten', reward })
+    this.postRival('beaten')
   }
 
   /**
@@ -843,6 +846,7 @@ export class SpaSim {
       this.book.gifts.push('certificate')
     }
     this.emit({ type: 'inspected', checks, low: lowItem ? { item: lowItem, count: this.stock[lowItem] } : null, lost, beauty, reward, cert })
+    if (cert) this.postWard()
   }
 
   /** Customers who want `service` and have not reached a bed yet. */
@@ -1059,10 +1063,15 @@ export class SpaSim {
         if (dayOfMonth(this.day) === 1) this.emit({ type: 'monthStarted', month: monthOf(this.day), ended })
       }
     }
+    if (this.questsOpen()) openFeed(this.feed)
     // told after the quests are rolled, so the service is the one the month settled on
     const festival = festivalOf(this.day)
-    if (festival && festival !== festivalOf(this.day - 1)) this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
+    if (festival && festival !== festivalOf(this.day - 1)) {
+      this.emit({ type: 'festivalStarted', festival, service: this.festivalServiceToday()! })
+      this.postNews({ kind: 'festival', festival })
+    }
     if (book.plan?.day === this.day) this.emit({ type: 'eventToday', plan: { ...book.plan } })
+    if (rivalToday(book, this.day)) this.postRival('morning')
     if (hotCardToday(book, this.day)) this.emit({ type: 'hotStarted', until: book.hotUntil })
   }
 
@@ -1187,6 +1196,7 @@ export class SpaSim {
     this.pets.owned.push(pet)
     // a full shop has no room for the litter: it counts as taken
     if (this.pets.owned.length >= MAX_PETS) this.pets.litter = true
+    this.postNews({ kind: 'pet', name: pet.name, breed })
     return pet
   }
 
@@ -1377,6 +1387,7 @@ export class SpaSim {
     this.floors = floor
     this.changeRoom()
     this.emit({ type: 'floorOpened', floor })
+    this.postNews({ kind: 'floor', floor })
     return null
   }
 
@@ -1409,6 +1420,7 @@ export class SpaSim {
     this.rebuildShell()
     this.changeRoom()
     this.emit({ type: 'houseBought', house: { side, n } })
+    this.postNews({ kind: 'house', place: this.place })
     return null
   }
 
@@ -1672,12 +1684,15 @@ export class SpaSim {
       recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday(), this.day)
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (this.place === null && isJudgeDay(this.day)) {
-        this.money += judgeMonth(this.rank, this.rankNow().input, this.day).reward
+        const month = judgeMonth(this.rank, this.rankNow().input, this.day)
+        this.money += month.reward
+        if (month.after > month.before) this.postNews({ kind: 'rank', stars: month.after })
         if (isYearEnd(this.day)) {
           const year = judgeYear(this.rank, this.day)
           if (year) {
             this.money += year.reward
             this.book.gifts.push(...year.gifts)
+            if (year.place <= 3) this.postNews({ kind: 'year', place: year.place })
           }
         }
       }
@@ -1884,9 +1899,14 @@ export class SpaSim {
     return this.feedRng(salt + c.id * 16)
   }
 
+  /** The regulars met, by name, who may comment under a post of `name`'s. */
+  private friendsOf(name: string): string[] {
+    return REGULAR_IDS.filter(id => this.book.regulars[id].met).map(id => REGULAR_TEXT[id].name).filter(n => n !== name)
+  }
+
   /** Files a post of this customer's in the feed, with the likes and comments Phây draws for it. */
   private filePost(c: Customer, kind: PostDraft['kind'], name: string, fields: Partial<PostDraft> & Pick<PostDraft, 'text'>): void {
-    const friends = REGULAR_IDS.filter(id => this.book.regulars[id].met).map(id => REGULAR_TEXT[id].name).filter(n => n !== name)
+    const friends = this.friendsOf(name)
     const face = { look: { ...c.look }, kind: c.kind, regular: c.regular, vip: c.vip, idol: c.idol }
     const draft: PostDraft = { kind, name, face, tick: false, stars: null, pic: null, comments: commentsFor(kind, friends, this.guestRng(c, 5)), complaint: null, boostable: false, notify: false, ...fields }
     addPost(this.feed, draft, this.day, this.clock.minutes, this.guestRng(c, 6))
@@ -1916,6 +1936,30 @@ export class SpaSim {
       if (this.feed.today.day === this.day && this.feed.today.praise > 0 && this.guestRng(c, 1)() >= FEED_PRAISE_CHANCE) return
       this.filePost(c, 'praise', own, { text: praiseText(c.service, c.kind, this.guestRng(c, 3)), stars: 5, boostable: true })
     }
+  }
+
+  /** Files a post with no guest behind it, once Phây is open: its text, comments and likes all come from the one stream `salt` picks (7 to 15, below any guest's). */
+  private filePiece(salt: number, kind: PostDraft['kind'], name: string, text: (rng: Rng) => string, fields: Partial<PostDraft> = {}): void {
+    if (!this.feed.open) return
+    const rng = this.feedRng(salt)
+    const draft: PostDraft = { kind, name, face: null, tick: false, stars: null, text: text(rng), pic: null, comments: commentsFor(kind, this.friendsOf(name), rng), complaint: null, boostable: false, notify: false, ...fields }
+    addPost(this.feed, draft, this.day, this.clock.minutes, rng)
+  }
+
+  /** The shop's own news in the feed, from the main shop or a branch alike. */
+  postNews(news: ShopNews): void {
+    const pic = news.kind === 'rank' ? 'plaque' : news.kind === 'year' ? 'cup' : null
+    this.filePiece(NEWS_SALT[news.kind], 'shop', this.shopName, rng => shopText(news, this.shopName, rng), { pic, boostable: true })
+  }
+
+  /** SPA MỚI's teasing, or its post when the shop beats its challenge. */
+  private postRival(when: 'morning' | 'beaten'): void {
+    this.filePiece(when === 'morning' ? 14 : 15, 'rival', t('rivalSignName'), rng => rivalText(when, rng))
+  }
+
+  /** Phường 3's word on the inspector's certificate; the inspector and the rival never come on the same day, so they share a stream. */
+  private postWard(): void {
+    this.filePiece(14, 'ward', PHAY_WARD_NAME, rng => wardText(this.shopName, rng), { tick: true, pic: 'cert' })
   }
 
   /** Mi Mi's video after her 3 stars. */

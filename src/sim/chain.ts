@@ -90,6 +90,7 @@ export class Chain {
     this.wireIncoming(branch)
     this.branches = PLACE_IDS.flatMap(id => (id === place ? [branch] : this.branches.filter(b => b.place === id)))
     this.sync()
+    this.main.postNews({ kind: 'branch', place })
     return null
   }
 
