@@ -125,8 +125,7 @@ export class PhoScene extends Phaser.Scene {
 
   private addTicket(): void {
     const tk = this.params.ticket
-    const lines: StringKey[] = [tk.doneness === 'tai' ? 'phoTai' : 'phoChin', tk.onion === 'little' ? 'phoOnionLittle' : 'phoOnionLots', tk.chili ? 'phoChili' : 'phoNoChili']
-    if (tk.extraHerb) lines.push('phoExtraHerb')
+    const lines: StringKey[] = [tk.doneness === 'tai' ? 'phoTai' : 'phoChin', tk.onion === 'little' ? 'phoOnionLittle' : 'phoOnionLots', tk.chili ? 'phoChili' : 'phoNoChili', tk.extraHerb ? 'phoExtraHerb' : 'phoHerbLine']
     this.add.image(TICKET.x, TICKET.y, 'pho-ticket').setOrigin(0)
     this.add.text(TICKET.textX, TICKET.headY, t('phoTicket'), textStyle(TICKET.headSize, '800', C.terracotta)).setOrigin(0, 0.5)
     lines.forEach((key, i) => this.add.text(TICKET.textX, TICKET.lineY + i * TICKET.lineStep, t(key), textStyle(TICKET.lineSize, '600')).setOrigin(0, 0.5))
@@ -197,6 +196,8 @@ export class PhoScene extends Phaser.Scene {
     const from = this.phase
     this.phase = next
     this.held = false
+    // a needle that filled let go on its own, under a finger still down
+    this.holdButton?.setScale(1)
     if (next === 'done') {
       this.reveal(this.rules.stars() ?? 1)
       return

@@ -209,6 +209,7 @@ export const vi = {
   phoOnionLots: 'Nhiều hành',
   phoChili: 'Có ớt',
   phoNoChili: 'Không ớt',
+  phoHerbLine: 'Có rau',
   phoExtraHerb: 'Thêm rau',
   phoCutGood: 'Lát đẹp!',
   phoCutOff: 'Hơi lệch vạch.',
