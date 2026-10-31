@@ -275,7 +275,7 @@ export class RestaurantSim {
     for (const d of [...this.diners]) {
       if (d.id === carried) this.setState(d, 'eating')
       else if (d.state === 'street') this.diners = this.diners.filter(x => x !== d)
-      else if (d.state === 'ordering' || d.state === 'waitingFood') this.startLeaving(d)
+      else if (d.state !== 'eating' && d.state !== 'leaving' && d.state !== 'exiting') this.startLeaving(d)
     }
   }
 

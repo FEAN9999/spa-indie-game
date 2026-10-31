@@ -528,6 +528,27 @@ describe('the owner working the restaurant', () => {
     expect(r.stoves.every(s => s.dinerId === null)).toBe(true)
   })
 
+  it('sends away a diner still coming in or walking to a chair when the owner leaves town', () => {
+    const { r } = setup()
+    r.ownerArrives()
+    const walking = r.spawnDiner({ kind: 'student' })!
+    for (let t = 0; walking.state !== 'toChair'; t += 50) {
+      expect(t).toBeLessThan(5_000)
+      r.advance(50)
+    }
+    const coming = r.spawnDiner({ kind: 'student' })!
+    expect(coming.state).toBe('arriving')
+    r.drainEvents()
+    r.leaveTown()
+    expect(r.freeSeats()).toHaveLength(8)
+    r.advance(EXIT_MS + 8_000)
+    expect(r.drainEvents().some(e => e.type === 'dinerLeft' || e.type === 'dinerArrived')).toBe(false)
+    expect(r.diners).toHaveLength(0)
+    expect(r.stats).toEqual({ served: 0, income: 0, tips: 0, walkedAway: 0 })
+    expect(walking.mood).toBeNull()
+    expect(coming.mood).toBeNull()
+  })
+
   it('lets go of a diner waiting at the stove when the owner leaves town mid-cook', () => {
     const { r } = setup()
     r.ownerArrives()
