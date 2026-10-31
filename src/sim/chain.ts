@@ -1,13 +1,15 @@
-import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, STEP_MS } from '../config'
+import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, RESTAURANT_DAY, RESTAURANT_PRICE, STEP_MS } from '../config'
 import type { AwayResult } from './away'
 import { staffCap } from './crew'
 import { housesBought } from './layout'
 import { dayProfit } from './economy'
 import { PLACE_IDS, type PlaceId } from './places'
+import { RestaurantSim, type DinerState, type RestaurantEvent } from './restaurant'
 import { createRng } from './rng'
 import { SaveError, type SaveData } from './save'
 import { SpaSim } from './spa'
 import type { MoveTo, Staff, StaffRole } from './staff'
+import { Street } from './street'
 import type { CustomerState, SimEvent } from './types'
 import type { IdolId } from './idols'
 import type { VipId } from './vips'
@@ -18,6 +20,10 @@ export type OpenProblem = 'open' | 'stars' | 'money'
 export type GoProblem = 'here' | 'notOpen' | 'closed'
 /** `staff`: no such working person there, or they are leaving; `place`: their own shop, or no branch there; `full`: no room left there for their role. */
 export type MoveProblem = 'staff' | 'place' | 'full'
+/** `owned`: the restaurant is bought already; `day`: before RESTAURANT_DAY; `money`: the purse is short. */
+export type RestaurantProblem = 'owned' | 'day' | 'money'
+/** Added to the chain's seed for the restaurant's own stream, clear of the branches' seed + 1 to seed + 3. */
+export const RESTAURANT_RNG_SALT = 101
 /** The shop a booked move goes to: null for the main shop. */
 export const moveDest = (to: Exclude<MoveTo, null>): PlaceId | null => (to === 'main' ? null : to)
 
@@ -30,6 +36,8 @@ export interface ChainDayRow {
 const HELD: readonly SimEvent['type'][] = ['badge', 'questDone', 'goalDone', 'festivalQuestDone', 'inspected', 'kolPosted', 'rivalBeaten', 'heart', 'gift', 'bookPage', 'recipeHint', 'dayEnded']
 
 const WAITING: readonly CustomerState[] = ['arriving', 'toSeat', 'waiting']
+/** The diners who leave quietly when the owner goes to a branch, but for the one whose bowl she carries. */
+const DINERS_LEAVING: readonly DinerState[] = ['street', 'arriving', 'toChair', 'ordering', 'waitingFood']
 
 /** The main shop and its branches: one clock, one purse, and the owner in one of them. */
 export class Chain {
@@ -40,6 +48,8 @@ export class Chain {
   at: PlaceId | null = null
   /** True once the card that opens the chain has been shown. */
   told = false
+  /** The owner between the main shop and the restaurant; null until the restaurant is bought. */
+  street: Street | null = null
 
   private readonly seed: number
   /** The main shop's cards waiting for the owner. */
@@ -48,11 +58,52 @@ export class Chain {
   private vipCalls: VipId[] = []
   /** The stars who came to the main shop while the owner was at a branch. */
   private idolCalls: IdolId[] = []
+  /** The restaurant's events, for the view to take. */
+  private restaurantEvents: RestaurantEvent[] = []
 
   constructor(main: SpaSim, seed: number) {
     this.main = main
     this.seed = seed
     this.wireIncoming(main)
+  }
+
+  get restaurant(): RestaurantSim | null {
+    return this.street?.restaurant ?? null
+  }
+
+  restaurantProblem(): RestaurantProblem | null {
+    if (this.street) return 'owned'
+    if (this.main.day < RESTAURANT_DAY) return 'day'
+    if (this.main.money < RESTAURANT_PRICE) return 'money'
+    return null
+  }
+
+  /** Takes the price and opens the restaurant beside the main shop, drawing from its own stream; the owner stays where she is. */
+  buyRestaurant(): RestaurantProblem | null {
+    const problem = this.restaurantProblem()
+    if (problem) return problem
+    this.main.money -= RESTAURANT_PRICE
+    this.wire(new RestaurantSim({ host: this.main, rng: createRng(this.seed + RESTAURANT_RNG_SALT), autoSpawn: this.main.autoSpawn }))
+    return null
+  }
+
+  /** A Phở game is open: the whole chain stands still. */
+  cooking(): boolean {
+    return this.restaurant?.cookingDinerId != null
+  }
+
+  /** The restaurant's events since last asked; taking them empties the list. */
+  drainRestaurantEvents(): RestaurantEvent[] {
+    const out = this.restaurantEvents
+    this.restaurantEvents = []
+    return out
+  }
+
+  /** Hooks the main shop, and only it, to the restaurant: paying customers may walk over, and its day stays open while anyone eats. */
+  private wire(restaurant: RestaurantSim): void {
+    this.main.onCustomerGone = c => restaurant.walkOver(c)
+    this.main.keepOpen = () => restaurant.busy()
+    this.street = new Street(this.main, restaurant)
   }
 
   /** The shop the owner is in. */
@@ -140,6 +191,7 @@ export class Chain {
     if (problem) return problem
     const left = this.active()
     this.route(left, left.drainEvents())
+    if (left === this.main) this.street?.ownerLeavesTown()
     left.ownerLeaves()
     this.sync()
     this.at = place
@@ -147,6 +199,7 @@ export class Chain {
     if (place === null) {
       this.vipCalls = []
       this.idolCalls = []
+      this.street?.ownerBack()
     } else if (left === this.main) this.callForWaitingVips()
     this.active().ownerArrives()
     return null
@@ -163,14 +216,19 @@ export class Chain {
     return this.advance(Math.min(dtMs, MAX_FRAME_MS))
   }
 
-  /** Runs the owner's shop, then every other shop for exactly the ms it ran; returns those ms. */
+  /** Runs the owner's shop, then every other shop and the restaurant for exactly the ms it ran; returns those ms. Nothing runs while a Phở game is open. */
   advance(ms: number): number {
+    if (this.cooking()) return 0
     const here = this.active()
     const ran = here.advance(ms)
     for (const s of [this.main, ...this.branches]) {
       if (s === here) continue
       s.advance(ran)
       this.route(s, s.drainEvents())
+    }
+    if (this.street) {
+      this.street.advance(ran)
+      this.restaurantEvents.push(...this.street.restaurant.drainEvents())
     }
     return ran
   }
@@ -244,6 +302,7 @@ export class Chain {
     this.idolCalls = []
     this.main.ownerHere = true
     for (const b of this.branches) b.ownerHere = false
+    this.street?.startDay()
     this.sync()
   }
 
@@ -299,9 +358,12 @@ export class Chain {
     return [this.main, ...this.branches].map(s => ({ place: s.place, profit: dayProfit(s.stats) }))
   }
 
-  /** How many customers would leave the owner's shop if she went now. */
+  /** How many customers would leave the owner's shop if she went now; from the main shop, the restaurant's diners too. */
   leaveCount(): number {
-    return this.active().leaversIfOwnerGoes()
+    const r = this.restaurant
+    if (this.at !== null || !r) return this.active().leaversIfOwnerGoes()
+    const carried = r.owner.task?.kind === 'carry' ? r.owner.task.dinerId : null
+    return this.main.leaversIfOwnerGoes() + r.diners.filter(d => d.id !== carried && DINERS_LEAVING.includes(d.state)).length
   }
 
   /** The main shop's cards kept while the owner was away, in order; taking them empties the list. */

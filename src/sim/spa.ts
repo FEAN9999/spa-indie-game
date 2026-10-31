@@ -178,6 +178,12 @@ export class SpaSim {
   paused = false
   /** The owner is in this shop; an absent shop runs on its staff. Not saved. */
   ownerHere = true
+  /** The owner is in the restaurant or on the street between: taps here are ignored, and the shop otherwise runs as if she were in. Not saved. */
+  ownerNextDoor = false
+  /** Called just before a customer who has walked out is gone. */
+  onCustomerGone: ((c: Customer) => void) | null = null
+  /** Holds the day open after closing while it is true. */
+  keepOpen: () => boolean = () => false
   servingCustomerId: number | null = null
   dayOver = false
   shopName = t('defaultShopName')
@@ -218,7 +224,7 @@ export class SpaSim {
 
   private readonly rng: Rng
   private readonly crew: CrewHost
-  private readonly autoSpawn: boolean
+  readonly autoSpawn: boolean
   /** Floor 1's layout without its furniture or its houses. */
   private readonly base: string[]
   /** The layout without its furniture: walls and door; the screens and desk are furniture. */
@@ -353,6 +359,22 @@ export class SpaSim {
   ownerArrives(): void {
     this.owner = { pos: this.ownerStart(), facing: this.ownerStartFacing(), path: [], task: null }
     this.ownerHere = true
+  }
+
+  /** Sends the owner to the door for the restaurant; false while she fetches or serves someone. */
+  ownerWalksOut(): boolean {
+    if (this.owner.task || this.servingCustomerId !== null) return false
+    this.owner.path = findPath(this.grid, this.ownerTile(), t => tileEq(t, this.grid.door)) ?? []
+    return true
+  }
+
+  ownerAtDoor(): boolean {
+    return this.owner.path.length === 0 && tileEq(this.ownerTile(), this.grid.door)
+  }
+
+  /** The owner is back from the restaurant: at the door, facing in, with nothing to do. */
+  ownerWalksIn(): void {
+    this.owner = { pos: { ...this.grid.door }, facing: 'up', path: [], task: null }
   }
 
   /** Everyone is gone at once and the staff's tasks are repaired; the shop can then end its day. */
@@ -647,7 +669,7 @@ export class SpaSim {
 
   /** A tap on the shop floor: fetch the waiting customer sitting there, offer a bed on an open bed slot, or walk there. */
   tapTile(t: Tile): void {
-    if (!this.ownerHere || this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
+    if (!this.ownerHere || this.ownerNextDoor || this.paused || this.dayOver || this.servingCustomerId !== null || this.owner.task?.kind === 'serve') return
     const from = this.ownerTile()
 
     const waiting = this.customers.find(c => c.state === 'waiting' && c.seat && tileEq(c.seat, t))
@@ -1666,7 +1688,7 @@ export class SpaSim {
     }
     this.checkBadges()
 
-    if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null) {
+    if (this.clock.isClosed && this.customers.length === 0 && this.servingCustomerId === null && !this.keepOpen()) {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
@@ -1721,6 +1743,7 @@ export class SpaSim {
         break
       case 'exiting':
         if (c.stateMs >= EXIT_MS) {
+          this.onCustomerGone?.(c)
           this.customers = this.customers.filter(x => x !== c)
           this.emit({ type: 'customerLeft', id: c.id, angry: c.mood === 'angry' })
         }
