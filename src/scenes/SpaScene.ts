@@ -91,6 +91,7 @@ import type { InspectData } from './InspectScene'
 import type { NewOutfitData } from './NewOutfitScene'
 import type { LitterData } from './LitterScene'
 import type { PetNameData } from './PetNameScene'
+import type { CookData } from './PhoScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -606,10 +607,21 @@ export class SpaScene extends Phaser.Scene {
     }
   }
 
-  /** The owner stands at a stove with a diner's ticket: the bowl is cooked. */
+  /** The owner stands at a stove with a diner's ticket: the Phở game opens, and its stars send her off with the bowl. */
   private cook(e: Extract<RestaurantEvent, { type: 'cookReady' }>): void {
-    // TEMP (Task 11): launch PhoScene
-    this.chain.restaurant?.completeCooking(e.dinerId, 3)
+    const restaurant = this.chain.restaurant
+    const d = restaurant?.diners.find(x => x.id === e.dinerId)
+    if (!restaurant || !d) return
+    const data: CookData = {
+      look: d.look,
+      kind: d.kind,
+      extraMs: dayEase(this.sim.day).miniGameExtraMs,
+      hard: KINDS[d.kind].hard,
+      demo: false,
+      ticket: d.ticket,
+      onDone: stars => restaurant.completeCooking(d.id, stars),
+    }
+    this.scene.launch('PhoScene', data)
   }
 
   /** A mini-game is being played: a spa service or a bowl at the restaurant's stove. */
