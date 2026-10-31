@@ -603,7 +603,7 @@ describe('save version 5', () => {
       ev.length = 0
       return paid.length >= 2
     }, 120_000, ev)
-    expect(paid.slice(0, 2)).toEqual([40_000, 40_000])
+    expect(paid.slice(0, 2)).toEqual([20_000, 20_000])
   })
 
   it('keeps the services and what each customer wants through a round trip', () => {

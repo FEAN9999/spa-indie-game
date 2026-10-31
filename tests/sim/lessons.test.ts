@@ -182,7 +182,7 @@ describe('served by staff', () => {
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
     expect(c.service).toBe('scrub')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(170_000, 3))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(85_000, 3))
     expect(main.stock.salt).toBe(salt - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
@@ -252,7 +252,7 @@ describe('Ngâm chân thảo mộc', () => {
     const events: SimEvent[] = []
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(190_000, 4))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(90_000, 4))
     expect(main.stock.herbs).toBe(herbs - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
@@ -323,7 +323,7 @@ describe('Sơn móng', () => {
     const events: SimEvent[] = []
     advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
     const paid = events.find(e => e.type === 'paid')
-    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(220_000, 5))
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(100_000, 5))
     expect(main.stock.polish).toBe(polish - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })

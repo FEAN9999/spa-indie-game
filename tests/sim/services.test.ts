@@ -66,7 +66,7 @@ describe('opening Xông lá', () => {
     expect(RECIPE_SERVICES).toEqual(['steam', 'stone', 'mud'])
     expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails'])
     expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true, false, false, false])
-    expect(SERVICES.steam).toEqual({ price: 110_000, openCost: 500_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
+    expect(SERVICES.steam).toEqual({ price: 50_000, openCost: 500_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
     expect([t('serviceSteam'), t('itemSteamTent'), t('stockHerbs'), t('busySteam')]).toEqual(['Xông lá', 'Lều xông lá', 'Gói lá xông', 'Lều xông đang bận'])
   })
 
@@ -124,8 +124,8 @@ describe('opening Đá nóng and Tắm bùn', () => {
   }
 
   it('has the specs, strings and prices', () => {
-    expect(SERVICES.stone).toEqual({ price: 130_000, openCost: 650_000, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' })
-    expect(SERVICES.mud).toEqual({ price: 160_000, openCost: 800_000, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' })
+    expect(SERVICES.stone).toEqual({ price: 60_000, openCost: 650_000, bed: 'stoneBed', name: 'serviceStone', busy: 'busyStone' })
+    expect(SERVICES.mud).toEqual({ price: 75_000, openCost: 800_000, bed: 'mudTub', name: 'serviceMud', busy: 'busyMud' })
     expect([t('serviceStone'), t('itemStoneBed'), t('busyStone')]).toEqual(['Đá nóng', 'Giường đá nóng', 'Giường đá đang bận'])
     expect([t('serviceMud'), t('itemMudTub'), t('stockMud'), t('busyMud')]).toEqual(['Tắm bùn', 'Bồn tắm bùn', 'Túi bùn khoáng', 'Bồn bùn đang bận'])
   })
@@ -223,8 +223,8 @@ describe('customers and services', () => {
     sim.drainEvents()
     const before = sim.money
     sim.completeService(c.id, 3)
-    expect(sim.money).toBe(before + 60_000 + tipFor(60_000, 3))
-    expect(sim.drainEvents()).toContainEqual({ type: 'paid', customerId: c.id, amount: 60_000, tip: tipFor(60_000, 3), tile: station.bed })
+    expect(sim.money).toBe(before + 30_000 + tipFor(30_000, 3))
+    expect(sim.drainEvents()).toContainEqual({ type: 'paid', customerId: c.id, amount: 30_000, tip: tipFor(30_000, 3), tile: station.bed })
   })
 
   it('says the right bed is busy and keeps the owner still', () => {
@@ -288,7 +288,7 @@ describe('Chà muối biển', () => {
     expect(isLessonService('scrub')).toBe(true)
     expect(isLessonService('mud')).toBe(false)
     expect(LESSON_STARS.scrub).toBe(3)
-    expect(SERVICES.scrub).toEqual({ price: 170_000, openCost: 700_000, bed: 'scrubBed', name: 'serviceScrub', busy: 'busyScrub' })
+    expect(SERVICES.scrub).toEqual({ price: 85_000, openCost: 700_000, bed: 'scrubBed', name: 'serviceScrub', busy: 'busyScrub' })
     expect(serviceOfBed('scrubBed')).toBe('scrub')
     expect([t('serviceScrub'), t('itemScrubBed'), t('stockSalt'), t('busyScrub')]).toEqual(['Chà muối biển', 'Giường chà muối', 'Muối biển', 'Giường chà muối đang bận'])
   })
@@ -298,7 +298,7 @@ describe('Ngâm chân thảo mộc', () => {
   it('is the second service learned in a lesson, at 4 stars, with its chair, price and tuition', () => {
     expect(isLessonService('foot')).toBe(true)
     expect(LESSON_STARS.foot).toBe(4)
-    expect(SERVICES.foot).toEqual({ price: 190_000, openCost: 850_000, bed: 'footChair', name: 'serviceFoot', busy: 'busyFoot' })
+    expect(SERVICES.foot).toEqual({ price: 90_000, openCost: 850_000, bed: 'footChair', name: 'serviceFoot', busy: 'busyFoot' })
     expect(serviceOfBed('footChair')).toBe('foot')
     expect([t('serviceFoot'), t('itemFootChair'), t('busyFoot')]).toEqual(['Ngâm chân thảo mộc', 'Ghế ngâm chân', 'Ghế ngâm chân đang bận'])
   })
@@ -309,7 +309,7 @@ describe('Sơn móng', () => {
     expect(SERVICE_IDS.slice(-3)).toEqual(['scrub', 'foot', 'nails'])
     expect(isLessonService('nails')).toBe(true)
     expect(LESSON_STARS.nails).toBe(5)
-    expect(SERVICES.nails).toEqual({ price: 220_000, openCost: 1_000_000, bed: 'nailDesk', name: 'serviceNails', busy: 'busyNails' })
+    expect(SERVICES.nails).toEqual({ price: 100_000, openCost: 1_000_000, bed: 'nailDesk', name: 'serviceNails', busy: 'busyNails' })
     expect(serviceOfBed('nailDesk')).toBe('nails')
     expect([t('serviceNails'), t('itemNailDesk'), t('stockPolish'), t('busyNails')]).toEqual(['Sơn móng', 'Bàn làm móng', 'Sơn móng', 'Bàn làm móng đang bận'])
   })

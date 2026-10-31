@@ -208,7 +208,7 @@ describe('technicians at work', () => {
       ev.push(...sim.drainEvents())
     }
     expect(Math.abs(ms - workMs(3))).toBeLessThanOrEqual(200)
-    expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id, amount: 40_000 }))
+    expect(ev).toContainEqual(expect.objectContaining({ type: 'paid', customerId: a.id, amount: 20_000 }))
     expect(sim.stats.served).toBe(1)
     expect(a.state).toBe('leaving')
     expect(sim.stations[0].customerId).toBeNull()
@@ -239,7 +239,7 @@ describe('technicians at work', () => {
     const paid = ev.find(e => e.type === 'paid' && e.customerId === a.id)
     const review = ev.find(e => e.type === 'review' && e.customerId === a.id)
     if (paid?.type !== 'paid' || review?.type !== 'review') throw new Error('no payment')
-    expect(paid.tip).toBe(Math.round(tipFor(40_000, (review.score - 2) as 1 | 2 | 3) * tipFactor(0, tech.stats.friendly)))
+    expect(paid.tip).toBe(Math.round(tipFor(20_000, (review.score - 2) as 1 | 2 | 3) * tipFactor(0, tech.stats.friendly)))
   })
 
   it('never takes the customer the owner tapped', () => {
@@ -358,7 +358,7 @@ describe('the receptionist', () => {
     expect(c.greet).toBe(4)
     sim.drainEvents()
     sim.completeService(c.id, 3)
-    expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 12_000 }))
+    expect(sim.drainEvents()).toContainEqual(expect.objectContaining({ type: 'paid', tip: 6_000 }))
   })
 
   it('waits at the desk facing the door', () => {

@@ -107,10 +107,10 @@ describe('kinds of customer', () => {
     const two = serve('picky', 2)
     expect([tipOf(two), scores(two)]).toEqual([0, [3]])
     const three = serve('picky', 3)
-    expect([tipOf(three), scores(three)]).toEqual([Math.round(tipFor(40_000, 3) * 2), [5]])
-    expect(tipOf(three)).toBe(20_000)
+    expect([tipOf(three), scores(three)]).toEqual([Math.round(tipFor(20_000, 3) * 2), [5]])
+    expect(tipOf(three)).toBe(10_000)
     expect(scores(serve('celeb', 3))).toEqual([5, 5])
-    expect(tipOf(serve('celeb', 3))).toBe(Math.round(tipFor(40_000, 3) * 3))
+    expect(tipOf(serve('celeb', 3))).toBe(Math.round(tipFor(20_000, 3) * 3))
 
     const sim = newSim(6)
     const c = sim.spawnCustomer({ kind: 'celeb', service: 'shampoo' })

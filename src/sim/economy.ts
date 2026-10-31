@@ -26,8 +26,8 @@ export function rating(reviews: number[]): number | null {
 }
 
 export function arrivalIntervalMs(r: number | null): number {
-  const seconds = 15 - ((r ?? 3) - 3) * 2
-  return Math.min(20, Math.max(10, seconds)) * 1000
+  const seconds = 7 - ((r ?? 3) - 3)
+  return Math.min(9, Math.max(5, seconds)) * 1000
 }
 
 /** A random gap around `meanMs` (exponential, from a uniform draw `u`): customers sometimes come close together, sometimes far apart. */
