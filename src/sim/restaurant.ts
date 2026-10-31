@@ -1,10 +1,10 @@
-import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, EXIT_MS, FIRST_ARRIVAL_MS, PATIENCE_MS, REAL_MS_PER_GAME_MIN, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
-import { beautyOf, ITEMS, type Item, type ItemKind } from './items'
+import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { placementProblem, sellRefund, type BuildProblem } from './build'
 import { drawKind, KINDS, type CustomerKind } from './customers'
 import { DINING_SHELL, DINING_START, diningSeats, type DiningSeat } from './dining'
 import { arrivalGapMs, type Stars } from './economy'
-import { buildGrid, parseLayout, tileEq, tileOf, type Grid } from './grid'
+import { besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { towerOf } from './floors'
 import { NO_HOUSES, widen, withHouses, type Houses } from './layout'
 import { findPath } from './path'
@@ -24,6 +24,13 @@ export type RestaurantEvent =
   /** A walk-in found every chair taken and walked on. */
   | { type: 'dinerPassed' }
   | { type: 'dinerLeft'; id: number; angry: boolean }
+  /** The owner stands at a stove with a diner's ticket: the Phở game opens. */
+  | { type: 'cookReady'; dinerId: number; stoveId: number }
+  | { type: 'dinerPaid'; dinerId: number; amount: number; tip: number; tile: Tile }
+  | { type: 'toast'; key: 'stovesBusy' | 'powerWait' }
+
+/** What the owner is doing for a diner: walking over to take the ticket, cooking at a stove, or carrying the bowl back. */
+export type DiningTask = { kind: 'order'; dinerId: number } | { kind: 'cook'; dinerId: number; stoveId: number } | { kind: 'carry'; dinerId: number }
 
 export type DinerState = 'street' | 'arriving' | 'toChair' | 'ordering' | 'waitingFood' | 'eating' | 'leaving' | 'exiting'
 export type DishId = 'pho'
@@ -69,6 +76,12 @@ export class RestaurantSim {
   grid: Grid
   readonly floors = 1
   readonly houses: Houses = NO_HOUSES
+  owner: Mover & { task: DiningTask | null }
+  /** The owner stands in this shop. */
+  ownerIn = false
+  /** A Phở game is open for this diner; the restaurant's clock stands still. */
+  cookingDinerId: number | null = null
+  stoves: { id: number; work: Tile; dinerId: number | null }[] = []
   private readonly host: RestaurantHost
   private readonly rng: Rng
   private readonly autoSpawn: boolean
@@ -76,6 +89,7 @@ export class RestaurantSim {
   private nextItemId: number
   private events: RestaurantEvent[] = []
   private untilDinerMs = FIRST_ARRIVAL_MS
+  private waitToasted = false
   private nextDinerId = 1
   diners: Diner[] = []
   stats: RestaurantStats = emptyStats()
@@ -89,6 +103,8 @@ export class RestaurantSim {
     this.items = DINING_START.map((it, i) => ({ ...it, id: i + 1 }))
     this.nextItemId = this.items.length + 1
     this.grid = buildGrid(this.shellGrid(), this.items, this.floors)
+    this.owner = { pos: { ...this.grid.door }, facing: 'up', path: [], task: null }
+    this.rebuildStoves()
   }
 
   get money(): number {
@@ -148,16 +164,19 @@ export class RestaurantSim {
     return null
   }
 
-  /** Nobody uses a piece yet; the owner's cooking and the diners fill this in. */
+  /** A stove with a diner's dish on it, a chair a diner holds, or a table with a diner at any of its chairs. */
   isBusy(id: number): boolean {
-    this.itemById(id)
+    const item = this.itemById(id)
+    if (item.kind === 'stove') return this.stoves.some(s => s.id === id && s.dinerId !== null)
+    if (item.kind === 'diningChair') return this.diners.some(d => d.chair && tileEq(d.chair, item))
+    if (item.kind === 'diningTable') return this.diners.some(d => d.chair && footprint(item).some(t => manhattan(t, d.chair!) === 1))
     return false
   }
 
-  /** Runs `ms` of game time in STEP_MS steps; returns the ms it stepped. */
+  /** Runs `ms` of game time in STEP_MS steps; returns the ms it stepped. It stands still while a Phở game is open. */
   advance(ms: number): number {
     let ran = 0
-    for (let left = ms; left > 0; left -= STEP_MS) {
+    for (let left = ms; left > 0 && this.cookingDinerId === null; left -= STEP_MS) {
       const dt = Math.min(STEP_MS, left)
       this.step(dt)
       ran += dt
@@ -196,20 +215,104 @@ export class RestaurantSim {
     return true
   }
 
-  /** Anyone is in the restaurant. */
+  /** Anyone is in the restaurant, or a Phở game is open. */
   busy(): boolean {
-    return this.diners.length > 0
+    return this.diners.length > 0 || this.cookingDinerId !== null
   }
 
-  /** Everyone goes at once and the chairs are free. */
+  /** Everyone goes at once, the chairs and stoves are free and the owner has nothing to do. */
   clearOut(): void {
     this.diners = []
+    this.cookingDinerId = null
+    for (const s of this.stoves) s.dinerId = null
+    this.owner.task = null
+    this.owner.path = []
   }
 
   startDay(): void {
     this.stats = emptyStats()
-    this.diners = []
+    this.clearOut()
     this.untilDinerMs = FIRST_ARRIVAL_MS
+  }
+
+  /** The owner is back: at the door, with nothing to do. */
+  ownerArrives(): void {
+    this.owner = { pos: { ...this.grid.door }, facing: 'up', path: [], task: null }
+    this.ownerIn = true
+  }
+
+  /** The owner is gone from this shop; only called when no task is held. */
+  ownerLeaves(): void {
+    this.owner.task = null
+    this.owner.path = []
+    this.ownerIn = false
+  }
+
+  /** Sends the owner to the door unless work is held. */
+  ownerWalksOut(): boolean {
+    if (this.ownerBusy()) return false
+    this.owner.path = this.walkTo(this.owner, t => tileEq(t, this.grid.door)) ?? []
+    return true
+  }
+
+  ownerAtDoor(): boolean {
+    return this.ownerIn && this.owner.path.length === 0 && tileEq(tileOf(this.owner.pos), this.grid.door)
+  }
+
+  ownerBusy(): boolean {
+    return this.owner.task !== null || this.cookingDinerId !== null
+  }
+
+  /** The owner goes to a branch: the dish being carried is served at once, everyone who waits for the owner leaves quietly. */
+  leaveTown(): void {
+    this.ownerAway = true
+    this.ownerIn = false
+    this.cookingDinerId = null
+    const carried = this.owner.task?.kind === 'carry' ? this.owner.task.dinerId : null
+    this.owner.task = null
+    this.owner.path = []
+    for (const s of this.stoves) s.dinerId = null
+    for (const d of [...this.diners]) {
+      if (d.id === carried) this.setState(d, 'eating')
+      else if (d.state === 'street') this.diners = this.diners.filter(x => x !== d)
+      else if (d.state === 'ordering' || d.state === 'waitingFood') this.startLeaving(d)
+    }
+  }
+
+  /** A tap on the floor: take a waiting diner's ticket, or walk to a tile. */
+  tapTile(t: Tile): void {
+    if (!this.ownerIn || this.ownerBusy()) return
+    const diner = this.diners.find(d => d.state === 'ordering' && d.chair && tileEq(d.chair, t))
+    if (diner) {
+      if (this.host.powerOut()) {
+        this.events.push({ type: 'toast', key: 'powerWait' })
+        return
+      }
+      if (!this.stoves.some(s => s.dinerId === null)) {
+        this.events.push({ type: 'toast', key: 'stovesBusy' })
+        return
+      }
+      const path = this.walkTo(this.owner, besideSeat(this.grid, diner.chair!))
+      if (!path) return
+      this.owner.task = { kind: 'order', dinerId: diner.id }
+      this.owner.path = path
+      return
+    }
+    if (!isWalkable(this.grid, t)) return
+    const path = this.walkTo(this.owner, x => tileEq(x, t))
+    if (!path) return
+    this.owner.path = path
+  }
+
+  /** The Phở game ended with these stars: the owner carries the bowl to the diner. */
+  completeCooking(dinerId: number, stars: Stars): void {
+    const diner = this.diners.find(d => d.id === dinerId)
+    if (this.cookingDinerId !== dinerId || !diner?.chair) return
+    this.cookingDinerId = null
+    for (const s of this.stoves) if (s.dinerId === dinerId) s.dinerId = null
+    diner.stars = stars
+    this.owner.task = { kind: 'carry', dinerId }
+    this.owner.path = this.walkTo(this.owner, besideSeat(this.grid, diner.chair)) ?? []
   }
 
   drainEvents(): RestaurantEvent[] {
@@ -225,6 +328,7 @@ export class RestaurantSim {
   }
 
   private step(dt: number): void {
+    this.updateOwner(dt)
     for (const d of [...this.diners]) this.updateDiner(d, dt)
     if (this.autoSpawn && !this.ownerAway && !this.host.clock.isClosed) {
       this.untilDinerMs -= dt
@@ -299,6 +403,9 @@ export class RestaurantSim {
           this.startLeaving(d)
         }
         break
+      case 'eating':
+        if (d.stateMs >= EAT_MS) this.pay(d)
+        break
       case 'leaving':
         moveAlong(d, KINDS[d.kind].speed, dt)
         if (d.path.length === 0) this.setState(d, 'exiting')
@@ -309,8 +416,68 @@ export class RestaurantSim {
     }
   }
 
+  /** The diner pays at the table for the dish and the tip the stars earn, then leaves. */
+  private pay(d: Diner): void {
+    const stars = d.stars ?? 1
+    const amount = DISH_PRICE[d.dish]
+    const tip = DINER_TIP[stars]
+    this.host.purse.money += amount + tip
+    this.stats.served++
+    this.stats.income += amount
+    this.stats.tips += tip
+    d.mood = stars >= 2 ? 'happy' : 'ok'
+    this.events.push({ type: 'dinerPaid', dinerId: d.id, amount, tip, tile: { ...d.chair! } })
+    this.startLeaving(d)
+  }
+
+  private updateOwner(dt: number): void {
+    if (!this.ownerIn) return
+    moveAlong(this.owner, OWNER_SPEED, dt)
+    const task = this.owner.task
+    if (!task) return
+    const diner = this.diners.find(d => d.id === task.dinerId)
+    if (diner?.state !== (task.kind === 'order' ? 'ordering' : 'waitingFood')) {
+      this.dropTask()
+      return
+    }
+    if (this.owner.path.length > 0) return
+    if (task.kind === 'order') {
+      const stove = this.stoves.find(s => s.dinerId === null)
+      const path = stove && this.walkTo(this.owner, t => tileEq(t, stove.work))
+      if (!stove || !path) {
+        this.events.push({ type: 'toast', key: 'stovesBusy' })
+        this.owner.task = null
+        return
+      }
+      stove.dinerId = diner.id
+      this.setState(diner, 'waitingFood')
+      this.waitToasted = false
+      this.owner.task = { kind: 'cook', dinerId: diner.id, stoveId: stove.id }
+      this.owner.path = path
+    } else if (task.kind === 'cook') {
+      if (this.host.powerOut()) {
+        if (!this.waitToasted) this.events.push({ type: 'toast', key: 'powerWait' })
+        this.waitToasted = true
+        return
+      }
+      this.cookingDinerId = diner.id
+      this.events.push({ type: 'cookReady', dinerId: diner.id, stoveId: task.stoveId })
+    } else {
+      this.owner.task = null
+      this.setState(diner, 'eating')
+    }
+  }
+
+  /** The diner the owner works for is gone: the owner stops, and the stove is free. */
+  private dropTask(): void {
+    this.owner.task = null
+    this.owner.path = []
+    for (const s of this.stoves) if (s.dinerId !== null && !this.diners.some(d => d.id === s.dinerId && d.state === 'waitingFood')) s.dinerId = null
+  }
+
   /** Frees the chair and sends the diner to the door. */
   private startLeaving(d: Diner): void {
+    for (const s of this.stoves) if (s.dinerId === d.id) s.dinerId = null
     d.chair = null
     d.path = this.walkTo(d, t => tileEq(t, this.grid.door)) ?? []
     this.setState(d, 'leaving')
@@ -324,8 +491,19 @@ export class RestaurantSim {
     return tileEq(from, m.pos) ? route : [from, ...route]
   }
 
+  private rebuildStoves(): void {
+    const held = new Map(this.stoves.map(s => [s.id, s.dinerId]))
+    this.stoves = this.items.filter(i => i.kind === 'stove').map(i => ({ id: i.id, work: workTile(i)!, dinerId: held.get(i.id) ?? null }))
+  }
+
+  /** New furniture may block a walk: whoever is walking finds a new way to the same goal, from the tile they stand on. */
   private changeRoom(): void {
     this.grid = buildGrid(this.shellGrid(), this.items, this.floors)
+    this.rebuildStoves()
+    for (const m of [this.owner, ...this.diners]) {
+      const goal = m.path[m.path.length - 1]
+      if (goal) m.path = this.walkTo(m, t => tileEq(t, goal)) ?? []
+    }
     this.events.push({ type: 'roomChanged' })
   }
 }

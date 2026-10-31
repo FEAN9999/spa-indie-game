@@ -189,6 +189,7 @@ export const vi = {
   busyFoot: 'Ghế ngâm chân đang bận',
   busyNails: 'Bàn làm móng đang bận',
   powerWait: 'Đang cúp điện, chờ có điện nhé',
+  stovesBusy: 'Hết bếp trống',
   itemBench: 'Ghế chờ mây',
   itemPlant: 'Chậu cây',
   itemTea: 'Bàn trà',
