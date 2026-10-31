@@ -66,6 +66,7 @@ import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWage
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
+import { placeableIn } from './dining'
 import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
 import { NO_HOUSES, SHOP_LAYOUT, withHouses, type Houses, type Side } from './layout'
@@ -1426,6 +1427,7 @@ export class SpaSim {
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number, turned = false): BuildProblem | null {
+    if (!placeableIn(kind, 'spa')) return 'wrongShop'
     const others = this.items.filter(i => i.id !== movingId)
     const item = { id: movingId ?? this.nextItemId, kind, x, y, flip, ...(turned && { turned }) }
     return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, floors: this.floors })

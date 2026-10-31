@@ -230,6 +230,8 @@ describe('building the shop', () => {
       lastDesk: 'Tiệm cần ít nhất một quầy lễ tân',
       seatFloor: 'Ghế chờ chỉ đặt ở tầng 1',
       deskFloor: 'Quầy lễ tân chỉ đặt ở tầng 1',
+      wrongShop: 'Món này không kê ở đây được',
+      lastDining: 'Nhà hàng cần ít nhất một bếp, một bàn và một ghế',
       money: 'Còn thiếu 200.000 đ',
       gift: 'Quà không bán được',
     })

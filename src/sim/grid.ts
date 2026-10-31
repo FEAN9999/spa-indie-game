@@ -120,6 +120,14 @@ export function buildGrid(shell: string[] | Grid, items: Item[], floors = 1): Gr
       grid.cells[work.y][work.x] = 'work'
       grid.beds.push(bed)
       grid.works.push(work)
+    } else if (item.kind === 'stove') {
+      set('decor')
+      const work = workTile(item)!
+      grid.cells[work.y][work.x] = 'work'
+      grid.works.push(work)
+    } else if (item.kind === 'diningChair') {
+      set('seat')
+      grid.seats.push(...tiles)
     } else if (ITEMS[item.kind].group === 'seat') {
       set('seat')
       grid.seats.push(...seatTiles(item))

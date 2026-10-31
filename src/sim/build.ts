@@ -7,7 +7,7 @@ import { DIRS, neighbours } from './path'
 import type { Tile } from './types'
 
 /** Why a piece of furniture cannot be bought, put down, moved or sold; a `gift` is never sold, and is put down only while it waits in the guest book. */
-export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'lastDesk' | 'seatFloor' | 'deskFloor' | 'money' | 'gift'
+export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'lastDesk' | 'seatFloor' | 'deskFloor' | 'wrongShop' | 'lastDining' | 'money' | 'gift'
 
 /** What the player is told for each problem; `money` takes the missing amount as {money}. */
 export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
@@ -20,6 +20,8 @@ export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
   lastDesk: 'problemLastDesk',
   seatFloor: 'problemSeatFloor',
   deskFloor: 'problemDeskFloor',
+  wrongShop: 'problemWrongShop',
+  lastDining: 'problemLastDining',
   money: 'problemMoney',
   gift: 'giftNoSell',
 }

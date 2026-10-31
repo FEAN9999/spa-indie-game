@@ -1,4 +1,4 @@
-import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY, MERIT_BEAUTY, TROPHY_BEAUTY } from '../config'
+import { CERTIFICATE_BEAUTY, KEEPSAKE_BEAUTY, MERIT_BEAUTY, RESTAURANT_FURNITURE, TROPHY_BEAUTY } from '../config'
 import type { StringKey } from '../strings/vi'
 import { SHOP_LAYOUT } from './layout'
 import type { Facing, Tile, Vec } from './types'
@@ -16,8 +16,9 @@ export type ItemKind =
   | 'gramophone' | 'standFan' | 'sewingMachine' | 'pendulumClock' | 'birdCage' | 'redRug'
   | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
+  | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter'
 
-export type ItemGroup = 'bed' | 'seat' | 'decor'
+export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
 export const SET_IDS: SetId[] = ['saigon', 'bamboo', 'zen', 'retro', 'garden']
 /** Where a decor piece goes: hung on the back wall's lower row, or laid flat under everything on the floor. */
@@ -35,6 +36,8 @@ export interface ItemSpec {
   name: StringKey
   /** Given by a regular, never sold in the catalogue. */
   giftOnly?: true
+  /** Stands only in the restaurant; see placeableIn for the spa's own and the shared pieces. */
+  shop?: 'restaurant'
 }
 
 export const ITEMS: Record<ItemKind, ItemSpec> = {
@@ -121,6 +124,13 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   runnerRug: { w: 1, h: 3, price: 90_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRunnerRug' },
   roundRug: { w: 2, h: 2, price: 110_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRoundRug' },
   brocadeRug: { w: 2, h: 3, price: 180_000, beauty: 4, group: 'decor', layer: 'rug', name: 'itemBrocadeRug' },
+  stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
+  diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
+  diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },
+  servingCounter: { w: 5, h: 1, price: 250_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemServingCounter' },
+  ingredientShelf: { w: 1, h: 1, price: 120_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIngredientShelf' },
+  sink: { w: 2, h: 1, price: 150_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemSink' },
+  cashierCounter: { w: 3, h: 1, price: 200_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemCashierCounter' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]
@@ -174,8 +184,9 @@ export function footprint(item: Item): Tile[] {
   return tiles
 }
 
-/** Where the owner stands to serve a bed, beside its second row, or behind a turned bed's customer; only beds of any service have one. */
+/** Where the owner stands to serve a bed, beside its second row, or behind a turned bed's customer, or to cook at a stove, in front of its burners; only beds and stoves have one. */
 export function workTile(item: Item): Tile | null {
+  if (item.kind === 'stove') return item.turned ? { x: item.flip ? item.x - 1 : item.x + 1, y: item.y } : { x: item.flip ? item.x + 1 : item.x, y: item.y + 1 }
   if (ITEMS[item.kind].group !== 'bed') return null
   if (item.turned) {
     const { x, y } = bedTile(item)

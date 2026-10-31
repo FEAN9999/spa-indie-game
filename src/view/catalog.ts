@@ -1,3 +1,4 @@
+import { placeableIn, type ShopSide } from '../sim/dining'
 import { ITEM_KINDS, ITEMS, layerOf, SET_IDS, type ItemGroup, type ItemKind, type SetId } from '../sim/items'
 import { BREED_IDS, type BreedId, type Pet } from '../sim/pets'
 import { serviceOfBed, type ServiceId } from '../sim/services'
@@ -22,12 +23,13 @@ export interface CatalogEntry {
  * One page of a tab's cards in catalogue order, a bed only once its service is open; turning past either end comes round to the other.
  * A tab starts with one card per waiting gift of its group, oldest first; the gift-only kinds are never for sale.
  * On the Trang trí tab a `filter` other than 'all' shows only its pieces, and no gift, since no gift is in a set or is a wall piece or rug.
+ * Only what stands in `shop` is shown, gifts included.
  */
-export function catalogPage(group: ItemGroup, page: number, open: ServiceId[], gifts: ItemKind[], filter: DecorFilter = 'all'): { entries: CatalogEntry[]; page: number; pages: number } {
+export function catalogPage(group: ItemGroup, page: number, open: ServiceId[], gifts: ItemKind[], filter: DecorFilter = 'all', shop: ShopSide = 'spa'): { entries: CatalogEntry[]; page: number; pages: number } {
   const filtered = group === 'decor' && filter !== 'all'
-  const shown = (k: ItemKind) => (filtered ? passes(k, filter) : ITEMS[k].group === group)
+  const shown = (k: ItemKind) => placeableIn(k, shop) && (filtered ? passes(k, filter) : ITEMS[k].group === group)
   const forSale = ITEM_KINDS.filter(k => shown(k) && !ITEMS[k].giftOnly && (ITEMS[k].group !== 'bed' || open.includes(serviceOfBed(k)!)))
-  const waiting = filtered ? [] : gifts.filter(k => ITEMS[k].group === group)
+  const waiting = filtered ? [] : gifts.filter(k => ITEMS[k].group === group && placeableIn(k, shop))
   const all = [...waiting.map(kind => ({ kind, gift: true })), ...forSale.map(kind => ({ kind, gift: false }))]
   const pages = Math.ceil(all.length / CARDS_PER_PAGE)
   const p = ((page % pages) + pages) % pages

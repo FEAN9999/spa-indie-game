@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { placeableIn, type ShopSide } from '../../src/sim/dining'
 import { ITEMS, ITEM_KINDS, type ItemGroup, type ItemKind } from '../../src/sim/items'
 import type { ServiceId } from '../../src/sim/services'
 import { catalogPage, DECOR_FILTERS, petPage, type DecorFilter } from '../../src/view/catalog'
 
+const ALL_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails']
 const kinds = (p: ReturnType<typeof catalogPage>) => p.entries.map(e => e.kind)
 
 describe('build mode catalogue', () => {
@@ -98,13 +100,26 @@ describe('build mode catalogue', () => {
     expect(beds([...six])).not.toContain('nailDesk')
   })
 
-  it('offers every kind but the gifts exactly once', () => {
-    const shown = (['bed', 'seat', 'decor'] as ItemGroup[]).flatMap(g => {
-      const all = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails'] as const
-      const { pages } = catalogPage(g, 0, [...all], [])
-      return Array.from({ length: pages }, (_, p) => kinds(catalogPage(g, p, [...all], []))).flat()
-    })
-    expect([...shown].sort()).toEqual(ITEM_KINDS.filter(k => !ITEMS[k].giftOnly).sort())
+  it('offers every kind but the gifts exactly once, shared decor once in each shop', () => {
+    const shown = (groups: ItemGroup[], shop: ShopSide) =>
+      groups.flatMap(g => {
+        const { pages } = catalogPage(g, 0, ALL_SERVICES, [], 'all', shop)
+        return Array.from({ length: pages }, (_, p) => kinds(catalogPage(g, p, ALL_SERVICES, [], 'all', shop))).flat()
+      })
+    const spa = shown(['bed', 'seat', 'decor'], 'spa')
+    const restaurant = shown(['dining', 'decor'], 'restaurant')
+    const forSale = ITEM_KINDS.filter(k => !ITEMS[k].giftOnly)
+    expect([...spa].sort()).toEqual(forSale.filter(k => placeableIn(k, 'spa')).sort())
+    expect([...restaurant].sort()).toEqual(forSale.filter(k => placeableIn(k, 'restaurant')).sort())
+    for (const k of forSale) {
+      const times = spa.filter(x => x === k).length + restaurant.filter(x => x === k).length
+      expect(times, k).toBe(placeableIn(k, 'spa') && placeableIn(k, 'restaurant') ? 2 : 1)
+    }
+  })
+
+  it('shows no restaurant piece on the spa decor tab', () => {
+    const { pages } = catalogPage('decor', 0, ALL_SERVICES, [])
+    for (let p = 0; p < pages; p++) for (const kind of kinds(catalogPage('decor', p, ALL_SERVICES, []))) expect(placeableIn(kind, 'spa'), kind).toBe(true)
   })
 
   it('shows a gift bed first on the bed tab, not on the decor tab', () => {

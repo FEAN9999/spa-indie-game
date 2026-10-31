@@ -567,3 +567,8 @@ export const AWAY_MAX_HOURS = 8
 export const AWAY_DAY_SHARE = 0.25
 /** The pay is worked from the mean profit of this many finished days. */
 export const AWAY_PROFIT_DAYS = 3
+
+// ---------- The restaurant ----------
+
+/** What the restaurant's three working pieces cost; its decor pieces carry their prices in ITEMS. */
+export const RESTAURANT_FURNITURE = { stove: 400_000, diningTable: 150_000, diningChair: 60_000 } as const
