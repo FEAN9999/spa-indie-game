@@ -38,14 +38,20 @@ export const DINING_START: Omit<Item, 'id'>[] = [
   piece('sink', 21, 2), piece('cashierCounter', 20, 14),
 ]
 
+/** What opening the rooftop sets out for free, in the 37-column grid: one umbrella table with a chair at each end of both sides, on the rooftop's left half and clear of the stairs. */
+export const ROOF_START: Omit<Item, 'id'>[] = [
+  piece('umbrellaTable', 15, 44),
+  ...([[15, 43], [16, 43], [15, 45], [16, 45]] as const).map(([x, y]) => piece('diningChair', x, y)),
+]
+
 export interface DiningSeat {
   tile: Tile
   facing: Facing
 }
 
-/** Where a diner may sit: every dining chair with a table tile right beside it, facing that tile; a chair touching no table is none. */
+/** Where a diner may sit: every dining chair with a table tile (a dining table's or an umbrella table's) right beside it, facing that tile; a chair touching no table is none. */
 export function diningSeats(items: Item[]): DiningSeat[] {
-  const tables = items.filter(i => i.kind === 'diningTable').flatMap(footprint)
+  const tables = items.filter(i => i.kind === 'diningTable' || i.kind === 'umbrellaTable').flatMap(footprint)
   const beside: [Facing, number, number][] = [['up', 0, -1], ['down', 0, 1], ['left', -1, 0], ['right', 1, 0]]
   return items.filter(i => i.kind === 'diningChair').flatMap(chair => {
     const side = beside.find(([, dx, dy]) => tables.some(t => t.x === chair.x + dx && t.y === chair.y + dy))

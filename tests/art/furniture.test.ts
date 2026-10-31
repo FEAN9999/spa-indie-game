@@ -53,7 +53,7 @@ describe('furniture art', () => {
 
   it("draws the restaurant's pieces as wide as their footprints", () => {
     const dining = ITEM_KINDS.filter(k => ITEMS[k].shop === 'restaurant')
-    expect(dining).toHaveLength(7)
+    expect(dining).toHaveLength(8)
     for (const kind of dining) expect(FURNITURE[itemTexture(kind)]?.w, kind).toBe(ITEMS[kind].w)
   })
 
@@ -62,7 +62,7 @@ describe('furniture art', () => {
   it('draws an upright picture of its own for every piece that turns', () => {
     const tex = furnitureTextures()
     const turning = ITEM_KINDS.filter(k => canTurn(k) && ITEMS[k].group !== 'bed')
-    expect(turning).toHaveLength(28)
+    expect(turning).toHaveLength(29)
     for (const kind of turning) {
       const key = itemTexture(kind, true)
       expect(key).toBe(`${itemTexture(kind)}-turned`)

@@ -601,8 +601,8 @@ export const DINER_PEAKS = [[660, 780], [1020, 1200]] as const
 export const EAT_MS = 8_000
 export const RIDE_MS = 3_000
 
-/** What the restaurant's three working pieces cost; its decor pieces carry their prices in ITEMS. */
-export const RESTAURANT_FURNITURE = { stove: 600_000, diningTable: 225_000, diningChair: 90_000 } as const
+/** What the restaurant's working pieces cost; its decor pieces carry their prices in ITEMS. */
+export const RESTAURANT_FURNITURE = { stove: 600_000, diningTable: 225_000, diningChair: 90_000, umbrellaTable: 300_000 } as const
 
 /** Phở: the cooking game's time limit, the four dotted cut lines (x, in game pixels), how close a swipe must land and how long it must be. */
 export const PHO_LIMIT_MS = 25_000

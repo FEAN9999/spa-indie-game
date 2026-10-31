@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DINING_SHELL, placeableIn } from '../../src/sim/dining'
+import { DINING_SHELL, diningSeats, placeableIn } from '../../src/sim/dining'
 import { buildGrid } from '../../src/sim/grid'
 import { ITEM_KINDS, workTile, type Item } from '../../src/sim/items'
 import { widen } from '../../src/sim/layout'
@@ -34,5 +34,9 @@ describe('the restaurant furniture', () => {
 
   it('refuses a restaurant piece in the spa', () => {
     expect(starShop(3, 10_000_000).canPlace('stove', 14, 4, false)).toBe('wrongShop')
+  })
+
+  it('counts a chair beside an umbrella table as a seat', () => {
+    expect(diningSeats([at(1, 'umbrellaTable', 15, 44), at(2, 'diningChair', 15, 43)])).toEqual([{ tile: { x: 15, y: 43 }, facing: 'down' }])
   })
 })

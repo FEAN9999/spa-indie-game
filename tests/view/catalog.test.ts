@@ -123,7 +123,7 @@ describe('build mode catalogue', () => {
   })
 
   it('offers the dining pieces and the shared decor at the restaurant', () => {
-    expect(kinds(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['stove', 'diningTable', 'diningChair'])
+    expect(kinds(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['stove', 'diningTable', 'diningChair', 'umbrellaTable'])
     expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(1)
     const { pages } = catalogPage('decor', 0, ALL_SERVICES, [], 'all', 'restaurant')
     const decor = Array.from({ length: pages }, (_, p) => kinds(catalogPage('decor', p, ALL_SERVICES, [], 'all', 'restaurant'))).flat()

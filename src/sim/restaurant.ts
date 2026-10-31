@@ -3,7 +3,7 @@ import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from '
 import { doorReach, placementProblem, sellRefund, type BuildProblem } from './build'
 import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
 import { drawKind, KINDS, type CustomerKind } from './customers'
-import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './dining'
+import { DINING_START, diningSeats, ROOF_START, diningShellGrid, type DiningSeat } from './dining'
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
@@ -253,9 +253,20 @@ export class RestaurantSim {
     if (problem) return problem
     this.host.purse.money -= FLOOR_PRICE[floor]
     this.floors = floor
+    if (floor === 3) this.setOutRoof()
     this.changeRoom()
     this.events.push({ type: 'floorOpened', floor })
     return null
+  }
+
+  /** The rooftop's first table, free: a piece that would not stand (the rooftop holds something already) is skipped. */
+  private setOutRoof(): void {
+    for (const piece of ROOF_START) {
+      const item = { ...piece, id: this.nextItemId }
+      if (placementProblem('restaurant', this.shellGrid(), this.items, item, { door: this.grid.door, floors: this.floors })) continue
+      this.items.push(item)
+      this.nextItemId++
+    }
   }
 
   /** The price of the next house on `side`, the spa's. */
@@ -331,11 +342,17 @@ export class RestaurantSim {
   sell(id: number): BuildProblem | null {
     const { kind } = this.itemById(id)
     if (this.isBusy(id)) return 'busy'
-    if ((kind === 'stove' || kind === 'diningTable' || kind === 'diningChair') && this.items.filter(i => i.kind === kind).length === 1) return 'lastDining'
+    if (this.lastDining(kind)) return 'lastDining'
     this.host.purse.money += sellRefund(kind)
     this.items = this.items.filter(i => i.id !== id)
     this.changeRoom()
     return null
+  }
+
+  /** Whether `kind` is the restaurant's last stove, last chair or last table; a dining table and an umbrella table count as one kind. */
+  private lastDining(kind: ItemKind): boolean {
+    const same = kind === 'diningTable' || kind === 'umbrellaTable' ? (i: Item) => i.kind === 'diningTable' || i.kind === 'umbrellaTable' : (i: Item) => i.kind === kind
+    return (kind === 'stove' || kind === 'diningChair' || kind === 'diningTable' || kind === 'umbrellaTable') && this.items.filter(same).length === 1
   }
 
   /** A stove with a diner's dish on it, a chair a diner holds, or a table with a diner at any of its chairs. */
@@ -343,7 +360,7 @@ export class RestaurantSim {
     const item = this.itemById(id)
     if (item.kind === 'stove') return this.stoves.some(s => s.id === id && s.dinerId !== null)
     if (item.kind === 'diningChair') return this.diners.some(d => d.chair && tileEq(d.chair, item))
-    if (item.kind === 'diningTable') return this.diners.some(d => d.chair && footprint(item).some(t => manhattan(t, d.chair!) === 1))
+    if (item.kind === 'diningTable' || item.kind === 'umbrellaTable') return this.diners.some(d => d.chair && footprint(item).some(t => manhattan(t, d.chair!) === 1))
     return false
   }
 

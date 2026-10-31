@@ -8,7 +8,7 @@ import { DIRS, neighbours } from './path'
 import type { Tile } from './types'
 
 /** Why a piece of furniture cannot be bought, put down, moved or sold; a `gift` is never sold, and is put down only while it waits in the guest book. */
-export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'lastDesk' | 'seatFloor' | 'deskFloor' | 'wrongShop' | 'lastDining' | 'money' | 'gift'
+export type BuildProblem = 'overlap' | 'blocksPath' | 'bedWall' | 'busy' | 'lastBed' | 'lastSeat' | 'lastDesk' | 'seatFloor' | 'deskFloor' | 'roofOnly' | 'wrongShop' | 'lastDining' | 'money' | 'gift'
 
 /** What the player is told for each problem; `money` takes the missing amount as {money}. */
 export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
@@ -21,6 +21,7 @@ export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
   lastDesk: 'problemLastDesk',
   seatFloor: 'problemSeatFloor',
   deskFloor: 'problemDeskFloor',
+  roofOnly: 'problemRoofOnly',
   wrongShop: 'problemWrongShop',
   lastDining: 'problemLastDining',
   money: 'problemMoney',
@@ -73,7 +74,7 @@ export function doorReach(grid: Grid, door: Tile): (t: Tile) => boolean {
  * Nothing covers the tile inside the door, and every bed and seat stays in reach of the door, and so does every desk's spot, which is kept free, and so does a walkable tile beside each open floor's stairs foot (the stairs themselves would otherwise let a shut-in upper foot count as reached).
  * A foot the door did not reach without `item` either, as in an older shop built before the stairs, is left as it is.
  */
-export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'deskFloor' | 'blocksPath' | null {
+export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'deskFloor' | 'roofOnly' | 'blocksPath' | null {
   const { door, floors } = extras
   const layer = layerOf(item.kind)
   if (layer !== 'floor') {
@@ -88,6 +89,8 @@ export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { d
   if (ITEMS[item.kind].group === 'seat' && floorOf(item.y) !== 1) return 'seatFloor'
 
   if (item.kind === 'desk' && floorOf(item.y) !== 1) return 'deskFloor'
+
+  if (item.kind === 'umbrellaTable' && floorOf(item.y) !== 3) return 'roofOnly'
 
   const all = [...items, item]
   const grid = buildGrid(shell, all, floors)

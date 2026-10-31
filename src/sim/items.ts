@@ -16,7 +16,7 @@ export type ItemKind =
   | 'gramophone' | 'standFan' | 'sewingMachine' | 'pendulumClock' | 'birdCage' | 'redRug'
   | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
-  | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter'
+  | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
@@ -127,6 +127,7 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
   diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
   diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },
+  umbrellaTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.umbrellaTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemUmbrellaTable' },
   servingCounter: { w: 5, h: 1, price: 375_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemServingCounter' },
   ingredientShelf: { w: 1, h: 1, price: 180_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIngredientShelf' },
   sink: { w: 2, h: 1, price: 225_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemSink' },

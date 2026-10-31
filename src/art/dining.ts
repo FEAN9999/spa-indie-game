@@ -1,6 +1,6 @@
 import { C } from './palette'
 
-// The restaurant's seven pieces, in furniture.ts's style: seen from the front, ink outline, palette colours. A piece that
+// The restaurant's eight pieces, in furniture.ts's style: seen from the front, ink outline, palette colours. A piece that
 // turns has a picture of its own standing on its end, its long side up the picture and its work side to the right.
 
 const LINE = 0.05
@@ -176,6 +176,28 @@ const cashierCounterTurned =
   bell(0.5, 1.4) +
   at(-1.75, 0.95, tipJar)
 
+// bàn dù: the dining table under a red and cream market umbrella, the canopy standing a tile and a bit above the footprint
+/** A scalloped canopy of `n` red and cream wedges between x0 and x1, its tip at (cx, tip) and its rim at `rim`. */
+const canopy = (x0: number, x1: number, cx: number, tip: number, rim: number, n: number) => {
+  const step = (x1 - x0) / n
+  const wedges = Array.from({ length: n }, (_, i) => {
+    const a = x0 + i * step
+    const b = a + step
+    return `<path d="M${f(cx)},${tip} L${f(a)},${rim} Q${f(a + step / 2)},${f(rim + 0.14)} ${f(b)},${rim} Z" fill="${i % 2 ? C.cream : C.lantern}" ${ink(FINE)}/>`
+  }).join('')
+  return wedges + dot(cx, tip - 0.02, 0.05, C.mustard, 0.025)
+}
+const umbrellaTable =
+  rect(0.95, 0.9, 0.1, 0.8, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  at(0, 1.2, diningTable) +
+  canopy(0.02, 1.98, 1, 0.12, 0.85, 6)
+
+// bàn dù turned: the table on its end, the umbrella over its far half
+const umbrellaTableTurned =
+  rect(0.45, 1.2, 0.1, 1.3, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  at(0, 1.2, diningTableTurned) +
+  canopy(0.03, 1.07, 0.55, 0.45, 1.2, 4)
+
 type Piece = { w: number; h: number; body: string }
 
 /** The restaurant's furniture pictures, keyed like furniture.ts's decor under `decor-`; every piece that can turn also has a `-turned` picture. */
@@ -184,6 +206,8 @@ export const DINING_FURNITURE: Record<string, Piece> = {
   'decor-stove-turned': { w: 1.1, h: 2.45, body: stoveTurned },
   'decor-diningTable': { w: 2, h: 1.4, body: diningTable },
   'decor-diningTable-turned': { w: 1.1, h: 2.3, body: diningTableTurned },
+  'decor-umbrellaTable': { w: 2, h: 2.6, body: umbrellaTable },
+  'decor-umbrellaTable-turned': { w: 1.1, h: 3.5, body: umbrellaTableTurned },
   'decor-diningChair': { w: 1, h: 1.45, body: diningChair },
   'decor-servingCounter': { w: 5, h: 1.45, body: servingCounter },
   'decor-servingCounter-turned': { w: 1.1, h: 5.45, body: servingCounterTurned },
