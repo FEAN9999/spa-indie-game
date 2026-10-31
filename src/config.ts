@@ -50,7 +50,7 @@ export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5 } as const
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
 export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 200000, massage: 400000, steam: 500000, stone: 650000, mud: 800000, scrub: 700000, foot: 850000, nails: 1000000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -268,9 +268,9 @@ export const STOCK_START = 20
 export const CHAIN_FROM_STARS = 3
 /** Where a branch can open: the main shop's stars and the price, how much faster customers come, and what its services cost against the plain price. */
 export const PLACES = {
-  beach: { stars: 3, price: 5_000_000, arrival: 1.2, priceFactor: 1.0 },
-  oldTown: { stars: 4, price: 8_000_000, arrival: 1.0, priceFactor: 1.2 },
-  uptown: { stars: 5, price: 12_000_000, arrival: 0.8, priceFactor: 1.6 },
+  beach: { stars: 3, price: 7_500_000, arrival: 1.2, priceFactor: 1.0 },
+  oldTown: { stars: 4, price: 12_000_000, arrival: 1.0, priceFactor: 1.2 },
+  uptown: { stars: 5, price: 18_000_000, arrival: 0.8, priceFactor: 1.6 },
 }
 /** The weights of the kinds each place draws. */
 export const PLACE_KINDS: Record<keyof typeof PLACES, Record<string, number>> = {
@@ -314,13 +314,13 @@ export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6
 export const FLOOR_ROWS = 18
 export const MAX_FLOORS = 3
 /** What opening floor 2 and the rooftop costs. */
-export const FLOOR_PRICE: Record<number, number> = { 2: 2_000_000, 3: 4_000_000 }
+export const FLOOR_PRICE: Record<number, number> = { 2: 3_000_000, 3: 6_000_000 }
 /** How long someone spends on the stairs between two floors. */
 export const STAIRS_MS = 1000
 /** Each floor beyond the first lets the shop hire this many more technicians. */
 export const STAFF_PER_FLOOR = 2
 /** What the neighbour house next to the shop costs, then the far one, on either side. */
-export const HOUSE_PRICE = [3_000_000, 6_000_000] as const
+export const HOUSE_PRICE = [4_500_000, 9_000_000] as const
 /** Each neighbour house bought lets the shop hire this many more technicians. */
 export const STAFF_PER_HOUSE = 1
 
@@ -353,9 +353,9 @@ export const MAX_TIER = 3
 /** The tier a rare technician starts with in their specialty. */
 export const RARE_TIER = 2
 /** What a night course costs, by the tier it starts from. */
-export const STUDY_PRICE = [100000, 200000, 400000] as const
+export const STUDY_PRICE = [150000, 300000, 600000] as const
 /** What a Tiếp khách course costs, by the friendliness it starts from, less 1. */
-export const GREET_STUDY_PRICE = [50000, 100000, 200000, 400000] as const
+export const GREET_STUDY_PRICE = [75000, 150000, 300000, 600000] as const
 export const WAGE_BASE = 20000
 export const WAGE_PER_DOT = 2500
 export const LEVEL_WAGE_RAISE = 2500
@@ -439,7 +439,7 @@ export const HUM_MS = 3000
 /** How long a speech bubble stays, for a greeting and for a story line. */
 export const BUBBLE_MS = { greet: 4000, story: 6000 } as const
 /** What one try at the recipe bench costs. */
-export const RECIPE_TRY_COST = 20000
+export const RECIPE_TRY_COST = 30000
 /** Chance that a regular tells a recipe hint on a visit. */
 export const RECIPE_HINT_CHANCE = 0.5
 

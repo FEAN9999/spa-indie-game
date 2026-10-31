@@ -117,7 +117,7 @@ describe('a new shop runs the starter chain', () => {
     const r = serve(sim, 5)
     expect(r).toEqual([])
     const last = ownerServes(sim, 3).events.find(e => e.type === 'goalDone')
-    expect(last).toEqual({ type: 'goalDone', goal: 'serveMore', reward: 200_000, opens: 'services' })
+    expect(last).toEqual({ type: 'goalDone', goal: 'serveMore', reward: 300_000, opens: 'services' })
     expect(sim.services).toEqual(['shampoo', 'mask'])
     expect(sim.book.gifts).toEqual(['maskBed'])
   })

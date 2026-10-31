@@ -75,18 +75,18 @@ describe('a chain with no branch', () => {
 describe('opening a branch', () => {
   it('says what stops a place opening', () => {
     expect(new Chain(starShop(2), 7).openProblem('beach')).toBe('stars')
-    expect(new Chain(starShop(3, 4_999_999), 7).openProblem('beach')).toBe('money')
+    expect(new Chain(starShop(3, 7_499_999), 7).openProblem('beach')).toBe('money')
     expect(new Chain(starShop(3), 7).openProblem('beach')).toBeNull()
     expect(new Chain(starShop(3), 7).openProblem('oldTown')).toBe('stars')
     expect(new Chain(starShop(4), 7).openProblem('oldTown')).toBeNull()
-    expect(new Chain(starShop(4, 7_999_999), 7).openProblem('oldTown')).toBe('money')
+    expect(new Chain(starShop(4, 11_999_999), 7).openProblem('oldTown')).toBe('money')
     expect(new Chain(starShop(4), 7).openProblem('uptown')).toBe('stars')
     expect(new Chain(starShop(5), 7).openProblem('uptown')).toBeNull()
     expect(withBeach().chain.openProblem('beach')).toBe('open')
   })
 
   it('opens all three places at 5 stars, each with its own piece', () => {
-    const chain = new Chain(starShop(5, 30_000_000), 7)
+    const chain = new Chain(starShop(5, 42_500_000), 7)
     for (const place of ['uptown', 'beach', 'oldTown'] as const) expect(chain.open(place)).toBeNull()
     expect(chain.branches.map(b => b.place)).toEqual(['beach', 'oldTown', 'uptown'])
     expect(chain.main.money).toBe(5_000_000)
@@ -106,13 +106,14 @@ describe('opening a branch', () => {
 
   it('opens the old town for a v23 save and charges it once, with the owner still at the beach', () => {
     const chain = Chain.fromSave(parseSave(structuredClone(v23)), 8)
+    chain.main.money = 13_000_000
     expect(chain.openProblem('oldTown')).toBeNull()
     expect(chain.openProblem('uptown')).toBe('stars')
     const money = chain.main.money
     expect(chain.open('oldTown')).toBeNull()
-    expect(chain.main.money).toBe(money - 8_000_000)
+    expect(chain.main.money).toBe(money - 12_000_000)
     const copy = viaJson(chain)
-    expect(copy.main.money).toBe(money - 8_000_000)
+    expect(copy.main.money).toBe(money - 12_000_000)
     expect(copy.branches).toHaveLength(2)
     expect(copy.shop('oldTown')!.items.filter(i => i.kind === 'lanternString')).toHaveLength(1)
     expect(copy.at).toBe('beach')
@@ -120,9 +121,9 @@ describe('opening a branch', () => {
 
   it('charges the price once and leaves the owner where she is', () => {
     const { chain, main, beach } = withBeach()
-    expect(main.money).toBe(15_000_000)
+    expect(main.money).toBe(12_500_000)
     expect(chain.open('beach')).toBe('open')
-    expect(main.money).toBe(15_000_000)
+    expect(main.money).toBe(12_500_000)
     expect(chain.branches).toEqual([beach])
     expect(beach.place).toBe('beach')
     expect(beach.purse).toBe(main.purse)

@@ -170,7 +170,7 @@ describe('courses', () => {
     const six = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
     expect(courses(s, [...six, 'scrub']).at(-1)).toBe('scrub')
     expect(courses(s, [...six])).not.toContain('scrub')
-    expect(tuition({ ...s, trait: 'calm' } as Staff, 'scrub')).toBe(100_000)
+    expect(tuition({ ...s, trait: 'calm' } as Staff, 'scrub')).toBe(150_000)
     expect(courses(s, [...six, 'foot']).at(-1)).toBe('foot')
     expect(courses(s, [...six, 'nails']).at(-1)).toBe('nails')
   })
@@ -181,8 +181,8 @@ describe('courses', () => {
   })
 
   it('prices a course by the step it climbs', () => {
-    expect([0, 1, 2].map(tier => tuition(tech({ mask: tier }), 'mask'))).toEqual([100000, 200000, 400000])
-    expect([1, 2, 3, 4].map(f => tuition(reception(f), 'greet'))).toEqual([50000, 100000, 200000, 400000])
+    expect([0, 1, 2].map(tier => tuition(tech({ mask: tier }), 'mask'))).toEqual([150000, 300000, 600000])
+    expect([1, 2, 3, 4].map(f => tuition(reception(f), 'greet'))).toEqual([75000, 150000, 300000, 600000])
   })
 })
 
@@ -226,8 +226,8 @@ describe('personality numbers', () => {
 
   it("cuts a studious person's tuition by 30%, to the thousand", () => {
     const tech = (tier: number) => with_('studious', { tiers: { ...noTiers(), mask: tier } })
-    expect([0, 1, 2].map(tier => tuition(tech(tier), 'mask'))).toEqual([70000, 140000, 280000])
-    expect(tuition(with_('studious', { role: 'receptionist', stats: { ...all(3), friendly: 1 } }), 'greet')).toBe(35000)
+    expect([0, 1, 2].map(tier => tuition(tech(tier), 'mask'))).toEqual([105000, 210000, 420000])
+    expect(tuition(with_('studious', { role: 'receptionist', stats: { ...all(3), friendly: 1 } }), 'greet')).toBe(53000)
   })
 
   it('rests a diligent person one customer sooner', () => {

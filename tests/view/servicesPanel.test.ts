@@ -82,18 +82,18 @@ describe('lessonAction', () => {
     expect(lessonAction(chain.shop('beach')!, 'scrub')).toEqual({ kind: 'note', text: 'Mở ở tiệm gốc' })
   })
   it('offers the lesson with the tuition, faded when it cannot be paid', () => {
-    expect(lessonAction(starShop(3), 'scrub')).toEqual({ kind: 'learn', label: 'Học nghề\n700.000 đ', faded: false })
+    expect(lessonAction(starShop(3), 'scrub')).toEqual({ kind: 'learn', label: 'Học nghề\n1.050.000 đ', faded: false })
     expect(lessonAction(starShop(3, 100), 'scrub')).toMatchObject({ kind: 'learn', faded: true })
     expect(lessonAction(starShop(3, -1), 'scrub')).toMatchObject({ kind: 'learn', faded: true })
   })
   it('offers the Ngâm chân lesson at 4 stars', () => {
     expect(lessonAction(starShop(3), 'foot')).toEqual({ kind: 'note', text: 'Đạt 4★' })
-    expect(lessonAction(starShop(4), 'foot')).toEqual({ kind: 'learn', label: 'Học nghề\n850.000 đ', faded: false })
+    expect(lessonAction(starShop(4), 'foot')).toEqual({ kind: 'learn', label: 'Học nghề\n1.275.000 đ', faded: false })
     expect(servicesOpening(starShop(4), true, false)).toEqual({ tab: 'services', page: 1 })
   })
   it('offers the Sơn móng lesson at 5 stars', () => {
     expect(lessonAction(starShop(4), 'nails')).toEqual({ kind: 'note', text: 'Đạt 5★' })
-    expect(lessonAction(starShop(5), 'nails')).toEqual({ kind: 'learn', label: 'Học nghề\n1.000.000 đ', faded: false })
+    expect(lessonAction(starShop(5), 'nails')).toEqual({ kind: 'learn', label: 'Học nghề\n1.500.000 đ', faded: false })
     expect(servicesOpening(starShop(5), true, false)).toEqual({ tab: 'services', page: 1 })
   })
   it('goes on once paid, also after a reload', () => {

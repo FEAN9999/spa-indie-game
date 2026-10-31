@@ -33,7 +33,7 @@ describe('staff card', () => {
     sim.money = 500000
     expect(studyButton(sim, tech)).toEqual({ kind: 'open', courses: ['shampoo', 'mask'] })
 
-    sim.money = 99999
+    sim.money = 149999
     expect(studyButton(sim, tech)).toEqual({ kind: 'noMoney' })
     sim.money = -1
     expect(studyButton(sim, tech)).toEqual({ kind: 'noMoney' })

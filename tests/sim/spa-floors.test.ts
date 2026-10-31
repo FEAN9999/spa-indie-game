@@ -213,7 +213,7 @@ describe('the rooftop', () => {
   const roofShop = (bed: { x: number; y: number }) => {
     const sim = newSim()
     sim.day = 6
-    sim.money = 10_000_000
+    sim.money = 15_000_000
     expect(sim.openFloor(2)).toBeNull()
     expect(sim.openFloor(3)).toBeNull()
     expect(sim.openService('mask')).toBeNull()
@@ -237,7 +237,7 @@ describe('the rooftop', () => {
     return ms
   }
 
-  it('opens only after floor 2, for 4.000.000 đ', () => {
+  it('opens only after floor 2, for 6.000.000 đ', () => {
     const sim = newSim()
     sim.day = 6
     sim.money = 10_000_000

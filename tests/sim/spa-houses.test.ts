@@ -9,7 +9,7 @@ import { advanceUntil, hireStaff, seatAndWait, starShop } from './helpers'
 const newSim = () => new SpaSim({ rng: createRng(5), autoSpawn: false })
 
 /** Day 10 with `money`, nothing waiting in the events. */
-const day10 = (money = 18_000_000) => {
+const day10 = (money = 27_000_000) => {
   const sim = newSim()
   sim.day = 10
   sim.money = money
@@ -26,7 +26,7 @@ describe('buying a neighbour house', () => {
     expect(sim.buyHouse('right')).toBe('day')
     sim.day = 10
     expect([sim.houseForSale('left'), sim.houseForSale('right')]).toEqual([true, true])
-    expect(sim.housePrice('left')).toBe(3_000_000)
+    expect(sim.housePrice('left')).toBe(4_500_000)
     expect(sim.shownHouses()).toEqual({ left: 1, right: 1 })
     expect(sim.houses).toEqual({ left: 0, right: 0 })
   })
@@ -35,11 +35,11 @@ describe('buying a neighbour house', () => {
     const sim = day10()
     expect(sim.buyHouse('right')).toBeNull()
     expect(sim.houses).toEqual({ left: 0, right: 1 })
-    expect(sim.money).toBe(15_000_000)
+    expect(sim.money).toBe(22_500_000)
     const events = sim.drainEvents()
     expect(events).toContainEqual({ type: 'houseBought', house: { side: 'right', n: 1 } })
     expect(events).toContainEqual({ type: 'roomChanged' })
-    expect(sim.housePrice('right')).toBe(6_000_000)
+    expect(sim.housePrice('right')).toBe(9_000_000)
     expect(sim.buyHouse('right')).toBeNull()
     expect(sim.buyHouse('right')).toBe('max')
     expect(sim.houseForSale('right')).toBe(false)
@@ -51,17 +51,17 @@ describe('buying a neighbour house', () => {
   })
 
   it('never sells the far house before the near one', () => {
-    const sim = day10(6_000_000)
+    const sim = day10(9_000_000)
     expect(sim.buyHouse('left')).toBeNull()
-    expect(sim.money).toBe(3_000_000)
+    expect(sim.money).toBe(4_500_000)
     expect(sim.houses.left).toBe(1)
   })
 
   it('refuses short of money and changes nothing', () => {
-    const sim = day10(2_999_999)
+    const sim = day10(4_499_999)
     expect(sim.buyHouse('right')).toBe('money')
     expect(sim.houseForSale('right')).toBe(true)
-    expect(sim.money).toBe(2_999_999)
+    expect(sim.money).toBe(4_499_999)
     expect(sim.houses).toEqual({ left: 0, right: 0 })
     expect(sim.drainEvents()).toEqual([])
   })
@@ -73,7 +73,7 @@ describe('buying a neighbour house', () => {
     expect(branch.houseForSale('right')).toBe(true)
     expect(branch.shownHouses()).toEqual({ left: 1, right: 1 })
     expect(branch.buyHouse('right')).toBeNull()
-    expect(main.money).toBe(15_000_000)
+    expect(main.money).toBe(22_500_000)
     expect(branch.houses).toEqual({ left: 0, right: 1 })
     expect(main.houses).toEqual({ left: 0, right: 0 })
     expect(main.shownHouses()).toEqual({ left: 1, right: 1 })

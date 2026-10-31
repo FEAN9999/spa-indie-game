@@ -38,10 +38,10 @@ describe('the shop pets', () => {
 
   it('sells a pet for its price, while there is money and room', () => {
     const sim = shop()
-    sim.money = 1_500_000
+    sim.money = 2_250_000
     expect(sim.adoptPet('poodle', 'Kẹo')).toBe('money')
     expect(sim.adoptPet('xiem', 'Sữa')).toBeNull()
-    expect(sim.money).toBe(300_000)
+    expect(sim.money).toBe(450_000)
     expect(sim.pets.owned).toEqual([{ id: 1, breed: 'xiem', name: 'Sữa' }])
     sim.money = 100_000_000
     for (let i = 1; i < MAX_PETS; i++) expect(sim.adoptPet('mun', 'Mun')).toBeNull()

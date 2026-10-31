@@ -29,11 +29,11 @@ describe('mixing at the bench', () => {
     const sim = shop()
     const stats = structuredClone(sim.stats)
     expect(sim.mixRecipe('steam', [...WRONG])).toEqual({ kind: 'tried', right: 2 })
-    expect(sim.money).toBe(980_000)
+    expect(sim.money).toBe(970_000)
     expect(sim.recipes.steam.tries).toEqual([{ mix: [...WRONG], right: 2 }])
 
     expect(sim.mixRecipe('steam', ['salt', 'pomelo', 'lemongrass'])).toEqual({ kind: 'repeat', right: 2 })
-    expect(sim.money).toBe(980_000)
+    expect(sim.money).toBe(970_000)
     expect(sim.recipes.steam.tries).toHaveLength(1)
 
     expect(sim.serviceProblem('steam')).toBe('recipe')
@@ -45,14 +45,14 @@ describe('mixing at the bench', () => {
 
   it('needs the full price for a new bowl, but answers a repeat whatever the till holds', () => {
     const exact = shop()
-    exact.money = 20_000
+    exact.money = 30_000
     expect(exact.mixRecipe('steam', [...WRONG])).toEqual({ kind: 'tried', right: 2 })
     expect(exact.money).toBe(0)
 
     const short = shop()
-    short.money = 19_999
+    short.money = 29_999
     expect(short.mixRecipe('steam', [...WRONG])).toEqual({ kind: 'problem', problem: 'money' })
-    expect(short.money).toBe(19_999)
+    expect(short.money).toBe(29_999)
     expect(short.recipes.steam.tries).toEqual([])
 
     const debt = shop()
@@ -77,12 +77,12 @@ describe('mixing at the bench', () => {
     noBench.money = 1_000_000
     expect(noBench.openService('mask')).toBeNull()
     expect(() => noBench.mixRecipe('steam', [...WRONG])).toThrow('bench is not open')
-    expect(noBench.money).toBe(800_000)
+    expect(noBench.money).toBe(700_000)
 
     const solved = shop()
     solved.mixRecipe('steam', [...RIGHT])
     expect(() => solved.mixRecipe('steam', [...WRONG])).toThrow('is solved')
-    expect(solved.money).toBe(980_000)
+    expect(solved.money).toBe(970_000)
   })
 })
 

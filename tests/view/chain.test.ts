@@ -8,7 +8,7 @@ import { closingCard, figureOf, mapSub, noTechCard, pinLabel, pinState, placeNam
 import { hireStaff, starShop } from '../sim/helpers'
 
 /** A 3-star main shop with `money` in the purse and 1.840.000 đ made today; the owner is there. */
-const atMain = (money = 6_000_000, stars: 3 | 4 | 5 = 3) => {
+const atMain = (money = 8_500_000, stars: 3 | 4 | 5 = 3) => {
   const chain = new Chain(starShop(stars, money), 7)
   chain.main.stats.income = 1_840_000
   return chain
@@ -93,9 +93,9 @@ describe('the map pins', () => {
   it('shows the owner at the main shop, the beach to open and the next places locked at 3 stars', () => {
     const chain = atMain()
     expect([pinState(chain, null), pinLabel(chain, null)]).toEqual(['here', '+1.840.000 đ hôm nay'])
-    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['can', 'Mở được · 5.000.000 đ'])
-    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['lock', 'Cần 4★ · 8.000.000 đ'])
-    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['lock', 'Cần 5★ · 12.000.000 đ'])
+    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['can', 'Mở được · 7.500.000 đ'])
+    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['lock', 'Cần 4★ · 12.000.000 đ'])
+    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['lock', 'Cần 5★ · 18.000.000 đ'])
   })
 
   it('keeps the beach to open, button off, while the purse is short', () => {
@@ -121,10 +121,10 @@ describe('the map pins', () => {
 
   it('opens the old town and uptown at 5 stars with the money, and locks uptown at 4', () => {
     const chain = atMain(20_000_000, 5)
-    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['can', 'Mở được · 8.000.000 đ'])
-    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['can', 'Mở được · 12.000.000 đ'])
+    expect([pinState(chain, 'oldTown'), pinLabel(chain, 'oldTown')]).toEqual(['can', 'Mở được · 12.000.000 đ'])
+    expect([pinState(chain, 'uptown'), pinLabel(chain, 'uptown')]).toEqual(['can', 'Mở được · 18.000.000 đ'])
     const four = atMain(20_000_000, 4)
-    expect([pinState(four, 'uptown'), pinLabel(four, 'uptown')]).toEqual(['lock', 'Cần 5★ · 12.000.000 đ'])
+    expect([pinState(four, 'uptown'), pinLabel(four, 'uptown')]).toEqual(['lock', 'Cần 5★ · 18.000.000 đ'])
   })
 })
 
@@ -141,14 +141,14 @@ describe('the sheet under the map', () => {
       title: 'Bãi biển',
       status: 'Mở được · tiệm gốc đang 3★',
       rows: ['Khách riêng: Khách du lịch · lượng khách ×1,2', 'Giá dịch vụ ×1,0', '1 tầng, bày sẵn như tiệm ngày đầu, thêm ván lướt sóng.'],
-      button: { text: 'Mở chi nhánh · 5.000.000 đ', on: true },
+      button: { text: 'Mở chi nhánh · 7.500.000 đ', on: true },
       short: null,
     })
   })
 
   it('turns the button off and says what is missing while the purse is short', () => {
-    const sheet = sheetOf(atMain(4_000_000), 'beach')
-    expect(sheet.button).toEqual({ text: 'Mở chi nhánh · 5.000.000 đ', on: false })
+    const sheet = sheetOf(atMain(6_500_000), 'beach')
+    expect(sheet.button).toEqual({ text: 'Mở chi nhánh · 7.500.000 đ', on: false })
     expect(sheet.short).toBe('Còn thiếu 1.000.000 đ')
   })
 
@@ -193,7 +193,7 @@ describe('the sheet under the map', () => {
   it('locks a place until the main shop has its stars, with its own customer and room', () => {
     expect(sheetOf(atMain(), 'oldTown')).toEqual({
       title: 'Phố cổ',
-      status: 'Mở khi tiệm gốc đạt 4★ · 8.000.000 đ',
+      status: 'Mở khi tiệm gốc đạt 4★ · 12.000.000 đ',
       rows: ['Khách riêng: Khách Tây ba lô · lượng khách ×1,0', 'Giá dịch vụ ×1,2', '1 tầng, bày sẵn như tiệm ngày đầu, thêm dây đèn lồng Hội An.'],
       button: { text: 'Cần 4★', on: false },
       short: null,
@@ -201,11 +201,11 @@ describe('the sheet under the map', () => {
   })
 
   it('shows uptown ready to open at 5 stars, short of the price', () => {
-    expect(sheetOf(atMain(10_000_000, 5), 'uptown')).toEqual({
+    expect(sheetOf(atMain(16_000_000, 5), 'uptown')).toEqual({
       title: 'Khu cao cấp',
       status: 'Mở được · tiệm gốc đang 5★',
       rows: ['Khách riêng: Quý bà · lượng khách ×0,8', 'Giá dịch vụ ×1,6', '1 tầng, bày sẵn như tiệm ngày đầu, thêm chậu lan hồ điệp.'],
-      button: { text: 'Mở chi nhánh · 12.000.000 đ', on: false },
+      button: { text: 'Mở chi nhánh · 18.000.000 đ', on: false },
       short: 'Còn thiếu 2.000.000 đ',
     })
   })

@@ -8,14 +8,14 @@ export type BreedId = (typeof BREED_IDS)[number]
 export type PetKind = 'cat' | 'dog'
 
 export const BREEDS: Record<BreedId, { kind: PetKind; price: number }> = {
-  muop: { kind: 'cat', price: 300_000 },
-  mun: { kind: 'cat', price: 400_000 },
-  tamthe: { kind: 'cat', price: 600_000 },
-  xiem: { kind: 'cat', price: 1_200_000 },
-  chota: { kind: 'dog', price: 300_000 },
-  phuquoc: { kind: 'dog', price: 1_000_000 },
-  corgi: { kind: 'dog', price: 1_600_000 },
-  poodle: { kind: 'dog', price: 2_000_000 },
+  muop: { kind: 'cat', price: 450_000 },
+  mun: { kind: 'cat', price: 600_000 },
+  tamthe: { kind: 'cat', price: 900_000 },
+  xiem: { kind: 'cat', price: 1_800_000 },
+  chota: { kind: 'dog', price: 450_000 },
+  phuquoc: { kind: 'dog', price: 1_500_000 },
+  corgi: { kind: 'dog', price: 2_400_000 },
+  poodle: { kind: 'dog', price: 3_000_000 },
 }
 
 /** The two Chú Sáu's litter offers, free. */

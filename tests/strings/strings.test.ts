@@ -90,7 +90,7 @@ describe('strings', () => {
   })
 
   it('fills the recipe bench strings', () => {
-    expect(t('benchMix', { money: formatMoney(RECIPE_TRY_COST) })).toBe('Pha thử · 20.000 đ')
+    expect(t('benchMix', { money: formatMoney(RECIPE_TRY_COST) })).toBe('Pha thử · 30.000 đ')
     expect(t('benchRight', { n: 2 })).toBe('Đúng 2 món')
     expect(t('benchRepeat', { n: 1 })).toBe('Chén này pha rồi: đúng 1 món')
     expect(t('benchSolved', { name: t('serviceSteam') })).toBe('Đúng cả 3 món! Giờ mở được Xông lá.')
