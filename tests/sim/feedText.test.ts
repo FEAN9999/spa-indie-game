@@ -12,7 +12,9 @@ import {
   commentsFor, complaintText, idolText, kolText, managerText, praiseText, REASON_LINE, rivalText, shopText, strangerName, vipText, wardText,
 } from '../../src/sim/feedText'
 import type { ShopNews } from '../../src/sim/feedText'
-import { STRANGER_NAMES, PHAY_KOL_NAME, PHAY_WARD_NAME, managerName } from '../../src/strings/phay'
+import {
+  COMMENT_LINES, COMPLAINT_PIECES, IDOL_PIECES, KOL_PIECES, PRAISE_PIECES, STRANGER_NAMES, PHAY_KOL_NAME, PHAY_WARD_NAME, VIP_PIECES, managerName,
+} from '../../src/strings/phay'
 import { IDOL_TEXT } from '../../src/strings/idols'
 import { t } from '../../src/strings/vi'
 
@@ -63,6 +65,22 @@ describe('feed text', () => {
       for (const v of VIP_IDS) expect(vipText(v, 'foot', rng).length).toBeLessThanOrEqual(120)
       expect(kolText('foot', rng).length).toBeLessThanOrEqual(120)
     }
+  })
+
+  it('no piece asks to "làm" or "từng" a service, which only some service names allow', () => {
+    const pieces = [PRAISE_PIECES, IDOL_PIECES, KOL_PIECES, VIP_PIECES, ...Object.values(COMPLAINT_PIECES)].flat()
+    for (const id of SERVICE_IDS) {
+      const name = t(SERVICES[id].name).toLocaleLowerCase('vi')
+      for (const piece of pieces) {
+        const s = piece.replaceAll('{service}', name)
+        expect(s, `${id}: ${s}`).not.toContain(`làm ${name}`)
+        expect(s, `${id}: ${s}`).not.toContain(`từng ${name}`)
+      }
+    }
+  })
+
+  it('rival comments fit both the challenge and the defeat', () => {
+    for (const line of COMMENT_LINES.rival) expect(line).not.toMatch(/thách|\{/)
   })
 
   it('same rng, same words', () => {

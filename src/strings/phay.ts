@@ -8,7 +8,7 @@ export const PHAY_WARD_NAME = 'Phường 3'
 export const managerName = (idolName: string): string => `Quản lý của ${idolName}`
 
 /**
- * Every line below is a piece of a post. `{service}` is the service's name in lower case, `{shop}` the shop's name, `{rival}` SPA MỚI,
+ * Every line below is a piece of a post (rival comments fit both of its posts, so they never speak of a challenge). `{service}` is the service's name in lower case, `{shop}` the shop's name, `{rival}` SPA MỚI,
  * `{name}` a star's or pet's name, `{title}` a VIP's title, `{song}` a star's song, `{place}`, `{stars}`, `{floor}`, `{breed}`, `{festival}` the fact of a news.
  * Openers end with a comma or a colon, pieces start in lower case and end with a full stop, closers are sentences of their own.
  */
@@ -45,12 +45,12 @@ export const PRAISE_OPENERS: readonly string[] = [
   'Công nhận,',
 ]
 export const PRAISE_PIECES: readonly string[] = [
-  'làm {service} ở đây êm ru, thợ nhẹ tay.',
-  '{service} xong người nhẹ hẳn, đáng đồng tiền.',
-  'thợ làm {service} kỹ lắm, còn dễ thương.',
+  '{service} ở đây êm ru, thợ nhẹ tay.',
+  'đi {service} về thấy đáng đồng tiền.',
+  '{service} ở đây thợ làm kỹ lắm, còn dễ thương.',
   'tiệm sạch sẽ thơm tho, {service} đã ghê.',
   'không phải chờ lâu, {service} xong gọn lẹ.',
-  'đi {service} về ngủ một giấc tới sáng.',
+  'thử {service} ở đây một lần là mê.',
   'giá hợp lý mà {service} chất lượng ghê.',
 ]
 /** A closing sentence in the voice of each kind of guest. */
@@ -77,9 +77,9 @@ export const COMPLAINT_PIECES: Record<ComplaintReason, readonly string[]> = {
   wait: ['chờ lâu quá nên mình bỏ về luôn.', 'đợi cả buổi không tới lượt, đành về.', 'ngồi chờ {service} mãi, hết kiên nhẫn rồi.'],
   stock: ['{service} mà hết hàng, đi uổng công.', 'hỏi {service} thì nghe thiếu hàng, tiếc ghê.', 'tới nơi mới biết hết hàng, mất công.'],
   power: ['hôm đó cúp điện nên {service} dở dang.', 'gặp ngày mất điện, chờ {service} không có máy.', 'điện cúp suốt, đợi {service} hoài không được.'],
-  sloppy: ['thợ làm {service} vội quá, như chạy cho xong.', '{service} mà làm lẹ cho kịp, hơi cẩu thả.', 'thợ làm vội, {service} chưa tới nơi tới chốn.'],
-  tech: ['thợ làm {service} chưa tới, còn lóng ngóng.', '{service} chưa kỹ, tay nghề thợ cần học thêm.', 'thợ làm {service} còn vụng, chưa vừa ý.'],
-  owner: ['chủ tiệm làm {service} chưa tới, hơi tiếc.', 'chính chủ tiệm làm {service} mà chưa kỹ lắm.', 'tưởng chủ tiệm làm {service} sẽ kỹ hơn, tiếc ghê.'],
+  sloppy: ['{service} mà thợ làm vội quá, như chạy cho xong.', '{service} mà làm lẹ cho kịp, hơi cẩu thả.', 'thợ làm vội, {service} chưa tới nơi tới chốn.'],
+  tech: ['{service} mà thợ còn lóng ngóng, chưa tới.', '{service} chưa kỹ, tay nghề thợ cần học thêm.', '{service} ở đây thợ còn vụng, chưa vừa ý.'],
+  owner: ['{service} do chủ tiệm làm mà chưa tới, hơi tiếc.', '{service} mà chính chủ tiệm làm chưa kỹ lắm.', 'tưởng chủ tiệm làm thì {service} sẽ kỹ hơn.'],
 }
 
 /** The manager of a star writes about the star in the third person, politely. */
@@ -109,12 +109,12 @@ export const IDOL_OPENERS: readonly string[] = [
   'Cuối ngày rồi,',
 ]
 export const IDOL_PIECES: readonly string[] = [
-  'ghé {shop} làm {service}, đã lắm.',
-  '{shop} làm {service} êm hết sức.',
+  'ghé {shop} đi {service}, đã lắm.',
+  '{service} ở {shop} êm hết sức.',
   'được {shop} chiều với {service} nè.',
   'tới {shop} thử {service}, đáng tiền.',
   '{service} ở {shop} nhẹ nhàng ghê.',
-  'nhờ {shop} làm {service} mà khỏe.',
+  'ghé {shop} thử {service}, êm ghê.',
 ]
 export const IDOL_CLOSERS: readonly string[] = [
   'Tối nay hát {song} phê lắm.',
@@ -135,10 +135,10 @@ export const VIP_OPENERS: readonly string[] = [
 ]
 export const VIP_PIECES: readonly string[] = [
   'làm {title} phải giữ gìn, {service} ở đây đúng chuẩn.',
-  '{service} xong thấy trẻ ra mấy tuổi.',
+  '{service} ở đây làm mình thấy dễ chịu hẳn.',
   'nghề {title} bận, có chỗ {service} thế này là quý.',
   '{service} ở đây làm kỹ, {title} như mình cũng yên tâm.',
-  'giới {title} chắc hợp lắm, {service} nhẹ tay ghê.',
+  'giới {title} chắc hợp lắm, {service} ở đây nhẹ tay.',
   'tiệm sạch sẽ, {service} đâu ra đấy.',
 ]
 export const VIP_CLOSERS: readonly string[] = [
@@ -160,11 +160,11 @@ export const KOL_OPENERS: readonly string[] = [
 ]
 export const KOL_PIECES: readonly string[] = [
   'thử {service} ở spa này, đáng tiền không nè.',
-  '{service} xong da dẻ khác hẳn, xem video nha.',
+  'đi {service} ở spa này, xem video nha.',
   'chấm điểm {service} của tiệm, bất ngờ lắm.',
   'đi {service} đúng bài, quay video cho cả nhà.',
-  'tiệm này {service} nhẹ tay, Mi Mi khen thật lòng.',
-  'có ai từng {service} chỗ này chưa, kể Mi Mi nghe.',
+  '{service} ở tiệm này nhẹ tay, Mi Mi khen thật lòng.',
+  'có ai đi {service} chỗ này chưa, kể Mi Mi nghe.',
 ]
 export const KOL_CLOSERS: readonly string[] = [
   'Thả tim và theo dõi Mi Mi nha!',
@@ -268,11 +268,11 @@ export const COMMENT_LINES: Record<PostKind, readonly string[]> = {
     'Quay đẹp quá, tiệm này có gì hot?',
   ],
   rival: [
-    '{rival} đừng thách nữa, tiệm này làm kỹ lắm.',
+    'Tiệm này làm kỹ lắm, mình tin tiệm.',
     'Mình ủng hộ tiệm này tới cùng!',
     'Mình là khách quen, thấy tiệm này xịn hơn.',
-    'Bên đó đông khách mà, ráng lên tiệm ơi!',
-    'Thách thì thách, tiệm mình không sợ.',
+    'Thợ ở đây dễ thương, mình đi hoài.',
+    'Tiệm mình xịn nhất xóm, cứ tin đi.',
     'Cố lên tiệm ơi, cả xóm ủng hộ.',
     'Mình đi cả hai nơi, vẫn chọn tiệm này.',
   ],

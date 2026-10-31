@@ -112,7 +112,7 @@ export function commentsFor(kind: PostKind, regulars: string[], rng: Rng): [stri
     while (!author || used.has(author)) author = strangerName(pick(CUSTOMER_KINDS, rng), rng)
     used.add(author)
     const said = lines.splice(Math.floor(rng() * lines.length), 1)[0]
-    out.push([author, fill(said, { rival: t('rivalSignName') })])
+    out.push([author, said])
   }
   return out
 }
