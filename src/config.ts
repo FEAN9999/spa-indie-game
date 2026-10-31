@@ -608,6 +608,20 @@ export const PHO_BOIL_NEAR = 0.08
 /** This many good cuts earn a star. */
 export const PHO_GOOD_CUTS = 3
 
+/** Bánh xèo: the game's time limit, the pan's centre (game pixels), the ring a swirl must run in, and the sectors that ring is judged in. */
+export const BX_LIMIT_MS = 25_000
+export const BX_PAN = { x: 430, y: 1110 }
+export const BX_RING = { inner: 90, outer: 330 }
+export const BX_SECTORS = 24
+/** The share of sectors a swirl must cover to count at all, and to earn a star. */
+export const BX_SPREAD_MIN = 0.3
+export const BX_SPREAD_GOOD = 0.85
+/** The browning needle fills in this long; the crispness bands sit on it, a hard diner's band shrinks by the shrink on each edge, and a fold this close outside a band is "near". */
+export const BX_BROWN_MS = 6_000
+export const BX_BAND = { vua: [0.45, 0.62], ky: [0.68, 0.85] } as const
+export const BX_BAND_HARD_SHRINK = 0.04
+export const BX_FOLD_NEAR = 0.08
+
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50
 export const FEED_MAX_POSTS = 50
