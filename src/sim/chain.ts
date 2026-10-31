@@ -349,7 +349,7 @@ export class Chain {
   /**
    * The owner is back after `ms`: every shop pays its own time away into the one purse.
    * One paying shop gives its own figures; two or more give the sum of their profits and the main shop's days.
-   * The tip stays the main shop's, and is held back (to be shown another time) when a branch paid.
+   * The tip stays the main shop's, and is held back (to be shown another time) when a branch or the restaurant paid.
    */
   comeBack(ms: number): AwayResult {
     const rs = [this.main, ...this.branches, ...(this.restaurant ? [this.restaurant] : [])].map(s => s.comeBack(ms))

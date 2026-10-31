@@ -261,7 +261,7 @@ export class RestaurantLayer {
       const ordering = d.state === 'ordering' && this.floor1
       s.bar.clear()
       if (ordering) drawPatienceBar(s.bar, p.x, p.y, d.patienceMs / d.patienceMaxMs)
-      s.ticket.setTexture(ticketKey(d.dish)).setVisible(ordering).setPosition(p.x, p.y + TICKET_BOTTOM)
+      s.ticket.setTexture(ticketKey(d.dish)).setVisible(ordering && d.chefId === null).setPosition(p.x, p.y + TICKET_BOTTOM)
     }
   }
 

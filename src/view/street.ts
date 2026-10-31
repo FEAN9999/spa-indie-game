@@ -55,10 +55,10 @@ export function stripBlocks(spaShown: Houses): StripBlock[] {
   ]
 }
 
-/** The world x of each diner holding a ticket out of view sideways (the restaurant has one floor, so there is no floor to check). */
+/** The world x of each diner holding a ticket out of view sideways, unless a cook has taken them (the restaurant has one floor, so there is no floor to check). */
 export function ticketDots(diners: Diner[], visible: Rect): number[] {
   return diners
-    .filter(d => d.state === 'ordering')
+    .filter(d => d.state === 'ordering' && d.chefId === null)
     .map(d => restaurantX(d.pos.x + 0.5))
     .filter(x => x < visible.x || x >= visible.x + visible.w)
 }

@@ -79,6 +79,7 @@ describe('Che rules', () => {
   it('crushes the ice in iceTarget taps and rewards a fast hand', () => {
     const fast = new CheGame(ticket({ ice: 'little' }))
     toIce(fast)
+    fast.startIce()
     for (let i = 0; i < 6; i++) {
       fast.tick(300)
       fast.tap()
@@ -87,12 +88,26 @@ describe('Che rules', () => {
     expect(fast.iceFast).toBe(true)
     const slow = new CheGame(ticket({ ice: 'little' }))
     toIce(slow)
+    slow.startIce()
     for (let i = 0; i < 6; i++) {
       slow.tick(500)
       slow.tap()
     }
     expect(slow.phase).toBe('pour')
     expect(slow.iceFast).toBe(false)
+  })
+
+  it('starts the ice clock only when the scene shows the ice block', () => {
+    const g = new CheGame(ticket({ ice: 'little' }))
+    toIce(g)
+    g.tick(700)
+    expect(g.iceMs).toBe(0)
+    g.startIce()
+    for (let i = 0; i < 6; i++) {
+      g.tick(400)
+      g.tap()
+    }
+    expect(g.iceFast).toBe(true)
   })
 
   it('counts a pass each way across the glass', () => {

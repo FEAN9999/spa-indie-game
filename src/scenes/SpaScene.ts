@@ -30,7 +30,6 @@ import type { ShopSide } from '../sim/dining'
 import type { RestaurantEvent } from '../sim/restaurant'
 import { SpaSim } from '../sim/spa'
 import type { House, Side } from '../sim/layout'
-import { RSTOCK_NAME } from '../sim/menu'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types'
@@ -66,7 +65,7 @@ import { addMedal } from '../view/medal'
 import type { MiniGameData } from '../view/miniGame'
 import { questTitle } from '../view/quests'
 import { servicesOpening } from '../view/servicesPanel'
-import { stockLowText } from '../view/stockText'
+import { restaurantStockText, stockLowText } from '../view/stockText'
 import { humNow, humText, todayToasts } from '../view/idol'
 import { lieAngle, liePoint } from '../view/lying'
 import { RoomView } from '../view/RoomView'
@@ -1455,7 +1454,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       const low = events.flatMap(e => (e.type === 'stockLow' ? [e.item] : []))
       if (low.length > 0) this.queueToast(stockLowText(low))
       // the restaurant is the main shop's street's; at a branch nothing of it is drawn
-      for (const e of this.chain.drainRestaurantEvents()) if (this.restaurant) this.handleRestaurant(e)
+      const restaurantEvents = this.chain.drainRestaurantEvents()
+      for (const e of restaurantEvents) if (this.restaurant) this.handleRestaurant(e)
+      // one portion can run both its dish's stock and the herbs low: one toast, or the first would be destroyed unseen
+      const restaurantLow = restaurantEvents.flatMap(e => (e.type === 'stockLow' ? [e] : []))
+      if (this.restaurant && restaurantLow.length > 0) this.hud.toast(restaurantStockText(restaurantLow)!)
       if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && !this.playing()) this.showStairsNote()
       // a card opened by this frame's events (a bed slot's) goes first; a badge card waits for whichever card is up, rather than play under it
       if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && !this.playing()) this.showInspection()
@@ -1891,11 +1894,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'toast':
         this.hud.toast(t(e.key))
         return
-      case 'stockLow': {
-        const name = t(RSTOCK_NAME[e.item])
-        this.hud.toast(e.out ? t('menuStockOut', { item: name.toLocaleLowerCase('vi') }) : t('stockLow', { item: name }))
+      case 'stockLow':
+        // toasted together, once per step, where the events are drained
         return
-      }
     }
   }
 

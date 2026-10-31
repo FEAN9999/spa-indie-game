@@ -5,7 +5,7 @@ import { NO_HOUSES } from '../../src/sim/layout'
 import { mapBounds } from '../../src/view/camera'
 import { DOOR_X, restaurantTileAt, restaurantX, rideX, shopAt, stripBlocks, streetBounds, ticketDots, walkerX } from '../../src/view/street'
 
-const diner = (over: Partial<Diner>): Diner => ({ state: 'ordering', pos: { x: 18, y: 17 }, stateMs: 0, legMs: 0, ...over }) as Diner
+const diner = (over: Partial<Diner>): Diner => ({ state: 'ordering', pos: { x: 18, y: 17 }, stateMs: 0, legMs: 0, chefId: null, ...over }) as Diner
 
 describe('the street', () => {
   it("spans the spa and the restaurant's main block", () => {
@@ -59,5 +59,7 @@ describe('the street', () => {
     expect(ticketDots([away, eating], visible)).toEqual([restaurantX(18.5)])
     const near = diner({ state: 'ordering', pos: { x: 0, y: 17 } })
     expect(ticketDots([near], { x: restaurantX(0), y: 0, w: 400, h: 1000 })).toEqual([])
+    const taken = diner({ state: 'ordering', pos: { x: 22, y: 17 }, chefId: 1 })
+    expect(ticketDots([away, taken], visible)).toEqual([restaurantX(18.5)])
   })
 })

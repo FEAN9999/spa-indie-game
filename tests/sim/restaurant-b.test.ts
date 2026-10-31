@@ -103,6 +103,18 @@ describe('the restaurant menu and its stock', () => {
     expect(r.portionsLeft('che')).toBe(0)
   })
 
+  it('counts the herbs left less every diner not yet cooked for', () => {
+    const { r } = setup()
+    r.stock.herbs = 3
+    expect(r.herbsLeft()).toBe(3)
+    r.spawnDiner({ dish: 'pho' })
+    r.spawnDiner({ dish: 'che' })
+    expect(r.herbsLeft()).toBe(1)
+    r.spawnDiner({ dish: 'banhXeo' })
+    r.spawnDiner({ dish: 'pho' })
+    expect(r.herbsLeft()).toBe(0)
+  })
+
   it('has no dish to sell without a stove', () => {
     const { r } = setup()
     expect(r.sellableDishes()).toEqual(['pho', 'banhXeo', 'che'])

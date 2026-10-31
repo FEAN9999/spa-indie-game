@@ -278,7 +278,7 @@ export class RestaurantSim {
     return false
   }
 
-  /** Runs `ms` of game time in STEP_MS steps; returns the ms it stepped. It stands still while a Phở game is open. */
+  /** Runs `ms` of game time in STEP_MS steps; returns the ms it stepped. It stands still while a cook scene is open. */
   advance(ms: number): number {
     let ran = 0
     for (let left = ms; left > 0 && this.cookingDinerId === null; left -= STEP_MS) {
@@ -296,9 +296,19 @@ export class RestaurantSim {
 
   /** How many more diners `dish` can take: its stock and the herbs, less the portions held by diners not yet cooked for. */
   portionsLeft(dish: DishId): number {
-    const held = this.diners.filter(d => d.state === 'street' || d.state === 'arriving' || d.state === 'toChair' || d.state === 'ordering')
+    const held = this.heldDiners()
     const own = this.stock[DISH_STOCK[dish]] - held.filter(d => d.dish === dish).length
-    return Math.max(0, Math.min(own, this.stock.herbs - held.length))
+    return Math.max(0, Math.min(own, this.herbsLeft()))
+  }
+
+  /** The herbs not yet promised: the stock less one for every diner not yet cooked for. */
+  herbsLeft(): number {
+    return Math.max(0, this.stock.herbs - this.heldDiners().length)
+  }
+
+  /** The diners who hold a portion, and a herb, until they are cooked for. */
+  private heldDiners(): Diner[] {
+    return this.diners.filter(d => d.state === 'street' || d.state === 'arriving' || d.state === 'toChair' || d.state === 'ordering')
   }
 
   /** The dishes the kitchen can make now: those with a portion left, while there is a stove. */
@@ -421,7 +431,7 @@ export class RestaurantSim {
     return !this.learned.includes(dish)
   }
 
-  /** Anyone is in the restaurant, or a Phở game is open. */
+  /** Anyone is in the restaurant, or a cook scene is open. */
   busy(): boolean {
     return this.diners.length > 0 || this.cookingDinerId !== null
   }
@@ -524,7 +534,7 @@ export class RestaurantSim {
     this.owner.path = path
   }
 
-  /** The Phở game ended with these stars: the owner carries the bowl to the diner. */
+  /** The cook scene ended with these stars: the owner carries the bowl to the diner. */
   completeCooking(dinerId: number, stars: Stars): void {
     const diner = this.diners.find(d => d.id === dinerId)
     if (this.cookingDinerId !== dinerId || !diner?.chair) return

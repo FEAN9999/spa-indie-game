@@ -21,17 +21,22 @@ export class HandPointer {
   /** The box's size, to place it again when only the point moves. */
   private boxW = 0
   private boxH = 0
+  private boxRight = BOX.right
   private shown = ''
 
   constructor(private readonly scene: Phaser.Scene) {}
 
-  /** `down`: the fingertip touches (x, y) from above, the text above the hand; `up`: from below, the text below. The same text and direction only moves them. */
-  show(text: string, x: number, y: number, dir: 'down' | 'up'): void {
+  /**
+   * `down`: the fingertip touches (x, y) from above, the text above the hand; `up`: from below, the text below. The same text and direction only moves them.
+   * `place` keeps the box off something it would cover: `boxY` is the box's own centre, and `boxRight` the right edge it may reach (the text wraps to fit).
+   */
+  show(text: string, x: number, y: number, dir: 'down' | 'up', place: { boxY?: number; boxRight?: number } = {}): void {
     const key = `${text}|${dir}`
     const away = dir === 'down' ? -1 : 1
     if (key !== this.shown) {
       this.hide()
       this.shown = key
+      this.boxRight = place.boxRight ?? BOX.right
 
       const add = this.scene.add
       // the fingertip sits at the bottom centre of the texture; a negative scale mirrors the hand about it
@@ -39,7 +44,7 @@ export class HandPointer {
       this.hand = add.container(0, 0, [this.finger]).setDepth(DEPTH)
       this.scene.tweens.add({ targets: this.finger, y: away * BOB_PX, duration: BOB_MS, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' })
 
-      const label = add.text(0, 0, text, { ...textStyle(38, '600'), align: 'center', wordWrap: { width: BOX.wrap } }).setOrigin(0.5)
+      const label = add.text(0, 0, text, { ...textStyle(38, '600'), align: 'center', wordWrap: { width: Math.min(BOX.wrap, this.boxRight - BOX.left - BOX.padX * 2) } }).setOrigin(0.5)
       const w = label.width + BOX.padX * 2
       const h = label.height + BOX.padY * 2
       const bg = add
@@ -53,8 +58,8 @@ export class HandPointer {
       this.boxH = h
     }
     this.hand!.setPosition(x, y)
-    const bx = Phaser.Math.Clamp(x, BOX.left + this.boxW / 2, BOX.right - this.boxW / 2)
-    const by = y + away * (this.finger!.height + BOB_PX + GAP + this.boxH / 2)
+    const bx = Phaser.Math.Clamp(x, BOX.left + this.boxW / 2, this.boxRight - this.boxW / 2)
+    const by = place.boxY ?? y + away * (this.finger!.height + BOB_PX + GAP + this.boxH / 2)
     this.box!.setPosition(bx, by)
   }
 

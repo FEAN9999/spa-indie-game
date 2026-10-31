@@ -23,6 +23,8 @@ const LAYER_COLOUR: Record<Layer, string> = { redBean: C.terracotta, mungBean: C
 const [GLASS_L, GLASS_R] = [CHE_GLASS.x - CHE_GLASS.halfW, CHE_GLASS.x + CHE_GLASS.halfW]
 /** The hold button under the glass; its label names the layer being poured and is scaled down to fit. */
 const HOLD = { x: 540, y: 1530, w: 680, h: 120, size: 48, padX: 40 }
+/** The layer lesson's box sits above the glass rim, under the ticket and the pills, so it covers no mark. */
+const LAYER_LESSON_Y = 785
 /** The marks run a little past the glass's walls, in dashes. */
 const MARK = { dash: 22, gap: 14, w: 6, overhang: 34 }
 /** A glint down the glass's left side, over the layers. */
@@ -134,7 +136,7 @@ export class CheScene extends Phaser.Scene {
   private pointLesson(): void {
     if (!this.hand) return
     const spot = this.lessonSpot()
-    if (spot) this.hand.show(t(LESSON[this.shown]), spot.x, spot.y, 'down')
+    if (spot) this.hand.show(t(LESSON[this.shown]), spot.x, spot.y, 'down', this.shown === 'layer' ? { boxY: LAYER_LESSON_Y } : {})
     else this.hand.hide()
   }
 
@@ -164,6 +166,7 @@ export class CheScene extends Phaser.Scene {
     }
 
     if (s === 'ice') {
+      this.rules.startIce()
       this.ice = keep(this.add.image(ICE.x, ICE.y, 'che-ice').setInteractive(new Phaser.Geom.Rectangle(...CHE_ICE_BLOCK), Phaser.Geom.Rectangle.Contains))
       this.count = keep(this.add.text(ICE.x, COUNT.y, this.iceCount(), textStyle(COUNT.size, '800')).setOrigin(0.5))
       return

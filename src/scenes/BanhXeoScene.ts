@@ -31,6 +31,8 @@ const FILLINGS: { id: BxTopping; key: StringKey; x: number }[] = [
 ]
 const FILLING_BTN = { y: 1500, w: 260, h: 110, iconDx: -80, textDx: 28, size: 40 }
 const DONE = { x: 880, y: 1330, w: 240, h: 120 }
+/** The fill lesson's box stops this far left of the Xong button. */
+const LESSON_GAP = 20
 const FOLD = { x: 540, y: 1520, w: 440, h: 120 }
 const NEEDLE = { w: 120, h: 22, ink: 4 }
 /** The batter's colour runs from raw cream through golden to dark brown as it browns. */
@@ -128,15 +130,15 @@ export class BanhXeoScene extends Phaser.Scene {
   private pointLesson(): void {
     if (!this.hand) return
     const spot = this.lessonSpot()
-    if (spot) this.hand.show(t(LESSON[this.shown]), spot.x, spot.y, 'down')
+    if (spot) this.hand.show(t(LESSON[this.shown]), spot.x, spot.y, 'down', this.shown === 'fill' ? { boxRight: DONE.x - DONE.w / 2 - LESSON_GAP } : {})
     else this.hand.hide()
   }
 
-  /** Inside the pan for the swirl, the shrimp button's top for the fillings, the fold button's top for the fold. */
+  /** Inside the pan for the swirl, the top of the button of the ticket's own filling, the fold button's top for the fold. */
   private lessonSpot(): { x: number; y: number } | null {
     if (this.rules.phase !== this.shown) return null
     if (this.shown === 'spread') return SWIRL_SPOT
-    if (this.shown === 'fill') return { x: FILLINGS[0].x, y: FILLING_BTN.y - FILLING_BTN.h / 2 }
+    if (this.shown === 'fill') return { x: FILLINGS.find(f => f.id === this.params.ticket.filling)!.x, y: FILLING_BTN.y - FILLING_BTN.h / 2 }
     return { x: FOLD.x, y: FOLD.y - FOLD.h / 2 }
   }
 

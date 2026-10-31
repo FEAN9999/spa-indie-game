@@ -44,6 +44,7 @@ export class CheGame {
   iceMs = 0
   iceFast = false
   passes = 0
+  private iceStarted = false
   private layerStart = 0
   private anchor: number | null = null
   private far = 0
@@ -110,6 +111,11 @@ export class CheGame {
     this.dir = 0
   }
 
+  /** The scene shows the ice block: the fast budget counts from here, not from the pause before it. */
+  startIce(): void {
+    this.iceStarted = true
+  }
+
   iceTarget(): number {
     return CHE_ICE_TAPS[this.ticket.ice]
   }
@@ -121,7 +127,7 @@ export class CheGame {
   tick(ms: number): void {
     if (this.phase === 'done') return
     this.elapsedMs += ms
-    if (this.phase === 'ice') this.iceMs += ms
+    if (this.phase === 'ice' && this.iceStarted) this.iceMs += ms
     if (this.elapsedMs >= this.limitMs) this.finish(false)
   }
 

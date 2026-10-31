@@ -98,7 +98,7 @@ export class MenuScene extends Phaser.Scene {
   private herbsRow(y0: number): void {
     const { restaurant } = this.params
     const cy = y0 + ROW_H / 2
-    const left = restaurant.stock.herbs
+    const left = restaurant.herbsLeft()
     this.keep(this.add.image(ICON_X, cy, 'rstock-herbs').setScale(2))
     this.keep(this.add.text(TEXT_X, cy - 58, t(RSTOCK_NAME.herbs), textStyle(40)).setOrigin(0, 0.5))
     this.keep(this.add.text(TEXT_X, cy - 14, t('menuLeft', { n: left }), textStyle(30, '800', left <= LOW_STOCK ? C.lantern : C.ink)).setOrigin(0, 0.5))
