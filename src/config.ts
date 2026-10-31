@@ -622,6 +622,20 @@ export const BX_BAND = { vua: [0.45, 0.62], ky: [0.68, 0.85] } as const
 export const BX_BAND_HARD_SHRINK = 0.04
 export const BX_FOLD_NEAR = 0.08
 
+/** Chè ba màu: the game's time limit, and how long holding the pour takes to fill the whole glass. */
+export const CHE_LIMIT_MS = 25_000
+export const CHE_POUR_MS = 3_000
+/** How thick each layer is, bottom to top (red bean, mung bean, jelly); a layer is good when the glass's fill is within the tolerance of the running sum, and a hard diner's tolerance is tighter. */
+export const CHE_LAYER_THICK = { beans: [0.3, 0.3, 0.15], jelly: [0.2, 0.2, 0.35] } as const
+export const CHE_LAYER_TOL = 0.05
+export const CHE_LAYER_TOL_HARD = 0.035
+/** Taps to crush the ice for each amount, and the time per tap that still counts as a fast hand. */
+export const CHE_ICE_TAPS = { little: 6, lots: 12 } as const
+export const CHE_ICE_MS_PER_TAP = 400
+/** Passes of the coconut milk across the glass, for a plain and a hard diner (extra coconut), and the swipe distance (game pixels) that makes one pass. */
+export const CHE_POUR_PASSES = { base: 4, extra: 6 } as const
+export const CHE_PASS_PX = 220
+
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50
 export const FEED_MAX_POSTS = 50
