@@ -9,7 +9,7 @@ import type { Look } from '../sim/types'
 import { formatCount } from '../strings/format'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
-import { clampScroll, isDrag, postTime, shortCount } from '../view/phay'
+import { clampScroll, dragTo, inWindow, postTime, shortCount, stackPosts, type Hold } from '../view/phay'
 import { starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
 import { whenTapped } from '../view/ui'
@@ -58,11 +58,15 @@ const FACE_FEET = 42
 const PIC_FIGURE = 1.7
 const TICK_AT = 100_000
 const GOLD_AT = 1_000_000
+/** Posts this far past the window's edges are built ahead, so a drag meets them ready. */
+const BUILD_MARGIN = 600
 
 const PIC_BG: Record<PostPic, string> = { idol: C.seaPale, video: C.pinkPale, plaque: C.goldPale, cup: C.goldPale, cert: C.tealPale }
 
+/** A post laid in the list; its box is built only once it comes near the window. */
 interface Shown {
-  box: Phaser.GameObjects.Container
+  post: Post
+  box: Phaser.GameObjects.Container | null
   top: number
   bottom: number
 }
@@ -77,7 +81,9 @@ export class PhayScene extends Phaser.Scene {
   private posts: Shown[] = []
   private listH = 0
   private scroll = 0
-  private drag: { id: number; y0: number; s0: number; moved: boolean } | null = null
+  private drag: (Hold & { id: number }) | null = null
+  /** One hidden text per style, to count a post's wrapped lines before it is built; the heights by line count. */
+  private measurers = new Map<string, { text: Phaser.GameObjects.Text; h: number[] }>()
 
   constructor() {
     super('PhayScene')
@@ -89,6 +95,7 @@ export class PhayScene extends Phaser.Scene {
     this.listH = 0
     this.scroll = 0
     this.drag = null
+    this.measurers = new Map()
   }
 
   create() {
@@ -154,91 +161,114 @@ export class PhayScene extends Phaser.Scene {
     this.add.text(PROFILE.textX, PROFILE.followY, t('phayFollowers', { n: formatCount(feed.followers) }), textStyle(32, '600', C.soft)).setOrigin(0, 0.5)
   }
 
-  /** Every post, newest first, laid out down the list; the focused one's top becomes the scroll. */
+  /** Every post, newest first, measured and laid down the list without being built (setScroll builds those near the window); the focused one's top becomes the scroll. */
   private fillList(): void {
     const { feed, focusId } = this.params
-    let y = LIST_TOP + FIRST_GAP
+    const top = LIST_TOP + FIRST_GAP
     if (feed.posts.length === 0) {
-      this.list.add(this.add.text(GAME_W / 2, y + 120, t('phayEmpty'), { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0))
+      this.list.add(this.add.text(GAME_W / 2, top + 120, t('phayEmpty'), { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0))
     }
-    for (const post of [...feed.posts].reverse()) {
-      if (post.id === focusId) this.scroll = -(y - LIST_TOP - FIRST_GAP)
-      const box = this.add.container(0, 0)
-      const bottom = this.drawPost(box, post, y)
-      this.list.add(box)
-      this.posts.push({ box, top: y, bottom })
-      y = bottom + POST_GAP
-    }
-    this.listH = y - LIST_TOP
+    const newest = [...feed.posts].reverse()
+    const { spans, end } = stackPosts(newest.map(p => this.drawPost(null, p, 0)), top, POST_GAP)
+    this.posts = newest.map((post, i) => ({ post, box: null, ...spans[i] }))
+    const focus = this.posts.find(s => s.post.id === focusId)
+    if (focus) this.scroll = -(focus.top - top)
+    this.listH = end - LIST_TOP
   }
 
-  /** One post from `y0` into `box`: returns the card's bottom. */
-  private drawPost(box: Phaser.GameObjects.Container, p: Post, y0: number): number {
+  /** A post's box at its place in the list. */
+  private build(s: Shown): Phaser.GameObjects.Container {
+    const box = this.add.container(0, 0)
+    this.drawPost(box, s.post, s.top)
+    this.list.add(box)
+    return box
+  }
+
+  /** One post from `y0` into `box`, or only measured when there is no box: returns the card's bottom. */
+  private drawPost(box: Phaser.GameObjects.Container | null, p: Post, y0: number): number {
     const x = POST_X
-    const card = this.add.graphics()
-    box.add(card)
+    const card = box ? this.add.graphics() : null
     let y = y0 + PAD
-    this.avatar(box, p, x + 74, y + AVATAR_R)
-    const nameW = POST_W - NAME_X - PAD - (p.tick ? 3 * TICK_R : 0)
-    const name = fit(this.add.text(x + NAME_X, y + 26, p.name, textStyle(36, '800', p.kind === 'rival' ? C.lantern : C.ink)).setOrigin(0, 0.5), nameW)
-    box.add(name)
-    if (p.tick) box.add(this.tick(name.x + name.displayWidth + 12 + TICK_R, name.y, TICK_R, p.kind === 'idol'))
-    const time = this.add.text(x + NAME_X, y + 74, postTime(p.day, p.minute), textStyle(26, '600', C.soft)).setOrigin(0, 0.5)
-    box.add(time)
-    if (p.stars !== null) this.starRow(box, time.x + time.width + 24, time.y, p.stars)
+    if (box && card) {
+      box.add(card)
+      this.avatar(box, p, x + 74, y + AVATAR_R)
+      const nameW = POST_W - NAME_X - PAD - (p.tick ? 3 * TICK_R : 0)
+      const name = fit(this.add.text(x + NAME_X, y + 26, p.name, textStyle(36, '800', p.kind === 'rival' ? C.lantern : C.ink)).setOrigin(0, 0.5), nameW)
+      box.add(name)
+      if (p.tick) box.add(this.tick(name.x + name.displayWidth + 12 + TICK_R, name.y, TICK_R, p.kind === 'idol'))
+      const time = this.add.text(x + NAME_X, y + 74, postTime(p.day, p.minute), textStyle(26, '600', C.soft)).setOrigin(0, 0.5)
+      box.add(time)
+      if (p.stars !== null) this.starRow(box, time.x + time.width + 24, time.y, p.stars)
+    }
 
     y = y0 + BODY_DY
-    const body = this.add.text(x + PAD, y, p.text, { ...textStyle(32, '600'), wordWrap: { width: POST_W - 2 * PAD } })
-    box.add(body)
-    y += body.height + 14
+    y += this.words(box, x + PAD, y, p.text, { ...textStyle(32, '600'), wordWrap: { width: POST_W - 2 * PAD } }) + 14
     const unanswered = p.complaint !== null && p.complaint.answered === null
     if (p.complaint && unanswered) {
-      const why = this.add.text(x + PAD, y, REASON_LINE[p.complaint.reason], { ...textStyle(26, '800', C.lanternDark), wordWrap: { width: POST_W - 2 * PAD } })
-      box.add(why)
-      y += why.height + 14
+      y += this.words(box, x + PAD, y, REASON_LINE[p.complaint.reason], { ...textStyle(26, '800', C.lanternDark), wordWrap: { width: POST_W - 2 * PAD } }) + 14
     }
     if (p.pic) {
-      this.picture(box, p, y + 6)
+      if (box) this.picture(box, p, y + 6)
       y += 6 + PIC_H + 24
     }
 
     // the likes, then the comments' count
-    const row = y + 24
-    box.add(this.add.image(x + 50, row, 'icon-heart').setScale(0.65))
-    box.add(this.add.text(x + 84, row, shortCount(p.likes), textStyle(30)).setOrigin(0, 0.5))
-    const comments = p.comments.length + p.extra
-    if (comments > 0) {
-      box.add(this.add.image(x + 310, row + 2, 'icon-comment').setScale(0.65))
-      box.add(this.add.text(x + 344, row, t('phayComments', { n: shortCount(comments) }), textStyle(28, '600', C.soft)).setOrigin(0, 0.5))
+    if (box) {
+      const row = y + 24
+      box.add(this.add.image(x + 50, row, 'icon-heart').setScale(0.65))
+      box.add(this.add.text(x + 84, row, shortCount(p.likes), textStyle(30)).setOrigin(0, 0.5))
+      const comments = p.comments.length + p.extra
+      if (comments > 0) {
+        box.add(this.add.image(x + 310, row + 2, 'icon-comment').setScale(0.65))
+        box.add(this.add.text(x + 344, row, t('phayComments', { n: shortCount(comments) }), textStyle(28, '600', C.soft)).setOrigin(0, 0.5))
+      }
     }
     y += 64
 
     // the comments shown, on a sand box
     if (p.comments.length > 0) {
       const top = y
-      const sand = this.add.graphics()
-      box.add(sand)
+      const sand = box ? this.add.graphics() : null
+      if (box && sand) box.add(sand)
       y += 22
       for (const [who, said] of p.comments) {
-        const nm = fit(this.add.text(x + 52, y, who, textStyle(28)), POST_W - 104)
-        box.add(nm)
-        y += nm.height + 2
-        const line = this.add.text(x + 52, y, said, { ...textStyle(28, '600'), wordWrap: { width: POST_W - 104 } })
-        box.add(line)
-        y += line.height + 12
+        y += this.words(box, x + 52, y, who, textStyle(28), POST_W - 104) + 2
+        y += this.words(box, x + 52, y, said, { ...textStyle(28, '600'), wordWrap: { width: POST_W - 104 } }) + 12
       }
       y += 10
-      sand.fillStyle(hex(C.sand), 1).fillRoundedRect(x + PIC_PAD, top, POST_W - 2 * PIC_PAD, y - top, 24)
+      sand?.fillStyle(hex(C.sand), 1).fillRoundedRect(x + PIC_PAD, top, POST_W - 2 * PIC_PAD, y - top, 24)
       y += 24
     }
 
     const h = y - y0 + 6
     card
-      .fillStyle(hex(C.cream), 1)
+      ?.fillStyle(hex(C.cream), 1)
       .fillRoundedRect(x, y0, POST_W, h, 36)
       .lineStyle(unanswered ? 6 : 4, hex(unanswered ? C.terracotta : C.ink))
       .strokeRoundedRect(x, y0, POST_W, h, 36)
     return y0 + h
+  }
+
+  /** Words at x, y into `box`, fitted to `fitW` when given, or only measured when there is no box: returns their height. */
+  private words(box: Phaser.GameObjects.Container | null, x: number, y: number, str: string, style: Phaser.Types.GameObjects.Text.TextStyle, fitW = 0): number {
+    if (!box) return this.measure(str, style)
+    const text = this.add.text(x, y, str, style)
+    if (fitW > 0) fit(text, fitW)
+    box.add(text)
+    return text.height
+  }
+
+  /** The height `str` takes in `style`: its wrapped lines are counted on one hidden text per style, and each line count is drawn once. */
+  private measure(str: string, style: Phaser.Types.GameObjects.Text.TextStyle): number {
+    const key = JSON.stringify(style)
+    let m = this.measurers.get(key)
+    if (!m) {
+      m = { text: this.add.text(0, 0, '', style).setVisible(false), h: [] }
+      this.measurers.set(key, m)
+    }
+    const n = m.text.getWrappedText(str).length
+    m.h[n] ??= m.text.setText(Array(n).fill('M').join('\n')).height
+    return m.h[n]
   }
 
   /** A guest's, star's or VIP's whole figure standing in a disc; the shop's lotus, SPA MỚI's initials or the ward's star. */
@@ -373,9 +403,8 @@ export class PhayScene extends Phaser.Scene {
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       const d = this.drag
       if (!d || p.id !== d.id) return
-      const dy = p.y - d.y0
-      if (!d.moved && isDrag(dy)) d.moved = true
-      if (d.moved) this.setScroll(d.s0 + dy)
+      const y = dragTo(d, p.y)
+      if (y !== null) this.setScroll(y)
     })
     for (const ev of ['pointerup', 'pointerupoutside']) {
       this.input.on(ev, (p: Phaser.Input.Pointer) => {
@@ -386,11 +415,14 @@ export class PhayScene extends Phaser.Scene {
     this.input.on('wheel', (_p: Phaser.Input.Pointer, _over: unknown, _dx: number, dy: number) => this.setScroll(this.scroll - dy))
   }
 
-  /** Moves the list, kept in its bounds, and draws only the posts in the window. */
+  /** Moves the list, kept in its bounds, builds the posts that come near the window and draws only those in it. */
   private setScroll(y: number): void {
     this.scroll = clampScroll(y, this.listH, LIST_BOTTOM - LIST_TOP)
     this.list.y = this.scroll
-    for (const s of this.posts) s.box.setVisible(s.bottom + this.scroll > LIST_TOP && s.top + this.scroll < LIST_BOTTOM)
+    for (const s of this.posts) {
+      if (!s.box && inWindow(s, this.scroll, LIST_TOP - BUILD_MARGIN, LIST_BOTTOM + BUILD_MARGIN)) s.box = this.build(s)
+      s.box?.setVisible(inWindow(s, this.scroll, LIST_TOP, LIST_BOTTOM))
+    }
   }
 
   private close(): void {

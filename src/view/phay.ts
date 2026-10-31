@@ -34,6 +34,45 @@ export function isDrag(dy: number): boolean {
   return Math.abs(dy) > DRAG_PX
 }
 
+/** A finger on the list: where it went down (re-based where it became a drag) and the scroll then. */
+export interface Hold {
+  y0: number
+  s0: number
+  moved: boolean
+}
+
+/** The scroll for the finger at `y`, or null while it is still a tap; the drag starts where the finger passed DRAG_PX, so the list never jumps. */
+export function dragTo(hold: Hold, y: number): number | null {
+  if (!hold.moved) {
+    if (!isDrag(y - hold.y0)) return null
+    hold.moved = true
+    hold.y0 = y
+  }
+  return hold.s0 + y - hold.y0
+}
+
+/** A post's place in the list before scrolling. */
+export interface Span {
+  top: number
+  bottom: number
+}
+
+/** Posts of these heights laid down from `top`, `gap` apart: their spans, and where the list ends after the last gap. */
+export function stackPosts(heights: readonly number[], top: number, gap: number): { spans: Span[]; end: number } {
+  const spans: Span[] = []
+  let y = top
+  for (const h of heights) {
+    spans.push({ top: y, bottom: y + h })
+    y += h + gap
+  }
+  return { spans, end: y }
+}
+
+/** Whether any of a post reaches between `from` and `to` with the list moved by `scroll`. */
+export function inWindow(s: Span, scroll: number, from: number, to: number): boolean {
+  return s.bottom + scroll > from && s.top + scroll < to
+}
+
 /** The button shows once Phây is open, but not under the gold card or the morning banner, which take its spot. */
 export function phayButtonShown(open: boolean, cardUp: boolean, bannerUp: boolean): boolean {
   return open && !cardUp && !bannerUp

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { addPost, emptyFeed } from '../../src/sim/feed'
 import type { FeedBook, PostDraft } from '../../src/sim/feed'
 import { milestoneCard } from '../../src/view/phayCards'
-import { clampScroll, DRAG_PX, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, shortCount, unreadLabel } from '../../src/view/phay'
+import { clampScroll, DRAG_PX, dragTo, inWindow, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, shortCount, stackPosts, unreadLabel } from '../../src/view/phay'
 
 describe('the Phây button', () => {
   it('sits under the top bar on the right, lower at a branch under the ribbon', () => expect(PHAY_BUTTON).toEqual({ x: 1010, y: 280, r: 44, branchY: 330 }))
@@ -66,6 +66,35 @@ describe('Phây scrolling', () => {
   })
 
   it('does not scroll a list shorter than the view', () => expect(clampScroll(-10, 800, 1700)).toBe(0))
+
+  it('starts a drag from where the list was, not with a jump of DRAG_PX', () => {
+    const hold = { y0: 1000, s0: -300, moved: false }
+    expect(dragTo(hold, 1010)).toBeNull()
+    expect(dragTo(hold, 980)).toBe(-300)
+    expect(dragTo(hold, 950)).toBe(-330)
+    expect(dragTo(hold, 1000)).toBe(-280)
+  })
+
+  it('stacks posts of known heights down the list, a gap apart, and ends after the last gap', () => {
+    expect(stackPosts([300, 500, 200], 414, 26)).toEqual({ spans: [{ top: 414, bottom: 714 }, { top: 740, bottom: 1240 }, { top: 1266, bottom: 1466 }], end: 1492 })
+    expect(stackPosts([], 414, 26)).toEqual({ spans: [], end: 414 })
+  })
+
+  it('a post is in the window when any of it reaches between the edges, the list moved by the scroll', () => {
+    const s = { top: 1000, bottom: 1500 }
+    expect(inWindow(s, 0, 400, 2090)).toBe(true)
+    expect(inWindow(s, -1100, 400, 2090)).toBe(false)
+    expect(inWindow(s, -1099, 400, 2090)).toBe(true)
+    expect(inWindow(s, 1090, 400, 2090)).toBe(false)
+    expect(inWindow(s, 1089, 400, 2090)).toBe(true)
+  })
+
+  it('a 50-post feed builds only the few posts near the window as it opens, and the rest as it scrolls', () => {
+    const { spans, end } = stackPosts(Array.from({ length: 50 }, (_, i) => [420, 560, 900][i % 3]), 414, 26)
+    const near = (scroll: number) => spans.filter(s => inWindow(s, scroll, 400 - 600, 2090 + 600)).length
+    expect(near(0)).toBeLessThanOrEqual(6)
+    expect(near(clampScroll(-1e9, end - 400, 1690))).toBeLessThanOrEqual(6)
+  })
 })
 
 const draft = (over: Partial<PostDraft> = {}): PostDraft => ({
