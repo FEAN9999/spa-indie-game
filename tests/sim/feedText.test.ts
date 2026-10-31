@@ -53,7 +53,7 @@ describe('feed text', () => {
         expect(/[{}]/.test(s), s).toBe(false)
       }
     }
-  })
+  }, 20_000) // thousands of draws: 2–3 s alone, more when the whole suite shares the machine
 
   it('the longest shop name and service still fit, whatever the pieces drawn', () => {
     for (let seed = 1; seed <= 3000; seed++) {
@@ -65,7 +65,7 @@ describe('feed text', () => {
       for (const v of VIP_IDS) expect(vipText(v, 'foot', rng).length).toBeLessThanOrEqual(120)
       expect(kolText('foot', rng).length).toBeLessThanOrEqual(120)
     }
-  })
+  }, 20_000) // thousands of draws: 2–3 s alone, more when the whole suite shares the machine
 
   it('no piece asks to "làm", "từng" or "đi" a service or calls it "êm", which only some service names allow', () => {
     const pieces = [PRAISE_PIECES, IDOL_PIECES, KOL_PIECES, VIP_PIECES, ...Object.values(COMPLAINT_PIECES)].flat()
