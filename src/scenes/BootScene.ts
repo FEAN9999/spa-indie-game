@@ -3,6 +3,7 @@ import { badgeTextures } from '../art/badges'
 import { banhXeoTextures } from '../art/banhXeoArt'
 import { beachRoomTexture } from '../art/beach'
 import { branchHouseTextures } from '../art/branchHouses'
+import { cheTextures } from '../art/cheArt'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { floorTextures } from '../art/floors'
@@ -70,6 +71,7 @@ export class BootScene extends Phaser.Scene {
       ...restaurantTextures(),
       ...phoTextures(),
       ...banhXeoTextures(),
+      ...cheTextures(),
       ...menuTextures(),
     })
     // the layer over the map runs first, so the shop draws into it from its first frame

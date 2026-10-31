@@ -15,6 +15,11 @@ describe('cook scene parts', () => {
     expect(ticketLines('banhXeo', { filling: 'thit', crisp: 'ky', extraSprouts: true })).toEqual(['bxThit', 'bxKy', 'bxExtraGia'])
   })
 
+  it("lists the Chè ticket's three lines", () => {
+    expect(ticketLines('che', { mix: 'beans', ice: 'little', extraCoconut: false })).toEqual(['cheBeans', 'cheIceLittle', 'cheCoconutLine'])
+    expect(ticketLines('che', { mix: 'jelly', ice: 'lots', extraCoconut: true })).toEqual(['cheJellyLine', 'cheIceLots', 'cheExtraCoconut'])
+  })
+
   it('opens each dish in its own scene', () => {
     expect(COOK_SCENE).toEqual({ pho: 'PhoScene', banhXeo: 'BanhXeoScene', che: 'CheScene' })
   })

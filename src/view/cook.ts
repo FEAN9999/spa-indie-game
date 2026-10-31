@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import type { BanhXeoTicket } from '../sim/banhXeo'
+import type { CheTicket } from '../sim/che'
 import type { DishId, DishTicket } from '../sim/menu'
 import type { PhoTicket } from '../sim/pho'
 import { t, type StringKey } from '../strings/vi'
@@ -30,7 +31,8 @@ export function ticketLines(dish: DishId, ticket: DishTicket): StringKey[] {
     const tk = ticket as BanhXeoTicket
     return [tk.filling === 'tom' ? 'bxTom' : 'bxThit', tk.crisp === 'vua' ? 'bxVua' : 'bxKy', tk.extraSprouts ? 'bxExtraGia' : 'bxGiaLine']
   }
-  return []
+  const tk = ticket as CheTicket
+  return [tk.mix === 'beans' ? 'cheBeans' : 'cheJellyLine', tk.ice === 'little' ? 'cheIceLittle' : 'cheIceLots', tk.extraCoconut ? 'cheExtraCoconut' : 'cheCoconutLine']
 }
 
 /** The order ticket at the card's top right, with the dish's lines written on it. */
