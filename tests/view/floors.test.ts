@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { FLOOR_PRICE, FLOOR_ROWS } from '../../src/config'
+import type { Diner } from '../../src/sim/restaurant'
 import { createRng } from '../../src/sim/rng'
 import { SHOP_LAYOUT, SPA_LAYOUT_1A, widen } from '../../src/sim/layout'
 import { SpaSim } from '../../src/sim/spa'
@@ -6,7 +8,8 @@ import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, showPills, stairsToasts } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, restaurantPills, showPills, stairsToasts } from '../../src/view/floors'
+import { restaurantFor } from '../sim/helpers'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
   ({ owner: { pos: { x: 11, y: owner.y }, task: owner.task ?? null, climbMs: owner.climbMs } }) as unknown as SpaSim
@@ -114,6 +117,43 @@ describe('pills', () => {
     sim.customers.push({ state: 'waiting' } as Customer)
     expect(pills(sim, 2).map(p => p.dot)).toEqual([true, false, false])
     expect(pills(sim, 1).map(p => p.dot)).toEqual([false, false, false])
+  })
+})
+
+describe('restaurantPills', () => {
+  /** A restaurant on a fresh main shop, its owner at the door. */
+  const restaurant = () => restaurantFor(newSim())
+  const dinerOn = (floor: number, chefId: number | null) => ({ state: 'ordering', chefId, pos: { x: 7, y: (floor - 1) * FLOOR_ROWS + 10 } }) as Diner
+
+  it("gives the restaurant one pill per floor with the spa's floor prices", () => {
+    const r = restaurant()
+    expect(r.floors).toBe(1)
+    expect(r.maxFloors()).toBe(3)
+    const ps = restaurantPills(r, 1, false)
+    expect(ps.map(p => p.state)).toEqual(['viewed', 'locked', 'locked'])
+    expect(ps.map(p => p.price)).toEqual([0, FLOOR_PRICE[2], FLOOR_PRICE[3]])
+  })
+
+  it('opens the pills of the floors it has opened', () => {
+    const r = restaurant()
+    r.floors = 2
+    expect(restaurantPills(r, 2, false).map(p => p.state)).toEqual(['open', 'viewed', 'locked'])
+  })
+
+  it('marks a restaurant floor with a diner waiting for the owner', () => {
+    const r = restaurant()
+    r.diners.push(dinerOn(2, null))
+    expect(restaurantPills(r, 1, false).map(p => p.dot)).toEqual([false, true, false])
+    expect(restaurantPills(r, 2, false).map(p => p.dot)).toEqual([false, false, false])
+    r.diners[0].chefId = 1
+    expect(restaurantPills(r, 1, false).map(p => p.dot)).toEqual([false, false, false])
+  })
+
+  it("puts the owner's face on her floor only when she is in the restaurant", () => {
+    const r = restaurant()
+    r.owner.pos = { x: 7, y: FLOOR_ROWS + 10 }
+    expect(restaurantPills(r, 1, true).map(p => p.face)).toEqual([false, true, false])
+    expect(restaurantPills(r, 1, false).map(p => p.face)).toEqual([false, false, false])
   })
 })
 

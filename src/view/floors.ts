@@ -1,6 +1,7 @@
 import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
 import { ITEMS, layerOf, size, type Item, type ItemKind } from '../sim/items'
+import type { RestaurantSim } from '../sim/restaurant'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
@@ -52,6 +53,25 @@ export function pills(sim: SpaSim, viewed: number): Pill[] {
       price: FLOOR_PRICE[floor] ?? 0,
       face: floor === ownerFloor,
       dot: floor === 1 && viewed !== 1 && waiting,
+    })
+  }
+  return out
+}
+
+/**
+ * The restaurant's pills, one per floor it can have, at the spa's floor prices: the owner's face on her floor while she is in it (`ownerHere`),
+ * and a dot on another floor than the one viewed where a diner waits to order with no cook on them.
+ */
+export function restaurantPills(r: RestaurantSim, viewed: number, ownerHere: boolean): Pill[] {
+  const ownerFloor = floorOf(r.owner.pos.y)
+  const out: Pill[] = []
+  for (let floor = 1; floor <= r.maxFloors(); floor++) {
+    out.push({
+      floor,
+      state: floor === viewed ? 'viewed' : floor <= r.floors ? 'open' : 'locked',
+      price: FLOOR_PRICE[floor] ?? 0,
+      face: ownerHere && floor === ownerFloor,
+      dot: floor !== viewed && r.diners.some(d => d.state === 'ordering' && d.chefId === null && floorOf(d.pos.y) === floor),
     })
   }
   return out

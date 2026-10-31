@@ -45,7 +45,7 @@ import { closingCard, idolCallCard, noTechCard, placeName, unlockCard, vipCallCa
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
-import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
+import { climbPose, followFloor, pills, restaurantPills, showPills, stairsToasts } from '../view/floors'
 import { MAP_VIEW, mapBounds, type Rect } from '../view/camera'
 import { RestaurantLayer } from '../view/RestaurantLayer'
 import { DOOR_X, doorWalk, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
@@ -199,6 +199,8 @@ export class SpaScene extends Phaser.Scene {
   private viewFloor = 1
   /** The owner's floor on the last frame, so the view follows them only on the frame they come off the stairs. */
   private lastOwnerFloor = 1
+  /** The same for the owner in the restaurant, whom the view follows up and down its stairs. */
+  private lastRestOwnerFloor = 1
   private floorBar!: FloorBar
   private hud!: Hud
   private owner!: CharacterView
@@ -334,10 +336,13 @@ export class SpaScene extends Phaser.Scene {
     this.restaurant = this.chain.at === null ? new RestaurantLayer(this) : null
     this.syncRestaurantHouses()
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
-    this.showFloor(this.lastOwnerFloor)
+    const inRestaurant = this.chain.at === null && this.chain.restaurant?.ownerIn ? this.chain.restaurant : null
+    this.lastRestOwnerFloor = inRestaurant ? floorOf(inRestaurant.owner.pos.y) : 1
+    // the floor she stands on, in the restaurant if she is there
+    this.showFloor(inRestaurant ? this.lastRestOwnerFloor : this.lastOwnerFloor)
     // at normal size on the owner, in the restaurant if she is there; the view is never saved
     this.cam = new MapCamera(this, MAP_VIEW, this.mapRect())
-    const next = this.chain.at === null && this.chain.restaurant?.ownerIn ? this.chain.restaurant.owner.pos : null
+    const next = inRestaurant?.owner.pos ?? null
     this.cam.jump({ zoom: 1, cx: next ? restaurantX(next.x + 0.5) : this.room.tileToWorld(this.sim.owner.pos).x })
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
@@ -719,8 +724,8 @@ export class SpaScene extends Phaser.Scene {
     const shop = this.centreShop()
     if (sim.floors > 1 && shop === 'spa') sim.markHint('openFloor')
     const restaurant = shop === 'restaurant' ? this.chain.restaurant : null
-    // the restaurant has only floor 1, which build mode works on
-    if (restaurant && this.viewFloor !== 1) this.showFloor(1)
+    // build mode works on an open floor of the shop under the centre: a floor in view that it has not opened (the other shop's) goes back to floor 1
+    if (this.viewFloor > (restaurant ?? sim).floors) this.showFloor(1)
     const data: BuildData = {
       sim,
       place: restaurant ?? sim,
@@ -1240,16 +1245,19 @@ export class SpaScene extends Phaser.Scene {
     return !this.modal && !this.holding && !sim.paused && !sim.dayOver && !this.playing()
   }
 
-  /** The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game, nor while waiting on an update check. */
+  /**
+   * The floor buttons show whenever the shop is free to tap: not under a card, a pause, build mode or a mini-game, nor while waiting on an update check.
+   * Over the restaurant they are its own once it is bought; over the spa its own once floors are open, or whenever another floor is in view, so the way down is always there.
+   */
   private updateFloorBar(): void {
     const sim = this.sim
-    if (!showPills(sim) || this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) {
+    const r = this.centreShop() === 'restaurant' ? this.chain.restaurant : null
+    const shown = this.centreShop() === 'restaurant' ? r !== null : showPills(sim) || this.viewFloor !== 1
+    if (!shown || this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) {
       this.floorBar.hide()
       return
     }
-    const shown = pills(sim, this.viewFloor)
-    // over the restaurant a locked floor offers nothing to buy: its pill shows no price
-    this.floorBar.show(this.centreShop() === 'restaurant' ? shown.map(p => (p.state === 'locked' ? { ...p, price: 0 } : p)) : shown, sim.ownerLook)
+    this.floorBar.show(r ? restaurantPills(r, this.viewFloor, r.ownerIn) : pills(sim, this.viewFloor), sim.ownerLook)
   }
 
   /** The strip shows whenever the map is free and wider than the screen, drawn from where this frame left the view. */
@@ -1283,11 +1291,12 @@ export class SpaScene extends Phaser.Scene {
     })
   }
 
-  /** A viewed or open pill brings its floor into view, for the whole street; a locked one offers to open it, or over the restaurant says it has no upper floors. Nothing while waiting on an update check, which hides the pills on its next frame. */
+  /** A viewed or open pill brings its floor into view, for the whole street; a locked one offers to open it, the restaurant's over the restaurant. Nothing while waiting on an update check, which hides the pills on its next frame. */
   private tapFloor(floor: number): void {
     if (this.holding) return
-    if (floor <= this.sim.floors) this.showFloor(floor)
-    else if (this.centreShop() === 'restaurant') this.hud.toast(t('restaurantNoFloors'))
+    const r = this.centreShop() === 'restaurant' ? this.chain.restaurant : null
+    if (floor <= (r ?? this.sim).floors) this.showFloor(floor)
+    else if (r) this.offerRestaurantFloor(floor)
     else this.offerFloor(floor)
   }
 
@@ -1373,6 +1382,29 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       this.syncHouses()
       this.cam.slideTo(restaurantX(SHOP_X0 + 6.5))
       this.session.saveNow()
+    })
+  }
+
+  /** A card over the frozen shop to open the restaurant's floor 2 or rooftop, saying why it cannot open yet: the floor below first, a way to the stairs, or the money missing. */
+  private offerRestaurantFloor(floor: number): void {
+    const r = this.chain.restaurant
+    if (!r) return
+    const problem = r.floorProblem(floor)
+    if (problem === 'max') return
+    const price = FLOOR_PRICE[floor]
+    const note = (why: 'order' | 'blocked' | 'money') => (why === 'order' ? t('floorOrder') : why === 'blocked' ? t('floorBlocked') : t('floorShort', { money: formatMoney(price - r.money) }))
+    const card: ChoiceText = {
+      kicker: t('restaurantKicker'),
+      title: t(`floorName${floor}` as StringKey),
+      lines: [t(`restFloorLine${floor}a` as StringKey), t(`restFloorLine${floor}b` as StringKey), ...(problem ? [note(problem)] : [])],
+      buttons: [t('floorOpen', { money: formatMoney(price) }), t('floorLater')],
+    }
+    this.choose(card, i => {
+      if (i !== 0) return
+      const why = r.openFloor(floor)
+      if (why === 'max') return
+      if (why) this.hud.toast(note(why))
+      else sound.play('thud')
     })
   }
 
@@ -1522,6 +1554,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (ride && !this.riding) this.showFloor(1)
     this.riding = ride !== null
     if (ride && !this.gestures.busy) this.cam.jump({ cx: rideX(ride.to, ride.k) })
+    // in the restaurant the view goes with her up or down its stairs while she works for a diner, on the frame she comes off them; never under a card or build mode
+    const rest = this.restaurant ? this.chain.restaurant : null
+    const restFloor = rest ? floorOf(rest.owner.pos.y) : 1
+    if (!this.modal && rest?.ownerIn && !ride && rest.owner.task && restFloor !== this.lastRestOwnerFloor && restFloor !== this.viewFloor) this.showFloor(restFloor)
+    this.lastRestOwnerFloor = restFloor
 
     const dt = this.sim.paused || this.modal ? 0 : delta
     const o = this.sim.owner
@@ -1942,6 +1979,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
         this.session.saveNow()
         return
       }
+      case 'floorOpened':
+        this.showFloor(e.floor)
+        this.session.saveNow()
+        return
     }
   }
 

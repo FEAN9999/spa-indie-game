@@ -40,6 +40,8 @@ const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const ITEM_DEPTH_BIAS = -0.5
 /** The neighbour houses lie over the room's edges and under its lanterns, mats and bed slots. */
 const HOUSE_DEPTH = 0.5
+/** A closed floor's front lies over the room and under the houses, which keep their own upper floors. */
+const UPPER_DEPTH = 0.1
 /** A house for sale's sign: its middle row in tiles, and its size in pixels. */
 const SALE_SIGN = { y: 14, w: 300, h: 170 }
 /** How far buying a house lifts its roof, and how long the roof, the dust and the new house take, in ms. */
@@ -133,6 +135,10 @@ export class RoomView {
   /** The floor on view, from 1. */
   floor = 1
   private readonly room: Phaser.GameObjects.Image
+  /** The main room's closed front, over a floor the shop has not opened. */
+  private readonly upper: Phaser.GameObjects.Image
+  /** The floor in view is not open. */
+  private closed = false
   private readonly stairs: Phaser.GameObjects.Image
   private readonly rope: Phaser.GameObjects.Image
   /** The pigeon coop over the rooftop's stairs cells. */
@@ -172,6 +178,7 @@ export class RoomView {
     private readonly place: PlaceId | null,
   ) {
     this.room = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
+    this.upper = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, 'spa-upper').setOrigin(0, 0).setDepth(UPPER_DEPTH).setVisible(false)
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
     this.rival = this.rivalSign()
@@ -259,14 +266,19 @@ export class RoomView {
     return this.place ? `room-${this.place}` : 'room'
   }
 
-  /** Shows `floor`: its room, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open. The caller syncs afterwards. */
+  /**
+   * Shows `floor`: its room, the stairs, the coop on the rooftop, and the rope when it is the top open floor with another to open; a floor the
+   * shop has not opened (in view for the restaurant's) shows the closed front over the main room instead. The caller syncs afterwards.
+   */
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
+    this.closed = floor > floors
     this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
+    this.upper.setVisible(this.closed)
     for (const h of housesBetween(NO_HOUSES, this.houses)) this.houseImages.get(houseKey(h))?.setTexture(houseTextureKey(this.place, h, floor))
     // the rooftop has the coop where the stairs are, and no rope
-    this.coop.setVisible(floor === 3)
-    this.stairs.setVisible(maxFloors > 1 && floor < 3)
+    this.coop.setVisible(floor === 3 && !this.closed)
+    this.stairs.setVisible(maxFloors > 1 && floor < 3 && !this.closed)
     this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
     this.drawFestival()
     this.rival.setVisible(this.rivalOn && floor === 1)
@@ -301,7 +313,7 @@ export class RoomView {
     const lit = powerOut ? 0 : d.lamps
     this.night.setFillStyle(d.color, d.alpha).setVisible(d.alpha > 0)
     this.wash.setAlpha(WASH_ALPHA * lit).setVisible(lit > 0)
-    this.wallLantern.setAlpha(lit).setVisible(lit > 0 && this.floor === 2)
+    this.wallLantern.setAlpha(lit).setVisible(lit > 0 && this.floor === 2 && !this.closed)
     this.doorLight.setX(MAP_X + (door.x + 0.5) * TILE).setAlpha(lit).setVisible(lit > 0 && this.floor === 1)
     for (const g of this.lampGlows) g.setAlpha(lit).setVisible(lit > 0)
   }
@@ -385,7 +397,7 @@ export class RoomView {
     const g = this.bunting.clear()
     const f = this.festival
     this.sign.setVisible(f !== null && this.floor === 1)
-    if (!f || this.floor === 3) return
+    if (!f || this.floor === 3 || this.closed) return
     const colors = FESTIVAL_COLORS[f]
     const x = (tx: number) => MAP_X + tx * TILE
     const y = (ty: number) => MAP_Y + ty * TILE

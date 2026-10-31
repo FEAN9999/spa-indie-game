@@ -10,6 +10,7 @@ import { floorOf } from '../sim/floors'
 import { tileEq } from '../sim/grid'
 import { footprint, ITEMS, layerOf, nextFacing, SET_IDS, setProgress, size, type Item, type ItemKind, type Layer } from '../sim/items'
 import { BREEDS, type BreedId, type Pet } from '../sim/pets'
+import type { RestaurantSim } from '../sim/restaurant'
 import type { SpaSim } from '../sim/spa'
 import type { Tile, Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
@@ -17,7 +18,7 @@ import { BREED_NAME, t, type StringKey } from '../strings/vi'
 import { buildArea, dragTile, MAP_VIEW } from '../view/camera'
 import { buildTabs, catalogPage, DECOR_FILTERS, petPage, type BuildTab, type CatalogEntry, type DecorFilter } from '../view/catalog'
 import { FloorBar } from '../view/FloorBar'
-import { carryTo, clampToFloor, pills, showPills } from '../view/floors'
+import { carryTo, clampToFloor, pills, restaurantPills, showPills } from '../view/floors'
 import type { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
 import { textStyle } from '../view/text'
@@ -43,7 +44,7 @@ export interface BuildRoom {
 }
 
 export interface BuildData {
-  /** The spa: its gifts, pets, open services and floor pills, which the restaurant has none of. */
+  /** The spa: its gifts, pets and open services, which the restaurant has none of. */
   sim: SpaSim
   /** The shop under the screen's centre, which build mode works on, and its room on the map. */
   place: BuildPlace
@@ -561,10 +562,11 @@ export class BuildScene extends Phaser.Scene {
     this.showFloorBar()
   }
 
-  /** While a piece is held and the spa has another floor open, the pills carry it there; the restaurant has one floor and no pills. */
+  /** While a piece is held and the shop has another floor open, the pills carry it there. */
   private showFloorBar(): void {
-    const { sim, room, shop } = this.params
+    const { sim, place, room, shop } = this.params
     if (shop === 'spa' && showPills(sim) && sim.floors > 1) this.floorBar.show(pills(sim, room.floor).filter(p => p.floor <= sim.floors), sim.ownerLook)
+    if (shop === 'restaurant' && place.floors > 1) this.floorBar.show(restaurantPills(place as RestaurantSim, room.floor, false).filter(p => p.floor <= place.floors), sim.ownerLook)
   }
 
   /** A pill tapped: the floor comes into view and the held piece moves onto it, to the nearest free spot there when its own does not fit. */
