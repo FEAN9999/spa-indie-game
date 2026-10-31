@@ -16,6 +16,7 @@ import { mapBounds } from './camera'
 import { FESTIVAL_COLORS } from './festivals'
 import { deskCandle, retagFloors } from './floors'
 import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerFloor, saleTextureKey } from './houses'
+import { LAMPS } from './lamps'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 import { daylight } from './daylight'
@@ -68,14 +69,6 @@ const NIGHT_DEPTH = DARK_DEPTH - 3
 const LAMP_DEPTH = DARK_DEPTH - 2
 /** At night the lit shop's rows are lifted by this much warm light over the street's. */
 const WASH_ALPHA = 0.07
-/** Each texture's lamps, in its own tiles from its top-left (mirrored when it is flipped), with the glow's scale. */
-const LAMPS: Record<string, { x: number; y: number; s: number }[]> = {
-  lantern: [{ x: 0.5, y: 0.55, s: 0.6 }],
-  nailDesk: [{ x: 0.42, y: 1.42, s: 0.5 }],
-  'nailDesk-turned': [{ x: 1.84, y: 1.44, s: 0.5 }],
-  bambooLamp: [{ x: 0.5, y: 0.56, s: 0.7 }],
-  'decor-lanternString': [0.51, 1.31, 2.11].map(y => ({ x: 0.62, y, s: 0.4 })),
-}
 /** Floor 2's lantern on the back wall, in tiles. */
 const WALL_LANTERN = { x: SHOP_X0 + 6.5, y: 0.74, s: 0.7 }
 /** The door's light spilling onto floor 1's sidewalk: its row in tiles, and the glow's scale. */
