@@ -179,6 +179,38 @@ describe('Phây posts from customers', () => {
     })
   })
 
+  describe('stars and VIPs walking out', () => {
+    it('has a star who walks out leave one manager complaint and no star post', () => {
+      const sim = withMassage(on(30))
+      walkOut(sim, { idol: 'taylor' })
+      expect(sim.feed.posts).toHaveLength(1)
+      const [post] = sim.feed.posts
+      expect(post).toMatchObject({ kind: 'complaint', name: managerName(IDOL_TEXT.taylor.name), notify: true })
+      expect(post.complaint).toMatchObject({ manager: true, reason: 'wait' })
+      expect(ofKind(sim, 'idol')).toEqual([])
+    })
+
+    it('has a VIP who walks out complain under her own name', () => {
+      const sim = withMassage(on(30))
+      walkOut(sim, { vip: 'chef' })
+      expect(sim.feed.posts).toHaveLength(1)
+      expect(sim.feed.posts[0]).toMatchObject({ kind: 'complaint', name: VIP_TEXT.chef.name })
+      expect(sim.feed.posts[0].complaint).toMatchObject({ manager: false, reason: 'wait' })
+    })
+  })
+
+  it('draws a stream of its own for each guest, even when two pay between the same two arrivals', () => {
+    const sim = on(10)
+    const a = seatAndWait(sim, { kind: 'office', service: 'shampoo' })
+    const b = seatAndWait(sim, { kind: 'office', service: 'shampoo' })
+    const rngOf = (c: Customer, salt: number) => (sim as unknown as { guestRng(c: Customer, salt: number): () => number }).guestRng(c, salt)
+    for (let salt = 1; salt <= 6; salt++) {
+      expect([rngOf(a, salt)(), rngOf(a, salt)()]).toEqual([rngOf(a, salt)(), rngOf(a, salt)()])
+      expect(rngOf(a, salt)()).not.toBe(rngOf(b, salt)())
+      for (let other = salt + 1; other <= 6; other++) expect(rngOf(a, salt)()).not.toBe(rngOf(a, other)())
+    }
+  })
+
   describe('Mi Mi', () => {
     it('posts her video after 3 stars', () => {
       const sim = on(20)

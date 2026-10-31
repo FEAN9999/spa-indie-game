@@ -1879,44 +1879,49 @@ export class SpaSim {
     return createRng(this.day * 9431 + this.nextId + salt)
   }
 
+  /** The feed's stream for one guest's post: the guest's id is mixed in, so two guests paying between the same two arrivals never draw alike (salts stay under 16). */
+  private guestRng(c: Customer, salt: number): Rng {
+    return this.feedRng(salt + c.id * 16)
+  }
+
   /** Files a post of this customer's in the feed, with the likes and comments Phây draws for it. */
   private filePost(c: Customer, kind: PostDraft['kind'], name: string, fields: Partial<PostDraft> & Pick<PostDraft, 'text'>): void {
     const friends = REGULAR_IDS.filter(id => this.book.regulars[id].met).map(id => REGULAR_TEXT[id].name).filter(n => n !== name)
     const face = { look: { ...c.look }, kind: c.kind, regular: c.regular, vip: c.vip, idol: c.idol }
-    const draft: PostDraft = { kind, name, face, tick: false, stars: null, pic: null, comments: commentsFor(kind, friends, this.feedRng(5)), complaint: null, boostable: false, notify: false, ...fields }
-    addPost(this.feed, draft, this.day, this.clock.minutes, this.feedRng(6))
+    const draft: PostDraft = { kind, name, face, tick: false, stars: null, pic: null, comments: commentsFor(kind, friends, this.guestRng(c, 5)), complaint: null, boostable: false, notify: false, ...fields }
+    addPost(this.feed, draft, this.day, this.clock.minutes, this.guestRng(c, 6))
   }
 
   /** What a customer posts about their visit: a complaint at 2 or less, a star's photo or a VIP's word when pleased, else sometimes praise. Branches post nothing. */
   private postReview(c: Customer, score: number, why: ComplaintReason): void {
     if (this.place !== null || !this.feed.open || c.kol) return
     const idol = c.idol ? IDOL_TEXT[c.idol].name : null
-    const own = c.vip ? VIP_TEXT[c.vip].name : c.regular ? REGULAR_TEXT[c.regular].name : strangerName(c.kind, this.feedRng(4))
+    const own = c.vip ? VIP_TEXT[c.vip].name : c.regular ? REGULAR_TEXT[c.regular].name : strangerName(c.kind, this.guestRng(c, 4))
     if (score <= 2) {
       if (!dayRoom(this.feed, this.day, 'complaint')) return
-      const shuffle = this.feedRng(2)
+      const shuffle = this.guestRng(c, 2)
       const replies = [...REPLY_KINDS]
       for (let i = replies.length - 1; i > 0; i--) {
         const j = Math.floor(shuffle() * (i + 1))
         ;[replies[i], replies[j]] = [replies[j], replies[i]]
       }
-      const text = idol ? managerText(idol, why, this.feedRng(3)) : complaintText(why, c.service, this.feedRng(3))
+      const text = idol ? managerText(idol, why, this.guestRng(c, 3)) : complaintText(why, c.service, this.guestRng(c, 3))
       this.filePost(c, 'complaint', idol ? managerName(idol) : own, { text, stars: score === 1 ? 1 : 2, complaint: { reason: why, customerId: c.id, replies, answered: null, manager: idol !== null }, notify: true })
     } else if (c.idol) {
-      this.filePost(c, 'idol', IDOL_TEXT[c.idol].name, { text: idolText(c.idol, c.service, this.shopName, this.feedRng(3)), pic: 'idol', tick: true, notify: true, boostable: true })
+      this.filePost(c, 'idol', IDOL_TEXT[c.idol].name, { text: idolText(c.idol, c.service, this.shopName, this.guestRng(c, 3)), pic: 'idol', tick: true, notify: true, boostable: true })
     } else if (c.vip) {
-      this.filePost(c, 'vip', own, { text: vipText(c.vip, c.service, this.feedRng(3)), boostable: true })
+      this.filePost(c, 'vip', own, { text: vipText(c.vip, c.service, this.guestRng(c, 3)), boostable: true })
     } else if (score === 5 && dayRoom(this.feed, this.day, 'praise')) {
       // the first praise of a day always posts, the rest by chance
-      if (this.feed.today.day === this.day && this.feed.today.praise > 0 && this.feedRng(1)() >= FEED_PRAISE_CHANCE) return
-      this.filePost(c, 'praise', own, { text: praiseText(c.service, c.kind, this.feedRng(3)), stars: 5, boostable: true })
+      if (this.feed.today.day === this.day && this.feed.today.praise > 0 && this.guestRng(c, 1)() >= FEED_PRAISE_CHANCE) return
+      this.filePost(c, 'praise', own, { text: praiseText(c.service, c.kind, this.guestRng(c, 3)), stars: 5, boostable: true })
     }
   }
 
   /** Mi Mi's video after her 3 stars. */
   private postKol(c: Customer): void {
     if (this.place !== null || !this.feed.open) return
-    this.filePost(c, 'kol', PHAY_KOL_NAME, { text: kolText(c.service, this.feedRng(3)), pic: 'video', tick: true, notify: true })
+    this.filePost(c, 'kol', PHAY_KOL_NAME, { text: kolText(c.service, this.guestRng(c, 3)), pic: 'video', tick: true, notify: true })
   }
 
   private setState(c: Customer, state: CustomerState): void {
