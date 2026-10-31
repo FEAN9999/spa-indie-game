@@ -17,6 +17,7 @@ import { scrubTextures } from '../art/scrubArt'
 import { mudTextures } from '../art/mudArt'
 import { oldTownRoomTexture } from '../art/oldTown'
 import { petTextures } from '../art/pets'
+import { restaurantTextures } from '../art/restaurant'
 import { roomTexture } from '../art/room'
 import { shampooTextures } from '../art/shampooArt'
 import { steamTextures } from '../art/steamArt'
@@ -63,6 +64,7 @@ export class BootScene extends Phaser.Scene {
       ...stoneTextures(),
       ...mudTextures(),
       ...petTextures(),
+      ...restaurantTextures(),
     })
     // the layer over the map runs first, so the shop draws into it from its first frame
     this.scene.launch('HudScene')
