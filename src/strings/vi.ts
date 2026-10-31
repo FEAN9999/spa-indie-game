@@ -202,6 +202,8 @@ export const vi = {
   restaurantTitle: 'Mua căn nhà cũ làm nhà hàng',
   restaurantLine1: 'Có sẵn 2 bếp, 2 bàn, 8 ghế.',
   restaurantLine2: 'Bán Phở, Bánh xèo và Chè ngay hôm nay.',
+  restHouseLine2: 'Đục tường thông sang, lát gạch như nhà hàng.',
+  restHouseLine3: 'Thêm 1 chỗ đầu bếp.',
   restaurantNoFloors: 'Nhà hàng chưa mở tầng trên',
   shopLabelSpa: 'Spa',
   shopLabelRestaurant: 'Nhà hàng',

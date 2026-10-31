@@ -1,12 +1,14 @@
 import * as Phaser from 'phaser'
 import { itemTexture } from '../art/furniture'
 import { SCOOTER_BOX } from '../art/fx'
+import { houseKey, type HouseKey } from '../art/houses'
 import { C, customerColors, ownerColors, staffColors } from '../art/palette'
 import { RESTAURANT_LAMP, ROOF_LANTERNS } from '../art/restaurant'
-import { ARRIVE_MS, FLOOR_ROWS, HOUSE_COLS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TILE } from '../config'
+import { ARRIVE_MS, FLOOR_ROWS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TILE } from '../config'
 import type { Chain } from '../sim/chain'
 import type { Chef } from '../sim/chefs'
 import type { Item } from '../sim/items'
+import { NO_HOUSES, type Houses } from '../sim/layout'
 import type { DishId } from '../sim/menu'
 import type { Diner, RestaurantSim } from '../sim/restaurant'
 import { floorOf } from '../sim/floors'
@@ -14,12 +16,14 @@ import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
 import { climbPose } from './floors'
-import { houseRect } from './houses'
+import { forSale, houseRect, housesBetween } from './houses'
 import { LAMPS } from './lamps'
-import { addGlow, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
-import { DOOR_X, doorWalk, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
+import { addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
+import { DOOR_X, doorWalk, restaurantHouseImageX, restaurantHouseRect, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
+/** A bought restaurant house's texture on `floor`. */
+const houseTexture = (key: HouseKey, floor: number): string => `rest-house-${key}-${floor}`
 /** The restaurant's block: its 13 columns from SHOP_X0 of its own grid, like the spa's old shop. */
 const BLOCK = { x: restaurantX(SHOP_X0), w: 13 * TILE }
 /** The bottom-centre of the restaurant's door on floor 1, and the sidewalk's row under it, where walkers and the bike go. */
@@ -28,6 +32,9 @@ const WALK_Y = DOOR.y + 0.9 * TILE
 /** The shop fronts lie on the ground with the rooms; the closed upper floor over the restaurant's room. */
 const FRONT_DEPTH = 0
 const UPPER_DEPTH = 0.1
+/** The restaurant's houses lie over its block's edge walls, like the spa's over its room; a sale sign over its roof. */
+const HOUSE_DEPTH = 0.2
+const SIGN_DEPTH = 0.3
 /** The ticket and the patience bar sit over everyone on the map, like the spa's waiting marks. */
 const MARK_DEPTH = 9000
 /** The bottom of the ticket, just above the patience bar. */
@@ -71,7 +78,15 @@ export class RestaurantLayer {
   private readonly upper: Phaser.GameObjects.Image
   /** The spa's right lots, nearest first, shown while the spa does not show its house there. */
   private readonly spaLots: Phaser.GameObjects.Image[] = []
-  private readonly restLots: Phaser.GameObjects.Image[] = []
+  /** The restaurant's own lots, by house: closed fronts where no house of its shows, and on the floors above where none is bought. */
+  private readonly restLots = new Map<HouseKey, Phaser.GameObjects.Image>()
+  /** The restaurant's houses bought and shown, as the last setHouses had them. */
+  private bought: Houses = NO_HOUSES
+  private shown: Houses = NO_HOUSES
+  /** One image per bought house, by its key, on the floor in view. */
+  private readonly houseImages = new Map<HouseKey, Phaser.GameObjects.Image>()
+  /** The roof and BÁN NHÀ sign of each house for sale, by its key, shown on floor 1. */
+  private readonly sales = new Map<HouseKey, (Phaser.GameObjects.Image | Phaser.GameObjects.Container)[]>()
   private readonly items = new Map<number, ItemSprite>()
   private readonly diners = new Map<number, DinerSprite>()
   private readonly chefs = new Map<number, CharacterView>()
@@ -94,7 +109,7 @@ export class RestaurantLayer {
     this.front = add.image(BLOCK.x, MAP_Y, 'rest-old').setOrigin(0, 0).setDepth(FRONT_DEPTH)
     this.upper = add.image(BLOCK.x, MAP_Y, 'rest-upper').setOrigin(0, 0).setDepth(UPPER_DEPTH).setVisible(false)
     for (let n = 1; n <= HOUSES_PER_SIDE; n++) this.spaLots.push(add.image(houseRect({ side: 'right', n: n as 1 | 2 }).x, MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
-    for (let n = 0; n < HOUSES_PER_SIDE; n++) this.restLots.push(add.image(restaurantX(n * HOUSE_COLS), MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
+    for (const h of housesBetween(NO_HOUSES, { left: HOUSES_PER_SIDE, right: HOUSES_PER_SIDE })) this.restLots.set(houseKey(h), add.image(restaurantHouseRect(h).x, MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
     const [bx, by, bw, bh] = SCOOTER_BOX
     this.bike = add.image(0, WALK_Y, 'fx-bike').setOrigin(-bx / bw, -by / bh).setScale(BIKE.scale).setDepth(WALK_Y).setVisible(false)
     this.wash = add.rectangle(BLOCK.x, MAP_Y, BLOCK.w, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
@@ -118,7 +133,36 @@ export class RestaurantLayer {
   setFloor(floor: number): void {
     this.floor = floor
     this.syncRoom()
+    this.syncHouses()
     this.syncItems(this.restaurant?.items ?? [])
+  }
+
+  /** Lays each bought house beside the restaurant's block and each house for sale's roof with its sign, and the night's warm wash over the bought houses too. */
+  setHouses(bought: Houses, shown: Houses): void {
+    this.bought = bought
+    this.shown = shown
+    for (const h of housesBetween(NO_HOUSES, bought)) {
+      const key = houseKey(h)
+      if (this.houseImages.has(key)) continue
+      this.houseImages.set(key, this.scene.add.image(restaurantHouseImageX(h), MAP_Y, houseTexture(key, this.floor)).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left'))
+    }
+    const selling = forSale(bought, shown)
+    const keys = new Set<string>(selling.map(houseKey))
+    for (const [key, parts] of this.sales) {
+      if (keys.has(key)) continue
+      for (const p of parts) p.destroy()
+      this.sales.delete(key)
+    }
+    for (const h of selling) {
+      if (this.sales.has(houseKey(h))) continue
+      const r = restaurantHouseRect(h)
+      const roof = this.scene.add.image(r.x, r.y, `rest-sale-${houseKey(h)}`).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
+      this.sales.set(houseKey(h), [roof, addSaleSign(this.scene, h, r).setDepth(SIGN_DEPTH)])
+    }
+    const left = bought.left > 0 ? restaurantHouseRect({ side: 'left', n: bought.left as 1 | 2 }).x : BLOCK.x
+    const right = bought.right > 0 ? restaurantHouseRect({ side: 'right', n: bought.right as 1 | 2 }) : null
+    this.wash.setPosition(left, MAP_Y).setSize((right ? right.x + right.w : BLOCK.x + BLOCK.w) - left, FLOOR_ROWS * TILE)
+    this.syncHouses()
   }
 
   /** Draws the street's restaurant as the chain has it, on the floor in view, in the light of `minutes`; `dt` moves the figures' legs. */
@@ -189,7 +233,10 @@ export class RestaurantLayer {
   }
 
   destroy(): void {
-    for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots, this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
+    for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots.values(), ...this.houseImages.values(), this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
+    for (const parts of this.sales.values()) for (const p of parts) p.destroy()
+    this.houseImages.clear()
+    this.sales.clear()
     for (const s of this.items.values()) for (const p of [s.body, s.off, s.glow, ...s.lamps]) p?.destroy()
     for (const s of this.diners.values()) this.dropDiner(s)
     for (const v of this.chefs.values()) v.container.destroy()
@@ -206,6 +253,19 @@ export class RestaurantLayer {
     const key = open ? `rest-room-${this.floor}` : r ? 'rest-room' : 'rest-old'
     if (this.front.texture.key !== key) this.front.setTexture(key)
     this.upper.setVisible(this.floor > 1 && !open)
+  }
+
+  /** The bought houses on the floor in view; on floor 1 the roofs and signs for sale over their lots, on the floors above the closed lots where no house is bought. */
+  private syncHouses(): void {
+    for (const [key, image] of this.houseImages) {
+      const texture = houseTexture(key, this.floor)
+      if (image.texture.key !== texture) image.setTexture(texture)
+    }
+    for (const parts of this.sales.values()) for (const p of parts) p.setVisible(this.floor === 1)
+    for (const h of housesBetween(NO_HOUSES, { left: HOUSES_PER_SIDE, right: HOUSES_PER_SIDE })) {
+      const selling = h.n > this.bought[h.side] && h.n <= this.shown[h.side]
+      this.restLots.get(houseKey(h))!.setVisible(h.n > this.bought[h.side] && !(selling && this.floor === 1))
+    }
   }
 
   /** One picture per piece, made once and moved; a stove also gets its flame cover and glow. */

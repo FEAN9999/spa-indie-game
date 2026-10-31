@@ -1,9 +1,13 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { FLOOR_ROWS, MAP_Y, MAP_X, RESTAURANT_X0, SHOP_X0, TILE } from '../../src/config'
 import type { Diner } from '../../src/sim/restaurant'
-import { NO_HOUSES } from '../../src/sim/layout'
+import { NO_HOUSES, type House } from '../../src/sim/layout'
 import { mapBounds } from '../../src/view/camera'
-import { DOOR_X, restaurantTileAt, restaurantX, rideX, shopAt, stripBlocks, streetBounds, ticketDots, walkerX } from '../../src/view/street'
+import { houseRect } from '../../src/view/houses'
+import { DOOR_X, restaurantHouseImageX, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, stripBlocks, streetBounds, ticketDots, walkerX } from '../../src/view/street'
+
+// the house helpers' module reaches the art, which loads Phaser
+vi.mock('phaser', () => ({}))
 
 const diner = (over: Partial<Diner>): Diner => ({ state: 'ordering', pos: { x: 18, y: 17 }, stateMs: 0, legMs: 0, chefId: null, ...over }) as Diner
 
@@ -17,6 +21,33 @@ describe('the street', () => {
     const wide = streetBounds({ left: 2, right: 0 })
     expect(wide.x).toBe(b.x - 12 * TILE)
     expect(wide.x + wide.w).toBe(restaurantX(SHOP_X0 + 13))
+    expect(streetBounds(NO_HOUSES, NO_HOUSES)).toEqual(b)
+  })
+
+  it("widens the street to the restaurant's shown right houses", () => {
+    const near = restaurantHouseRect({ side: 'right', n: 1 })
+    const one = streetBounds(NO_HOUSES, { left: 1, right: 1 })
+    expect(one.x).toBe(streetBounds(NO_HOUSES).x)
+    expect(one.x + one.w).toBe(near.x + near.w)
+    const far = restaurantHouseRect({ side: 'right', n: 2 })
+    const two = streetBounds(NO_HOUSES, { left: 1, right: 2 })
+    expect(two.x + two.w).toBe(far.x + far.w)
+    expect(near).toEqual({ ...houseRect({ side: 'right', n: 1 }), x: houseRect({ side: 'right', n: 1 }).x + RESTAURANT_X0 * TILE })
+    expect(restaurantHouseImageX({ side: 'right', n: 1 })).toBe(near.x - TILE / 2)
+    expect(restaurantHouseImageX({ side: 'left', n: 1 })).toBe(restaurantHouseRect({ side: 'left', n: 1 }).x)
+  })
+
+  it("finds the restaurant's house for sale under a world x", () => {
+    const bought = { left: 0, right: 1 }
+    const shown = { left: 1, right: 2 }
+    const mid = (h: House) => {
+      const r = restaurantHouseRect(h)
+      return r.x + r.w / 2
+    }
+    expect(restaurantSaleAt(bought, shown, mid({ side: 'right', n: 2 }))).toEqual({ side: 'right', n: 2 })
+    expect(restaurantSaleAt(bought, shown, mid({ side: 'left', n: 1 }))).toEqual({ side: 'left', n: 1 })
+    expect(restaurantSaleAt(bought, shown, mid({ side: 'right', n: 1 }))).toBeNull()
+    expect(restaurantSaleAt(bought, shown, restaurantX(SHOP_X0 + 6))).toBeNull()
   })
 
   it('tells which shop is under an x', () => {
@@ -57,6 +88,10 @@ describe('the street', () => {
     expect(spa).toEqual({ from: streetBounds(NO_HOUSES).x, to: restaurantX(0), restaurant: false })
     expect(rest).toEqual({ from: restaurantX(0), to: restaurantX(SHOP_X0 + 13), restaurant: true })
     expect(stripBlocks(NO_HOUSES)).toHaveLength(2)
+    expect(stripBlocks(NO_HOUSES, NO_HOUSES)).toEqual(stripBlocks(NO_HOUSES))
+    const [, wide] = stripBlocks(NO_HOUSES, { left: 1, right: 1 })
+    const near = restaurantHouseRect({ side: 'right', n: 1 })
+    expect(wide).toEqual({ from: restaurantX(0), to: near.x + near.w, restaurant: true })
   })
 
   it('puts a red dot for each ticket held off-screen', () => {

@@ -1,9 +1,10 @@
 import { ARRIVE_MS, EXIT_MS, FLOOR_ROWS, MAP_X, MAP_Y, RESTAURANT_X0, SHOP_X0, TILE } from '../config'
 import type { ShopSide } from '../sim/dining'
-import type { Houses } from '../sim/layout'
+import { NO_HOUSES, type House, type Houses } from '../sim/layout'
 import type { Diner } from '../sim/restaurant'
 import type { Facing, Tile, Vec } from '../sim/types'
 import { mapBounds, type Rect } from './camera'
+import { forSale, houseImageX, houseRect } from './houses'
 
 /** The world x of the left edge of restaurant column `col`: its grid is drawn RESTAURANT_X0 columns to the right of the spa's. */
 export const restaurantX = (col: number): number => MAP_X + (RESTAURANT_X0 + col) * TILE
@@ -16,10 +17,33 @@ export function restaurantTileAt(world: Vec, floor = 1): Tile {
 /** The right edge of the restaurant's main block: its 13 columns from SHOP_X0, as the spa's mapBounds ends on its own. */
 const RESTAURANT_RIGHT = restaurantX(SHOP_X0 + 13)
 
-/** The world the main shop's camera may show: the spa's bounds out to the end of the restaurant's main block. */
-export function streetBounds(spaShown: Houses): Rect {
+/** The world rect of a restaurant house's six columns: the spa's house rect on the restaurant's grid. */
+export const restaurantHouseRect = (h: House): Rect => {
+  const r = houseRect(h)
+  return { ...r, x: r.x + RESTAURANT_X0 * TILE }
+}
+
+/** The left edge of a restaurant house's image, as houseImageX has it for the spa's. */
+export const restaurantHouseImageX = (h: House): number => houseImageX(h) + RESTAURANT_X0 * TILE
+
+/** The restaurant's house for sale under world x, or null. */
+export const restaurantSaleAt = (bought: Houses, shown: Houses, worldX: number): House | null =>
+  forSale(bought, shown).find(h => {
+    const r = restaurantHouseRect(h)
+    return worldX >= r.x && worldX < r.x + r.w
+  }) ?? null
+
+/** The right edge of the restaurant with its shown right houses. */
+function restaurantRight(restShown: Houses): number {
+  if (restShown.right === 0) return RESTAURANT_RIGHT
+  const r = restaurantHouseRect({ side: 'right', n: restShown.right as 1 | 2 })
+  return r.x + r.w
+}
+
+/** The world the main shop's camera may show: the spa's bounds out to the end of the restaurant and its shown right houses; its left ones lie inside already. */
+export function streetBounds(spaShown: Houses, restShown: Houses = NO_HOUSES): Rect {
   const spa = mapBounds(spaShown)
-  return { ...spa, w: RESTAURANT_RIGHT - spa.x }
+  return { ...spa, w: restaurantRight(restShown) - spa.x }
 }
 
 /** The shop under a world x: the restaurant from its first column on once it is owned, else the spa. */
@@ -47,11 +71,11 @@ export interface StripBlock {
   restaurant: boolean
 }
 
-/** The spa's block and the restaurant's, meeting at the restaurant's first column; the old house is part of the street from day 1. */
-export function stripBlocks(spaShown: Houses): StripBlock[] {
+/** The spa's block and the restaurant's, meeting at the restaurant's first column; the old house is part of the street from day 1, and the restaurant's block runs on over its shown right houses. */
+export function stripBlocks(spaShown: Houses, restShown: Houses = NO_HOUSES): StripBlock[] {
   return [
     { from: streetBounds(spaShown).x, to: restaurantX(0), restaurant: false },
-    { from: restaurantX(0), to: RESTAURANT_RIGHT, restaurant: true },
+    { from: restaurantX(0), to: restaurantRight(restShown), restaurant: true },
   ]
 }
 

@@ -47,6 +47,16 @@ const PURCHASE = { rise: 60, roofMs: 400, dustMs: 500, fadeInMs: 300 }
 /** A house for sale's roof or its sign. */
 type SalePart = Phaser.GameObjects.Image | Phaser.GameObjects.Container
 
+/** A house for sale's sign over the middle of its columns `r`: BÁN NHÀ, CHÍNH CHỦ and the house's price. */
+export function addSaleSign(scene: Phaser.Scene, h: House, r: Rect): Phaser.GameObjects.Container {
+  const { w, h: bh } = SALE_SIGN
+  const g = scene.add.graphics().fillStyle(0xffffff, 1).fillRoundedRect(-w / 2, -bh / 2, w, bh, 16).lineStyle(6, hex(C.lantern)).strokeRoundedRect(-w / 2, -bh / 2, w, bh, 16)
+  const big = scene.add.text(0, -42, t('saleSign1'), textStyle(46, '800', C.lantern)).setOrigin(0.5)
+  const small = scene.add.text(0, 8, t('saleSign2'), textStyle(26, '800')).setOrigin(0.5)
+  const price = scene.add.text(0, 50, formatMoney(HOUSE_PRICE[h.n - 1]), textStyle(28, '800', C.soft)).setOrigin(0.5)
+  return scene.add.container(r.x + r.w / 2, MAP_Y + SALE_SIGN.y * TILE, [g, big, small, price])
+}
+
 /** The grade plaque beside the door: its middle in tiles, and the board's half-height, which sets its depth. */
 const PLAQUE = { x: 16.3, y: 17.5, bottom: 28 }
 /**
@@ -218,13 +228,7 @@ export class RoomView {
   private saleParts(h: House): SalePart[] {
     const r = houseRect(h)
     const roof = this.scene.add.image(r.x, r.y, saleTextureKey(this.place, h)).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
-    const { w, h: bh } = SALE_SIGN
-    const g = this.scene.add.graphics().fillStyle(0xffffff, 1).fillRoundedRect(-w / 2, -bh / 2, w, bh, 16).lineStyle(6, hex(C.lantern)).strokeRoundedRect(-w / 2, -bh / 2, w, bh, 16)
-    const big = this.scene.add.text(0, -42, t('saleSign1'), textStyle(46, '800', C.lantern)).setOrigin(0.5)
-    const small = this.scene.add.text(0, 8, t('saleSign2'), textStyle(26, '800')).setOrigin(0.5)
-    const price = this.scene.add.text(0, 50, formatMoney(HOUSE_PRICE[h.n - 1]), textStyle(28, '800', C.soft)).setOrigin(0.5)
-    const sign = this.scene.add.container(r.x + r.w / 2, MAP_Y + SALE_SIGN.y * TILE, [g, big, small, price]).setDepth(HOUSE_DEPTH + 0.1)
-    return [roof, sign]
+    return [roof, addSaleSign(this.scene, h, r).setDepth(HOUSE_DEPTH + 0.1)]
   }
 
   /** The roof and sign of a house just bought rise and fade, then go. */

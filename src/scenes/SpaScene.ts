@@ -29,7 +29,7 @@ import { SERVICES, type ServiceId } from '../sim/services'
 import type { ShopSide } from '../sim/dining'
 import type { RestaurantEvent } from '../sim/restaurant'
 import { SpaSim } from '../sim/spa'
-import type { House, Side } from '../sim/layout'
+import { NO_HOUSES, type House, type Houses, type Side } from '../sim/layout'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types'
@@ -48,7 +48,7 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, followFloor, pills, showPills, stairsToasts } from '../view/floors'
 import { MAP_VIEW, mapBounds, type Rect } from '../view/camera'
 import { RestaurantLayer } from '../view/RestaurantLayer'
-import { DOOR_X, doorWalk, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
+import { DOOR_X, doorWalk, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
 import { HandPointer } from '../view/HandPointer'
 import { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
@@ -332,6 +332,7 @@ export class SpaScene extends Phaser.Scene {
     this.room.setHouses(this.sim.houses, this.sim.shownHouses(), null, this.lightRect())
     // the main shop's street runs on to the restaurant beside it, or the old house for sale there
     this.restaurant = this.chain.at === null ? new RestaurantLayer(this) : null
+    this.syncRestaurantHouses()
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     this.showFloor(this.lastOwnerFloor)
     // at normal size on the owner, in the restaurant if she is there; the view is never saved
@@ -646,12 +647,17 @@ export class SpaScene extends Phaser.Scene {
 
   /** The world the camera may show: at the main shop the street out to the restaurant, at a branch its own houses. */
   private mapRect(): Rect {
-    return this.chain.at === null ? streetBounds(this.sim.shownHouses()) : mapBounds(this.sim.shownHouses())
+    return this.chain.at === null ? streetBounds(this.sim.shownHouses(), this.restaurantShown()) : mapBounds(this.sim.shownHouses())
   }
 
   /** The day's light and the power cut's dark lie over the whole street at the main shop; at a branch over its bought houses, as RoomView has it. */
   private lightRect(): Rect | undefined {
-    return this.chain.at === null ? streetBounds(this.sim.shownHouses()) : undefined
+    return this.chain.at === null ? streetBounds(this.sim.shownHouses(), this.restaurantShown()) : undefined
+  }
+
+  /** The restaurant's houses the street shows: none before it is bought. */
+  private restaurantShown(): Houses {
+    return this.chain.restaurant?.shownHouses() ?? NO_HOUSES
   }
 
   private buildOwner(): CharacterView {
@@ -1270,7 +1276,7 @@ export class SpaScene extends Phaser.Scene {
       visible,
       lots,
       doors: [DOOR_X.spa, DOOR_X.restaurant],
-      blocks: stripBlocks(sim.shownHouses()),
+      blocks: stripBlocks(sim.shownHouses(), this.restaurantShown()),
       owner,
       dots: [...dots, ...(r ? ticketDots(r.diners, visible) : [])],
       look: sim.ownerLook,
@@ -1332,7 +1338,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   private syncHouses(justBought: House | null = null): void {
     const sim = this.sim
     this.room.setHouses(sim.houses, sim.shownHouses(), justBought, this.lightRect())
+    this.syncRestaurantHouses()
     this.cam.setBounds(this.mapRect())
+  }
+
+  /** The restaurant's houses bought and for sale on the street, once it is bought. */
+  private syncRestaurantHouses(): void {
+    const r = this.chain.restaurant
+    if (this.restaurant && r) this.restaurant.setHouses(r.houses, r.shownHouses())
   }
 
   /** The old house beside the main shop: before RESTAURANT_DAY a toast, then a card over the frozen shop to buy it as a restaurant, saying what is missing when the money is short. */
@@ -1356,8 +1369,30 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (why === 'money') this.hud.toast(short())
       if (why) return
       sound.play('thud')
+      // its houses go up for sale with it: the street widens to them before the slide
+      this.syncHouses()
       this.cam.slideTo(restaurantX(SHOP_X0 + 6.5))
       this.session.saveNow()
+    })
+  }
+
+  /** A card over the frozen shop to buy the restaurant's next house on `side`, saying what is missing when the money is short. */
+  private offerRestaurantHouse(side: Side): void {
+    const r = this.chain.restaurant
+    if (!r) return
+    const problem = r.houseProblem(side)
+    if (problem === 'max') return
+    const price = r.housePrice(side)
+    const short = () => t('floorShort', { money: formatMoney(price - r.money) })
+    const card: ChoiceText = {
+      kicker: t('restaurantKicker'),
+      title: t(`houseTitle${side === 'right' ? 'Right' : 'Left'}${r.houses[side] + 1}` as StringKey),
+      lines: [t('houseLine1'), t('restHouseLine2'), t('restHouseLine3'), ...(problem === 'money' ? [short()] : [])],
+      buttons: [t('houseBuy', { money: formatMoney(price) }), t('floorLater')],
+    }
+    this.choose(card, i => {
+      if (i !== 0) return
+      if (r.buyHouse(side) === 'money') this.hud.toast(short())
     })
   }
 
@@ -1898,6 +1933,15 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'stockLow':
         // toasted together, once per step, where the events are drained
         return
+      case 'houseBought': {
+        // the bounds take the new house in before the slide there
+        this.syncHouses()
+        const h = restaurantHouseRect(e.house)
+        this.cam.slideTo(h.x + h.w / 2)
+        sound.play('thud')
+        this.session.saveNow()
+        return
+      }
     }
   }
 
@@ -2179,6 +2223,14 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
     // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on the floor in view
     const r = this.chain.restaurant
+    // on floor 1, a roof for sale beside the restaurant offers its house
+    const restHouse = this.restaurant && r && this.viewFloor === 1 ? restaurantSaleAt(r.houses, r.shownHouses(), w.x) : null
+    if (restHouse) {
+      const h = restaurantHouseRect(restHouse)
+      this.cam.slideTo(h.x + h.w / 2)
+      this.offerRestaurantHouse(restHouse.side)
+      return
+    }
     if (this.restaurant && (shopAt(w.x, r !== null) === 'restaurant' || this.restaurant.oldHouseHit(w))) {
       if (!r) this.offerRestaurant()
       else this.streetTap('restaurant', this.restaurant.dinerAt(w)?.chair ?? restaurantTileAt(w, this.viewFloor))
