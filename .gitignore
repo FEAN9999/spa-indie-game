@@ -2,3 +2,4 @@
 node_modules/
 dist/
 .phay-curve.mjs
+graphify-out/
