@@ -75,7 +75,7 @@ export class FloorBar {
     else g.lineStyle(4, hex(C.ink)).strokeRoundedRect(-PILL_W / 2, -PILL_H / 2, PILL_W, PILL_H, PILL_H / 2)
     const parts: Phaser.GameObjects.GameObject[] = [g]
     const ink = viewed ? C.cream : C.ink
-    // a locked floor with no price to pay (over the restaurant) shows its name beside the lock
+    // a locked floor shows its price beside the lock, or its name when it has none
     const label = locked && p.price > 0 ? formatMoney(p.price) : t(NAME[p.floor])
     const text = add.text(24, 0, label, textStyle(locked ? 36 : 44, '800', ink)).setOrigin(0.5)
     // Fit the label between the icon slot and the pill's round end: names in -70..136, prices in -80..136.

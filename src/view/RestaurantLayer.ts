@@ -15,10 +15,10 @@ import { floorOf } from '../sim/floors'
 import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
-import { climbPose } from './floors'
+import { climbPose, stairsParts } from './floors'
 import { forSale, houseRect, housesBetween } from './houses'
 import { LAMPS } from './lamps'
-import { addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
+import { addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, ITEM_DEPTH_BIAS, LAMP_DEPTH, PART_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
 import { DOOR_X, doorWalk, restaurantHouseImageX, restaurantHouseRect, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -35,6 +35,8 @@ const UPPER_DEPTH = 0.1
 /** The restaurant's houses lie over its block's edge walls, like the spa's over its room; a sale sign over its roof. */
 const HOUSE_DEPTH = 0.2
 const SIGN_DEPTH = 0.3
+/** The stairs' top-left tile on every floor, where the 1 × 3 'stairs' texture goes; the rope hangs on its bottom tile. */
+const STAIRS_TILE = { x: SHOP_X0 + 11, y: 7 }
 /** The ticket and the patience bar sit over everyone on the map, like the spa's waiting marks. */
 const MARK_DEPTH = 9000
 /** The bottom of the ticket, just above the patience bar. */
@@ -76,6 +78,9 @@ interface ItemSprite {
 export class RestaurantLayer {
   private readonly front: Phaser.GameObjects.Image
   private readonly upper: Phaser.GameObjects.Image
+  /** The stairs between the floors and the rope across them, the same on every floor so they are drawn once. */
+  private readonly stairs: Phaser.GameObjects.Image
+  private readonly rope: Phaser.GameObjects.Image
   /** The spa's right lots, nearest first, shown while the spa does not show its house there. */
   private readonly spaLots: Phaser.GameObjects.Image[] = []
   /** The restaurant's own lots, by house: closed fronts where no house of its shows, and on the floors above where none is bought. */
@@ -108,6 +113,10 @@ export class RestaurantLayer {
     const add = scene.add
     this.front = add.image(BLOCK.x, MAP_Y, 'rest-old').setOrigin(0, 0).setDepth(FRONT_DEPTH)
     this.upper = add.image(BLOCK.x, MAP_Y, 'rest-upper').setOrigin(0, 0).setDepth(UPPER_DEPTH).setVisible(false)
+    const stairsX = restaurantX(STAIRS_TILE.x)
+    this.stairs = add.image(stairsX, MAP_Y + STAIRS_TILE.y * TILE, 'stairs').setOrigin(0, 0).setDepth(PART_DEPTH).setVisible(false)
+    // under whoever stands on the foot below it, over whoever is on the stairs
+    this.rope = add.image(stairsX, MAP_Y + (STAIRS_TILE.y + 2) * TILE, 'stairsRope').setOrigin(0, 0).setDepth(MAP_Y + (STAIRS_TILE.y + 3) * TILE + ITEM_DEPTH_BIAS).setVisible(false)
     for (let n = 1; n <= HOUSES_PER_SIDE; n++) this.spaLots.push(add.image(houseRect({ side: 'right', n: n as 1 | 2 }).x, MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
     for (const h of housesBetween(NO_HOUSES, { left: HOUSES_PER_SIDE, right: HOUSES_PER_SIDE })) this.restLots.set(houseKey(h), add.image(restaurantHouseRect(h).x, MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
     const [bx, by, bw, bh] = SCOOTER_BOX
@@ -233,7 +242,7 @@ export class RestaurantLayer {
   }
 
   destroy(): void {
-    for (const img of [this.front, this.upper, ...this.spaLots, ...this.restLots.values(), ...this.houseImages.values(), this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
+    for (const img of [this.front, this.upper, this.stairs, this.rope, ...this.spaLots, ...this.restLots.values(), ...this.houseImages.values(), this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
     for (const parts of this.sales.values()) for (const p of parts) p.destroy()
     this.houseImages.clear()
     this.sales.clear()
@@ -253,6 +262,10 @@ export class RestaurantLayer {
     const key = open ? `rest-room-${this.floor}` : r ? 'rest-room' : 'rest-old'
     if (this.front.texture.key !== key) this.front.setTexture(key)
     this.upper.setVisible(this.floor > 1 && !open)
+    // the tower's stairs show on an open floor under the rooftop, with the rope across them on the top open floor while another can still open
+    const parts = stairsParts(this.floor, r?.floors ?? 1, r?.maxFloors() ?? 1)
+    this.stairs.setVisible(parts.stairs)
+    this.rope.setVisible(parts.rope)
   }
 
   /** The bought houses on the floor in view; on floor 1 the roofs and signs for sale over their lots, on the floors above the closed lots where no house is bought. */

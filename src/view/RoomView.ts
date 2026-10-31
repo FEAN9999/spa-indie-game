@@ -14,7 +14,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { mapBounds, type Rect } from './camera'
 import { FESTIVAL_COLORS } from './festivals'
-import { deskCandle, retagFloors } from './floors'
+import { deskCandle, retagFloors, stairsParts } from './floors'
 import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerFloor, saleTextureKey } from './houses'
 import { LAMPS } from './lamps'
 import { starPoints } from './rankDraw'
@@ -24,7 +24,7 @@ import { daylight } from './daylight'
 /** Rugs lie on the floor and the bought houses, under the mats, the bed slots and the stairs. */
 const RUG_DEPTH = 0.8
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
-const PART_DEPTH = 1
+export const PART_DEPTH = 1
 /** Wall pieces hang over the wall and its mats and slots, under the beds' lanterns. */
 const WALL_DEPTH = 1.2
 /** A bed's lantern hangs in front of any wall piece behind it. */
@@ -37,7 +37,7 @@ const SIGN = { x: 19.8, top: 0.5, h: 0.72, pad: 0.36 }
 const WALL = { left: 12.3, right: 24.7, top: 0.1 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** An item draws just under a character whose feet are on its bottom row, however late it was bought. */
-const ITEM_DEPTH_BIAS = -0.5
+export const ITEM_DEPTH_BIAS = -0.5
 /** The neighbour houses lie over the room's edges and under its lanterns, mats and bed slots. */
 const HOUSE_DEPTH = 0.5
 /** A closed floor's front lies over the room and under the houses, which keep their own upper floors. */
@@ -278,8 +278,9 @@ export class RoomView {
     for (const h of housesBetween(NO_HOUSES, this.houses)) this.houseImages.get(houseKey(h))?.setTexture(houseTextureKey(this.place, h, floor))
     // the rooftop has the coop where the stairs are, and no rope
     this.coop.setVisible(floor === 3 && !this.closed)
-    this.stairs.setVisible(maxFloors > 1 && floor < 3 && !this.closed)
-    this.rope.setVisible(floors === floor && floor < maxFloors && floor < 3)
+    const parts = stairsParts(floor, floors, maxFloors)
+    this.stairs.setVisible(parts.stairs)
+    this.rope.setVisible(parts.rope)
     this.drawFestival()
     this.rival.setVisible(this.rivalOn && floor === 1)
     this.plaque.setVisible(floor === 1 && this.place === null)
@@ -312,7 +313,8 @@ export class RoomView {
     const d = daylight(minutes)
     const lit = powerOut ? 0 : d.lamps
     this.night.setFillStyle(d.color, d.alpha).setVisible(d.alpha > 0)
-    this.wash.setAlpha(WASH_ALPHA * lit).setVisible(lit > 0)
+    // a closed upper front stays shuttered and dark
+    this.wash.setAlpha(WASH_ALPHA * lit).setVisible(lit > 0 && !this.closed)
     this.wallLantern.setAlpha(lit).setVisible(lit > 0 && this.floor === 2 && !this.closed)
     this.doorLight.setX(MAP_X + (door.x + 0.5) * TILE).setAlpha(lit).setVisible(lit > 0 && this.floor === 1)
     for (const g of this.lampGlows) g.setAlpha(lit).setVisible(lit > 0)

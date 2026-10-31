@@ -1554,10 +1554,10 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (ride && !this.riding) this.showFloor(1)
     this.riding = ride !== null
     if (ride && !this.gestures.busy) this.cam.jump({ cx: rideX(ride.to, ride.k) })
-    // in the restaurant the view goes with her up or down its stairs while she works for a diner, on the frame she comes off them; never under a card or build mode
+    // in the restaurant the view goes with her up or down its stairs while she works for a diner, on the frame she comes off them; only while it is under the centre, never under a card or build mode
     const rest = this.restaurant ? this.chain.restaurant : null
     const restFloor = rest ? floorOf(rest.owner.pos.y) : 1
-    if (!this.modal && rest?.ownerIn && !ride && rest.owner.task && restFloor !== this.lastRestOwnerFloor && restFloor !== this.viewFloor) this.showFloor(restFloor)
+    if (!this.modal && this.centreShop() === 'restaurant' && rest?.ownerIn && !ride && rest.owner.task && restFloor !== this.lastRestOwnerFloor && restFloor !== this.viewFloor) this.showFloor(restFloor)
     this.lastRestOwnerFloor = restFloor
 
     const dt = this.sim.paused || this.modal ? 0 : delta

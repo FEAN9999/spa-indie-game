@@ -77,6 +77,11 @@ export function restaurantPills(r: RestaurantSim, viewed: number, ownerHere: boo
   return out
 }
 
+/** Which parts of the stairs show on `floor` of a tower of `maxFloors` with `floors` open: the stairs on an open floor under the rooftop, and the rope across them on the top open floor while another can still open. */
+export function stairsParts(floor: number, floors: number, maxFloors: number): { stairs: boolean; rope: boolean } {
+  return { stairs: maxFloors > 1 && floor < 3 && floor <= floors, rope: floors === floor && floor < maxFloors && floor < 3 }
+}
+
 /** The same piece moved by whole floors onto `floor`, keeping its row within the floor. */
 export function carryTo(item: Item, floor: number): Item {
   return { ...item, y: item.y + (floor - floorOf(item.y)) * FLOOR_ROWS }

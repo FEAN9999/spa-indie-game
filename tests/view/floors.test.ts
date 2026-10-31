@@ -8,7 +8,7 @@ import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, restaurantPills, showPills, stairsToasts } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, restaurantPills, showPills, stairsParts, stairsToasts } from '../../src/view/floors'
 import { restaurantFor } from '../sim/helpers'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
@@ -154,6 +154,30 @@ describe('restaurantPills', () => {
     r.owner.pos = { x: 7, y: FLOOR_ROWS + 10 }
     expect(restaurantPills(r, 1, true).map(p => p.face)).toEqual([false, true, false])
     expect(restaurantPills(r, 1, false).map(p => p.face)).toEqual([false, false, false])
+  })
+})
+
+describe('stairsParts', () => {
+  it('shows the stairs on the floors below the rooftop that are open, and not on the rooftop', () => {
+    expect(stairsParts(1, 1, 3).stairs).toBe(true)
+    expect(stairsParts(2, 2, 3).stairs).toBe(true)
+    expect(stairsParts(3, 3, 3).stairs).toBe(false)
+  })
+
+  it('shows no stairs on a floor not opened yet, or in a one-floor shop', () => {
+    expect(stairsParts(2, 1, 3).stairs).toBe(false)
+    expect(stairsParts(1, 1, 1).stairs).toBe(false)
+  })
+
+  it('hangs the rope on the top open floor while another can still open', () => {
+    expect(stairsParts(1, 1, 3).rope).toBe(true)
+    expect(stairsParts(2, 2, 3).rope).toBe(true)
+    expect(stairsParts(1, 2, 3).rope).toBe(false)
+    expect(stairsParts(3, 3, 3).rope).toBe(false)
+  })
+
+  it('hangs no rope in a shop with only two floors once both are open', () => {
+    expect(stairsParts(2, 2, 2).rope).toBe(false)
   })
 })
 
