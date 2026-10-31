@@ -268,3 +268,27 @@ describe('Phây posts from customers', () => {
     expect(draws(true)).toEqual(draws(false))
   })
 })
+
+describe('the follower curve', () => {
+  it('reaches about a thousand followers in the first month of a plain shop, never falling, with at most 3 complaint posts a day', () => {
+    const sim = new SpaSim({ rng: createRng(1), autoSpawn: true })
+    sim.profileDone = true
+    sim.services = ['shampoo', 'mask', 'massage']
+    hireStaff(sim, 'receptionist')
+    hireStaff(sim, 'technician')
+    let last = 0
+    for (let day = 1; day <= 30; day++) {
+      advanceUntil(sim, () => sim.dayOver, 600_000)
+      sim.drainEvents()
+      expect(sim.feed.followers).toBeGreaterThanOrEqual(last)
+      expect(sim.feed.today.complaint).toBeLessThanOrEqual(FEED_DAY_CAP.complaint)
+      last = sim.feed.followers
+      sim.money = Math.max(sim.money, 5_000_000)
+      for (const item of sim.lowStock()) sim.restock(item)
+      if (day % 4 === 0 && sim.staff.length < 4) hireStaff(sim, 'technician')
+      sim.startDay()
+    }
+    expect(last).toBeGreaterThanOrEqual(1_000)
+    expect(last).toBeLessThanOrEqual(10_000)
+  }, 60_000)
+})

@@ -1,4 +1,5 @@
 import { clockLabel } from '../sim/clock'
+import type { FeedBook, Post } from '../sim/feed'
 import { formatCount } from '../strings/format'
 import { t } from '../strings/vi'
 
@@ -36,4 +37,24 @@ export function isDrag(dy: number): boolean {
 /** The button shows once Phây is open, but not under the gold card or the morning banner, which take its spot. */
 export function phayButtonShown(open: boolean, cardUp: boolean, bannerUp: boolean): boolean {
   return open && !cardUp && !bannerUp
+}
+
+/** How long a notice stays down, fades included. */
+export const NOTICE_MS = 4000
+const NOTICE_CHARS = 48
+
+/** The newest post with a notice that came after the mark; the older ones waiting are folded into the red count. */
+export function nextNotice(feed: FeedBook, notified: number): Post | null {
+  for (let i = feed.posts.length - 1; i >= 0; i--) {
+    const p = feed.posts[i]
+    if (p.id <= notified) return null
+    if (p.notify) return p
+  }
+  return null
+}
+
+/** The notice's one line: the name, then the words, cut with an ellipsis to fit. */
+export function noticeLine(post: Post): string {
+  const line = `${post.name}: ${post.text}`
+  return line.length <= NOTICE_CHARS ? line : line.slice(0, NOTICE_CHARS - 1).trimEnd() + '…'
 }

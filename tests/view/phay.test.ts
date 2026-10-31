@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { clampScroll, DRAG_PX, isDrag, PHAY_BUTTON, phayButtonShown, postTime, shortCount, unreadLabel } from '../../src/view/phay'
+import { addPost, emptyFeed } from '../../src/sim/feed'
+import type { FeedBook, PostDraft } from '../../src/sim/feed'
+import { milestoneCard } from '../../src/view/phayCards'
+import { clampScroll, DRAG_PX, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, shortCount, unreadLabel } from '../../src/view/phay'
 
 describe('the Phây button', () => {
   it('sits under the top bar on the right, lower at a branch under the ribbon', () => expect(PHAY_BUTTON).toEqual({ x: 1010, y: 280, r: 44, branchY: 330 }))
@@ -63,4 +66,56 @@ describe('Phây scrolling', () => {
   })
 
   it('does not scroll a list shorter than the view', () => expect(clampScroll(-10, 800, 1700)).toBe(0))
+})
+
+const draft = (over: Partial<PostDraft> = {}): PostDraft => ({
+  kind: 'praise', name: 'Chị Thu', face: null, tick: false, stars: null, text: 'Gội đầu rất thích.', pic: null, comments: [], complaint: null, boostable: false, notify: false, ...over,
+})
+const feedWith = (...notify: boolean[]): FeedBook => {
+  const f = { ...emptyFeed(), open: true, followers: 50 }
+  notify.forEach((n, i) => addPost(f, draft({ notify: n, name: `Khách ${i + 1}` }), 8, i, () => 0.5))
+  return f
+}
+
+describe('the Phây notice', () => {
+  it('has no notice for posts already there on load', () => {
+    const f = feedWith(true, true)
+    expect(nextNotice(f, f.nextId - 1)).toBeNull()
+  })
+
+  it('picks the newest post that wants a notice, ignoring the quiet ones after it', () => {
+    const f = feedWith(true, true, false)
+    expect(nextNotice(f, 0)?.id).toBe(2)
+  })
+
+  it('skips posts at or before the mark, so older pending ones are folded away', () => {
+    const f = feedWith(true, true)
+    expect(nextNotice(f, 1)?.id).toBe(2)
+    expect(nextNotice(f, 2)).toBeNull()
+  })
+
+  it('has nothing for an empty feed', () => expect(nextNotice(emptyFeed(), 0)).toBeNull())
+
+  it('writes one line, name then words, cut with an ellipsis when long', () => {
+    expect(noticeLine(feedWith(true).posts[0])).toBe('Khách 1: Gội đầu rất thích.')
+    const long = { ...feedWith(true).posts[0], text: 'a'.repeat(120) }
+    const line = noticeLine(long)
+    expect(line.length).toBeLessThanOrEqual(48)
+    expect(line.endsWith('…')).toBe(true)
+  })
+})
+
+describe('the milestone card', () => {
+  it('cheers the count with a tick', () => {
+    const card = milestoneCard(100_000)
+    expect(card.name).toBe('100.000 người theo dõi!')
+    expect(card.icon.texture).toBe('icon-tick')
+    expect(card.line).toContain('tích xanh')
+  })
+
+  it('names the gold ring at a million and says nothing of a tick before 100.000', () => {
+    expect(milestoneCard(1_000_000).line).toContain('viền vàng')
+    expect(milestoneCard(1_000).line).not.toContain('tích')
+    expect(milestoneCard(10_000).name).toBe('10.000 người theo dõi!')
+  })
 })

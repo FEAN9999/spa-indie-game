@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FEED_MAX_POSTS } from '../../src/config'
+import { FEED_GAIN, FEED_MAX_POSTS, FEED_REACH } from '../../src/config'
 import { addPost, dayRoom, emptyFeed, markRead, openFeed, repairFeed, seededFeed, takeCheer, unreadCount } from '../../src/sim/feed'
 import type { FeedBook, PostDraft, PostKind } from '../../src/sim/feed'
 
@@ -31,7 +31,7 @@ describe('feed book', () => {
 
   it('likes follow the kind', () => {
     const f = book(10_000)
-    expect(addPost(f, draft('praise'), 9, 0, half).likes).toBe(3 + 0.02 * 10_000)
+    expect(addPost(f, draft('praise'), 9, 0, half).likes).toBe(FEED_REACH.praise[0] + FEED_REACH.praise[1] * 10_000)
     expect(addPost(f, draft('idol'), 9, 0, half).likes).toBe(40_000)
     expect(addPost(f, draft('kol'), 9, 0, half).likes).toBe(10_000)
   })
@@ -48,10 +48,12 @@ describe('feed book', () => {
   it('followers grow by likes x gain and never fall', () => {
     const f = book(9_850)
     const post = addPost(f, draft('praise'), 9, 0, half)
-    expect(post.likes).toBe(200)
-    expect(f.followers).toBe(9_880)
+    const likes = FEED_REACH.praise[0] + FEED_REACH.praise[1] * 9_850
+    expect(post.likes).toBe(likes)
+    expect(f.followers).toBe(9_850 + Math.round(likes * FEED_GAIN.praise))
+    const grown = f.followers
     addPost(f, draft('complaint'), 9, 0, half)
-    expect(f.followers).toBe(9_880)
+    expect(f.followers).toBe(grown)
   })
 
   it('crossing a milestone queues one cheer', () => {

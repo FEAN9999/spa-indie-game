@@ -580,10 +580,10 @@ export const FEED_MILESTONES = [1_000, 10_000, 100_000, 1_000_000]
 /** An old save's followers: the start, then so much per rank star, idol met and year's win, at most max. */
 export const FEED_SEED = { base: 50, star: 1_000, idol: 5_000, win: 20_000, max: 99_000 }
 /** likes = fixed + share x followers x (0.6 + 0.8 r). */
-export const FEED_REACH = { praise: [3, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const
+export const FEED_REACH = { praise: [40, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const
 /** An idol's or a KOL's likes are their own fans: lo + (hi - lo) r. */
 export const FEED_FANS = { idol: [20_000, 60_000], kol: [5_000, 15_000] } as const
 /** followers += round(likes x gain). */
-export const FEED_GAIN = { praise: 0.15, complaint: 0, shop: 0.1, vip: 0.1, rival: 0, ward: 0.05, idol: 0.04, kol: 0.08 }
+export const FEED_GAIN = { praise: 0.4, complaint: 0, shop: 0.1, vip: 0.1, rival: 0, ward: 0.05, idol: 0.04, kol: 0.08 }
 /** extra = round(likes x this): the comments not shown. */
 export const FEED_EXTRA_COMMENTS = 0.03
