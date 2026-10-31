@@ -2,27 +2,23 @@ import * as Phaser from 'phaser'
 import { PHO_BOX, PHO_BROTH, PHO_DIAL, PHO_LINES } from '../art/phoArt'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
-import { GAME_W } from '../config'
+import { GAME_W, PHO_CUT_X } from '../config'
 import type { Stars } from '../sim/economy'
 import { boilBand, PhoGame, type PhoPhase, type PhoTicket, type Topping } from '../sim/pho'
 import { t, type StringKey } from '../strings/vi'
-import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
+import { addPills, addTicket, type CookData } from '../view/cook'
+import { HandPointer } from '../view/HandPointer'
+import { addMiniGameCard, drawBars, revealStars, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 import { addButton } from '../view/ui'
-
-/** What the Phở game is opened with: a mini-game's data and the diner's ticket. */
-export interface CookData extends MiniGameData {
-  ticket: PhoTicket
-}
 
 type Station = Exclude<PhoPhase, 'done'>
 const STATIONS: Station[] = ['cut', 'boil', 'top']
 const INSTRUCTION: Record<Station, StringKey> = { cut: 'phoCut', boil: 'phoBoil', top: 'phoTop' }
 const STEP: Record<Station, StringKey> = { cut: 'phoStepCut', boil: 'phoStepBoil', top: 'phoStepTop' }
-/** The three step pills down the left, beside the ticket at the top right, and the ticket's lines. */
-const PILL = { x: 285, w: 370, h: 64, ys: [520, 600, 680], size: 34 }
-const TICKET = { x: 520, y: 465, textX: 555, headY: 505, headSize: 30, lineY: 550, lineStep: 46, lineSize: 38 }
+/** The first game's lesson line for each station. */
+const LESSON: Record<Station, StringKey> = { cut: 'phoLearnCut', boil: 'phoLearnBoil', top: 'phoLearnTop' }
 /** The board's area a swipe must start in, and the beef's top and bottom, where a cut's ink line runs. */
 const BOARD = { left: 130, right: 950, top: 810, bottom: 1470 }
 const BEEF = { top: 940, bottom: 1340 }
@@ -52,15 +48,16 @@ const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 /** Cooking Phở over the frozen shops: cut the beef along four dotted lines, hold the boil into the ticket's band, top the bowl to the ticket and serve. */
 export class PhoScene extends Phaser.Scene {
-  private params!: CookData
+  private params!: CookData<PhoTicket>
   private rules!: PhoGame
   /** The rules' phase as last seen, and the station on the card, which follows it after a short pause. */
   private phase: PhoPhase = 'cut'
   private shown: Station = 'cut'
   private instruction!: Phaser.GameObjects.Text
   private bars!: Phaser.GameObjects.Graphics
-  private pills!: Phaser.GameObjects.Graphics
-  private pillTexts: Phaser.GameObjects.Text[] = []
+  private drawPills!: (at: number) => void
+  /** The lesson's hand, only in the first Phở. */
+  private hand: HandPointer | null = null
   /** Everything of the station on the card, and its buttons, which go at the reveal. */
   private station: Phaser.GameObjects.GameObject[] = []
   private buttons: Phaser.GameObjects.GameObject[] = []
@@ -79,7 +76,7 @@ export class PhoScene extends Phaser.Scene {
     super('PhoScene')
   }
 
-  init(data: CookData) {
+  init(data: CookData<PhoTicket>) {
     this.params = data
   }
 
@@ -94,9 +91,9 @@ export class PhoScene extends Phaser.Scene {
     this.revealed = false
 
     this.instruction = addMiniGameCard(this, t('phoCut'))
-    this.addTicket()
-    this.pills = this.add.graphics()
-    this.pillTexts = STATIONS.map((s, i) => this.add.text(PILL.x, PILL.ys[i], t(STEP[s]), textStyle(PILL.size)).setOrigin(0.5))
+    addTicket(this, 'pho', this.params.ticket)
+    this.drawPills = addPills(this, STATIONS.map(s => t(STEP[s])))
+    this.hand = this.params.demo ? new HandPointer(this) : null
     this.bars = this.add.graphics()
     this.showStation('cut')
 
@@ -114,6 +111,7 @@ export class PhoScene extends Phaser.Scene {
     if (this.rules.phase !== this.phase) this.enterPhase(this.rules.phase)
     if (this.revealed) return
     if (this.shown === 'boil') this.updateBoil(time, delta)
+    this.pointLesson()
     drawBars(this.bars, this.rules.progress(), this.timeLeft())
   }
 
@@ -123,25 +121,23 @@ export class PhoScene extends Phaser.Scene {
     this.reveal(stars)
   }
 
-  private addTicket(): void {
-    const tk = this.params.ticket
-    const lines: StringKey[] = [tk.doneness === 'tai' ? 'phoTai' : 'phoChin', tk.onion === 'little' ? 'phoOnionLittle' : 'phoOnionLots', tk.chili ? 'phoChili' : 'phoNoChili', tk.extraHerb ? 'phoExtraHerb' : 'phoHerbLine']
-    this.add.image(TICKET.x, TICKET.y, 'pho-ticket').setOrigin(0)
-    this.add.text(TICKET.textX, TICKET.headY, t('phoTicket'), textStyle(TICKET.headSize, '800', C.terracotta)).setOrigin(0, 0.5)
-    lines.forEach((key, i) => this.add.text(TICKET.textX, TICKET.lineY + i * TICKET.lineStep, t(key), textStyle(TICKET.lineSize, '600')).setOrigin(0, 0.5))
+  /** The first game's hand: this station's line, pointing at its target; nowhere to point (between stations) hides it. */
+  private pointLesson(): void {
+    if (!this.hand) return
+    const spot = this.lessonSpot()
+    if (spot) this.hand.show(t(LESSON[this.shown]), spot.x, spot.y, 'down')
+    else this.hand.hide()
   }
 
-  /** Done steps teal, the one under way mustard, the rest cream. */
-  private drawPills(): void {
-    const at = this.revealed ? STATIONS.length : STATIONS.indexOf(this.shown)
-    this.pills.clear()
-    STATIONS.forEach((_, i) => {
-      const fill = i < at ? C.teal : i === at ? C.mustard : C.cream
-      const [x, y] = [PILL.x - PILL.w / 2, PILL.ys[i] - PILL.h / 2]
-      this.pills.fillStyle(hex(fill), 1).fillRoundedRect(x, y, PILL.w, PILL.h, PILL.h / 2)
-      this.pills.lineStyle(4, hex(C.ink)).strokeRoundedRect(x, y, PILL.w, PILL.h, PILL.h / 2)
-      this.pillTexts[i].setColor(i < at ? C.cream : i === at ? C.ink : C.soft)
-    })
+  /** The first uncut line's top for the cut, the hold button's top for the boil, the onion button's top for the toppings. */
+  private lessonSpot(): { x: number; y: number } | null {
+    if (this.shown === 'cut') {
+      const next = this.rules.cutsDone.indexOf(false)
+      return next < 0 ? null : { x: PHO_CUT_X[next], y: PHO_LINES.top }
+    }
+    if (this.rules.phase !== this.shown) return null
+    if (this.shown === 'boil') return { x: HOLD.x, y: HOLD.y - HOLD.h / 2 }
+    return { x: TOPPINGS[0].x, y: TOPPING_BTN.y - TOPPING_BTN.h / 2 }
   }
 
   /** Clears the card's middle and lays out this step's station. */
@@ -153,7 +149,7 @@ export class PhoScene extends Phaser.Scene {
     this.pot = this.holdButton = null
     this.shown = s
     setInstruction(this.instruction, t(INSTRUCTION[s]))
-    this.drawPills()
+    this.drawPills(STATIONS.indexOf(s))
     const keep = <T extends Phaser.GameObjects.GameObject>(o: T): T => {
       this.station.push(o)
       return o
@@ -302,7 +298,8 @@ export class PhoScene extends Phaser.Scene {
     this.trail?.clear()
     for (const b of this.buttons) b.destroy()
     this.buttons = []
-    this.drawPills()
+    this.hand?.hide()
+    this.drawPills(STATIONS.length)
     setInstruction(this.instruction, t('shampooDone'))
     drawBars(this.bars, 1, this.timeLeft())
     revealStars(this, stars, () => {
