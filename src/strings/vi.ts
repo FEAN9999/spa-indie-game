@@ -863,6 +863,14 @@ export const vi = {
   tomorrowOpens: 'Ngày mai mở {name}',
   recordServed: 'Kỷ lục mới: {n} khách!',
   recordProfit: 'Kỷ lục lãi: {money}!',
+  phayTitle: 'Phây',
+  phayFollowers: '{n} người theo dõi',
+  phayComments: '{n} bình luận',
+  phayEmpty: 'Chưa có bài nào. Khách khen hay chê sẽ hiện ở đây.',
+  phayPicRank: 'Tiệm lên hạng',
+  phayPicCert: 'GIẤY KHEN',
+  phayPicCertLine: 'Vệ sinh an toàn',
+  phayVideoTime: '0:45',
 } as const
 
 export type StringKey = keyof typeof vi

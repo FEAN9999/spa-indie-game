@@ -46,4 +46,7 @@ describe('fx art', () => {
 
   it('has the stone and mud service badges, the mud stock badge and the stones on a back', () =>
     expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['svc-stone', 'svc-mud', 'stock-mud', 'fx-stones'])))
+
+  it("has Phây's phone, tick, heart, comment and play icons", () =>
+    expect(Object.keys(fxTextures())).toEqual(expect.arrayContaining(['icon-phone', 'icon-tick', 'icon-heart', 'icon-comment', 'icon-play'])))
 })

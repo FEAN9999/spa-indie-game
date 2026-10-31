@@ -13,6 +13,7 @@ import { PROBLEM_TEXT } from '../sim/build'
 import { Chain } from '../sim/chain'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
+import { markRead, unreadCount } from '../sim/feed'
 import { monthOf } from '../sim/calendar'
 import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
@@ -51,6 +52,7 @@ import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
 import { houseRect, saleAt, stripLots } from '../view/houses'
 import { navIds, type NavId } from '../view/nav'
+import { phayButtonShown } from '../view/phay'
 import { BANNER_MS, BOOK_BUTTON, DEPTH as HUD_DEPTH, Hud } from '../view/Hud'
 import { eventCard, hotCard, powerWarnText, rivalBeatenCard } from '../view/events'
 import { festivalDoneCard, festivalStartCard, goldCardMs, monthToast, type GoldCard } from '../view/festivals'
@@ -87,6 +89,7 @@ import type { InspectData } from './InspectScene'
 import type { NewOutfitData } from './NewOutfitScene'
 import type { LitterData } from './LitterScene'
 import type { PetNameData } from './PetNameScene'
+import type { PhayData } from './PhayScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
 
@@ -314,7 +317,7 @@ export class SpaScene extends Phaser.Scene {
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.pets = new PetLayer(this, this.room)
-    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => navIds(this.chain))
+    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => this.openPhay(null), () => navIds(this.chain))
     this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this.ui)
     this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
@@ -792,6 +795,27 @@ export class SpaScene extends Phaser.Scene {
     this.scene.launch('QuestsScene', data)
   }
 
+  /** The Phây panel over the frozen chain, opened only when the quest panel would be; opening it reads every post. `focusId` is the post to show first. */
+  private openPhay(focusId: number | null): void {
+    const sim = this.sim
+    if (this.modal || this.holding || sim.paused || sim.dayOver || sim.servingCustomerId !== null) return
+    this.modal = true
+    const main = this.chain.main
+    markRead(main.feed)
+    const data: PhayData = {
+      feed: main.feed,
+      shopName: main.shopName,
+      ownerLook: main.ownerLook,
+      ownerOutfit: main.ownerOutfit,
+      focusId,
+      onClose: () => {
+        this.modal = false
+        this.session.saveNow()
+      },
+    }
+    this.scene.launch('PhayScene', data)
+  }
+
   /** Shows the toast once the one before it has had LATE_TOAST_MS on screen, after any toast already queued here. */
   private queueToast(text: string): void {
     const now = this.time.now
@@ -1255,6 +1279,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.hud.update(this.modal)
+    // Phây is the main shop's, shared by its branches; the button gives way to the gold card and the morning banner, which use its spot
+    const feed = this.chain.main.feed
+    this.hud.setPhay(phayButtonShown(feed.open, this.time.now < this.badgeUntil, this.time.now < this.hud.lastBannerAt + BANNER_MS), unreadCount(feed), this.sim.place !== null)
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()

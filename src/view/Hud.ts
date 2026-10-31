@@ -6,6 +6,7 @@ import type { SpaSim } from '../sim/spa'
 import type { HintId } from '../sim/types'
 import { placeName } from './chain'
 import { navX, type NavId } from './nav'
+import { PHAY_BUTTON, unreadLabel } from './phay'
 import type { Feature } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { t, type StringKey } from '../strings/vi'
@@ -37,6 +38,8 @@ const RIBBON = { y: 198, h: 64, font: 31, pad: 90, textX: 27, textW: 860 }
 /** The guest-book button, in the top bar's second row. */
 export const BOOK_BUTTON = { x: 870, y: 152 }
 const BOOK_R = 38
+/** The red dot on the phone button's top-right, with the unread count. */
+const PHAY_DOT = { dx: 32, dy: -32, r: 24, font: 26 }
 
 /** Each button opens with its feature's day. A button with a hint wears "Mới" until that hint is done; `later` is a second hint of a feature that opens on a later day. */
 const NAV: Record<NavId, { key: StringKey; icon: string; feature?: Feature; hint?: HintId; later?: { feature: Feature; hint: HintId } }> = {
@@ -89,6 +92,10 @@ export class Hud {
   /** Today's line, and what it was last drawn with. */
   private readonly today: Phaser.GameObjects.Container
   private todayKey = ''
+  /** The Phây phone button and its unread count. */
+  private readonly phay: Phaser.GameObjects.Container
+  private readonly phayDot: Phaser.GameObjects.Container
+  private readonly phayCount: Phaser.GameObjects.Text
 
   constructor(
     private readonly scene: Phaser.Scene,
@@ -100,6 +107,7 @@ export class Hud {
     onBook: () => void,
     private readonly onQuests: () => void,
     private readonly onChain: () => void,
+    onPhay: () => void,
     private readonly nav: () => NavId[],
   ) {
     const add = scene.add
@@ -143,6 +151,18 @@ export class Hud {
     whenTapped(this.book.setSize(120, 110).setInteractive(), () => {
       sound.play('tap')
       onBook()
+    })
+
+    // the Phây phone, once Phây opens; SpaScene shows it and sets its count each frame
+    this.phay = add.container(PHAY_BUTTON.x, PHAY_BUTTON.y).setDepth(DEPTH).setVisible(false)
+    this.phay.add(add.circle(0, 0, PHAY_BUTTON.r, hex(C.cream)).setStrokeStyle(4, hex(C.ink)))
+    this.phay.add(add.image(0, 0, 'icon-phone'))
+    this.phayCount = add.text(0, 1, '', textStyle(PHAY_DOT.font, '800', C.paper)).setOrigin(0.5)
+    this.phayDot = add.container(PHAY_DOT.dx, PHAY_DOT.dy, [add.circle(0, 0, PHAY_DOT.r, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)), this.phayCount])
+    this.phay.add(this.phayDot)
+    whenTapped(this.phay.setSize(120, 120).setInteractive(), () => {
+      sound.play('tap')
+      onPhay()
     })
 
     // bottom bar
@@ -250,6 +270,15 @@ export class Hud {
       p.badge?.setVisible(!locked && (fresh || freshLater))
       p.dot?.setVisible(!locked && (p.feature === 'quests' ? this.sim.questsDot() : this.sim.lowStock().length > 0 || this.sim.learnable() !== null))
     }
+  }
+
+  /** Shows or hides the phone button, at a branch under the ribbon, with the red dot while posts are unread. */
+  setPhay(shown: boolean, unread: number, atBranch: boolean): void {
+    this.phay.setVisible(shown).setY(atBranch ? PHAY_BUTTON.branchY : PHAY_BUTTON.y)
+    const label = unreadLabel(unread)
+    // set only on a change, since new words redraw the text
+    if (this.phayCount.text !== label) this.phayCount.setText(label)
+    this.phayDot.setVisible(label !== '')
   }
 
   /** At a branch, a teal ribbon under the top bar names the shop and the place; a long shop name shrinks to fit. */
