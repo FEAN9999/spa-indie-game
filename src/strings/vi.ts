@@ -572,6 +572,7 @@ export const vi = {
   petsCount: 'Thú cưng trong tiệm: {n}/{max}',
   petsCountFull: 'Thú cưng trong tiệm: {n}/{max} · Đủ {max} con',
   petsFull: 'Tiệm đã đủ {max} con. Cho bớt một con đi để nhận con mới.',
+  petAtMain: 'Nuôi ở tiệm gốc',
   petRename: 'Đổi tên',
   petRenamed: 'Đã đổi tên thành {name}',
   petGive: 'Cho đi',
