@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import type { Plugin } from 'vite'
 import { defineConfig } from 'vitest/config'
-import { precacheList, renderServiceWorker } from './build/sw'
+import { precacheList, renderServiceWorker } from './build/sw.ts'
 
 /** Every file under `dir`, relative to it, with forward slashes. */
 const listFiles = (dir: string, prefix = ''): string[] =>
@@ -33,6 +33,7 @@ export default defineConfig(({ command }) => {
     plugins: [serviceWorkerPlugin(buildId)],
     server: { host: true },
     preview: { host: true },
-    test: { environment: 'node', include: ['tests/**/*.test.ts'] },
+    // the sim tests run synchronously, so a timeout cannot stop a hang; a tight one only fails a long seed loop on a busy machine
+    test: { environment: 'node', include: ['tests/**/*.test.ts'], testTimeout: 120_000 },
   }
 })

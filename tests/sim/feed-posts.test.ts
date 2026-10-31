@@ -290,5 +290,5 @@ describe('the follower curve', () => {
     }
     expect(last).toBeGreaterThanOrEqual(1_000)
     expect(last).toBeLessThanOrEqual(10_000)
-  }, 60_000)
+  })
 })
