@@ -132,15 +132,11 @@ describe('opening a branch', () => {
     expect(beach.ownerHere).toBe(false)
   })
 
-  it('gives a new empty beach no customers', () => {
+  it('gives a new empty beach customers of its own', () => {
     const { chain, beach } = withBeach(starShop(3, 20_000_000, 1, true))
-    // a game hour: long past the first arrival a beach with its owner would get
-    for (let t = 0; t < 60 * REAL_MS_PER_GAME_MIN; t += 100) {
-      chain.advance(100)
-      expect(beach.customers).toEqual([])
-    }
-    expect(beach.toSave().nextId).toBe(1)
-    expect(beach.stats.walkedAway + beach.stats.angry).toBe(0)
+    // a game hour: long past the first arrival
+    for (let t = 0; t < 60 * REAL_MS_PER_GAME_MIN; t += 100) chain.advance(100)
+    expect(beach.toSave().nextId).toBeGreaterThan(1)
   })
 
   it('shows the chain from 3 stars and tells it once', () => {
@@ -185,14 +181,12 @@ describe('going between shops', () => {
     expect(beach.ownerHere).toBe(false)
   })
 
-  it('counts who would leave the shop the owner is in', () => {
+  it('keeps the customers waiting in the shop the owner leaves', () => {
     const { chain, main } = withBeach()
     const cs = [main.spawnCustomer({ kind: 'office', service: 'shampoo' }), main.spawnCustomer({ kind: 'office', service: 'shampoo' })]
     chainUntil(chain, () => cs.every(c => c.state === 'waiting'))
-    expect(chain.leaveCount()).toBe(2)
     chain.goTo('beach')
-    expect(cs.every(c => c.state === 'leaving')).toBe(true)
-    expect(chain.leaveCount()).toBe(0)
+    expect(cs.every(c => c.state === 'waiting')).toBe(true)
   })
 })
 

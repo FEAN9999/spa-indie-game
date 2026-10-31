@@ -83,7 +83,7 @@ describe('the no-technician notice', () => {
       icon: { texture: 'icon-staff', disc: C.mustard },
       head: 'Chi nhánh Bãi biển',
       name: 'Chưa có thợ',
-      line: 'Vào Nhân viên để thuê người. Lúc chủ tiệm vắng mà chưa có thợ, tiệm treo biển Tạm nghỉ.',
+      line: 'Vào Nhân viên để thuê người. Lúc chủ tiệm vắng mà chưa có thợ, khách ngồi chờ lâu sẽ bỏ về.',
       quiet: true,
     })
   })
@@ -102,19 +102,19 @@ describe('the map pins', () => {
     expect(pinState(atMain(4_000_000), 'beach')).toBe('can')
   })
 
-  it("labels an open branch with its profit today, or Tạm nghỉ while it has no technician", () => {
+  it("labels an open branch with its profit today, or Chưa có thợ while it has no technician", () => {
     const { chain, beach } = withBeach()
-    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['open', 'Tạm nghỉ'])
+    expect([pinState(chain, 'beach'), pinLabel(chain, 'beach')]).toEqual(['open', 'Chưa có thợ'])
     hireStaff(beach, 'technician')
     beach.stats.income = 300_000
     expect(pinLabel(chain, 'beach')).toBe('+300.000 đ hôm nay')
   })
 
-  it('puts the owner on the branch she went to, and rests the main shop she left with no technician', () => {
+  it('puts the owner on the branch she went to, and marks the main shop she left as having no technician', () => {
     const { chain } = withBeach()
     chain.goTo('beach')
     expect([pinState(chain, 'beach'), pinState(chain, null)]).toEqual(['here', 'open'])
-    expect(pinLabel(chain, null)).toBe('Tạm nghỉ')
+    expect(pinLabel(chain, null)).toBe('Chưa có thợ')
     hireStaff(chain.main, 'technician')
     expect(pinLabel(chain, null)).toBe('+1.840.000 đ hôm nay')
   })
@@ -143,7 +143,6 @@ describe('the sheet under the map', () => {
       rows: ['Khách riêng: Khách du lịch · lượng khách ×1,2', 'Giá dịch vụ ×1,0', '1 tầng, bày sẵn như tiệm ngày đầu, thêm ván lướt sóng.'],
       button: { text: 'Mở chi nhánh · 5.000.000 đ', on: true },
       short: null,
-      warn: null,
     })
   })
 
@@ -156,7 +155,7 @@ describe('the sheet under the map', () => {
   it("tells an open branch's day, staff and stock, and goes there until closing time", () => {
     const { chain } = withBeach()
     const sheet = sheetOf(chain, 'beach')
-    expect(sheet.status).toBe('Tạm nghỉ · chưa có thợ')
+    expect(sheet.status).toBe('Mở cửa · chưa có thợ')
     expect(sheet.rows).toEqual(expect.arrayContaining(['Hôm nay: 0 khách · 0 bỏ về', 'Lãi hôm nay: 0 đ', '0/3 thợ · 0/1 lễ tân', 'Kho đủ']))
     expect(sheet.button).toEqual({ text: 'Đến tiệm', on: true })
     chain.main.clock.minutes = DAY_END_MIN
@@ -181,15 +180,6 @@ describe('the sheet under the map', () => {
     expect(sheetOf(chain, 'beach').button).toEqual({ text: 'Chủ tiệm đang ở đây', on: false })
   })
 
-  it('warns that the customers of a shop with no technician leave if the owner goes', () => {
-    const { chain, beach } = withBeach()
-    chain.goTo('beach')
-    for (let i = 0; i < 3; i++) beach.spawnCustomer({ kind: 'office', service: 'shampoo' })
-    expect(sheetOf(chain, null).warn).toBe('Rời Bãi biển: 3 khách đang chờ sẽ về, không đánh giá')
-    hireStaff(beach, 'technician')
-    expect(sheetOf(chain, null).warn).toBeNull()
-  })
-
   it("gives the main shop's rank, its day and its staff", () => {
     expect(sheetOf(atMain(), null)).toEqual({
       title: 'Tiệm gốc',
@@ -197,7 +187,6 @@ describe('the sheet under the map', () => {
       rows: ['Hôm nay: 0 khách · 0 bỏ về', 'Lãi hôm nay: +1.840.000 đ', '0/3 thợ · 0/1 lễ tân', 'Kho đủ'],
       button: { text: 'Chủ tiệm đang ở đây', on: false },
       short: null,
-      warn: null,
     })
   })
 
@@ -208,7 +197,6 @@ describe('the sheet under the map', () => {
       rows: ['Khách riêng: Khách Tây ba lô · lượng khách ×1,0', 'Giá dịch vụ ×1,2', '1 tầng, bày sẵn như tiệm ngày đầu, thêm dây đèn lồng Hội An.'],
       button: { text: 'Cần 4★', on: false },
       short: null,
-      warn: null,
     })
   })
 
@@ -219,7 +207,6 @@ describe('the sheet under the map', () => {
       rows: ['Khách riêng: Quý bà · lượng khách ×0,8', 'Giá dịch vụ ×1,6', '1 tầng, bày sẵn như tiệm ngày đầu, thêm chậu lan hồ điệp.'],
       button: { text: 'Mở chi nhánh · 12.000.000 đ', on: false },
       short: 'Còn thiếu 2.000.000 đ',
-      warn: null,
     })
   })
 

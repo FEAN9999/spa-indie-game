@@ -99,7 +99,6 @@ export interface Sheet {
   rows: string[]
   button: { text: string; on: boolean }
   short: string | null
-  warn: string | null
 }
 
 /** A place's own customer (the kind, how it looks and its name) and the piece its room opens with. */
@@ -125,7 +124,7 @@ export function pinState(chain: Chain, place: PlaceId | null): PinState {
   return problem === 'stars' ? 'lock' : 'can'
 }
 
-/** A shop the owner is away from with no technician gets no customers. */
+/** A shop the owner is away from with no technician: its customers wait with nobody to serve them. */
 const resting = (chain: Chain, place: PlaceId | null): boolean => pinState(chain, place) === 'open' && !chain.shop(place)!.hasTechnician()
 
 /** The small line on a pin's sign, under the place's name. */
@@ -179,13 +178,11 @@ export function sheetOf(chain: Chain, place: PlaceId | null): Sheet {
   if (shop) rows.push(...dayRows(shop))
   else if (place !== null) rows.push(t('sheetRoom', { decor: t(PLACE_OWN[place].decor) }))
   const short = place !== null && state === 'can' && chain.openProblem(place) === 'money' ? t('problemMoney', { money: formatMoney(PLACES[place].price - chain.main.money) }) : null
-  const leavers = chain.goProblem(place) === null ? chain.leaveCount() : 0
   return {
     title: placeName(place),
     status: statusOf(chain, place, state),
     rows,
     button: buttonOf(chain, place, state),
     short,
-    warn: leavers > 0 ? t('sheetLeave', { place: placeName(chain.at), n: leavers }) : null,
   }
 }

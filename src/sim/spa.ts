@@ -140,9 +140,6 @@ function moveAlong(m: Mover, speed: number, dtMs: number): void {
   }
 }
 
-/** Where a customer is while the shop has not yet put them on a bed. */
-const WAITING_STATES: CustomerState[] = ['arriving', 'toSeat', 'waiting']
-
 export interface SpaSimOptions {
   rng: Rng
   layout?: string[]
@@ -307,14 +304,7 @@ export class SpaSim {
     return task?.kind === 'serve' ? this.customers.find(c => c.id === task.customerId && c.state === 'toStation') : undefined
   }
 
-  /** How many customers would be sent away if the owner left now: none with a technician, else everyone arriving, walking to a seat or waiting, and the one the owner is walking to a bed. */
-  leaversIfOwnerGoes(): number {
-    if (this.hasTechnician()) return 0
-    const toBed = this.walkingToBed()
-    return this.customers.filter(c => c === toBed || WAITING_STATES.includes(c.state)).length
-  }
-
-  /** The owner goes: a walk to a bed is undone, the owner's task ends, and with no technician the shop's customers leave quietly. */
+  /** The owner goes: a walk to a bed is undone and the owner's task ends; the shop's customers stay and wait. */
   ownerLeaves(): void {
     const walking = this.walkingToBed()
     if (walking) {
@@ -329,7 +319,6 @@ export class SpaSim {
     this.owner.task = null
     this.owner.path = []
     this.ownerHere = false
-    if (!this.hasTechnician()) this.leaveQuietly()
   }
 
   private oldestDesk(): Item | undefined {
@@ -361,16 +350,6 @@ export class SpaSim {
     for (const s of this.seats) s.customerId = null
     for (const s of this.stations) s.customerId = null
     repairAfterLoad(this.crew)
-  }
-
-  /** Customers not yet in service walk out with no review, no count and no lost visit. */
-  private leaveQuietly(): void {
-    for (const c of this.customers) {
-      if (!WAITING_STATES.includes(c.state)) continue
-      this.freeSeat(c)
-      c.mood = null
-      this.startLeaving(c)
-    }
   }
 
   /** The owner's look and the shop's name, chosen when the shop is made. */
@@ -1611,7 +1590,7 @@ export class SpaSim {
     const before = this.clock.minutes
     this.clock.advance(dt)
 
-    if (this.autoSpawn && !this.clock.isClosed && (this.ownerHere || this.hasTechnician())) {
+    if (this.autoSpawn && !this.clock.isClosed) {
       this.untilArrivalMs -= dt
       if (this.untilArrivalMs <= 0) {
         // a regular whose hour has come takes the place of a stranger, but only when a seat is left for her once
@@ -1662,7 +1641,6 @@ export class SpaSim {
     this.updateOwnerTask()
     for (const s of this.staff) updateStaff(this.crew, s, dt)
     if (!this.ownerHere) {
-      if (!this.hasTechnician()) this.leaveQuietly()
       for (const item of this.lowStock()) if (this.money >= RESTOCK_PRICE[item]) this.restock(item)
     }
     this.checkBadges()

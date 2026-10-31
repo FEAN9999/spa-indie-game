@@ -299,11 +299,6 @@ export class Chain {
     return [this.main, ...this.branches].map(s => ({ place: s.place, profit: dayProfit(s.stats) }))
   }
 
-  /** How many customers would leave the owner's shop if she went now. */
-  leaveCount(): number {
-    return this.active().leaversIfOwnerGoes()
-  }
-
   /** The main shop's cards kept while the owner was away, in order; taking them empties the list. */
   takeHeld(): SimEvent[] {
     const out = this.held
