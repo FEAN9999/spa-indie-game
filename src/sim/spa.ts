@@ -80,6 +80,7 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
+import { emptyFeed, type FeedBook } from './feed'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -161,6 +162,8 @@ export class SpaSim {
   /** Where this shop is: null for the main shop. */
   place: PlaceId | null = null
   reviews: number[] = []
+  /** The customer behind each review, in step with `reviews`. */
+  reviewIds: number[] = []
   clock = new DayClock()
   day = 1
   stats: DayStats = emptyStats()
@@ -212,6 +215,8 @@ export class SpaSim {
   pets: PetBook = emptyPetBook()
   /** The neighbour houses bought each side, by this shop alone. */
   houses: Houses = { ...NO_HOUSES }
+  /** The Phây feed: the main shop's, the same object on every branch. */
+  feed: FeedBook = emptyFeed()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -269,6 +274,7 @@ export class SpaSim {
     branch.ownerOutfit = main.ownerOutfit
     branch.profileDone = main.profileDone
     branch.purse = main.purse
+    branch.feed = main.feed
     branch.pets = branchPetBook()
     const decor = PLACE_DECOR[place]
     branch.items.push({ id: branch.nextItemId++, kind: decor.kind, x: decor.x, y: decor.y, flip: false, gift: true })
@@ -872,6 +878,7 @@ export class SpaSim {
       minutes: this.clock.minutes,
       money: this.money,
       reviews: this.reviews.slice(-RATING_WINDOW),
+      reviewIds: this.reviewIds.slice(-RATING_WINDOW),
       stats: this.stats,
       dayOver: this.dayOver,
       servingCustomerId: this.servingCustomerId,
@@ -907,6 +914,8 @@ export class SpaSim {
       starter: this.starter,
       pets: this.pets,
       houses: this.houses,
+      // a branch shares the main shop's feed and saves none
+      feed: this.place === null ? this.feed : emptyFeed(),
       savedAt: null,
     })
   }
@@ -950,11 +959,13 @@ export class SpaSim {
     // the starter chain is the main shop's: a branch's has always passed
     sim.starter = d.place === null ? d.starter : pastStarter()
     sim.pets = d.place === null ? d.pets : branchPetBook()
+    sim.feed = d.feed
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
     sim.money = d.money
     sim.reviews = d.reviews
+    sim.reviewIds = d.reviewIds
     sim.stats = d.stats
     sim.dayOver = d.dayOver
     sim.servingCustomerId = d.servingCustomerId
@@ -1847,6 +1858,7 @@ export class SpaSim {
     if (c.kol) return
     for (let i = 0; i < (c.vip || c.idol ? VIP_REVIEWS : KINDS[c.kind].reviews); i++) {
       this.reviews.push(score)
+      this.reviewIds.push(c.id)
       this.emit({ type: 'review', customerId: c.id, score })
     }
   }

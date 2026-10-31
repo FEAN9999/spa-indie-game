@@ -18,14 +18,15 @@ import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_RO
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { repairAway, type AwayBook } from './away'
 import { repairStarter, type StarterBook } from './starter'
+import { emptyFeed, repairFeed, type FeedBook } from './feed'
 import { branchPetBook, repairPets, type PetBook } from './pets'
 import { isOutfitId, OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId, type Stars, type YearResult } from './rank'
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs. */
-export const SAVE_VERSION = 35
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review. */
+export const SAVE_VERSION = 36
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -66,6 +67,8 @@ export interface SaveData {
   money: number
   /** Only the last RATING_WINDOW reviews, the ones the rating uses. */
   reviews: number[]
+  /** The customer id behind each of `reviews`, the same length; 0 for a review saved before the ids. */
+  reviewIds: number[]
   stats: DayStats
   dayOver: boolean
   servingCustomerId: number | null
@@ -121,6 +124,8 @@ export interface SaveData {
   pets: PetBook
   /** The neighbour houses bought each side, by this shop alone. */
   houses: Houses
+  /** The Phây feed; only the main shop's is real, a branch shares it and saves an empty one. */
+  feed: FeedBook
   /** The real time of the last write, stamped by the session; null until then. */
   savedAt: number | null
 }
@@ -347,6 +352,12 @@ function parseShop(raw: unknown): SaveData {
   data.pets = isPlaceId(data.place) ? branchPetBook() : repairPets(data.pets)
   // shops saved before version 33 have bought no house, and a branch saved before version 34 none either
   data.houses = isPlaceId(data.place) && oldBranchHouses ? { left: 0, right: 0 } : repairHouses(data.houses)
+  // shops saved before version 36 get the feed they would have had; a branch's is empty, it shares the main shop's
+  const idolsMet = IDOL_IDS.filter(id => data.idol.idols[id].visits > 0).length
+  data.feed = isPlaceId(data.place) ? emptyFeed() : repairFeed(data.feed, { day: data.day, rankStars: data.rank.stars, idolsMet, wins: data.rank.wins })
+  // each review has its customer's id: the newest are kept, and a short list is padded at the front with 0
+  const ids: number[] = Array.isArray(data.reviewIds) && data.reviewIds.every(Number.isInteger) ? data.reviewIds : []
+  data.reviewIds = [...Array<number>(Math.max(data.reviews.length - ids.length, 0)).fill(0), ...ids.slice(Math.max(ids.length - data.reviews.length, 0))]
   data.savedAt = isNumber(data.savedAt) ? data.savedAt : null
   data.stats = { ...data.stats, ownerServed: repairCount(data.stats.ownerServed) }
   // shops saved before version 33 move onto the wide grid, once: the version is raised so a parsed save parsed again stays put
@@ -651,7 +662,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

@@ -11,6 +11,8 @@ import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
 import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
+import { addPost, emptyFeed, openFeed, seededFeed } from '../../src/sim/feed'
+import type { PostDraft } from '../../src/sim/feed'
 import { emptyEventBook, makeHot } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
 import { BASIC_SERVICES } from '../../src/sim/services'
@@ -64,7 +66,7 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; place?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; day: number; reviews: number[]; reviewIds?: unknown; feed?: unknown; rank?: { stars: number; wins: number }; idol?: { idols: Record<string, { visits: number }> }; place?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The old shop's furniture on the 13-column grid, as saves from before version 33 have it. */
 const LEGACY_ITEMS = itemsFromLayout(SPA_LAYOUT_1A)
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest, on the old grid. */
@@ -96,6 +98,8 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.stock.polish ??= 20
     shop.lessonsPaid ??= []
     shop.houses ??= { left: 0, right: 0 }
+    shop.reviewIds ??= shop.reviews.map(() => 0)
+    shop.feed ??= (shop.place ?? null) !== null ? emptyFeed() : seededFeed({ day: shop.day, rankStars: shop.rank?.stars ?? 1, idolsMet: Object.values(shop.idol?.idols ?? {}).filter(i => i.visits > 0).length, wins: shop.rank?.wins ?? 0 })
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
@@ -122,8 +126,8 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('the wide grid in an older shop', () => {
-  it('is version 35', () => {
-    expect(SAVE_VERSION).toBe(35)
+  it('is version 36', () => {
+    expect(SAVE_VERSION).toBe(36)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2421,5 +2425,40 @@ describe('wall pieces and rugs in a saved shop', () => {
   it('keeps them through a save and a load', () => {
     const sim = open(v35)
     expect(viaJson(sim).items).toEqual(sim.items)
+  })
+})
+
+describe('save version 36', () => {
+  const draft: PostDraft = { kind: 'praise', name: 'Lan', face: null, tick: false, stars: 5, text: 'Spa xịn', pic: null, comments: [['A', 'Ngon']], complaint: null, boostable: true, notify: false }
+  it('opens a v35 shop with every review id 0 and the feed an old shop would have', () => {
+    const old = structuredClone(v35) as unknown as { reviews: number[]; day: number }
+    old.reviews = [5, 4, 5]
+    old.day = 20
+    const sim = open(old)
+    expect(sim.reviewIds).toEqual([0, 0, 0])
+    expect(sim.feed).toEqual(seededFeed({ day: 20, rankStars: sim.rank.stars, idolsMet: IDOL_IDS.filter(id => sim.idol.idols[id].visits > 0).length, wins: sim.rank.wins }))
+    expect(sim.feed.open).toBe(true)
+  })
+  it('writes the version and keeps the posts, the last read, the followers and the boosts through a save', () => {
+    const sim = open(v35)
+    openFeed(sim.feed)
+    addPost(sim.feed, draft, 3, 100, createRng(1))
+    addPost(sim.feed, draft, 3, 110, createRng(2))
+    sim.feed.lastSeen = 1
+    sim.feed.followers += 500
+    sim.feed.boosts = [{ day: 3, tier: 'small' }]
+    expect(sim.toSave().v).toBe(SAVE_VERSION)
+    const back = viaJson(sim)
+    expect(back.feed).toEqual(sim.feed)
+    expect(back.feed.posts).toHaveLength(2)
+    expect([back.feed.lastSeen, back.feed.followers, back.feed.boosts]).toEqual([1, sim.feed.followers, [{ day: 3, tier: 'small' }]])
+  })
+  it('repairs bad review ids by padding or trimming to the reviews', () => {
+    const raw = (reviews: number[], reviewIds: unknown) => ({ ...structuredClone(v35), reviews, reviewIds })
+    expect(parseSave(raw([5, 4, 3], [7, 8])).reviewIds).toEqual([0, 7, 8])
+    expect(parseSave(raw([5, 4], [6, 7, 8])).reviewIds).toEqual([7, 8])
+    expect(parseSave(raw([5, 4], 'x')).reviewIds).toEqual([0, 0])
+    expect(parseSave(raw([5, 4], [1.5, 2])).reviewIds).toEqual([0, 0])
+    expect(parseSave(raw([5, 4], [1, 2])).reviewIds).toEqual([1, 2])
   })
 })

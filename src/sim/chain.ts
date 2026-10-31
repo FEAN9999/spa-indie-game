@@ -101,6 +101,7 @@ export class Chain {
       try {
         const branch = SpaSim.fromSave(b, { rng: createRng(seed + 1 + PLACE_IDS.indexOf(b.place!)) })
         branch.purse = chain.main.purse
+        branch.feed = chain.main.feed
         chain.wireIncoming(branch)
         chain.branches.push(branch)
       } catch (e) {

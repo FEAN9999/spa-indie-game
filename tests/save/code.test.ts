@@ -21,7 +21,7 @@ describe('save codes', () => {
   it('makes a code short enough to paste in a chat', async () => {
     const code = await encodeSaveCode(busyShop().toSave())
     expect(code).toMatch(/^SPA1\.[A-Za-z0-9_-]+$/)
-    expect(code.length).toBeLessThan(2100)
+    expect(code.length).toBeLessThan(2250)
   })
 
   it('accepts a code that a chat app broke into lines and padded with spaces', async () => {
