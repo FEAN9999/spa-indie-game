@@ -36,6 +36,19 @@ describe('Chain.comeBack', () => {
     expect(r.profit).toBe(500_000)
     expect(r.capped).toBe(false)
   })
+  it('adds the restaurant\'s away pay to the shops\'', () => {
+    const chain = shops(true, false)
+    chain.main.day = 10
+    chain.main.money = 20_000_000
+    expect(chain.buyRestaurant()).toBeNull()
+    chain.restaurant!.away = { profits: [400_000], ok: true, tipSeen: false }
+    const money = chain.main.money
+    const r = chain.comeBack(TWO_HOURS)
+    expect(r.paid).toBe(150_000 + 200_000)
+    expect(chain.main.money).toBe(money + 350_000)
+    expect(r.places).toEqual([null, 'restaurant'])
+    expect(r.profit).toBe(700_000)
+  })
   it('pays a branch alone', () => {
     const r = shops(false, true).comeBack(TWO_HOURS)
     expect(r.places).toEqual(['beach'])

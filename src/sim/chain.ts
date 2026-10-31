@@ -352,7 +352,7 @@ export class Chain {
    * The tip stays the main shop's, and is held back (to be shown another time) when a branch paid.
    */
   comeBack(ms: number): AwayResult {
-    const rs = [this.main, ...this.branches].map(s => s.comeBack(ms))
+    const rs = [this.main, ...this.branches, ...(this.restaurant ? [this.restaurant] : [])].map(s => s.comeBack(ms))
     const main = rs[0]
     const paying = rs.filter(r => r.paid > 0)
     const paid = paying.reduce((a, r) => a + r.paid, 0)

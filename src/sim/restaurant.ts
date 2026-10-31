@@ -1,9 +1,10 @@
-import { ARRIVE_MS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
 import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { placementProblem, sellRefund, type BuildProblem } from './build'
 import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
 import { drawKind, KINDS, type CustomerKind } from './customers'
 import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './dining'
+import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { housesBought, NO_HOUSES, type Houses } from './layout'
@@ -72,6 +73,9 @@ export interface RestaurantStats {
   chefCooked: number
 }
 
+/** The day's profit: what the diners paid with their tips, less the cooks' wages and the stock bought. */
+export const restaurantProfit = (s: RestaurantStats): number => s.income + s.tips - s.wages - s.restock
+
 const emptyStats = (): RestaurantStats => ({ served: 0, income: 0, tips: 0, walkedAway: 0, wages: 0, restock: 0, ownerCooked: 0, chefCooked: 0 })
 
 /** The mean wait between walk-ins at `minutes` of the day: shorter in the lunch and dinner peaks. */
@@ -113,6 +117,10 @@ export class RestaurantSim {
   candidatesDay = 0
   /** The day's wages are paid; a cook let go now just leaves. */
   dayClosed = false
+  /** The dishes the owner has cooked at least once; the first cook of each comes with a lesson. */
+  learned: DishId[] = []
+  /** What the restaurant needs to pay itself while the owner is away. */
+  away: AwayBook = emptyAwayBook()
 
   constructor({ host, rng, autoSpawn }: { host: RestaurantHost; rng: Rng; autoSpawn: boolean }) {
     this.host = host
@@ -351,7 +359,15 @@ export class RestaurantSim {
     for (const c of this.chefs) if (!c.leaving) this.stats.wages += c.wage
     this.host.purse.money -= this.stats.wages
     this.chefs = this.chefs.filter(c => !c.leaving)
+    closeAwayDay(this.away, restaurantProfit(this.stats), this.stats.ownerCooked, this.stats.chefCooked)
     this.dayClosed = true
+  }
+
+  /** The owner is back after `ms` away: the cooks' pay goes into the purse, and nothing else moves. */
+  comeBack(ms: number): AwayResult {
+    const paid = awayPay(this.away, ms)
+    this.host.purse.money += paid
+    return { paid, places: paid > 0 ? ['restaurant'] : [], ms, profit: awayMean(this.away), days: this.away.profits.length, capped: ms > AWAY_MAX_HOURS * 3_600_000, tip: false }
   }
 
   /** A paying spa customer may walk over to eat: true when a diner is now on the street. */
@@ -364,6 +380,11 @@ export class RestaurantSim {
     if (this.rng() >= WALK_OVER_CHANCE) return false
     this.addDiner({ ...c.look }, c.kind, seat, true)
     return true
+  }
+
+  /** The dish has never been cooked by the owner. */
+  needsLesson(dish: DishId): boolean {
+    return !this.learned.includes(dish)
   }
 
   /** Anyone is in the restaurant, or a Phở game is open. */
@@ -477,6 +498,7 @@ export class RestaurantSim {
     for (const s of this.stoves) if (s.dinerId === dinerId) s.dinerId = null
     diner.stars = stars
     this.stats.ownerCooked++
+    if (!this.learned.includes(diner.dish)) this.learned.push(diner.dish)
     this.owner.task = { kind: 'carry', dinerId }
     this.owner.path = this.walkTo(this.owner, besideSeat(this.grid, diner.chair)) ?? []
   }

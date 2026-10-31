@@ -8,10 +8,10 @@ export interface AwayBook {
   tipSeen: boolean
 }
 
-/** What coming back brings: `places` the shops that paid (the main shop is null), `profit` the mean used, `days` how many days it is over, `tip` whether to show the tip card. */
+/** What coming back brings: `places` the shops that paid (the main shop is null, the restaurant is 'restaurant'), `profit` the mean used, `days` how many days it is over, `tip` whether to show the tip card. */
 export interface AwayResult {
   paid: number
-  places: (PlaceId | null)[]
+  places: (PlaceId | null | 'restaurant')[]
   ms: number
   profit: number
   days: number

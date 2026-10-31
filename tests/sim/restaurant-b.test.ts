@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { DINER_TIP, DISH_PRICE, FIRST_ARRIVAL_MS, LOW_STOCK, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, STOCK_START } from '../../src/config'
+import { AWAY_DAY_SHARE, DINER_TIP, DISH_PRICE, FIRST_ARRIVAL_MS, LOW_STOCK, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, STOCK_START } from '../../src/config'
 import { Chain } from '../../src/sim/chain'
 import { chefWage, type Chef, type ChefStats } from '../../src/sim/chefs'
 import { tileEq, tileOf } from '../../src/sim/grid'
@@ -408,5 +408,52 @@ describe('the restaurant cooks', () => {
     chain.startDay()
     expect(r.dayClosed).toBe(false)
     expect(tileEq(tileOf(c!.pos), r.chefHome(c!))).toBe(true)
+  })
+})
+
+describe('lessons and the away money of the restaurant', () => {
+  it('marks a dish learned after its first cook, once', () => {
+    const { r } = setup()
+    r.ownerArrives()
+    expect(r.learned).toEqual([])
+    expect(r.needsLesson('che')).toBe(true)
+    serveOne(r, seat(r, 'che'))
+    expect(r.needsLesson('che')).toBe(false)
+    expect(r.needsLesson('pho')).toBe(true)
+    serveOne(r, seat(r, 'che'))
+    expect(r.learned).toEqual(['che'])
+  })
+  it('pays the restaurant for time away after a cooks-only day', () => {
+    const { main, r } = setup()
+    r.stats.income = 200_000
+    r.stats.chefCooked = 3
+    r.closeDay()
+    const money = main.money
+    const back = r.comeBack(2 * 3_600_000)
+    const pay = Math.round((2 * AWAY_DAY_SHARE * 200_000) / 1000) * 1000
+    expect(pay).toBeGreaterThan(0)
+    expect(main.money).toBe(money + pay)
+    expect(back).toEqual({ paid: pay, places: ['restaurant'], ms: 2 * 3_600_000, profit: 200_000, days: 1, capped: false, tip: false })
+  })
+  it('pays nothing after a day the owner cooked', () => {
+    const { main, r } = setup()
+    r.stats.income = 200_000
+    r.stats.chefCooked = 3
+    r.stats.ownerCooked = 1
+    r.closeDay()
+    const money = main.money
+    const back = r.comeBack(2 * 3_600_000)
+    expect(back.paid).toBe(0)
+    expect(back.places).toEqual([])
+    expect(main.money).toBe(money)
+  })
+  it('takes the wages and stock of the day off the profit', () => {
+    const { r } = setup()
+    r.stats.income = 100_000
+    r.stats.tips = 20_000
+    r.stats.restock = 40_000
+    r.stats.chefCooked = 1
+    r.closeDay()
+    expect(r.away.profits).toEqual([80_000])
   })
 })
