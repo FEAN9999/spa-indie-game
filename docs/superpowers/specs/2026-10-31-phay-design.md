@@ -1,7 +1,7 @@
 # Phây: mạng xã hội trong game
 
 - Ngày: 2026-10-31
-- Trạng thái: chồng yêu đã duyệt bản phác và 11 điểm ("Anh duyệt cả 11 điểm", 2026-10-31), kèm một thay đổi: giá đẩy bài ×1,5. Tài liệu này chờ chồng yêu duyệt.
+- Trạng thái: chồng yêu đã duyệt bản phác và 11 điểm ("Anh duyệt cả 11 điểm", 2026-10-31), kèm một thay đổi: giá đẩy bài ×1,5. Đã qua một lượt người làm đọc thử; ba câu hỏi của họ em tự quyết (ngôi sao 1★, lý do cúp điện, đẩy bài hai ngày liền). Tài liệu này chờ chồng yêu duyệt.
 - Bản phác: https://claude.ai/artifact/HxdS1nWs8UbKJL2vKYFitu
 - Lý do: chồng yêu thấy "game càng về cuối càng hết thứ để làm, tiền dư không biết làm gì". Trong 24 ý em đưa ra, chồng yêu chọn làm trước mạng xã hội trong game, loại "có việc để chơi", theo cách A.
 
@@ -83,8 +83,8 @@ Bài được tạo trong sim của tiệm chính, ngay lúc chuyện xảy ra:
 |---|---|---|
 | Khách khen | Điểm 5, tối đa 3 bài một ngày | Bài đầu tiên của ngày luôn đăng; sau đó mỗi điểm 5 có 1/3 cơ hội đăng, tới khi đủ 3 **(em đề xuất)** |
 | Khách chê | Điểm 1–2, tối đa 3 bài một ngày | Mỗi lần chấm 1–2 đều đăng cho tới khi đủ 3; quá 3 thì không đăng và không trả lời được |
-| Ngôi sao | Mỗi lần ngôi sao được phục vụ xong | Ảnh chụp chung, thích rất nhiều |
-| VIP | Mỗi lần VIP được phục vụ xong | |
+| Ngôi sao | Mỗi lần ngôi sao được phục vụ xong với 2★ hoặc 3★ | Ảnh chụp chung, thích rất nhiều. Phục vụ 1★ thì không có bài khoe mà có bài chê của quản lý (4.6) **(em đề xuất)** |
+| VIP | Mỗi lần VIP được phục vụ xong với 2★ hoặc 3★ | Phục vụ 1★ thì VIP tự đăng bài chê bằng tên mình, vì VIP là nhân vật bịa **(em đề xuất)** |
 | Mi Mi | Khi Mi Mi đăng video (`kolPosted`) | Có ảnh video |
 | SPA MỚI | Sáng ngày thách đấu, và khi tiệm mình thắng (`rivalBeaten`) | Có bình luận khách quen bênh tiệm mình |
 | Tiệm mình | Lên sao hạng, Spa của năm (hạng 1–3), giấy khen thanh tra, mở chi nhánh, mua nhà (cả ở chi nhánh), mở tầng, nhận thú cưng, ngày đầu mùa lễ | |
@@ -115,9 +115,10 @@ Bài được tạo trong sim của tiệm chính, ngay lúc chuyện xảy ra:
 - **Mốc:** 1.000, 10.000, 100.000 (tích xanh cạnh tên tiệm), 1.000.000 (viền vàng quanh ảnh tiệm). Mỗi mốc có một thẻ chúc mừng, mỗi mốc một lần. Bản lưu cũ được tính sẵn thì không hiện thẻ cho những mốc đã có sẵn.
 - Người theo dõi **không đổi số khách, tiền hay sao**. **(chồng yêu chọn, cách A)**
 
-### 4.6 Ngôi sao và VIP giận bỏ về **(em đề xuất)**
+### 4.6 Ngôi sao và VIP không vui **(em đề xuất)**
 
-- Họ để lại 3 điểm 1, nên vẫn có bài chê. Nhưng bài do **"Quản lý của [tên]"** đăng, với lời lịch sự, không đặt lời chê vào miệng người thật.
+- Ngôi sao giận bỏ về (3 điểm 1) hay được phục vụ 1★ (3 điểm 2) thì vẫn có bài chê. Nhưng bài do **"Quản lý của [tên]"** đăng, với lời lịch sự, không đặt lời chê vào miệng người thật. Lần ghé đó không có bài khoe ảnh.
+- VIP là nhân vật bịa, nên VIP tự đăng bài chê bằng tên mình.
 - Trả lời đúng thì sửa cả 3 điểm.
 
 ### 4.7 Lưu bài
@@ -139,7 +140,7 @@ Bài được tạo trong sim của tiệm chính, ngay lúc chuyện xảy ra:
 |---|---|---|
 | `wait` | Bỏ về vì chờ lâu (không phải hai lý do dưới) | Xin lỗi, lần sau nhắn trước tiệm giữ giường |
 | `stock` | Bỏ về khi dịch vụ đang thiếu hàng | Xin lỗi, tiệm đã nhập thêm hàng |
-| `power` | Bỏ về khi máy nghỉ vì cúp điện | Xin lỗi, hôm đó cúp điện, lần sau mời làm bù |
+| `power` | Bỏ về vào ngày cúp điện, khi khách chờ một dịch vụ dùng máy **(em đề xuất: trong lúc cúp, khách không mất kiên nhẫn nên không bỏ về; khách bỏ về sau đó vì hàng dồn lại, nên tính theo ngày và loại dịch vụ, không cần thêm cờ cho khách)** | Xin lỗi, hôm đó cúp điện, lần sau mời làm bù |
 | `sloppy` | Thợ làm vội, khách chấm 2 | Tiệm sẽ nhắc thợ làm kỹ, lần sau chủ tiệm tự làm |
 | `tech` | Thợ làm 1★ (không vội), khách chấm 2 | Tiệm sẽ cho thợ học thêm |
 | `owner` | Chủ tiệm làm 1★, khách chấm 2 | Chủ tiệm xin lỗi, lần sau làm kỹ hơn |
@@ -183,7 +184,7 @@ Bài được tạo trong sim của tiệm chính, ngay lúc chuyện xảy ra:
   - `posts`: tối đa 50 bài. Mỗi bài: `id`, `day`, `minute`, `kind`, `name`, `look` (cho ảnh đại diện, nếu có), `tick`, `stars` (nếu có), `text`, `pic` (nếu có), `likes`, `comments: [tên, câu][]`, `extra` (số bình luận không hiện), và:
     - bài chê: `complaint: { reason, customerId, replies (thứ tự 3 câu), answered: null | 'right' | 'plain' | 'rude' }`;
     - bài đẩy được: `boostable`, `boosted: null | tier`.
-  - `nextId`, `lastSeen`, `followers`, `milestones` (các mốc đã chúc mừng), `postedToday: { day, good, bad }`, `boost: null | { day, tier }` (ngày có hiệu lực).
+  - `nextId`, `lastSeen`, `followers`, `milestones` (các mốc đã chúc mừng), `postedToday: { day, good, bad }`, `boosts: { day, tier }[]` (ngày có hiệu lực, tối đa 2: hôm nay và mai). Một danh sách chứ không phải một ô, để đẩy bài hai ngày liền không xóa mất lượt đang chạy **(em đề xuất)**.
 - `reviewIds: number[]` song song với `reviews`, cùng độ dài. Bản cũ hơn: điền 0 (không khớp khách nào).
 - Bản lưu trước phiên bản này: `feed` rỗng với người theo dõi tính sẵn theo 4.5 (chỉ khi đã qua ngày mở Phây; chưa tới thì để 0 và tính 50 khi mở), các mốc đã vượt thì ghi là đã chúc mừng.
 - Chi nhánh: `feed` luôn rỗng và cố định, `reviewIds` vẫn có (mỗi tiệm có sổ điểm riêng).
@@ -217,7 +218,8 @@ Mã nguồn mở đã xem: Tracery (galaxykate/tracery) cho cách ghép mẫu c�
 - **Test sim:**
   - từng loại bài được tạo đúng lúc, kể cả khi chủ ở chi nhánh; không có bài trước ngày mở;
   - giới hạn 3 khen, 3 chê mỗi ngày; giới hạn 50 bài;
-  - lý do chê đúng cho cả 6 trường hợp; ngôi sao và VIP giận thì bài do quản lý đăng;
+  - lý do chê đúng cho cả 6 trường hợp; ngôi sao giận bỏ về hay được 1★ thì bài chê do quản lý đăng và không có bài khoe; VIP chê bằng tên mình;
+  - đẩy bài hai ngày liền: lượt đang chạy vẫn chạy hết ngày;
   - `reviewIds` luôn cùng độ dài với `reviews`, sau cả lưu và mở lại;
   - trả lời: đúng → 4, chung → 3, cãi → không đổi; cả 3 điểm của VIP; điểm đã trôi khỏi sổ; mỗi bài một lần;
   - đẩy bài: giá theo `awayMean` và giá tối thiểu, lãi âm, thiếu tiền, một lần một ngày, chỉ hôm sau, chỉ tiệm chính, ghép với lễ, ngày bận trong `recordDay`, boa;
