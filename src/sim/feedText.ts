@@ -1,7 +1,7 @@
 import { IDOL_TEXT } from '../strings/idols'
 import {
-  COMMENT_LINES, COMPLAINT_OPENERS, COMPLAINT_PIECES, IDOL_CLOSERS, IDOL_OPENERS, IDOL_PIECES, KOL_CLOSERS, KOL_OPENERS, KOL_PIECES,
-  MANAGER_OPENERS, MANAGER_PIECES, PRAISE_CLOSERS, PRAISE_OPENERS, PRAISE_PIECES, REASON_LINE, RIVAL_OPENERS, RIVAL_PIECES, SHOP_OPENERS,
+  ANSWER_PLAIN, ANSWER_PLAIN_MANAGER, ANSWER_RIGHT, ANSWER_RIGHT_MANAGER, COMMENT_LINES, COMPLAINT_OPENERS, COMPLAINT_PIECES, DRAMA_LINES, IDOL_CLOSERS, IDOL_OPENERS, IDOL_PIECES, KOL_CLOSERS, KOL_OPENERS, KOL_PIECES,
+  MANAGER_OPENERS, MANAGER_PIECES, PRAISE_CLOSERS, PRAISE_OPENERS, PRAISE_PIECES, REASON_LINE, REPLY_PLAIN, REPLY_RIGHT, REPLY_RUDE, RIVAL_OPENERS, RIVAL_PIECES, SHOP_OPENERS,
   SHOP_PIECES, STRANGER_NAMES, VIP_CLOSERS, VIP_OPENERS, VIP_PIECES, WARD_OPENERS, WARD_PIECES,
 } from '../strings/phay'
 import { BREED_NAME, t } from '../strings/vi'
@@ -9,7 +9,7 @@ import type { StringKey } from '../strings/vi'
 import { VIP_TEXT } from '../strings/vips'
 import { CUSTOMER_KINDS } from './customers'
 import type { CustomerKind } from './customers'
-import type { ComplaintReason, PostKind } from './feed'
+import type { ComplaintReason, PostKind, ReplyKind } from './feed'
 import { FESTIVALS } from './festivals'
 import type { FestivalId } from './festivals'
 import type { IdolId } from './idols'
@@ -100,6 +100,24 @@ export function wardText(shopName: string, rng: Rng): string {
 
 export function strangerName(kind: CustomerKind, rng: Rng): string {
   return pick(STRANGER_NAMES[kind], rng)
+}
+
+/** The shop's line for a reply: the right one names the reason, the plain one an apology for nothing in particular, the rude one argues back. */
+export function replyText(reply: ReplyKind, reason: ComplaintReason, rng: Rng): string {
+  return pick(reply === 'right' ? REPLY_RIGHT[reason] : reply === 'plain' ? REPLY_PLAIN : REPLY_RUDE, rng)
+}
+
+/** The guest's (or, for a star's complaint, the manager's) answer to a right or a plain reply; a rude reply gets none here, only a stranger's drama. */
+export function answerText(reply: ReplyKind, manager: boolean, rng: Rng): string {
+  if (reply === 'rude') return ''
+  if (reply === 'right') return pick(manager ? ANSWER_RIGHT_MANAGER : ANSWER_RIGHT, rng)
+  return pick(manager ? ANSWER_PLAIN_MANAGER : ANSWER_PLAIN, rng)
+}
+
+/** A stranger's line under a rude reply, as [author, words]. */
+export function dramaComment(rng: Rng): [string, string] {
+  const author = strangerName(pick(CUSTOMER_KINDS, rng), rng)
+  return [author, pick(DRAMA_LINES, rng)]
 }
 
 /** 0–2 comments under a post, as [author, words]; a rival's post always gets 2 defending the shop. The authors are the regulars first, then strangers, never the same twice. */

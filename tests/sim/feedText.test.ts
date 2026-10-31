@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { CUSTOMER_KINDS } from '../../src/sim/customers'
-import { COMPLAINT_REASONS, POST_KINDS } from '../../src/sim/feed'
+import { COMPLAINT_REASONS, POST_KINDS, REPLY_KINDS } from '../../src/sim/feed'
 import { FESTIVAL_IDS } from '../../src/sim/festivals'
 import { IDOL_IDS } from '../../src/sim/idols'
 import { BREED_IDS } from '../../src/sim/pets'
@@ -9,11 +9,11 @@ import { createRng } from '../../src/sim/rng'
 import { SERVICE_IDS, SERVICES } from '../../src/sim/services'
 import { VIP_IDS } from '../../src/sim/vips'
 import {
-  commentsFor, complaintText, idolText, kolText, managerText, praiseText, REASON_LINE, rivalText, shopText, strangerName, vipText, wardText,
+  answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, REASON_LINE, replyText, rivalText, shopText, strangerName, vipText, wardText,
 } from '../../src/sim/feedText'
 import type { ShopNews } from '../../src/sim/feedText'
 import {
-  COMMENT_LINES, COMPLAINT_PIECES, IDOL_PIECES, KOL_PIECES, PRAISE_CLOSERS, PRAISE_PIECES, STRANGER_NAMES, WARD_OPENERS, PHAY_KOL_NAME, PHAY_WARD_NAME, VIP_PIECES, managerName,
+  COMMENT_LINES, COMPLAINT_PIECES, DRAMA_LINES, IDOL_PIECES, KOL_PIECES, PRAISE_CLOSERS, PRAISE_PIECES, STRANGER_NAMES, WARD_OPENERS, PHAY_KOL_NAME, PHAY_WARD_NAME, VIP_PIECES, managerName,
 } from '../../src/strings/phay'
 import { IDOL_TEXT } from '../../src/strings/idols'
 import { t } from '../../src/strings/vi'
@@ -194,5 +194,120 @@ describe('feed text', () => {
     expect(REASON_LINE.tech).toBe('Lý do: thợ làm chưa tới')
     expect(REASON_LINE.owner).toBe('Lý do: chủ tiệm làm chưa tới')
     expect([PHAY_KOL_NAME, PHAY_WARD_NAME]).toEqual(['Mi Mi Review', 'Phường 3'])
+  })
+})
+
+describe('replies', () => {
+  const lines = (seed: number): string[] => {
+    const rng = createRng(seed)
+    const out: string[] = []
+    for (const k of REPLY_KINDS) {
+      for (const r of COMPLAINT_REASONS) out.push(replyText(k, r, rng))
+      for (const m of [false, true]) out.push(answerText(k, m, rng))
+    }
+    out.push(...dramaComment(rng))
+    return out.filter(l => l !== '')
+  }
+
+  it('every reply, answer and drama line is 1–120 characters with no emoji or slot left', () => {
+    for (let seed = 1; seed <= 200; seed++) {
+      for (const s of lines(seed)) {
+        expect(s.length).toBeGreaterThan(0)
+        expect(s.length, s).toBeLessThanOrEqual(120)
+        expect(/\p{Extended_Pictographic}/u.test(s), s).toBe(false)
+        expect(/[{}]/.test(s), s).toBe(false)
+      }
+    }
+  })
+
+  it('each reason has its own right reply, shared with no other reason, in at least two wordings', () => {
+    const seen = new Map<string, string>()
+    for (const reason of COMPLAINT_REASONS) {
+      const words = new Set<string>()
+      for (let seed = 1; seed <= 200; seed++) words.add(replyText('right', reason, createRng(seed)))
+      expect(words.size, reason).toBeGreaterThanOrEqual(2)
+      for (const w of words) {
+        expect(seen.get(w), w).toBeUndefined()
+        seen.set(w, reason)
+      }
+    }
+  })
+
+  it('a right reply says the fix for its reason', () => {
+    const fix: Record<string, RegExp> = {
+      wait: /nhắn.*giữ.*giường/, stock: /nhập thêm hàng|hàng về đủ/, power: /cúp điện.*(làm bù|bù)/,
+      sloppy: /nhắc thợ.*chủ tiệm/, tech: /thợ học thêm/, owner: /^Chủ tiệm xin lỗi/,
+    }
+    for (const reason of COMPLAINT_REASONS) {
+      for (let seed = 1; seed <= 100; seed++) expect(replyText('right', reason, createRng(seed)), reason).toMatch(fix[reason])
+    }
+  })
+
+  it('the plain apology names no reason, whatever the complaint', () => {
+    const words = new Set<string>()
+    for (const reason of COMPLAINT_REASONS) {
+      for (let seed = 1; seed <= 100; seed++) {
+        const s = replyText('plain', reason, createRng(seed))
+        words.add(s)
+        expect(s, s).not.toMatch(/hàng|điện|thợ|giữ giường|chờ|làm vội|chủ tiệm/i)
+      }
+    }
+    expect(words.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('the rude reply argues back in at least three wordings, and the same for every reason', () => {
+    const words = new Set<string>()
+    for (let seed = 1; seed <= 200; seed++) {
+      const rng = createRng(seed)
+      const s = replyText('rude', COMPLAINT_REASONS[seed % COMPLAINT_REASONS.length], rng)
+      words.add(s)
+      expect(s, s).not.toMatch(/ngu|đồ |im đi|đụ|mày/i)
+    }
+    expect(words.size).toBeGreaterThanOrEqual(3)
+  })
+
+  it('a guest thanks a right reply and is lukewarm to a plain one, in three wordings each', () => {
+    for (const reply of ['right', 'plain'] as const) {
+      for (const manager of [false, true]) {
+        const words = new Set<string>()
+        for (let seed = 1; seed <= 200; seed++) words.add(answerText(reply, manager, createRng(seed)))
+        expect(words.size, `${reply} ${manager}`).toBeGreaterThanOrEqual(3)
+      }
+    }
+    const right = new Set<string>(), plain = new Set<string>()
+    for (let seed = 1; seed <= 200; seed++) {
+      right.add(answerText('right', false, createRng(seed)))
+      plain.add(answerText('plain', false, createRng(seed)))
+    }
+    for (const w of right) expect(plain.has(w), w).toBe(false)
+  })
+
+  it("a manager's answer never speaks as the star or says the star's name", () => {
+    for (const reply of ['right', 'plain'] as const) {
+      for (let seed = 1; seed <= 200; seed++) {
+        const s = answerText(reply, true, createRng(seed))
+        for (const id of IDOL_IDS) expect(s, s).not.toContain(IDOL_TEXT[id].name)
+        expect(s, s).not.toMatch(/(^|[\s,.])(anh|chị|em) (sẽ|đã|rất)/i)
+      }
+    }
+  })
+
+  it('a rude reply has no answer; a drama comment is a stranger saying one of the drama lines', () => {
+    expect(answerText('rude', false, createRng(1))).toBe('')
+    expect(DRAMA_LINES.length).toBeGreaterThanOrEqual(4)
+    expect(DRAMA_LINES).toContain('Thái độ gì vậy tiệm?')
+    const names = new Set(Object.values(STRANGER_NAMES).flat())
+    const seen = new Set<string>()
+    for (let seed = 1; seed <= 200; seed++) {
+      const [author, words] = dramaComment(createRng(seed))
+      expect(names.has(author), author).toBe(true)
+      expect(DRAMA_LINES).toContain(words)
+      seen.add(words)
+    }
+    expect(seen.size).toBeGreaterThanOrEqual(4)
+  })
+
+  it('same rng, same words', () => {
+    expect(lines(7)).toEqual(lines(7))
   })
 })

@@ -293,3 +293,78 @@ export const COMMENT_LINES: Record<PostKind, readonly string[]> = {
     'Hay lắm, giữ vững nha tiệm.',
   ],
 }
+
+/**
+ * The shop's three replies to a complaint, and what comes after. A right reply names the real reason and promises its fix, and no two reasons share a line; the plain apology names no reason; the rude one argues back without an insult.
+ * Replies and answers are whole sentences with no slots; a manager answers politely for the star and never speaks in the star's name.
+ */
+export const REPLY_RIGHT: Record<ComplaintReason, readonly string[]> = {
+  wait: [
+    'Tiệm xin lỗi bạn đã chờ lâu. Lần sau bạn nhắn trước, tiệm giữ giường cho nha.',
+    'Xin lỗi vì để bạn chờ. Lần sau nhắn tiệm một tiếng, tiệm giữ sẵn giường cho bạn.',
+  ],
+  stock: [
+    'Xin lỗi bạn, tiệm đã nhập thêm hàng rồi. Mời bạn ghé lại nha.',
+    'Tiệm xin lỗi vì hôm đó thiếu hàng. Giờ hàng về đủ, mời bạn ghé lại.',
+  ],
+  power: [
+    'Xin lỗi bạn, hôm đó cúp điện. Lần sau bạn ghé, tiệm mời làm bù nha.',
+    'Tiệm xin lỗi, hôm đó cúp điện nên không phục vụ được. Mời bạn ghé làm bù.',
+  ],
+  sloppy: [
+    'Tiệm xin lỗi bạn. Tiệm sẽ nhắc thợ làm kỹ, lần sau chủ tiệm tự làm cho bạn.',
+    'Xin lỗi vì hôm đó làm vội. Tiệm sẽ nhắc thợ, lần sau chủ tiệm trực tiếp làm.',
+  ],
+  tech: [
+    'Tiệm xin lỗi bạn. Tiệm sẽ cho thợ học thêm để làm tới nơi tới chốn.',
+    'Xin lỗi bạn, tay nghề hôm đó chưa tới. Tiệm sẽ cho thợ học thêm nha.',
+  ],
+  owner: [
+    'Chủ tiệm xin lỗi bạn. Lần sau chủ tiệm sẽ làm kỹ hơn.',
+    'Chủ tiệm xin lỗi vì hôm đó làm chưa tới. Lần sau mời bạn ghé, chủ tiệm làm kỹ hơn.',
+  ],
+}
+
+export const REPLY_PLAIN: readonly string[] = [
+  'Tiệm xin lỗi bạn vì trải nghiệm chưa tốt. Tiệm sẽ cố gắng hơn.',
+  'Cảm ơn bạn đã góp ý, tiệm xin lỗi và sẽ rút kinh nghiệm.',
+  'Tiệm ghi nhận và xin lỗi bạn. Mong bạn cho tiệm cơ hội lần sau.',
+]
+
+export const REPLY_RUDE: readonly string[] = [
+  'Tiệm đông thì chờ chút có sao đâu.',
+  'Tiệm làm vậy là bình thường, bạn khó tính quá.',
+  'Mỗi người một ý, tiệm vẫn làm như vậy thôi.',
+  'Không ai chê như bạn đâu, bạn xem lại đi.',
+]
+
+/** The guest's answer under a right or a plain reply; a manager's own when the complaint was a star's. */
+export const ANSWER_RIGHT: readonly string[] = [
+  'Cảm ơn tiệm đã trả lời. Mình sẽ ghé lại nha.',
+  'Tiệm nói vậy mình yên tâm rồi, hôm nào mình quay lại.',
+  'Cảm ơn tiệm, mình sẽ cho tiệm thêm một cơ hội.',
+]
+export const ANSWER_RIGHT_MANAGER: readonly string[] = [
+  'Cảm ơn tiệm đã phản hồi. Bên mình ghi nhận và sẽ sắp xếp lịch để ghé lại.',
+  'Cảm ơn tiệm đã xin lỗi. Bên mình rất trân trọng sự quan tâm này.',
+  'Bên mình cảm ơn tiệm đã giải thích. Hy vọng sớm có dịp ghé lại.',
+]
+export const ANSWER_PLAIN: readonly string[] = [
+  'Ừ, để xem lần sau.',
+  'Thôi được, mình biết rồi.',
+  'Ok tiệm, để mình xem sao.',
+]
+export const ANSWER_PLAIN_MANAGER: readonly string[] = [
+  'Bên mình đã nhận phản hồi của tiệm, cảm ơn.',
+  'Cảm ơn tiệm. Bên mình sẽ xem xét thêm.',
+  'Bên mình ghi nhận, cảm ơn tiệm đã trả lời.',
+]
+
+/** A stranger's line under a rude reply. */
+export const DRAMA_LINES: readonly string[] = [
+  'Thái độ gì vậy tiệm?',
+  'Trả lời vậy mà nghe được à?',
+  'Khách góp ý mà tiệm nói vậy hả?',
+  'Tiệm này lạ thật, mình xem lại.',
+  'Đọc xong mà ngán, thôi mình không ghé nữa.',
+]

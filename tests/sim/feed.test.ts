@@ -127,6 +127,18 @@ describe('repairFeed', () => {
     expect(repairFeed(undefined, o)).toEqual(seededFeed(o))
   })
 
+  it('keeps a post but drops its complaint unless the replies are exactly the three kinds', () => {
+    const good = { reason: 'wait', customerId: 1, replies: ['rude', 'right', 'plain'], answered: null, manager: false }
+    const bads = [['right', 'right', 'plain'], ['right', 'plain'], ['right', 'plain', 'rude', 'rude'], ['right', 'plain', 'x'], [], 'right']
+    for (const replies of bads) {
+      const f = repairFeed({ open: true, followers: 80, posts: [post(1, { text: 'Chê nè', complaint: { ...good, replies } })] }, old)
+      expect(f.posts[0].complaint, JSON.stringify(replies)).toBeNull()
+      expect(f.posts[0].text).toBe('Chê nè')
+    }
+    const f = repairFeed({ open: true, followers: 80, posts: [post(1, { complaint: good })] }, old)
+    expect(f.posts[0].complaint).toEqual(good)
+  })
+
   it('drops posts that are not objects or have no text', () => {
     const f = repairFeed({ open: true, followers: 80, posts: [post(1), 'x', null, post(2, { text: 7 }), post(3)] }, old)
     expect(f.posts.map(p => p.id)).toEqual([1, 3])

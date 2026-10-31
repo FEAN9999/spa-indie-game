@@ -164,10 +164,13 @@ const isNonNegNumber = (x: unknown): x is number => typeof x === 'number' && Num
 
 function repairComplaint(x: unknown): Complaint | null {
   if (!isObject(x) || !isOneOf(COMPLAINT_REASONS, x.reason) || !Number.isInteger(x.customerId)) return null
+  const replies = Array.isArray(x.replies) ? x.replies : []
+  // exactly the three kinds, each once, or the post keeps its text and offers no reply
+  if (replies.length !== REPLY_KINDS.length || !REPLY_KINDS.every(k => replies.includes(k))) return null
   return {
     reason: x.reason,
     customerId: x.customerId as number,
-    replies: (Array.isArray(x.replies) ? x.replies : []).filter((r): r is ReplyKind => isOneOf(REPLY_KINDS, r)),
+    replies: replies as ReplyKind[],
     answered: isOneOf(REPLY_KINDS, x.answered) ? x.answered : null,
     manager: x.manager === true,
   }
