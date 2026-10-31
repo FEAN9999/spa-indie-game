@@ -508,7 +508,7 @@ export class SpaScene extends Phaser.Scene {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused) return
     if (sim.clock.isClosed) {
-      if (sim.servingCustomerId === null && sim.owner.task?.kind !== 'serve') this.choose(closingCard(place, sim.hasTechnician()), () => this.switchShop(null))
+      if (!this.playing() && sim.owner.task?.kind !== 'serve') this.choose(closingCard(place, sim.hasTechnician()), () => this.switchShop(null))
       return
     }
     if (!this.shopFree()) return
@@ -569,10 +569,10 @@ export class SpaScene extends Phaser.Scene {
 
   /** Coming back to the game moves it to a newer version, unless a service or a lesson is in progress or the shop has no owner yet. */
   private async checkForUpdate(): Promise<void> {
-    if (BUILD_ID === 'dev' || !this.sim.profileDone || this.sim.servingCustomerId !== null || this.scene.isActive('LessonScene')) return
+    if (BUILD_ID === 'dev' || !this.sim.profileDone || this.playing() || this.scene.isActive('LessonScene')) return
     this.holding = true
     const latest = await latestVersion(UPDATE_WAIT_MS)
-    if (shouldReload(BUILD_ID, latest, this.sim.servingCustomerId !== null, this.scene.isActive('LessonScene'))) this.session.reloadForUpdate()
+    if (shouldReload(BUILD_ID, latest, this.playing(), this.scene.isActive('LessonScene'))) this.session.reloadForUpdate()
     else this.holding = false
   }
 
@@ -854,7 +854,7 @@ export class SpaScene extends Phaser.Scene {
    */
   private pumpBadges(): void {
     const sim = this.sim
-    if (sim.dayOver || sim.paused || sim.servingCustomerId !== null) return
+    if (sim.dayOver || sim.paused || this.playing()) return
     if (this.foundToast) {
       // after this morning's month, VIP and stairs toasts, which are spaced the same way
       const text = this.foundToast
@@ -954,7 +954,7 @@ export class SpaScene extends Phaser.Scene {
   private shopFree(): boolean {
     const { sim, time } = this
     return (
-      !this.modal && !this.holding && !sim.paused && !sim.dayOver && sim.servingCustomerId === null && this.inspectNote === null && this.badgeQueue.length === 0 && time.now >= this.badgeUntil && time.now >= this.hud.lastBannerAt + BANNER_MS
+      !this.modal && !this.holding && !sim.paused && !sim.dayOver && !this.playing() && this.inspectNote === null && this.badgeQueue.length === 0 && time.now >= this.badgeUntil && time.now >= this.hud.lastBannerAt + BANNER_MS
     )
   }
 
@@ -1283,7 +1283,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     // over a panel too, so it does not wait for the panel to close; not over a lesson game, which has no serving customer
     if (this.heldAway.length > 0 && !this.playing() && !this.scene.isActive('LessonScene') && !this.scene.isActive('ScrubScene') && !this.scene.isActive('FootScene') && !this.scene.isActive('NailsScene') && !this.holding && !this.awayOpen && !this.switching) this.showAway(this.heldAway.shift()!)
     if (!this.modal) {
-      if (this.heldWearToast && !this.sim.paused && this.sim.servingCustomerId === null) {
+      if (this.heldWearToast && !this.sim.paused && !this.playing()) {
         this.queueToast(this.heldWearToast)
         this.heldWearToast = null
       }
@@ -1296,9 +1296,9 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (low.length > 0) this.queueToast(stockLowText(low))
       // the restaurant is the main shop's street's; at a branch nothing of it is drawn
       for (const e of this.chain.drainRestaurantEvents()) if (this.restaurant) this.handleRestaurant(e)
-      if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showStairsNote()
+      if (this.stairsNote && !this.sim.paused && !this.sim.dayOver && !this.playing()) this.showStairsNote()
       // a card opened by this frame's events (a bed slot's) goes first; a badge card waits for whichever card is up, rather than play under it
-      if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && this.sim.servingCustomerId === null) this.showInspection()
+      if (this.inspectNote && !this.modal && !this.holding && !this.sim.paused && !this.sim.dayOver && !this.playing()) this.showInspection()
       if (!this.modal) this.pumpBadges()
       if (!this.modal && this.shopFree()) this.showNewOutfits()
       if (!this.modal && this.shopFree() && this.sim.litterDue() && this.litterLaterDay !== this.sim.day) this.showLitter()
@@ -1345,8 +1345,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (s) this.syncCustomer(c, s, time, dt, badges)
     }
     // staff also hold still while the owner plays, as the sim does
-    this.staffLayer.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
-    this.pets.update(this.sim, this.sim.servingCustomerId !== null ? 0 : dt)
+    this.staffLayer.update(this.sim, this.playing() ? 0 : dt)
+    this.pets.update(this.sim, this.playing() ? 0 : dt)
     this.moveBubbles()
     this.humStars(dt)
     // festivals are the main shop's
@@ -1875,7 +1875,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     for (const c of sim.customers) {
       if (c.idol === null || (c.state !== 'toSeat' && c.state !== 'waiting')) continue
       live.add(c.id)
-      if (sim.paused || sim.servingCustomerId !== null) continue
+      if (sim.paused || this.playing()) continue
       const ms = (this.humMs.get(c.id) ?? 0) + dt
       if (humNow(c, ms, this.bubbles.has(c.id) || this.queuedLines.has(c.id))) {
         this.say(c.id, humText(c.idol), HUM_MS)
@@ -2000,7 +2000,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     if (over.length > 0) {
       // a pet takes the tap: a pat, and the owner stays put
       const pet = this.pets.petAt(over)
-      if (pet !== null && !this.modal && !this.sim.paused && this.sim.servingCustomerId === null) this.pets.pat(pet)
+      if (pet !== null && !this.modal && !this.sim.paused && !this.playing()) this.pets.pat(pet)
       return
     }
     // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on its floor
