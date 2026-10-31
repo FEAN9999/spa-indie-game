@@ -1253,6 +1253,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.room.setFestival(this.sim.place === null ? festivalOf(this.sim.day) : null)
     this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
+    this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.hud.update(this.modal)
     this.updateFloorBar()
     if (this.mapFree()) this.zoomButtons.show(1010, 1520, 1630)

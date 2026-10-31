@@ -13,10 +13,10 @@ describe('daylight', () => {
   })
   it('warms the late afternoon', () => {
     expect(at(17).color).toBe(0xf2a65a)
-    expect(at(17).alpha).toBeCloseTo(0.1)
+    expect(at(17).alpha).toBeCloseTo(0.14)
   })
   it('is full night from 19:30, through closing, with the lamps lit', () => {
-    for (const d of [at(19, 30), at(20), daylight(1300)]) expect(d).toEqual({ color: 0x1e2440, alpha: 0.5, lamps: 1 })
+    for (const d of [at(19, 30), at(20), daylight(1300)]) expect(d).toEqual({ color: 0x1e2440, alpha: 0.58, lamps: 1 })
   })
   it('lights the lamps between 18:30 and 19:00', () => {
     expect(at(18, 30).lamps).toBe(0)

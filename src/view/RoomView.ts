@@ -18,6 +18,7 @@ import { deskCandle, retagFloors } from './floors'
 import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerFloor, saleTextureKey } from './houses'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
+import { daylight } from './daylight'
 
 /** Lanterns, mats and bed slots lie on the room, under everything standing on it. */
 const PART_DEPTH = 1
@@ -56,6 +57,24 @@ const CANDLES = [
   { x: 13.5, y: 5.6 },
   { x: 23.2, y: 11.1 },
 ]
+/** The day's light lies over the room and everyone in it, under the power cut's dark; the lamps' glows and the shop's warm light over it. */
+const NIGHT_DEPTH = DARK_DEPTH - 3
+const LAMP_DEPTH = DARK_DEPTH - 2
+/** At night the lit shop's rows are lifted by this much warm light over the street's. */
+const WASH_ALPHA = 0.07
+/** Each texture's lamps, in its own tiles from its top-left (mirrored when it is flipped), with the glow's scale. */
+const LAMPS: Record<string, { x: number; y: number; s: number }[]> = {
+  lantern: [{ x: 0.5, y: 0.55, s: 0.6 }],
+  nailDesk: [{ x: 0.42, y: 1.42, s: 0.5 }],
+  'nailDesk-turned': [{ x: 1.84, y: 1.44, s: 0.5 }],
+  bambooLamp: [{ x: 0.5, y: 0.56, s: 0.7 }],
+  'decor-lanternString': [0.51, 1.31, 2.11].map(y => ({ x: 0.62, y, s: 0.4 })),
+}
+/** Floor 2's lantern on the back wall, in tiles. */
+const WALL_LANTERN = { x: SHOP_X0 + 6.5, y: 0.74, s: 0.7 }
+/** The door's light spilling onto floor 1's sidewalk: its row in tiles, and the glow's scale. */
+const DOOR_LIGHT = { y: FLOOR_ROWS + 0.4, s: 1.2 }
+
 /** How far over a machine's footprint its off mark sits, in tiles. */
 const OFF_MARK_LIFT = 0.3
 
@@ -97,6 +116,12 @@ export class RoomView {
   private readonly dark: Phaser.GameObjects.Rectangle
   private readonly candles: Phaser.GameObjects.Image[] = []
   private offMarks: Phaser.GameObjects.Image[] = []
+  /** The day's light over the map, the lit shop's warm light, and one glow per lamp shown, on the floor in view. */
+  private readonly night: Phaser.GameObjects.Rectangle
+  private readonly wash: Phaser.GameObjects.Rectangle
+  private readonly wallLantern: Phaser.GameObjects.Image
+  private readonly doorLight: Phaser.GameObjects.Image
+  private lampGlows: Phaser.GameObjects.Image[] = []
   /** The power cut's floor and machine tiles as last drawn, or 'off', so a frame without a change draws nothing. */
   private powerKey = ''
   /** The neighbour houses bought, whose floors are drawn over the room's edges. */
@@ -118,6 +143,10 @@ export class RoomView {
     this.plaqueStars = scene.add.graphics()
     this.plaque = this.plaqueBoard()
     this.dark = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
+    this.night = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, this.room.height, 0, 0).setOrigin(0, 0).setDepth(NIGHT_DEPTH).setVisible(false)
+    this.wash = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+    this.wallLantern = this.glow(MAP_X + WALL_LANTERN.x * TILE, MAP_Y + WALL_LANTERN.y * TILE, WALL_LANTERN.s)
+    this.doorLight = this.glow(0, MAP_Y + DOOR_LIGHT.y * TILE, DOOR_LIGHT.s)
     for (const c of CANDLES) {
       const at = { x: MAP_X + c.x * TILE, y: MAP_Y + c.y * TILE }
       this.candles.push(scene.add.image(at.x, at.y, 'fx-glow').setDepth(DARK_DEPTH + 1).setVisible(false))
@@ -139,6 +168,8 @@ export class RoomView {
     this.houses = bought
     const b = mapBounds(bought)
     this.dark.setPosition(b.x, b.y).setSize(b.w, this.room.height)
+    this.night.setPosition(b.x, b.y).setSize(b.w, this.room.height)
+    this.wash.setPosition(b.x, b.y).setSize(b.w, FLOOR_ROWS * TILE)
     const just = justBought && houseKey(justBought)
     for (const h of housesBetween(NO_HOUSES, bought)) {
       const key = houseKey(h)
@@ -230,6 +261,39 @@ export class RoomView {
     this.offMarks = on
       ? machineBeds.filter(t => this.onFloor(t.y)).map(t => this.scene.add.image(MAP_X + t.x * TILE, this.rowY(t.y - OFF_MARK_LIFT), 'power-off').setDepth(DARK_DEPTH + 3))
       : []
+  }
+
+  /**
+   * Lays the light of `minutes` over the map: a pale morning, a warm late afternoon, night from 19:30. From 18:30 the lamps on the floor
+   * in view glow, the shop's rows are lit warmer than the street and the door's light falls on the sidewalk; not in a power cut.
+   */
+  setDaylight(minutes: number, powerOut: boolean, door: Tile): void {
+    const d = daylight(minutes)
+    const lit = powerOut ? 0 : d.lamps
+    this.night.setFillStyle(d.color, d.alpha).setVisible(d.alpha > 0)
+    this.wash.setAlpha(WASH_ALPHA * lit).setVisible(lit > 0)
+    this.wallLantern.setAlpha(lit).setVisible(lit > 0 && this.floor === 2)
+    this.doorLight.setX(MAP_X + (door.x + 0.5) * TILE).setAlpha(lit).setVisible(lit > 0 && this.floor === 1)
+    for (const g of this.lampGlows) g.setAlpha(lit).setVisible(lit > 0)
+  }
+
+  /** A warm glow at (x, y) in world pixels, hidden until setDaylight lights it. */
+  private glow(x: number, y: number, scale: number): Phaser.GameObjects.Image {
+    return this.scene.add.image(x, y, 'fx-glow').setScale(scale).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+  }
+
+  /** One glow per lamp on every item and bed lantern shown; setDaylight lights them. */
+  private placeLamps(): void {
+    for (const g of this.lampGlows) g.destroy()
+    this.lampGlows = []
+    for (const s of this.items.values()) {
+      for (const img of [s.body, s.part]) {
+        const spots = img?.visible && LAMPS[img.texture.key]
+        if (!img || !spots) continue
+        const top = img.getTopLeft()
+        for (const p of spots) this.lampGlows.push(this.glow(top.x + (img.flipX ? img.width / TILE - p.x : p.x) * TILE, top.y + p.y * TILE, p.s))
+      }
+    }
   }
 
   /** The sign: a cream board with the new shop's name over its opening, and two balloons on strings. */
@@ -383,6 +447,7 @@ export class RoomView {
       s.body.setVisible(shown)
       s.part?.setVisible(shown && (!s.lantern || s.floor === 1) && !s.turned)
     }
+    this.placeLamps()
   }
 
   /** The item whose picture covers the point, the one drawn in front where several do; null when none does. */

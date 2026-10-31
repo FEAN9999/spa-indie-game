@@ -10,8 +10,8 @@ const KEYS: [number, number, number][] = [
   [480, 0x9fb8d8, 0.12],
   [540, 0x9fb8d8, 0],
   [960, 0xf2a65a, 0],
-  [1080, 0xf2a65a, 0.2],
-  [1170, 0x1e2440, 0.5],
+  [1080, 0xf2a65a, 0.28],
+  [1170, 0x1e2440, 0.58],
 ]
 /** The lamps light between 18:30 and 19:00. */
 const LAMPS = { from: 1110, to: 1140 }
