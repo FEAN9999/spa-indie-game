@@ -15,7 +15,7 @@ import { t } from '../strings/vi'
 import { mapBounds } from './camera'
 import { FESTIVAL_COLORS } from './festivals'
 import { deskCandle, retagFloors } from './floors'
-import { forSale, houseImageX, houseRect, housesBetween, innerFloor } from './houses'
+import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerFloor, saleTextureKey } from './houses'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 
@@ -143,7 +143,7 @@ export class RoomView {
     for (const h of housesBetween(NO_HOUSES, bought)) {
       const key = houseKey(h)
       if (this.houseImages.has(key)) continue
-      const image = this.scene.add.image(houseImageX(h), MAP_Y, `house-${key}-${this.floor}`).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
+      const image = this.scene.add.image(houseImageX(h), MAP_Y, houseTextureKey(this.place, h, this.floor)).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
       this.houseImages.set(key, image)
       if (key === just) this.purchase(h, image)
     }
@@ -161,7 +161,7 @@ export class RoomView {
   /** A house for sale's roof over its six columns, and its sign: BÁN NHÀ, CHÍNH CHỦ and the price. */
   private saleParts(h: House): SalePart[] {
     const r = houseRect(h)
-    const roof = this.scene.add.image(r.x, r.y, `sale-${houseKey(h)}`).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
+    const roof = this.scene.add.image(r.x, r.y, saleTextureKey(this.place, h)).setOrigin(0, 0).setDepth(HOUSE_DEPTH).setFlipX(h.side === 'left')
     const { w, h: bh } = SALE_SIGN
     const g = this.scene.add.graphics().fillStyle(0xffffff, 1).fillRoundedRect(-w / 2, -bh / 2, w, bh, 16).lineStyle(6, hex(C.lantern)).strokeRoundedRect(-w / 2, -bh / 2, w, bh, 16)
     const big = this.scene.add.text(0, -42, t('saleSign1'), textStyle(46, '800', C.lantern)).setOrigin(0.5)
@@ -203,7 +203,7 @@ export class RoomView {
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
     this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
-    for (const [key, image] of this.houseImages) image.setTexture(`house-${key}-${floor}`)
+    for (const h of housesBetween(NO_HOUSES, this.houses)) this.houseImages.get(houseKey(h))?.setTexture(houseTextureKey(this.place, h, floor))
     // the rooftop has the coop where the stairs are, and no rope
     this.coop.setVisible(floor === 3)
     this.stairs.setVisible(maxFloors > 1 && floor < 3)

@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
+import { BRANCH_HOUSE_LOOK } from '../../src/art/branchHouses'
 import { HOUSE_LOOK } from '../../src/art/houses'
 import { MAP_X, TILE } from '../../src/config'
-import { forSale, houseImageX, houseRect, innerFloor, saleAt, stripLots } from '../../src/view/houses'
+import { forSale, houseImageX, houseRect, houseTextureKey, innerFloor, saleAt, saleTextureKey, stripLots } from '../../src/view/houses'
 
 // the house art loads through svg.ts, which imports Phaser
 vi.mock('phaser', () => ({}))
@@ -10,6 +11,19 @@ vi.mock('phaser', () => ({}))
 const colX = (col: number) => MAP_X + (col + 0.5) * TILE
 
 describe('the neighbour houses on the map', () => {
+  it("names each house's texture by its place", () => {
+    expect(houseTextureKey(null, { side: 'right', n: 1 }, 2)).toBe('house-right1-2')
+    expect(houseTextureKey('beach', { side: 'left', n: 2 }, 1)).toBe('house-beach-left2')
+    expect(saleTextureKey(null, { side: 'left', n: 1 })).toBe('sale-left1')
+    expect(saleTextureKey('uptown', { side: 'left', n: 1 })).toBe('sale-uptown')
+  })
+
+  it("colours a branch's lots in its own houses' colours", () => {
+    const lots = stripLots({ left: 0, right: 1 }, { left: 1, right: 2 }, 'oldTown')
+    expect(lots.map(l => l.fill)).toEqual([null, BRANCH_HOUSE_LOOK.oldTown.colors.right1, null])
+    expect(stripLots({ left: 0, right: 1 }, { left: 1, right: 2 }).map(l => l.fill)).toEqual([null, HOUSE_LOOK.right1.wall, null])
+  })
+
   it('places each house on its own six columns', () => {
     expect(houseRect({ side: 'right', n: 1 })).toEqual({ x: 1047, y: 210, w: 468, h: 1560 })
     expect(houseRect({ side: 'left', n: 2 }).x).toBe(-903)

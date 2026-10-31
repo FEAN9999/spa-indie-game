@@ -1,6 +1,8 @@
+import { BRANCH_HOUSE_LOOK } from '../art/branchHouses'
 import { HOUSE_LOOK, houseKey } from '../art/houses'
 import { HOUSE_COLS, MAP_X, SHOP_X0, TILE } from '../config'
 import type { House, Houses, Side } from '../sim/layout'
+import type { PlaceId } from '../sim/places'
 import { MAP_VIEW, type Rect } from './camera'
 
 /** One house on the position strip: its world x and width, and its wall colour once bought, or null while it is for sale. */
@@ -45,9 +47,19 @@ export const innerFloor = (h: Houses): { left: number; top: number; right: numbe
   bottom: 17,
 })
 
-/** Every house the strip shows: bought ones in their wall colour, the ones for sale empty. */
-export const stripLots = (bought: Houses, shown: Houses): StripLot[] =>
+/** A bought house's texture on `floor`: the main shop's (place null) by floor, a branch's by its place. */
+export const houseTextureKey = (place: PlaceId | null, h: House, floor: number): string =>
+  place ? `house-${place}-${houseKey(h)}` : `house-${houseKey(h)}-${floor}`
+
+/** A house for sale's roof: the main shop's (place null) by house, a branch's one for the place. */
+export const saleTextureKey = (place: PlaceId | null, h: House): string => (place ? `sale-${place}` : `sale-${houseKey(h)}`)
+
+/** A bought house's colour: the main shop's wall, or a branch's wall, board band or trim. */
+export const houseColor = (place: PlaceId | null, h: House): string => (place ? BRANCH_HOUSE_LOOK[place].colors[houseKey(h)] : HOUSE_LOOK[houseKey(h)].wall)
+
+/** Every house the strip shows: bought ones in their colour at `place` (null for the main shop), the ones for sale empty. */
+export const stripLots = (bought: Houses, shown: Houses, place: PlaceId | null = null): StripLot[] =>
   housesBetween({ left: 0, right: 0 }, shown).map(h => {
     const r = houseRect(h)
-    return { x: r.x, w: r.w, fill: h.n <= bought[h.side] ? HOUSE_LOOK[houseKey(h)].wall : null }
+    return { x: r.x, w: r.w, fill: h.n <= bought[h.side] ? houseColor(place, h) : null }
   })
