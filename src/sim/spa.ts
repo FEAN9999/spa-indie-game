@@ -6,6 +6,7 @@ import {
   DAY_MINUTES,
   DAYS_PER_MONTH,
   EXIT_MS,
+  FEED_PRAISE_CHANCE,
   EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
   FESTIVAL_PATIENCE,
@@ -55,6 +56,10 @@ import {
   HOUSES_PER_SIDE,
 } from '../config'
 import { PET_NAME_IDEAS, t } from '../strings/vi'
+import { IDOL_TEXT } from '../strings/idols'
+import { managerName, PHAY_KOL_NAME } from '../strings/phay'
+import { REGULAR_TEXT } from '../strings/regulars'
+import { VIP_TEXT } from '../strings/vips'
 import { newBadges, type BadgeShop, type Badges } from './badges'
 import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
 import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
@@ -80,7 +85,8 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
-import { emptyFeed, type FeedBook } from './feed'
+import { addPost, dayRoom, emptyFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft } from './feed'
+import { commentsFor, complaintText, idolText, kolText, managerText, praiseText, strangerName, vipText } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -243,7 +249,7 @@ export class SpaSim {
       emit: e => this.emit(e),
       walkTo: (m, isGoal) => this.walkTo(m, isGoal),
       sendToBed: (c, station) => this.sendToBed(c, station),
-      payFor: (c, station, stars, technician) => this.payFor(c, station, stars, technician),
+      payFor: (c, station, stars, technician, sloppy) => this.payFor(c, station, stars, technician, sloppy),
       takeStaffId: () => this.nextStaffId++,
     }
     this.base = shellOf(layout)
@@ -676,7 +682,7 @@ export class SpaSim {
     const c = this.customers.find(x => x.id === customerId)
     const station = c && this.stations.find(s => s.id === c.stationId)
     if (!c || c.state !== 'inService' || !station) return
-    this.payFor(c, station, stars, null)
+    this.payFor(c, station, stars, null, false)
     this.servingCustomerId = null
     this.owner.task = null
   }
@@ -686,7 +692,7 @@ export class SpaSim {
    * and an idol IDOL_PRICE_FACTOR times, but both tip on the plain graded one.
    * Anyone else pays FESTIVAL_PRICE times the graded price for the festival service, and tips on that.
    */
-  private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null): void {
+  private payFor(c: Customer, station: Station, stars: Stars, technician: Staff | null, sloppy: boolean): void {
     const plain = this.place ? placePrice(SERVICES[c.service].price, this.place) : rankPrice(SERVICES[c.service].price, this.rank.stars)
     const base = !c.vip && !c.idol && c.service === this.festivalServiceToday() ? Math.round(plain * FESTIVAL_PRICE) : plain
     const price = c.idol ? plain * IDOL_PRICE_FACTOR : c.vip ? plain * VIP_PRICE_FACTOR : base
@@ -711,7 +717,9 @@ export class SpaSim {
     }
     // a picky customer grades like anyone else after a calm technician, or on the rival's day, so the rival costs no stars
     const fair = technician?.trait === 'calm' || rivalToday(this.eventBook, this.day)
-    this.addReview(c, reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading))
+    const score = reviewScore(stars, spec.grading === 'harsh' && c.kind === 'picky' && fair ? 'normal' : spec.grading)
+    this.addReview(c, score)
+    this.postReview(c, score, technician === null ? 'owner' : sloppy ? 'sloppy' : 'tech')
     if (stars === 3 && rivalToday(this.eventBook, this.day)) this.rivalScored()
     // a VIP has her own page in the book, not a place among the kinds served; so has an idol, whose 3 stars make the shop hot from the next morning
     if (c.vip) {
@@ -727,6 +735,7 @@ export class SpaSim {
       if (stars === 3) {
         makeHot(this.eventBook, this.day, 'kol')
         this.emit({ type: 'kolPosted', customerId: c.id })
+        this.postKol(c)
       } else this.emit({ type: 'kolLeft', customerId: c.id })
     }
     let hearts = 0
@@ -1832,6 +1841,8 @@ export class SpaSim {
     this.freeSeat(c)
     c.mood = 'angry'
     this.addReview(c, ANGRY_REVIEW)
+    const powerDay = this.eventBook.plan?.kind === 'power' && this.eventBook.plan.day === this.day
+    this.postReview(c, ANGRY_REVIEW, this.missingStock(c.service) ? 'stock' : powerDay && MACHINES.includes(c.service) ? 'power' : 'wait')
     if (c.regular) loseVisit(this.book, c.regular)
     // Mi Mi walking out costs nothing (spec 7.5): no angry customer on the summary, no lost one for the quests or the clean day
     if (c.kol) this.emit({ type: 'kolLeft', customerId: c.id })
@@ -1861,6 +1872,51 @@ export class SpaSim {
       this.reviewIds.push(c.id)
       this.emit({ type: 'review', customerId: c.id, score })
     }
+  }
+
+  /** A stream of its own for the Phây feed, so no post moves the shop's draws. */
+  private feedRng(salt: number): Rng {
+    return createRng(this.day * 9431 + this.nextId + salt)
+  }
+
+  /** Files a post of this customer's in the feed, with the likes and comments Phây draws for it. */
+  private filePost(c: Customer, kind: PostDraft['kind'], name: string, fields: Partial<PostDraft> & Pick<PostDraft, 'text'>): void {
+    const friends = REGULAR_IDS.filter(id => this.book.regulars[id].met).map(id => REGULAR_TEXT[id].name).filter(n => n !== name)
+    const face = { look: { ...c.look }, kind: c.kind, regular: c.regular, vip: c.vip, idol: c.idol }
+    const draft: PostDraft = { kind, name, face, tick: false, stars: null, pic: null, comments: commentsFor(kind, friends, this.feedRng(5)), complaint: null, boostable: false, notify: false, ...fields }
+    addPost(this.feed, draft, this.day, this.clock.minutes, this.feedRng(6))
+  }
+
+  /** What a customer posts about their visit: a complaint at 2 or less, a star's photo or a VIP's word when pleased, else sometimes praise. Branches post nothing. */
+  private postReview(c: Customer, score: number, why: ComplaintReason): void {
+    if (this.place !== null || !this.feed.open || c.kol) return
+    const idol = c.idol ? IDOL_TEXT[c.idol].name : null
+    const own = c.vip ? VIP_TEXT[c.vip].name : c.regular ? REGULAR_TEXT[c.regular].name : strangerName(c.kind, this.feedRng(4))
+    if (score <= 2) {
+      if (!dayRoom(this.feed, this.day, 'complaint')) return
+      const shuffle = this.feedRng(2)
+      const replies = [...REPLY_KINDS]
+      for (let i = replies.length - 1; i > 0; i--) {
+        const j = Math.floor(shuffle() * (i + 1))
+        ;[replies[i], replies[j]] = [replies[j], replies[i]]
+      }
+      const text = idol ? managerText(idol, why, this.feedRng(3)) : complaintText(why, c.service, this.feedRng(3))
+      this.filePost(c, 'complaint', idol ? managerName(idol) : own, { text, stars: score === 1 ? 1 : 2, complaint: { reason: why, customerId: c.id, replies, answered: null, manager: idol !== null }, notify: true })
+    } else if (c.idol) {
+      this.filePost(c, 'idol', IDOL_TEXT[c.idol].name, { text: idolText(c.idol, c.service, this.shopName, this.feedRng(3)), pic: 'idol', tick: true, notify: true, boostable: true })
+    } else if (c.vip) {
+      this.filePost(c, 'vip', own, { text: vipText(c.vip, c.service, this.feedRng(3)), boostable: true })
+    } else if (score === 5 && dayRoom(this.feed, this.day, 'praise')) {
+      // the first praise of a day always posts, the rest by chance
+      if (this.feed.today.day === this.day && this.feed.today.praise > 0 && this.feedRng(1)() >= FEED_PRAISE_CHANCE) return
+      this.filePost(c, 'praise', own, { text: praiseText(c.service, c.kind, this.feedRng(3)), stars: 5, boostable: true })
+    }
+  }
+
+  /** Mi Mi's video after her 3 stars. */
+  private postKol(c: Customer): void {
+    if (this.place !== null || !this.feed.open) return
+    this.filePost(c, 'kol', PHAY_KOL_NAME, { text: kolText(c.service, this.feedRng(3)), pic: 'video', tick: true, notify: true })
   }
 
   private setState(c: Customer, state: CustomerState): void {
