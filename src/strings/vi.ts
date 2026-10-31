@@ -251,6 +251,8 @@ export const vi = {
   houseLine1: 'Thêm 6 ô bề ngang cho cả ba tầng.',
   houseLine2: 'Đục tường thông sang, giữ gạch bông và màu tường của nhà cũ.',
   houseLine3: 'Thêm 1 chỗ kỹ thuật viên.',
+  houseBranchLine1: 'Thêm 6 ô bề ngang.',
+  houseBranchLine2: 'Đục tường thông sang, lát sàn như tiệm, giữ màu tường của nhà cũ.',
   houseBuy: 'Mua · {money}',
   buyHouseHint: 'Bấm Xây dựng để kê giường sang nhà mới',
   saleSign1: 'BÁN NHÀ',

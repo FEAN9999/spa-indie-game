@@ -1128,11 +1128,13 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       this.session.saveNow()
     }
     const title = `houseTitle${side === 'right' ? 'Right' : 'Left'}${n}` as StringKey
+    // a branch has one floor and its place's own floors, not the main shop's three and its gạch bông
+    const lines = sim.place === null ? [t('houseLine1'), t('houseLine2')] : [t('houseBranchLine1'), t('houseBranchLine2')]
     const parts: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [
       this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
       addCard(this.ui, 90, 740, 900, 680),
       this.ui.add.text(GAME_W / 2, 790, t(title), textStyle(60, '800')).setOrigin(0.5, 0),
-      this.ui.add.text(GAME_W / 2, 890, [t('houseLine1'), t('houseLine2'), t('houseLine3')].join('\n'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
+      this.ui.add.text(GAME_W / 2, 890, [...lines, t('houseLine3')].join('\n'), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
     ]
     // the same pair as the floor card: "Để sau" and the buy button wide enough for its price
     const buyX = GAME_W / 2 + 165
