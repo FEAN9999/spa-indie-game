@@ -12,7 +12,7 @@ import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight } from './daylight'
 import { houseRect } from './houses'
-import { addGlow, DOOR_LIGHT, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
+import { addGlow, DOOR_LIGHT, frontmostAt, LAMP_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
 import { DOOR_X, doorWalk, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -165,12 +165,7 @@ export class RestaurantLayer {
 
   /** The piece whose picture covers the point, the one drawn in front where several do, among those `allow` lets through; null when none does. */
   itemAt(x: number, y: number, allow: (id: number) => boolean = () => true): number | null {
-    if (!this.floor1) return null
-    let front: { id: number; depth: number } | null = null
-    for (const [id, s] of this.items) {
-      if (allow(id) && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
-    }
-    return front?.id ?? null
+    return this.floor1 ? frontmostAt(this.items, x, y, allow) : null
   }
 
   destroy(): void {

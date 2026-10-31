@@ -104,6 +104,15 @@ export function placeItemBody(body: Phaser.GameObjects.Image, item: Item, colX: 
   body.setPosition(colX(item.x + w / 2), bottom).setDepth(layer === 'rug' ? RUG_DEPTH : layer === 'wall' ? WALL_DEPTH : depth + ITEM_DEPTH_BIAS).setFlipX(item.flip)
 }
 
+/** Of the pictures by id, the one covering the point and drawn in front where several do, among those `allow` lets through; null when none does. Build mode's pick in either shop. */
+export function frontmostAt(sprites: Iterable<[number, { body: Phaser.GameObjects.Image }]>, x: number, y: number, allow: (id: number) => boolean): number | null {
+  let front: { id: number; depth: number } | null = null
+  for (const [id, s] of sprites) {
+    if (allow(id) && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
+  }
+  return front?.id ?? null
+}
+
 /** One item on screen, with a bed's lantern or a rattan bench's mat. */
 interface ItemSprite {
   body: Phaser.GameObjects.Image
@@ -474,11 +483,7 @@ export class RoomView {
 
   /** The item whose picture covers the point, the one drawn in front where several do, among those `allow` lets through; null when none does. */
   itemAt(x: number, y: number, allow: (id: number) => boolean = () => true): number | null {
-    let front: { id: number; depth: number } | null = null
-    for (const [id, s] of this.items) {
-      if (s.floor === this.floor && allow(id) && s.body.getBounds().contains(x, y) && (!front || s.body.depth > front.depth)) front = { id, depth: s.body.depth }
-    }
-    return front?.id ?? null
+    return frontmostAt(this.items, x, y, id => this.items.get(id)!.floor === this.floor && allow(id))
   }
 
   private addItem(item: Item): ItemSprite {
