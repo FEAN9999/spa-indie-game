@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { AWAY_DAY_SHARE, DINER_TIP, DISH_PRICE, FIRST_ARRIVAL_MS, LOW_STOCK, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, STOCK_START } from '../../src/config'
 import { Chain } from '../../src/sim/chain'
+import { parseSave } from '../../src/sim/save'
 import { chefWage, type Chef, type ChefStats } from '../../src/sim/chefs'
 import { tileEq, tileOf } from '../../src/sim/grid'
 import { DISH_IDS, RESTAURANT_STOCK_ITEMS } from '../../src/sim/menu'
@@ -468,5 +469,89 @@ describe('lessons and the away money of the restaurant', () => {
     r.stats.chefCooked = 1
     r.closeDay()
     expect(r.away.profits).toEqual([80_000])
+  })
+})
+
+describe('a saved restaurant with cooks', () => {
+  /** A chain on day 10 with the restaurant bought and one cook hired. */
+  const owned = () => {
+    const chain = new Chain(starShop(3, 20_000_000, 7), 7)
+    chain.main.day = 10
+    expect(chain.buyRestaurant()).toBeNull()
+    const r = chain.restaurant!
+    return { chain, r, c: withChef(r) }
+  }
+  const runUntil = (chain: Chain, pred: () => boolean, maxMs = 120_000) => {
+    for (let t = 0; !pred(); t += STEP_MS) {
+      if (t > maxMs) throw new Error('condition not reached')
+      chain.advance(STEP_MS)
+    }
+  }
+  /** The chain's save as JSON; a loaded chain spawns, so nobody new walks into either shop after the load. */
+  const raw = (chain: Chain) => {
+    const out = JSON.parse(JSON.stringify(chain.toSave())) as { untilArrivalMs: number; restaurant: { untilArrivalMs: number; diners: { id: number; chefId: number | null }[]; chefs: { task: unknown }[] } }
+    out.untilArrivalMs = out.restaurant.untilArrivalMs = 1e9
+    return out
+  }
+
+  it('reloads a cook mid-cook and serves the dish once', () => {
+    const { chain, r, c } = owned()
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
+    runUntil(chain, () => cooking(c))
+    chain.advance(STEP_MS)
+    const back = Chain.fromSave(parseSave(raw(chain)), 7)
+    const rr = back.restaurant!
+    const [cc] = rr.chefs
+    const task = cc.task as { kind: string; dinerId: number; stoveId: number; leftMs: number }
+    expect(task).toEqual(c.task)
+    expect(rr.stoves.find(s => s.id === task.stoveId)!.dinerId).toBe(d.id)
+    const dd = rr.diners.find(x => x.id === d.id)!
+    expect([dd.state, dd.chefId]).toEqual(['waitingFood', cc.id])
+    expect(rr.stats.served).toBe(0)
+    const before = back.main.money
+    const paid: RestaurantEvent[] = []
+    runUntil(back, () => {
+      paid.push(...back.drainRestaurantEvents().filter(e => e.type === 'dinerPaid'))
+      return rr.stats.served > 0
+    })
+    expect(rr.stats).toMatchObject({ served: 1, chefCooked: 1 })
+    expect(back.main.money).toBe(before + DISH_PRICE.pho + DINER_TIP[dd.stars!])
+    runUntil(back, () => !rr.diners.includes(dd))
+    paid.push(...back.drainRestaurantEvents().filter(e => e.type === 'dinerPaid'))
+    expect(paid).toHaveLength(1)
+    expect(rr.stats.served).toBe(1)
+    expect(rr.stock).toMatchObject({ phoKit: STOCK_START - 1, herbs: STOCK_START - 1 })
+  })
+
+  it("drops a cook's task whose diner is gone after a load", () => {
+    const { chain, r, c } = owned()
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
+    runUntil(chain, () => cooking(c))
+    const gone = raw(chain)
+    gone.restaurant.diners = gone.restaurant.diners.filter(x => x.id !== d.id)
+    const rr = Chain.fromSave(parseSave(gone), 7).restaurant!
+    const [cc] = rr.chefs
+    expect([cc.task, cc.path]).toEqual([null, []])
+    expect(rr.stoves.every(s => s.dinerId === null)).toBe(true)
+    for (let t = 0; t < 10_000; t += STEP_MS) rr.advance(STEP_MS)
+    expect(cc.task).toBeNull()
+    expect(tileOf(cc.pos)).toEqual(rr.chefHome(cc))
+  })
+
+  it('clears the cook of a diner whom no kept task holds, and lets a cook take them again', () => {
+    const { chain, r, c } = owned()
+    const d = r.spawnDiner({ kind: 'student', dish: 'pho' })!
+    runUntil(chain, () => c.task?.kind === 'order')
+    expect(d.chefId).toBe(c.id)
+    const e = r.spawnDiner({ kind: 'student', dish: 'che' })!
+    const lost = raw(chain)
+    lost.restaurant.chefs[0].task = { kind: 'order', dinerId: 999 }
+    lost.restaurant.diners.find(x => x.id === e.id)!.chefId = 42
+    const rr = Chain.fromSave(parseSave(lost), 7).restaurant!
+    expect(rr.chefs[0].task).toBeNull()
+    expect(rr.diners.map(x => [x.id, x.chefId])).toEqual([[d.id, null], [e.id, null]])
+    rr.advance(STEP_MS)
+    expect(rr.chefs[0].task).toEqual({ kind: 'order', dinerId: d.id })
+    expect(rr.diners[0].chefId).toBe(rr.chefs[0].id)
   })
 })

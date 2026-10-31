@@ -147,13 +147,21 @@ export class RestaurantSim {
       owner: this.owner,
       ownerIn: this.ownerIn,
       cookingDinerId: this.cookingDinerId,
+      stock: this.stock,
+      chefs: this.chefs,
+      nextChefId: this.nextChefId,
+      candidates: this.candidates,
+      candidatesDay: this.candidatesDay,
+      learned: this.learned,
+      away: this.away,
     })
   }
 
   /**
    * Rebuilds a saved restaurant. Walkers still on the street are gone, uncounted. The owner is in only if `ownerAt` says so: with a task of hers still
    * standing she keeps her place (a bowl cooking is cooked again from the stove, its game reopening), else she stands at the door; and a diner whose bowl
-   * is lost leaves.
+   * is lost leaves. A cook keeps a task that still holds (a ticket of a diner still ordering who names them, a stove that is there and free with its diner
+   * waiting, or a dish carried to a diner still waiting); any other task is dropped, and a diner whom no kept task holds names no cook.
    */
   static fromSave(data: RestaurantSave, options: { host: RestaurantHost; rng: Rng; autoSpawn: boolean }): RestaurantSim {
     const d = structuredClone(data)
@@ -166,6 +174,13 @@ export class RestaurantSim {
     r.nextDinerId = d.nextDinerId
     r.untilDinerMs = d.untilArrivalMs
     r.stats = d.stats
+    r.stock = d.stock
+    r.chefs = d.chefs
+    r.nextChefId = d.nextChefId
+    r.candidates = d.candidates
+    r.candidatesDay = d.candidatesDay
+    r.learned = d.learned
+    r.away = d.away
     r.ownerIn = d.ownerAt === 'restaurant'
     const task = d.owner.task
     const diner = task && r.diners.find(x => x.id === task.dinerId)
@@ -175,7 +190,25 @@ export class RestaurantSim {
       r.owner = d.owner
       if (stove) stove.dinerId = diner.id
     }
-    for (const x of [...r.diners]) if (x.state === 'waitingFood' && !(holds && task.dinerId === x.id)) r.startLeaving(x)
+    // each diner is held by one task at most: the owner's first, then the cooks' in order
+    const held = new Set<number>(holds ? [task.dinerId] : [])
+    const cookOf = new Map<number, number>()
+    for (const c of r.chefs) {
+      const t = c.task
+      const x = t && t.kind !== 'exit' ? r.diners.find(y => y.id === t.dinerId && !held.has(y.id)) : undefined
+      const s = t?.kind === 'cook' ? r.stoves.find(y => y.id === t.stoveId && y.dinerId === null) : undefined
+      const keeps = t && x && (t.kind === 'order' ? x.state === 'ordering' && x.chefId === c.id : x.state === 'waitingFood' && (t.kind !== 'cook' || s))
+      if (keeps) {
+        held.add(x.id)
+        cookOf.set(x.id, c.id)
+        if (s) s.dinerId = x.id
+      } else {
+        c.task = null
+        c.path = []
+      }
+    }
+    for (const x of r.diners) x.chefId = cookOf.get(x.id) ?? null
+    for (const x of [...r.diners]) if (x.state === 'waitingFood' && !held.has(x.id)) r.startLeaving(x)
     return r
   }
 

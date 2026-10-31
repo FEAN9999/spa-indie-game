@@ -18,9 +18,11 @@ import { emptyProgress, QUEST_KINDS, zeroCounts, type Counts, type DayRecord, ty
 import { fullStock, STOCK_ITEMS, type StockItem } from './stock'
 import { createRng } from './rng'
 import { BASIC_SERVICES, LESSON_SERVICES, SERVICE_IDS, type LessonService, type ServiceId } from './services'
-import { drawTiers, drawTrait, noTiers, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type MoveTo, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
+import { drawTiers, drawTrait, noTiers, workMs, RECEPTIONIST_TRAITS, TRAIT_IDS, STAFF_ROLES, STAT_KEYS, type Candidate, type MoveTo, type Staff, type StaffRole, type StaffTask, type Study, type Tiers } from './staff'
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
-import { repairAway, type AwayBook } from './away'
+import { emptyAwayBook, repairAway, type AwayBook } from './away'
+import { chefWage, type Chef, type ChefCandidate, type ChefTask, type DishTiers } from './chefs'
+import { DISH_IDS, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock } from './menu'
 import { repairStarter, type StarterBook } from './starter'
 import { emptyFeed, repairFeed, type FeedBook } from './feed'
 import { branchPetBook, repairPets, type PetBook } from './pets'
@@ -31,8 +33,10 @@ import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, ty
 
 /** The save that first has the restaurant: origin/master's SAVE_VERSION + 1 at merge time. */
 export const RESTAURANT_SAVE_VERSION = 37
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant. */
-export const SAVE_VERSION = RESTAURANT_SAVE_VERSION
+/** The save that first has the restaurant's cooks, stock and lessons: origin/master's SAVE_VERSION + 1 at merge time. */
+export const RESTAURANT_B_SAVE_VERSION = 38
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons. */
+export const SAVE_VERSION = RESTAURANT_B_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -72,6 +76,15 @@ export interface RestaurantSave {
   cookingDinerId: number | null
   /** A walk to the door and a ride between the shops are both 'street'. */
   ownerAt: 'spa' | 'restaurant' | 'street'
+  stock: RestaurantStock
+  chefs: Chef[]
+  nextChefId: number
+  /** Today's people to hire as cooks, drawn on `candidatesDay` (0: never). */
+  candidates: ChefCandidate[]
+  candidatesDay: number
+  /** The dishes the owner has cooked at least once. */
+  learned: DishId[]
+  away: AwayBook
 }
 
 /** The whole shop as plain JSON. */
@@ -287,13 +300,32 @@ const DINER_STATES: readonly DinerState[] = ['arriving', 'toChair', 'ordering', 
 
 const isTile = (x: unknown): x is Tile => isObject(x) && Number.isInteger(x.x) && Number.isInteger(x.y)
 
-/** A diner whose fields are all readable and who sits at a chair that is there, else null; a diner on the way out has no chair. */
-function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[]): Diner | null {
+/** A ticket whose every field is one `dish` has, else null. */
+function repairTicket(dish: DishId, t: unknown): DishTicket | null {
+  if (!isObject(t)) return null
+  if (dish === 'pho')
+    return (t.doneness === 'tai' || t.doneness === 'chin') && (t.onion === 'little' || t.onion === 'lots') && typeof t.chili === 'boolean' && typeof t.extraHerb === 'boolean'
+      ? { doneness: t.doneness, onion: t.onion, chili: t.chili, extraHerb: t.extraHerb }
+      : null
+  if (dish === 'banhXeo')
+    return (t.filling === 'tom' || t.filling === 'thit') && (t.crisp === 'vua' || t.crisp === 'ky') && typeof t.extraSprouts === 'boolean'
+      ? { filling: t.filling, crisp: t.crisp, extraSprouts: t.extraSprouts }
+      : null
+  return (t.mix === 'beans' || t.mix === 'jelly') && (t.ice === 'little' || t.ice === 'lots') && typeof t.extraCoconut === 'boolean' ? { mix: t.mix, ice: t.ice, extraCoconut: t.extraCoconut } : null
+}
+
+/**
+ * A diner whose fields are all readable and who sits at a chair that is there, else null; a diner on the way out has no chair.
+ * A save from before the cooks (`cooks` false) knew only Phở and no cooks; from the cooks' version on the dish must be known and the ticket must fit it.
+ */
+function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[], cooks: boolean): Diner | null {
   if (!isObject(x) || !Number.isInteger(x.id) || !DINER_STATES.includes(x.state as DinerState)) return null
   if (!isNumber(x.stateMs) || !isNumber(x.patienceMs) || !isNumber(x.patienceMaxMs) || !isNumber(x.legMs)) return null
   if (!isObject(x.pos) || !isNumber(x.pos.x) || !isNumber(x.pos.y) || !inBounds(shell, { x: Math.round(x.pos.x), y: Math.round(x.pos.y) })) return null
-  const t = x.ticket
-  if (!isObject(t) || (t.doneness !== 'tai' && t.doneness !== 'chin') || (t.onion !== 'little' && t.onion !== 'lots') || typeof t.chili !== 'boolean' || typeof t.extraHerb !== 'boolean') return null
+  const dish: DishId = cooks ? (x.dish as DishId) : 'pho'
+  if (!DISH_IDS.includes(dish)) return null
+  const ticket = repairTicket(dish, x.ticket)
+  if (!ticket) return null
   const state = x.state as DinerState
   const chair = state === 'leaving' || state === 'exiting' ? null : isTile(x.chair) ? { x: x.chair.x, y: x.chair.y } : undefined
   if (chair === undefined || (chair && !seats.some(s => tileEq(s.tile, chair)))) return null
@@ -309,9 +341,9 @@ function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[]): Diner | null
     facing: repairFacing(x.facing),
     path: repairPath(x.path),
     chair,
-    dish: 'pho',
-    chefId: null,
-    ticket: { doneness: t.doneness, onion: t.onion, chili: t.chili, extraHerb: t.extraHerb },
+    dish,
+    chefId: cooks && Number.isInteger(x.chefId) ? (x.chefId as number) : null,
+    ticket,
     stars: x.stars === 1 || x.stars === 2 || x.stars === 3 ? x.stars : null,
     mood: x.mood === 'happy' || x.mood === 'ok' || x.mood === 'angry' ? x.mood : null,
     fromSpa: x.fromSpa === true,
@@ -327,10 +359,63 @@ function repairDiningTask(x: unknown): RestaurantSim['owner']['task'] {
   return x.kind === 'cook' && Number.isInteger(x.stoveId) ? { kind: 'cook', dinerId, stoveId: x.stoveId as number } : null
 }
 
-/** The restaurant of a main shop saved from RESTAURANT_SAVE_VERSION on, field by field; null for an older save or none. Diners and furniture it cannot read, or that break the room's rules, are dropped. */
+/** A whole number clamped to a stat's 1 to 5; anything else is 1. */
+const repairStat = (x: unknown): number => (Number.isInteger(x) ? Math.min(5, Math.max(1, x as number)) : 1)
+
+/** Someone to hire as a cook, field by field; null without a name. */
+function repairChefCandidate(x: unknown): ChefCandidate | null {
+  if (!isObject(x) || typeof x.name !== 'string') return null
+  const s = isObject(x.stats) ? x.stats : {}
+  const stats = { skill: repairStat(s.skill), speed: repairStat(s.speed) }
+  const t = isObject(x.tiers) ? x.tiers : {}
+  const tiers = Object.fromEntries(DISH_IDS.map(id => [id, Number.isInteger(t[id]) ? Math.min(MAX_TIER, Math.max(0, t[id] as number)) : 0])) as DishTiers
+  return { name: x.name, look: repairLook(x.look), stats, wage: isNumber(x.wage) && x.wage >= 0 ? x.wage : chefWage(stats), rare: x.rare === true, tiers }
+}
+
+/** A cook's well-formed task, or none; a cooking time is capped at the slowest cook's. */
+function repairChefTask(x: unknown): ChefTask | null {
+  if (!isObject(x)) return null
+  if (x.kind === 'exit') return { kind: 'exit' }
+  if (!Number.isInteger(x.dinerId)) return null
+  const dinerId = x.dinerId as number
+  if (x.kind === 'order') return { kind: 'order', dinerId }
+  if (x.kind === 'cook' && Number.isInteger(x.stoveId) && isNumber(x.leftMs) && x.leftMs >= 0) return { kind: 'cook', dinerId, stoveId: x.stoveId as number, leftMs: Math.min(x.leftMs, workMs(1)) }
+  if (x.kind === 'carry' && (x.stars === 1 || x.stars === 2 || x.stars === 3)) return { kind: 'carry', dinerId, stars: x.stars }
+  return null
+}
+
+/** A hired cook, field by field, standing in the room or else at the door; null without a whole-number id or a name. */
+function repairChef(x: unknown, shell: Grid): Chef | null {
+  const c = repairChefCandidate(x)
+  if (!c || !isObject(x) || !Number.isInteger(x.id)) return null
+  const here = isObject(x.pos) && isNumber(x.pos.x) && isNumber(x.pos.y) && inBounds(shell, { x: Math.round(x.pos.x), y: Math.round(x.pos.y) })
+  return {
+    ...c,
+    id: x.id as number,
+    pos: here ? { x: (x.pos as Tile).x, y: (x.pos as Tile).y } : { ...shell.door },
+    facing: repairFacing(x.facing),
+    path: repairPath(x.path),
+    task: repairChefTask(x.task),
+    leaving: x.leaving === true,
+  }
+}
+
+/** Each item's count as a whole number from 0 up, else STOCK_START. */
+function repairRestaurantStock(x: unknown): RestaurantStock {
+  const stock = fullRestaurantStock()
+  if (!isObject(x)) return stock
+  for (const item of RESTAURANT_STOCK_ITEMS) if (Number.isInteger(x[item]) && (x[item] as number) >= 0) stock[item] = x[item] as number
+  return stock
+}
+
+/**
+ * The restaurant of a main shop saved from RESTAURANT_SAVE_VERSION on, field by field; null for an older save or none. Diners and furniture it cannot read, or that break the room's rules, are dropped.
+ * A save from before RESTAURANT_B_SAVE_VERSION has a full stock, no cooks and Phở learned, and every diner orders Phở.
+ */
 export function repairRestaurant(raw: unknown): RestaurantSave | null {
   if (!isObject(raw) || !isNumber(raw.v) || raw.v < RESTAURANT_SAVE_VERSION || !isObject(raw.restaurant)) return null
   const r = raw.restaurant
+  const cooks = raw.v >= RESTAURANT_B_SAVE_VERSION
   const shell = diningShellGrid()
   const items: Item[] = []
   for (const i of Array.isArray(r.items) ? r.items : []) {
@@ -342,13 +427,19 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
   const seats = diningSeats(items)
   const diners: Diner[] = []
   for (const d of Array.isArray(r.diners) ? r.diners : []) {
-    const diner = repairDiner(d, shell, seats)
+    const diner = repairDiner(d, shell, seats, cooks)
     if (!diner || diners.some(o => o.id === diner.id || (diner.chair && o.chair && tileEq(o.chair, diner.chair)))) continue
     diners.push(diner)
   }
   const o = isObject(r.owner) ? r.owner : {}
   const here = isObject(o.pos) && isNumber(o.pos.x) && isNumber(o.pos.y) && inBounds(shell, { x: Math.round(o.pos.x), y: Math.round(o.pos.y) })
   const stats = isObject(r.stats) ? r.stats : {}
+  const chefs: Chef[] = []
+  for (const x of cooks && Array.isArray(r.chefs) ? r.chefs : []) {
+    const chef = repairChef(x, shell)
+    if (chef && !chefs.some(o => o.id === chef.id)) chefs.push(chef)
+  }
+  const learned: unknown[] = cooks && Array.isArray(r.learned) ? r.learned : ['pho']
   return {
     items,
     nextItemId: Math.max(isNumber(r.nextItemId) ? r.nextItemId : 1, ...items.map(i => i.id + 1)),
@@ -376,6 +467,13 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
     ownerIn: r.ownerIn === true,
     cookingDinerId: Number.isInteger(r.cookingDinerId) ? (r.cookingDinerId as number) : null,
     ownerAt: r.ownerAt === 'restaurant' || r.ownerAt === 'street' ? r.ownerAt : 'spa',
+    stock: cooks ? repairRestaurantStock(r.stock) : fullRestaurantStock(),
+    chefs,
+    nextChefId: Math.max(Number.isInteger(r.nextChefId) ? (r.nextChefId as number) : 1, ...chefs.map(c => c.id + 1)),
+    candidates: cooks && Array.isArray(r.candidates) ? r.candidates.map(repairChefCandidate).filter((c): c is ChefCandidate => c !== null) : [],
+    candidatesDay: cooks ? repairCount(r.candidatesDay) : 0,
+    learned: DISH_IDS.filter(id => learned.includes(id)).sort((a, b) => learned.indexOf(a) - learned.indexOf(b)),
+    away: cooks ? repairAway(r.away) : emptyAwayBook(),
   }
 }
 
@@ -786,7 +884,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
