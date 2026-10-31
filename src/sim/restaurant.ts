@@ -6,6 +6,7 @@ import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './d
 import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { NO_HOUSES, type Houses } from './layout'
+import type { DishId } from './menu'
 import { findPath } from './path'
 import { drawPhoTicket, type PhoTicket } from './pho'
 import { randomLook, type Rng } from './rng'
@@ -33,7 +34,7 @@ export type RestaurantEvent =
 export type DiningTask = { kind: 'order'; dinerId: number } | { kind: 'cook'; dinerId: number; stoveId: number } | { kind: 'carry'; dinerId: number }
 
 export type DinerState = 'street' | 'arriving' | 'toChair' | 'ordering' | 'waitingFood' | 'eating' | 'leaving' | 'exiting'
-export type DishId = 'pho'
+export type { DishId }
 
 export interface Diner extends Mover {
   id: number

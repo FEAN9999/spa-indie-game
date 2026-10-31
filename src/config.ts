@@ -576,8 +576,17 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 30_000 } as const
+export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000 } as const
 export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
+
+/** What 20 portions of each restaurant stock item cost to restock (herbs are shared by every dish). */
+export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, herbs: 40_000 } as const
+
+/** How many cooks the restaurant can hold: base, plus per extra floor, plus per house, never above max. */
+export const CHEF_CAP = { base: 2, perFloor: 2, perHouse: 1, max: 10 } as const
+
+/** A cook's daily wage rises by this much for each stat dot above 1 (a cook has two stats). */
+export const CHEF_WAGE_PER_DOT = 5_000
 
 /** A third of the diners walk over from the spa; the leg is this many tiles long, at the walker's speed. */
 export const WALK_OVER_CHANCE = 1 / 3
