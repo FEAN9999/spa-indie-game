@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { FURNITURE, furnitureTextures, itemTexture } from '../../src/art/furniture'
 import { FESTIVAL_IDS, FESTIVALS } from '../../src/sim/festivals'
-import { canTurn, ITEM_KINDS, ITEMS, type ItemKind } from '../../src/sim/items'
+import { canTurn, ITEM_KINDS, ITEMS, layerOf, type ItemKind } from '../../src/sim/items'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
 vi.mock('phaser', () => ({}))
@@ -56,15 +56,27 @@ describe('furniture art', () => {
   it('draws an upright picture of its own for every piece that turns', () => {
     const tex = furnitureTextures()
     const turning = ITEM_KINDS.filter(k => canTurn(k) && ITEMS[k].group !== 'bed')
-    expect(turning).toHaveLength(17)
+    expect(turning).toHaveLength(23)
     for (const kind of turning) {
       const key = itemTexture(kind, true)
       expect(key).toBe(`${itemTexture(kind)}-turned`)
       expect(tex[key], kind).toBeDefined()
+      expect(FURNITURE[key].body, kind).not.toBe(FURNITURE[itemTexture(kind)].body)
+      if (layerOf(kind) === 'rug') continue
       expect(FURNITURE[key].w, kind).toBeGreaterThanOrEqual(1)
       expect(FURNITURE[key].w, kind).toBeLessThanOrEqual(1.2)
       expect(FURNITURE[key].h, kind).toBeGreaterThanOrEqual(ITEMS[kind].w)
-      expect(FURNITURE[key].body, kind).not.toBe(FURNITURE[itemTexture(kind)].body)
+    }
+  })
+
+  it('draws every rug flat on exactly its footprint, turned or not, and every wall piece two tiles high over its width', () => {
+    for (const kind of ITEM_KINDS) {
+      const { w, h } = ITEMS[kind]
+      if (layerOf(kind) === 'rug') {
+        expect(FURNITURE[itemTexture(kind)], kind).toMatchObject({ w, h })
+        if (canTurn(kind)) expect(FURNITURE[itemTexture(kind, true)], kind).toMatchObject({ w: h, h: w })
+      }
+      if (layerOf(kind) === 'wall') expect(FURNITURE[itemTexture(kind)], kind).toMatchObject({ w, h: 2 })
     }
   })
 

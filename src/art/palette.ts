@@ -34,6 +34,8 @@ export const C = {
   lanternDark: '#A8302A',
   lotus: '#F28CA0',
   lotusDark: '#E8708A',
+  // bougainvillea's paper flowers
+  magenta: '#D6418C',
   // the pale pink of a nail desk's cushions and the nail badges
   pinkPale: '#F7C6D0',
   // a small nail before the polish

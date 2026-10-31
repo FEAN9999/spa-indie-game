@@ -1,6 +1,7 @@
 import { TILE } from '../config'
 import { canTurn, type ItemKind } from '../sim/items'
 import { silkLantern } from './lantern'
+import { NEW_DECOR } from './newDecor'
 import { C, SKIN } from './palette'
 import { svgDoc } from './svg'
 
@@ -1311,6 +1312,7 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   lantern: { w: 1, h: 1.5, body: lantern(0.5) },
   bedSlot: { w: 2, h: 4.5, body: `<g transform="translate(0.5 -1)">${bedSlot(0, 2)}</g>` },
   benchMat: { w: 4, h: 3.5, body: `<defs>${MAT}</defs><g transform="translate(-1.5 -12.5)">${benchMat(2, 4, 13)}</g>` },
+  ...NEW_DECOR,
 }
 
 /** The texture of an item kind: the first pieces keep their keys, the old decor is under `decor-`; turned, a piece that can turn has its upright picture under `-turned`. */
