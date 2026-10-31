@@ -67,6 +67,8 @@ async function start() {
     scene: [BootScene, SpaScene, HudScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, PhoScene, BanhXeoScene, CheScene, MenuScene, ChefScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, PetGiveScene, ChoiceScene, ChainScene, AwayScene, StarterScene, PhayScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
+  // frame timing over the game for measuring on a phone, only with ?perf in the address
+  if (new URLSearchParams(location.search).has('perf')) void import('./app/perf').then(m => m.showPerf(game))
 }
 
 // Chrome offers the install prompt once, early; keep it for the "Cài" button
