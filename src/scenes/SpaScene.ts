@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { AUTOSAVE_MS, BUBBLE_MS, DISH_PRICE, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, MAP_Y, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
+import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, MAP_Y, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -30,6 +30,7 @@ import type { ShopSide } from '../sim/dining'
 import type { RestaurantEvent } from '../sim/restaurant'
 import { SpaSim } from '../sim/spa'
 import type { House, Side } from '../sim/layout'
+import { RSTOCK_NAME } from '../sim/menu'
 import { STOCK_NAME } from '../sim/stock'
 import { pickHint } from '../sim/tutorial'
 import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types'
@@ -88,14 +89,14 @@ import type { QuestsData } from './QuestsScene'
 import type { StarterData } from './StarterScene'
 import type { OwnerData, OwnerMode } from './OwnerScene'
 import type { PauseData, PausePanel } from './PauseScene'
+import type { MenuData } from './MenuScene'
 import type { ServicesData } from './ServicesScene'
 import type { StaffData } from './StaffScene'
 import type { InspectData } from './InspectScene'
 import type { NewOutfitData } from './NewOutfitScene'
 import type { LitterData } from './LitterScene'
 import type { PetNameData } from './PetNameScene'
-import type { CookData } from '../view/cook'
-import type { PhoTicket } from '../sim/pho'
+import { COOK_SCENE, type CookData } from '../view/cook'
 import type { PhayData } from './PhayScene'
 import type { RankData } from './RankScene'
 import type { SummaryData } from './SummaryScene'
@@ -621,7 +622,7 @@ export class SpaScene extends Phaser.Scene {
     }
   }
 
-  /** The owner stands at a stove with a diner's ticket: the Phở game opens, and its stars send her off with the bowl. */
+  /** The owner stands at a stove with a diner's ticket: that dish's game opens, and its stars send her off with the dish. */
   private cook(e: Extract<RestaurantEvent, { type: 'cookReady' }>): void {
     const restaurant = this.chain.restaurant
     const d = restaurant?.diners.find(x => x.id === e.dinerId)
@@ -631,11 +632,11 @@ export class SpaScene extends Phaser.Scene {
       kind: d.kind,
       extraMs: dayEase(this.sim.day).miniGameExtraMs,
       hard: KINDS[d.kind].hard,
-      demo: false,
-      ticket: d.ticket as PhoTicket,
+      demo: restaurant.needsLesson(d.dish),
+      ticket: d.ticket,
       onDone: stars => restaurant.completeCooking(d.id, stars),
     }
-    this.scene.launch('PhoScene', data)
+    this.scene.launch(COOK_SCENE[d.dish], data)
   }
 
   /** A mini-game is being played: a spa service or a bowl at the restaurant's stove. */
@@ -772,8 +773,18 @@ export class SpaScene extends Phaser.Scene {
   private openServices(): void {
     const sim = this.sim
     if (this.modal || this.holding || sim.paused || sim.dayOver || this.playing()) return
-    if (this.centreShop() === 'restaurant') {
-      this.restaurantCard('menuTitle', [t('menuPho', { money: formatMoney(DISH_PRICE.pho) }), t('menuSoon')])
+    const restaurant = this.centreShop() === 'restaurant' ? this.chain.restaurant : null
+    if (restaurant) {
+      this.modal = true
+      const menu: MenuData = {
+        restaurant,
+        onChange: () => this.session.saveNow(),
+        onClose: () => {
+          this.modal = false
+          this.session.saveNow()
+        },
+      }
+      this.scene.launch('MenuScene', menu)
       return
     }
     this.modal = true
@@ -1874,6 +1885,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       case 'toast':
         this.hud.toast(t(e.key))
         return
+      case 'stockLow': {
+        const name = t(RSTOCK_NAME[e.item])
+        this.hud.toast(e.out ? t('menuStockOut', { item: name.toLocaleLowerCase('vi') }) : t('stockLow', { item: name }))
+        return
+      }
     }
   }
 

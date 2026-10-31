@@ -17,6 +17,7 @@ import { NewOutfitScene } from './scenes/NewOutfitScene'
 import { LitterScene } from './scenes/LitterScene'
 import { PetNameScene } from './scenes/PetNameScene'
 import { PetGiveScene } from './scenes/PetGiveScene'
+import { MenuScene } from './scenes/MenuScene'
 import { PhoScene } from './scenes/PhoScene'
 import { BanhXeoScene } from './scenes/BanhXeoScene'
 import { CheScene } from './scenes/CheScene'
@@ -62,7 +63,7 @@ async function start() {
     audio: { noAudio: true },
     // two fingers on the map pinch it
     input: { activePointers: 2 },
-    scene: [BootScene, SpaScene, HudScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, PhoScene, BanhXeoScene, CheScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, PetGiveScene, ChoiceScene, ChainScene, AwayScene, StarterScene, PhayScene],
+    scene: [BootScene, SpaScene, HudScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, PhoScene, BanhXeoScene, CheScene, MenuScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, PetGiveScene, ChoiceScene, ChainScene, AwayScene, StarterScene, PhayScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
 }
