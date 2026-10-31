@@ -1,5 +1,5 @@
 import { FLOOR_ROWS } from '../config'
-import { BED_SLOTS, bedTile, footprint, ITEMS, seatTiles, workTile } from './items'
+import { BED_SLOTS, bedTile, footprint, ITEMS, layerOf, seatTiles, workTile } from './items'
 import type { Item } from './items'
 import type { Tile, Vec } from './types'
 
@@ -108,7 +108,8 @@ export function buildGrid(shell: string[] | Grid, items: Item[], floors = 1): Gr
   const grid = Array.isArray(shell) ? parseLayout(shell) : structuredClone(shell)
   grid.links = grid.feet.slice(0, floors).flatMap((f, k) => (k > 0 ? [[grid.feet[k - 1], f] as [Tile, Tile]] : []))
   grid.bedSlots = BED_SLOTS
-  const sorted = [...items].sort((a, b) => a.id - b.id)
+  // wall pieces and rugs are in nobody's way
+  const sorted = items.filter(i => layerOf(i.kind) === 'floor').sort((a, b) => a.id - b.id)
   for (const item of sorted) {
     const tiles = footprint(item)
     const set = (cell: Cell) => tiles.forEach(t => (grid.cells[t.y][t.x] = cell))

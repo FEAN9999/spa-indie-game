@@ -243,7 +243,7 @@ describe('facings', () => {
     expect(nextFacing(nextFacing(tea))).toEqual({ ...tea, flip: true })
   })
   it('only mirrors square pieces that are not beds', () => {
-    expect(ITEM_KINDS.filter(canTurn).filter(k => ITEMS[k].group !== 'bed').sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'cabinet', 'desk', 'goldBoard', 'lotus', 'planter', 'regularsBoard', 'screen', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest'])
+    expect(ITEM_KINDS.filter(canTurn).filter(k => ITEMS[k].group !== 'bed').sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'brocadeRug', 'cabinet', 'desk', 'fishTank', 'goldBoard', 'lotus', 'planter', 'redRug', 'regularsBoard', 'runnerRug', 'screen', 'sewingMachine', 'shelf', 'silkScreen', 'slippers', 'starWall', 'tea', 'teaChest', 'waterfall'])
     const plant: Item = { id: 3, kind: 'plant', x: 1, y: 16, flip: false }
     expect(nextFacing(plant)).toEqual({ ...plant, flip: true })
   })

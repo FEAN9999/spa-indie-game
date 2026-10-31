@@ -1,6 +1,7 @@
 import type { StringKey } from '../strings/vi'
 import { buildGrid, inBounds, isWalkable, tileEq, type Grid } from './grid'
-import { deskSpot, footprint, ITEMS, workTile, type Item } from './items'
+import { deskSpot, footprint, ITEMS, layerOf, workTile, type Item } from './items'
+import { FLOOR_ROWS } from '../config'
 import { floorOf } from './floors'
 import { DIRS, neighbours } from './path'
 import type { Tile } from './types'
@@ -23,15 +24,24 @@ export const PROBLEM_TEXT: Record<BuildProblem, StringKey> = {
   gift: 'giftNoSell',
 }
 
-/** The tiles an item keeps for itself: its footprint, a bed's work tile and a desk's spot. */
+/** The tiles an item keeps for itself: its footprint, a bed's work tile and a desk's spot; a wall piece or a rug keeps none. */
 export function claimed(item: Item): Tile[] {
+  if (layerOf(item.kind) !== 'floor') return []
   const extra = workTile(item) ?? deskSpot(item)
   return extra ? [...footprint(item), extra] : footprint(item)
 }
 
-/** True when part of the item, a bed's work tile or a desk's spot, is off the grid, on a floor not open yet, or on something fixed: a wall, the door or the stairs. */
+/**
+ * True when part of the item, a bed's work tile or a desk's spot, is off the grid, on a floor not open yet, or on something fixed: a wall, the door or the stairs.
+ * A rug lies on open floor the same way; a wall piece hangs on the back wall's lower row over open floor, on floors 1 and 2 only.
+ */
 export function offFloor(shell: Grid, item: Item, floors: number): boolean {
-  return claimed(item).some(t => !inBounds(shell, t) || floorOf(t.y) > floors || shell.cells[t.y][t.x] !== 'floor')
+  const cell = (t: Tile) => shell.cells[t.y]?.[t.x]
+  const layer = layerOf(item.kind)
+  if (layer === 'wall')
+    return footprint(item).some(t => !inBounds(shell, t) || t.y % FLOOR_ROWS !== 1 || floorOf(t.y) > Math.min(floors, 2) || cell(t) !== 'wall' || cell({ x: t.x, y: t.y + 1 }) !== 'floor')
+  const tiles = layer === 'rug' ? footprint(item) : claimed(item)
+  return tiles.some(t => !inBounds(shell, t) || floorOf(t.y) > floors || cell(t) !== 'floor')
 }
 
 /** Every tile reachable from `from` through tiles that pass `open`, nearest first, starting with `from`. */
@@ -62,6 +72,11 @@ export function doorReach(grid: Grid, door: Tile): (t: Tile) => boolean {
  */
 export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { door: Tile; floors: number }): 'overlap' | 'bedWall' | 'seatFloor' | 'deskFloor' | 'blocksPath' | null {
   const { door, floors } = extras
+  const layer = layerOf(item.kind)
+  if (layer !== 'floor') {
+    const taken = items.filter(i => layerOf(i.kind) === layer).flatMap(footprint)
+    return offFloor(shell, item, floors) || footprint(item).some(t => taken.some(k => tileEq(k, t))) ? 'overlap' : null
+  }
   const kept = [...items.flatMap(claimed), { x: door.x, y: door.y - 1 }, ...shell.feet]
   if (offFloor(shell, item, floors) || claimed(item).some(t => kept.some(k => tileEq(k, t)))) return 'overlap'
   // the shampoo basin hangs on the back wall, above the bed's head, unless the bed lies across with its standing basin

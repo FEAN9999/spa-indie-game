@@ -12,9 +12,16 @@ export type ItemKind =
   | 'photoIdolSontung' | 'photoIdolTaylor' | 'photoIdolGd' | 'photoIdolJennie' | 'photoIdolHieuthuhai' | 'photoIdolWeeknd' | 'photoIdolTaeyang' | 'photoIdolBieber' | 'photoIdolDaesung' | 'starWall'
   | 'maiBranch' | 'heartFrame' | 'roseVase' | 'starLantern' | 'flowerBasket' | 'xmasTree'
   | 'certificate' | 'trophy' | 'merit' | 'surfboard' | 'lanternString' | 'orchid'
+  | 'waterfall' | 'bonsai' | 'stoneLamp' | 'inkBamboo' | 'candleShelf' | 'sedgeRug'
+  | 'gramophone' | 'standFan' | 'sewingMachine' | 'pendulumClock' | 'birdCage' | 'redRug'
+  | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
+  | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor'
-export type SetId = 'saigon' | 'bamboo'
+export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
+export const SET_IDS: SetId[] = ['saigon', 'bamboo', 'zen', 'retro', 'garden']
+/** Where a decor piece goes: hung on the back wall's lower row, or laid flat under everything on the floor. */
+export type Layer = 'floor' | 'wall' | 'rug'
 
 export interface ItemSpec {
   w: number
@@ -23,6 +30,8 @@ export interface ItemSpec {
   beauty: number
   group: ItemGroup
   set?: SetId
+  /** A wall piece or a rug; any other piece stands on the floor. */
+  layer?: 'wall' | 'rug'
   name: StringKey
   /** Given by a regular, never sold in the catalogue. */
   giftOnly?: true
@@ -87,9 +96,38 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   surfboard: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemSurfboard' },
   lanternString: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemLanternString' },
   orchid: { w: 1, h: 1, price: 0, beauty: 3, group: 'decor', giftOnly: true, name: 'itemOrchid' },
+  waterfall: { w: 2, h: 1, price: 220_000, beauty: 5, group: 'decor', set: 'zen', name: 'itemWaterfall' },
+  bonsai: { w: 1, h: 1, price: 130_000, beauty: 3, group: 'decor', set: 'zen', name: 'itemBonsai' },
+  stoneLamp: { w: 1, h: 1, price: 90_000, beauty: 2, group: 'decor', set: 'zen', name: 'itemStoneLamp' },
+  inkBamboo: { w: 2, h: 1, price: 160_000, beauty: 4, group: 'decor', set: 'zen', layer: 'wall', name: 'itemInkBamboo' },
+  candleShelf: { w: 1, h: 1, price: 80_000, beauty: 2, group: 'decor', set: 'zen', layer: 'wall', name: 'itemCandleShelf' },
+  sedgeRug: { w: 2, h: 2, price: 150_000, beauty: 3, group: 'decor', set: 'zen', layer: 'rug', name: 'itemSedgeRug' },
+  gramophone: { w: 1, h: 1, price: 180_000, beauty: 4, group: 'decor', set: 'retro', name: 'itemGramophone' },
+  standFan: { w: 1, h: 1, price: 80_000, beauty: 2, group: 'decor', set: 'retro', name: 'itemStandFan' },
+  sewingMachine: { w: 2, h: 1, price: 160_000, beauty: 3, group: 'decor', set: 'retro', name: 'itemSewingMachine' },
+  pendulumClock: { w: 1, h: 1, price: 150_000, beauty: 4, group: 'decor', set: 'retro', layer: 'wall', name: 'itemPendulumClock' },
+  birdCage: { w: 1, h: 1, price: 100_000, beauty: 3, group: 'decor', set: 'retro', layer: 'wall', name: 'itemBirdCage' },
+  redRug: { w: 3, h: 2, price: 220_000, beauty: 4, group: 'decor', set: 'retro', layer: 'rug', name: 'itemRedRug' },
+  fishTank: { w: 2, h: 1, price: 250_000, beauty: 5, group: 'decor', set: 'garden', name: 'itemFishTank' },
+  bougainvillea: { w: 1, h: 1, price: 90_000, beauty: 2, group: 'decor', set: 'garden', name: 'itemBougainvillea' },
+  sunflowerVase: { w: 1, h: 1, price: 80_000, beauty: 2, group: 'decor', set: 'garden', name: 'itemSunflowerVase' },
+  fernBasket: { w: 1, h: 1, price: 70_000, beauty: 2, group: 'decor', set: 'garden', layer: 'wall', name: 'itemFernBasket' },
+  succulentShelf: { w: 2, h: 1, price: 120_000, beauty: 3, group: 'decor', set: 'garden', layer: 'wall', name: 'itemSucculentShelf' },
+  grassRug: { w: 2, h: 2, price: 140_000, beauty: 3, group: 'decor', set: 'garden', layer: 'rug', name: 'itemGrassRug' },
+  lacquerPainting: { w: 2, h: 1, price: 200_000, beauty: 5, group: 'decor', layer: 'wall', name: 'itemLacquerPainting' },
+  rattanMirror: { w: 1, h: 1, price: 90_000, beauty: 2, group: 'decor', layer: 'wall', name: 'itemRattanMirror' },
+  wallLantern: { w: 1, h: 1, price: 60_000, beauty: 1, group: 'decor', layer: 'wall', name: 'itemWallLantern' },
+  conicalHat: { w: 1, h: 1, price: 50_000, beauty: 1, group: 'decor', layer: 'wall', name: 'itemConicalHat' },
+  runnerRug: { w: 1, h: 3, price: 90_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRunnerRug' },
+  roundRug: { w: 2, h: 2, price: 110_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRoundRug' },
+  brocadeRug: { w: 2, h: 3, price: 180_000, beauty: 4, group: 'decor', layer: 'rug', name: 'itemBrocadeRug' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]
+
+export function layerOf(kind: ItemKind): Layer {
+  return ITEMS[kind].layer ?? 'floor'
+}
 
 export interface Item {
   id: number
@@ -110,9 +148,10 @@ export function size(item: { kind: ItemKind; turned?: boolean }): { w: number; h
   return item.turned ? { w: h, h: w } : { w, h }
 }
 
-/** Whether a piece has a side to stand on: any bed, which then lies across the floor, or any piece that is not square. */
+/** Whether a piece has a side to stand on: any bed, which then lies across the floor, or any piece that is not square; a wall piece never turns. */
 export function canTurn(kind: ItemKind): boolean {
   const { w, h, group } = ITEMS[kind]
+  if (layerOf(kind) === 'wall') return false
   return group === 'bed' || w !== h
 }
 
@@ -170,9 +209,9 @@ export function workFacing(s: { bed: Tile; work: Tile }): Facing {
   return s.bed.x < s.work.x ? 'left' : 'right'
 }
 
-/** A piece stood on its side, drawn upright; a turned bed lies across the floor instead. */
+/** A piece stood on its side, drawn upright; a turned bed or rug lies across the floor instead. */
 export function isUpright(item: Item): boolean {
-  return item.turned === true && ITEMS[item.kind].group !== 'bed'
+  return item.turned === true && ITEMS[item.kind].group !== 'bed' && layerOf(item.kind) !== 'rug'
 }
 
 /** Where the owner stands behind a desk, beside its end away from the customers; only a desk has one. A turned desk faces right, or left when flipped. */
@@ -238,7 +277,7 @@ export function setProgress(items: Item[], set: SetId): number {
 /** Sum of every item's beauty; items of a complete set count half again. */
 export function beautyOf(items: Item[]): number {
   const full = new Set<SetId>()
-  for (const set of ['saigon', 'bamboo'] as const) if (setProgress(items, set) === 6) full.add(set)
+  for (const set of SET_IDS) if (setProgress(items, set) === 6) full.add(set)
   return items.reduce((sum, i) => {
     const { beauty, set } = ITEMS[i.kind]
     return sum + (set && full.has(set) ? beauty * 1.5 : beauty)
