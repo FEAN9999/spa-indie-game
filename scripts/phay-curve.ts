@@ -1,5 +1,5 @@
 /**
- * Phây's follower curve, run headless: a main shop on three seeds for 120 days, a technician hired every few days,
+ * Phây's follower curve, run headless: a main shop on three seeds for 240 days, a technician hired every few days,
  * the owner serving no one. Prints the followers at the checkpoints, the complaint posts a day early and late, and the save-code length.
  *
  * node has no TypeScript runner here, so bundle it first (from the project folder):
@@ -11,8 +11,8 @@ import { SpaSim } from '../src/sim/spa'
 import { noTiers, wageFor, type StaffRole } from '../src/sim/staff'
 
 const SEEDS = [1, 2, 3]
-const DAYS = 120
-const CHECKPOINTS = [20, 30, 60, 90, 120]
+const DAYS = 240
+const CHECKPOINTS = [20, 30, 60, 90, 120, 240]
 /** A technician is hired this often until the shop is full. */
 const HIRE_EVERY = 4
 const EARLY = [8, 20]
@@ -61,7 +61,7 @@ async function run(seed: number) {
     if (sim.feed.followers < last) throw new Error(`followers fell on day ${day}`)
     last = sim.feed.followers
     if (CHECKPOINTS.includes(day)) followers[day] = sim.feed.followers
-    if (day === 60 || day === 120) codes[day] = (await encodeSaveCode(sim.toSave())).length
+    if (day === 60 || day === 240) codes[day] = (await encodeSaveCode(sim.toSave())).length
     // the next morning: money topped up, what ran low bought again, a technician hired every few days until the shop is full
     sim.money = Math.max(sim.money, 5_000_000)
     for (const item of sim.lowStock()) sim.restock(item)
@@ -75,6 +75,6 @@ console.log(`followers at day ${CHECKPOINTS.join(' / ')}`)
 for (const seed of SEEDS) {
   const r = await run(seed)
   console.log(
-    `seed ${seed}: ${CHECKPOINTS.map(d => r.followers[d]).join(' / ')} | complaints a day: days ${EARLY.join('-')} ${r.early.toFixed(2)}, days ${LATE.join('-')} ${r.late.toFixed(2)} | save code: day 60 ${r.codes[60]}, day 120 ${r.codes[120]} chars | milestones ${r.milestones.join(',')}`,
+    `seed ${seed}: ${CHECKPOINTS.map(d => r.followers[d]).join(' / ')} | complaints a day: days ${EARLY.join('-')} ${r.early.toFixed(2)}, days ${LATE.join('-')} ${r.late.toFixed(2)} | save code: day 60 ${r.codes[60]}, day 240 ${r.codes[240]} chars | milestones ${r.milestones.join(',')}`,
   )
 }

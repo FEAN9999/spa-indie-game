@@ -1,4 +1,4 @@
-import { FEED_DAY_CAP, FEED_EXTRA_COMMENTS, FEED_FANS, FEED_GAIN, FEED_MAX_POSTS, FEED_MILESTONES, FEED_REACH, FEED_SEED, FEED_START_FOLLOWERS, UNLOCK_DAY } from '../config'
+import { FEED_DAY_CAP, FEED_EXTRA_COMMENTS, FEED_FANS, FEED_GAIN, FEED_MAX_POSTS, FEED_MILESTONES, FEED_REACH, FEED_REACH_CAP, FEED_SEED, FEED_START_FOLLOWERS, UNLOCK_DAY } from '../config'
 import { CUSTOMER_KINDS } from './customers'
 import type { CustomerKind } from './customers'
 import { IDOL_IDS } from './idols'
@@ -107,7 +107,7 @@ export function addPost(feed: FeedBook, draft: PostDraft, day: number, minute: n
     likes = lo + (hi - lo) * r
   } else {
     const [fixed, share] = FEED_REACH[draft.kind]
-    likes = fixed + share * feed.followers * (0.6 + 0.8 * r)
+    likes = fixed + share * Math.min(feed.followers, FEED_REACH_CAP) * (0.6 + 0.8 * r)
   }
   likes = Math.round(likes)
   const post: Post = { ...draft, id: feed.nextId++, day, minute, likes, extra: Math.round(likes * FEED_EXTRA_COMMENTS), boosted: null }

@@ -579,8 +579,10 @@ export const FEED_PRAISE_CHANCE = 1 / 3
 export const FEED_MILESTONES = [1_000, 10_000, 100_000, 1_000_000]
 /** An old save's followers: the start, then so much per rank star, idol met and year's win, at most max. */
 export const FEED_SEED = { base: 50, star: 1_000, idol: 5_000, win: 20_000, max: 99_000 }
-/** likes = fixed + share x followers x (0.6 + 0.8 r). */
+/** likes = fixed + share x min(followers, FEED_REACH_CAP) x (0.6 + 0.8 r). */
 export const FEED_REACH = { praise: [40, 0.02], complaint: [1, 0.005], shop: [5, 0.08], vip: [30, 0.05], rival: [20, 0.01], ward: [10, 0.02] } as const
+/** Followers past this bring no more likes, so a plain shop grows by a steady amount a day past it and 100.000 needs stars and boosts. */
+export const FEED_REACH_CAP = 8_000
 /** An idol's or a KOL's likes are their own fans: lo + (hi - lo) r. */
 export const FEED_FANS = { idol: [20_000, 60_000], kol: [5_000, 15_000] } as const
 /** followers += round(likes x gain). */

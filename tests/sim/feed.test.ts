@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FEED_GAIN, FEED_MAX_POSTS, FEED_REACH } from '../../src/config'
+import { FEED_GAIN, FEED_MAX_POSTS, FEED_REACH, FEED_REACH_CAP } from '../../src/config'
 import { addPost, dayRoom, emptyFeed, markRead, openFeed, repairFeed, seededFeed, takeCheer, unreadCount } from '../../src/sim/feed'
 import type { FeedBook, PostDraft, PostKind } from '../../src/sim/feed'
 
@@ -30,10 +30,18 @@ describe('feed book', () => {
   })
 
   it('likes follow the kind', () => {
-    const f = book(10_000)
-    expect(addPost(f, draft('praise'), 9, 0, half).likes).toBe(FEED_REACH.praise[0] + FEED_REACH.praise[1] * 10_000)
+    const f = book(5_000)
+    expect(addPost(f, draft('praise'), 9, 0, half).likes).toBe(FEED_REACH.praise[0] + FEED_REACH.praise[1] * 5_000)
     expect(addPost(f, draft('idol'), 9, 0, half).likes).toBe(40_000)
     expect(addPost(f, draft('kol'), 9, 0, half).likes).toBe(10_000)
+  })
+
+  it('followers past the reach cap bring no more likes, so the count grows by a steady amount a day', () => {
+    for (const kind of ['praise', 'complaint', 'shop', 'vip', 'rival', 'ward'] as const) {
+      const [fixed, share] = FEED_REACH[kind]
+      expect(addPost(book(FEED_REACH_CAP), draft(kind), 9, 0, half).likes).toBe(Math.round(fixed + share * FEED_REACH_CAP))
+      expect(addPost(book(500_000), draft(kind), 9, 0, half).likes).toBe(Math.round(fixed + share * FEED_REACH_CAP))
+    }
   })
 
   it('draws exactly one random value and fills in the post', () => {
@@ -46,11 +54,11 @@ describe('feed book', () => {
   })
 
   it('followers grow by likes x gain and never fall', () => {
-    const f = book(9_850)
+    const f = book(4_850)
     const post = addPost(f, draft('praise'), 9, 0, half)
-    const likes = FEED_REACH.praise[0] + FEED_REACH.praise[1] * 9_850
+    const likes = FEED_REACH.praise[0] + FEED_REACH.praise[1] * 4_850
     expect(post.likes).toBe(likes)
-    expect(f.followers).toBe(9_850 + Math.round(likes * FEED_GAIN.praise))
+    expect(f.followers).toBe(4_850 + Math.round(likes * FEED_GAIN.praise))
     const grown = f.followers
     addPost(f, draft('complaint'), 9, 0, half)
     expect(f.followers).toBe(grown)
