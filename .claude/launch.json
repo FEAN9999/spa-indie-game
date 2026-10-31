@@ -1,0 +1,44 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ngay-dem",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "D:/Project/spa-indie-game/.superpowers/worktrees/ngay-dem",
+        "--config",
+        "C:/Users/phatlee/AppData/Local/Temp/claude/D--Project-spa-indie-game/cbed3f76-e935-4d37-85e7-fb3b52e9457b/scratchpad/vite.dev.mjs",
+        "--port",
+        "5193",
+        "--strictPort"
+      ],
+      "port": 5193
+    },
+    {
+      "name": "phay",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "D:/Project/spa-indie-game/.superpowers/worktrees/phay",
+        "--config",
+        "C:/Users/phatlee/AppData/Local/Temp/claude/D--Project-spa-indie-game/96613132-1df2-4530-b549-768a20a38c52/scratchpad/vite.phay.mjs",
+        "--port",
+        "5194",
+        "--strictPort"
+      ],
+      "port": 5194
+    },
+    {
+      "name": "main",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5195",
+        "--strictPort"
+      ],
+      "port": 5195
+    }
+  ]
+}
