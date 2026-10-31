@@ -713,8 +713,8 @@ export class SpaScene extends Phaser.Scene {
     this.modal = true
     const intro = !sim.hintDone('openBuild')
     sim.markHint('openBuild')
-    if (sim.floors > 1) sim.markHint('openFloor')
     const shop = this.centreShop()
+    if (sim.floors > 1 && shop === 'spa') sim.markHint('openFloor')
     const restaurant = shop === 'restaurant' ? this.chain.restaurant : null
     // the restaurant has only floor 1, which build mode works on
     if (restaurant && this.viewFloor !== 1) this.showFloor(1)
@@ -1570,8 +1570,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       return
     }
     const at = pick && this.customers.get(pick.customerId)?.view.container
-    // a customer newly pointed at out of view: the map slides to them, and the hand shows once they are in view
-    if (pick && at?.visible && pick.customerId !== this.pointedId) {
+    // a customer newly pointed at out of view: the map slides to them, and the hand shows once they are in view; not while the owner is next door, the slide waits until she is back
+    if (pick && at?.visible && !sim.ownerNextDoor && pick.customerId !== this.pointedId) {
       this.pointedId = pick.customerId
       if (!this.gestures.busy && !this.cam.isVisible(at.x, at.y)) this.cam.slideTo(at.x, at.y)
     }
