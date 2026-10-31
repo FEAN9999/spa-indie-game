@@ -56,10 +56,10 @@ describe('the restaurant room', () => {
     const before = main.money
     expect(r.money).toBe(before)
     expect(r.buy('stove', 21, 3, false)).toBeNull()
-    expect(main.money).toBe(before - 400_000)
+    expect(main.money).toBe(before - 600_000)
     const id = r.items[r.items.length - 1].id
     expect(r.sell(id)).toBeNull()
-    expect(main.money).toBe(before - 400_000 + Math.floor(ITEMS.stove.price / 2))
+    expect(main.money).toBe(before - 600_000 + Math.floor(ITEMS.stove.price / 2))
     expect(r.items.some(i => i.id === id)).toBe(false)
   })
 

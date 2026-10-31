@@ -57,6 +57,7 @@ import v30 from '../fixtures/save-v30.json'
 import v31 from '../fixtures/save-v31.json'
 import v32 from '../fixtures/save-v32.json'
 import v35 from '../fixtures/save-v35.json'
+import v37 from '../fixtures/save-v37.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -129,7 +130,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
 describe('the wide grid in an older shop', () => {
   it('is the restaurant version', () => {
     expect(SAVE_VERSION).toBe(RESTAURANT_SAVE_VERSION)
-    expect(RESTAURANT_SAVE_VERSION).toBe(36)
+    expect(RESTAURANT_SAVE_VERSION).toBe(37)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2481,7 +2482,42 @@ describe('the restaurant in a saved chain', () => {
 
   it('writes no restaurant until it is bought, and ignores one in an older save', () => {
     expect(Chain.fromSave(parseSave(structuredClone(v35)), 5).toSave().restaurant).toBeNull()
-    expect(parseSave({ ...structuredClone(v35), restaurant: owned().chain.toSave().restaurant }).restaurant).toBeNull()
+    const bought = owned().chain.toSave().restaurant
+    expect(bought).not.toBeNull()
+    expect(parseSave({ ...structuredClone(v35), restaurant: bought }).restaurant).toBeNull()
+    expect(parseSave({ ...structuredClone(v35), v: RESTAURANT_SAVE_VERSION - 1, restaurant: bought }).restaurant).toBeNull()
+  })
+
+  it('loads the restaurant fixture', () => {
+    const data = parseSave(structuredClone(v37))
+    expect(data.v).toBe(RESTAURANT_SAVE_VERSION)
+    const r = Chain.fromSave(data, 7).restaurant!
+    expect(r.items.filter(i => i.kind === 'stove')).toHaveLength(2)
+    expect(r.diners).toHaveLength(2)
+  })
+
+  it('loads a version 36 Phây save into the restaurant version with no restaurant and its feed kept', () => {
+    const phay = JSON.parse(JSON.stringify(Chain.fromSave(parseSave(structuredClone(v35)), 5).toSave())) as Record<string, unknown> & { feed: { followers: number } }
+    delete phay.restaurant
+    phay.v = 36
+    phay.feed.followers = 1234
+    const chain = Chain.fromSave(parseSave(phay), 5)
+    expect([chain.restaurant, chain.street, chain.main.feed.followers]).toEqual([null, null, 1234])
+    const saved = chain.toSave()
+    expect([saved.v, saved.restaurant, saved.feed.followers]).toEqual([RESTAURANT_SAVE_VERSION, null, 1234])
+  })
+
+  it('takes a version 35 save through the Phây step and then the restaurant step', () => {
+    const old = structuredClone(v35) as unknown as { reviews: number[]; day: number }
+    old.reviews = [5, 4]
+    old.day = 12
+    const data = parseSave(old)
+    expect([data.reviewIds, data.feed.open, data.restaurant]).toEqual([[0, 0], true, null])
+    const chain = Chain.fromSave(data, 5)
+    chain.main.money = 20_000_000
+    expect(chain.buyRestaurant()).toBeNull()
+    const saved = chain.toSave()
+    expect([saved.v, saved.feed.followers, saved.restaurant!.items.length]).toEqual([RESTAURANT_SAVE_VERSION, data.feed.followers, chain.restaurant!.items.length])
   })
 
   it('round-trips a restaurant with diners, stats and furniture', () => {

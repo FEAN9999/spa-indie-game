@@ -572,7 +572,7 @@ export const AWAY_PROFIT_DAYS = 3
 
 /** It goes on sale from this day, for this price, and its grid is drawn from this world column on. */
 export const RESTAURANT_DAY = 10
-export const RESTAURANT_PRICE = 5_000_000
+export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
@@ -593,7 +593,7 @@ export const EAT_MS = 8_000
 export const RIDE_MS = 3_000
 
 /** What the restaurant's three working pieces cost; its decor pieces carry their prices in ITEMS. */
-export const RESTAURANT_FURNITURE = { stove: 400_000, diningTable: 150_000, diningChair: 60_000 } as const
+export const RESTAURANT_FURNITURE = { stove: 600_000, diningTable: 225_000, diningChair: 90_000 } as const
 
 /** Phở: the cooking game's time limit, the four dotted cut lines (x, in game pixels), how close a swipe must land and how long it must be. */
 export const PHO_LIMIT_MS = 25_000

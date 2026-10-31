@@ -62,14 +62,14 @@ const toStove = (o: Owned, d: Diner) => {
 }
 
 describe('buying the restaurant', () => {
-  it('sells the restaurant from day 10 for 5.000.000 đ, once', () => {
+  it('sells the restaurant from day 10 for 7.500.000 đ, once', () => {
     const chain = new Chain(starShop(3, 20_000_000, 7), 7)
     chain.main.day = 9
     expect(chain.restaurantProblem()).toBe('day')
     expect(chain.buyRestaurant()).toBe('day')
     expect(chain.restaurant).toBeNull()
     chain.main.day = 10
-    chain.main.money = 4_999_999
+    chain.main.money = 7_499_999
     expect(chain.restaurantProblem()).toBe('money')
     expect(chain.buyRestaurant()).toBe('money')
     expect(chain.restaurant).toBeNull()
