@@ -167,6 +167,23 @@ describe('answering a Phây complaint', () => {
     expect(chain.shop('beach')!.reviews).toEqual(branchReviews)
   })
 
+  it('a branch cannot answer: it says branch and changes nothing', () => {
+    const main = starShop()
+    openFeed(main.feed)
+    const chain = new Chain(main, 7)
+    expect(chain.open('beach')).toBeNull()
+    const c = walkOut(main)
+    const post = complaintOf(main, c)
+    const branch = chain.shop('beach')!
+    const money = branch.money, followers = branch.feed.followers, scores = scoresOf(main, c), stars = post.stars
+    expect(branch.answerPost(post.id, 'right')).toBe('branch')
+    expect(post.complaint!.answered).toBeNull()
+    expect(post.stars).toBe(stars)
+    expect(scoresOf(main, c)).toEqual(scores)
+    expect(branch.feed.followers).toBe(followers)
+    expect(branch.money).toBe(money)
+  })
+
   it('followers never go down and a crossed milestone is queued once', () => {
     const { sim, post } = angry()
     const first = FEED_MILESTONES[0]

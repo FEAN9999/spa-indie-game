@@ -332,10 +332,10 @@ export const REPLY_PLAIN: readonly string[] = [
 ]
 
 export const REPLY_RUDE: readonly string[] = [
-  'Tiệm đông thì chờ chút có sao đâu.',
-  'Tiệm làm vậy là bình thường, bạn khó tính quá.',
+  'Tiệm đông khách, đâu chiều riêng ai được.',
+  'Tiệm làm vậy là bình thường, ai cũng thấy ổn mà.',
   'Mỗi người một ý, tiệm vẫn làm như vậy thôi.',
-  'Không ai chê như bạn đâu, bạn xem lại đi.',
+  'Khách khác khen hết, tiệm không thấy có gì sai.',
 ]
 
 /** The guest's answer under a right or a plain reply; a manager's own when the complaint was a star's. */
@@ -347,7 +347,7 @@ export const ANSWER_RIGHT: readonly string[] = [
 export const ANSWER_RIGHT_MANAGER: readonly string[] = [
   'Cảm ơn tiệm đã phản hồi. Bên mình ghi nhận và sẽ sắp xếp lịch để ghé lại.',
   'Cảm ơn tiệm đã xin lỗi. Bên mình rất trân trọng sự quan tâm này.',
-  'Bên mình cảm ơn tiệm đã giải thích. Hy vọng sớm có dịp ghé lại.',
+  'Bên mình cảm ơn tiệm đã trả lời tận tình. Hy vọng sớm có dịp ghé lại.',
 ]
 export const ANSWER_PLAIN: readonly string[] = [
   'Ừ, để xem lần sau.',

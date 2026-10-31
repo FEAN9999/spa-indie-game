@@ -152,6 +152,22 @@ describe('what a boost does the next day', () => {
     expect(branch.arrivalFactor()).toBe(before)
   })
 
+  it('a branch cannot boost: it says branch and changes nothing', () => {
+    const main = starShop()
+    openFeed(main.feed)
+    const p = post(main)
+    const chain = new Chain(main, 7)
+    expect(chain.open('beach')).toBeNull()
+    const branch = chain.shop('beach')!
+    const money = branch.money, followers = branch.feed.followers, likes = p.likes
+    expect(branch.boostPost(p.id, 'small')).toBe('branch')
+    expect(p.boosted).toBeNull()
+    expect(p.likes).toBe(likes)
+    expect(branch.feed.boosts).toEqual([])
+    expect(branch.feed.followers).toBe(followers)
+    expect(branch.money).toBe(money)
+  })
+
   it('gives a new customer the festival patience', () => {
     const plain = on()
     const plainPatience = plain.spawnCustomer({ kind: 'office', service: 'shampoo' }).patienceMaxMs

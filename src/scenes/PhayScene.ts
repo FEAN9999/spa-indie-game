@@ -386,7 +386,7 @@ export class PhayScene extends Phaser.Scene {
   /** A toast inside the phone, over the list's foot, replacing the one up. */
   private toast(text: string): void {
     this.toastBox?.destroy()
-    const box = addToast(this, GAME_W / 2, TOAST_Y, text)
+    const box = addToast(this, GAME_W / 2, TOAST_Y, text, 760)
     box.once(Phaser.GameObjects.Events.DESTROY, () => {
       if (this.toastBox !== box) return
       this.toastBox = null

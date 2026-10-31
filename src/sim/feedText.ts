@@ -107,9 +107,8 @@ export function replyText(reply: ReplyKind, reason: ComplaintReason, rng: Rng): 
   return pick(reply === 'right' ? REPLY_RIGHT[reason] : reply === 'plain' ? REPLY_PLAIN : REPLY_RUDE, rng)
 }
 
-/** The guest's (or, for a star's complaint, the manager's) answer to a right or a plain reply; a rude reply gets none here, only a stranger's drama. */
-export function answerText(reply: ReplyKind, manager: boolean, rng: Rng): string {
-  if (reply === 'rude') return ''
+/** The guest's (or, for a star's complaint, the manager's) answer to a right or a plain reply; a rude reply gets none, only a stranger's drama (see dramaComment). */
+export function answerText(reply: Exclude<ReplyKind, 'rude'>, manager: boolean, rng: Rng): string {
   if (reply === 'right') return pick(manager ? ANSWER_RIGHT_MANAGER : ANSWER_RIGHT, rng)
   return pick(manager ? ANSWER_PLAIN_MANAGER : ANSWER_PLAIN, rng)
 }

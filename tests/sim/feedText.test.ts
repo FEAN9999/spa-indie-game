@@ -203,7 +203,7 @@ describe('replies', () => {
     const out: string[] = []
     for (const k of REPLY_KINDS) {
       for (const r of COMPLAINT_REASONS) out.push(replyText(k, r, rng))
-      for (const m of [false, true]) out.push(answerText(k, m, rng))
+      if (k !== 'rude') for (const m of [false, true]) out.push(answerText(k, m, rng))
     }
     out.push(...dramaComment(rng))
     return out.filter(l => l !== '')
@@ -293,7 +293,8 @@ describe('replies', () => {
   })
 
   it('a rude reply has no answer; a drama comment is a stranger saying one of the drama lines', () => {
-    expect(answerText('rude', false, createRng(1))).toBe('')
+    // @ts-expect-error a rude reply has no answer text
+    expect(() => answerText('rude', false, createRng(1))).not.toThrow()
     expect(DRAMA_LINES.length).toBeGreaterThanOrEqual(4)
     expect(DRAMA_LINES).toContain('Thái độ gì vậy tiệm?')
     const names = new Set(Object.values(STRANGER_NAMES).flat())

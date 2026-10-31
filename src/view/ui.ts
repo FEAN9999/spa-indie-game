@@ -58,8 +58,8 @@ export function addButton(
 }
 
 /** A dark pill with paper text centred on x, y that fades in, stays 1.7 seconds and fades out, then destroys itself. */
-export function addToast(scene: Phaser.Scene, x: number, y: number, text: string): Phaser.GameObjects.Container {
-  const label = scene.add.text(0, 0, text, { ...textStyle(40, '600', C.paper), align: 'center', wordWrap: { width: 920 } }).setOrigin(0.5)
+export function addToast(scene: Phaser.Scene, x: number, y: number, text: string, wrapWidth = 920): Phaser.GameObjects.Container {
+  const label = scene.add.text(0, 0, text, { ...textStyle(40, '600', C.paper), align: 'center', wordWrap: { width: wrapWidth } }).setOrigin(0.5)
   // one line keeps the old 80 tall box (the font's tall-mark metrics would make label.height + 40 taller); wrapped lines grow it
   const h = label.getWrappedText().length > 1 ? Math.max(80, label.height + 40) : 80
   const bg = scene.add.graphics().fillStyle(hex(C.ink), 0.92).fillRoundedRect(-label.width / 2 - 40, -h / 2, label.width + 80, h, Math.min(40, h / 2))

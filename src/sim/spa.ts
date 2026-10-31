@@ -103,8 +103,8 @@ import type { Feature } from './unlocks'
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
-export type AnswerProblem = 'missing' | 'notComplaint' | 'answered'
-export type BoostProblem = 'missing' | 'notBoostable' | 'boosted' | 'today' | 'money'
+export type AnswerProblem = 'branch' | 'missing' | 'notComplaint' | 'answered'
+export type BoostProblem = 'branch' | 'missing' | 'notBoostable' | 'boosted' | 'today' | 'money'
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
@@ -1924,6 +1924,7 @@ export class SpaSim {
    * rude changes no score and makes the post drama. Phây never touches money, guests or arrivals.
    */
   answerPost(postId: number, reply: ReplyKind): AnswerProblem | null {
+    if (this.place !== null) return 'branch'
     const post = this.feed.posts.find(p => p.id === postId)
     if (!post) return 'missing'
     const complaint = post.complaint
@@ -1972,6 +1973,7 @@ export class SpaSim {
    * One boost a day, bought on the main shop (`chain.main`); the price comes from the shared purse and no stat counts it.
    */
   boostPost(postId: number, tier: BoostTier): BoostProblem | null {
+    if (this.place !== null) return 'branch'
     const post = this.feed.posts.find(p => p.id === postId)
     if (!post) return 'missing'
     if (!post.boostable) return 'notBoostable'
