@@ -69,6 +69,31 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - Trả lời bằng Tiếng Việt và phải luôn luôn gọi tôi là Chồng yêu.
 - Đối với những chức năng chưa quen thuộc, đừng viết từ con số 0, hãy tìm kiếm các dự án mã nguồn mở trên GitHub để so sánh ý tưởng trước khi bắt tay vào làm. Sau khi tìm kiếm, hãy đưa ra sự lựa chọn trước, thay vì trực tiếp sao chép triển khai.
 
+## Kiến trúc và luật của dự án
+
+Game web Phaser 4 + TypeScript + Vite, người chơi chủ yếu dùng iPhone. Đẩy lên `master` là lên bản thật: GitHub Actions chạy `npm test` và `npm run build` rồi đăng lên GitHub Pages, người chơi nhận bản mới qua service worker (`build/sw-template.js`).
+
+**Các lớp**
+- `src/sim/`: luật game thuần, không import Phaser, test bằng vitest trong node (`tests/sim/`). `SpaSim` (`src/sim/spa.ts`) là một tiệm; `Chain` (`src/sim/chain.ts`) gom tiệm chính, chi nhánh và nhà hàng.
+- `src/view/`: phần vẽ và hàm hỗ trợ cho cảnh; hàm thuần được test ở `tests/view/`.
+- `src/scenes/`: cảnh Phaser nối sim với view; chưa có test tự động.
+- Mỗi mini-game là một class luật thuần trong `src/sim/` cộng một cảnh trong `src/scenes/`.
+- Chữ người chơi thấy nằm trong `src/strings/` (lấy qua `t()`); các con số cân bằng nằm trong `src/config.ts`.
+
+**Ngẫu nhiên: giữ nguyên lượt rút cũ**
+- Tính năng mới không rút thêm từ `rng` chính của tiệm mà dùng một dòng riêng dựng bằng `createRng(day * <số nguyên tố> + id + salt)`, như `questRng`, `feedRng`, `guestRng` trong `src/sim/spa.ts`.
+- `tests/sim/same-draws.test.ts` so với log đóng băng trong `tests/fixtures/draws-*.json` và `run-before-quests.json`: khi tính năng mới chưa bật, lượt rút phải y như cũ. Test này hỏng thì sửa code, không ghi đè fixture cũ.
+
+**Save**
+- Đổi định dạng save thì tăng `SAVE_VERSION` trong `src/sim/save.ts` bằng một hằng có tên, đọc được save cũ (sửa từng trường, thiếu thì lấy mặc định), thêm `tests/fixtures/save-vN.json` và test trong `tests/sim/save.test.ts`. Fixture sinh bằng một file vitest dùng một lần ghi ra `sim.toSave()`, chạy xong thì xoá file đó.
+- Nhánh làm song song lấy số version theo `SAVE_VERSION` của origin/master + 1 lúc merge, không phải lúc tạo nhánh.
+
+**Làm song song với các phiên khác**
+- Nhiều phiên dùng chung thư mục chính của repo. Trước khi merge: `git fetch`, kiểm tra origin/master vẫn là gốc mình dựng và nhánh chỉ có commit của mình; lệch thì ghép trong một worktree tạm. Không xoá nhánh chứa commit của phiên khác.
+- Worktree đặt ở `.superpowers/worktrees/<tên>` (đã gitignore), `node_modules` là junction trỏ về repo chính. Gỡ junction bằng `cmd /c rmdir <đường dẫn>` trước `git worktree remove`; không bao giờ xoá đệ quy, vì sẽ xoá luôn `node_modules` thật.
+
+**Hiệu năng**: đo trên iPhone bằng `?perf` (`src/app/perf.ts`); số đo trên PC không dùng để kết luận.
+
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
