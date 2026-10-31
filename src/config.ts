@@ -591,3 +591,9 @@ export const FEED_GAIN = { praise: 0.4, complaint: 0, shop: 0.1, vip: 0.1, rival
 export const FEED_EXTRA_COMMENTS = 0.03
 /** What answering a complaint does: a right or plain reply sets the customer's scores to `stars` and wins `followers`; a rude one makes `likes` times the likes and `comments` more comments. */
 export const FEED_REPLY = { right: { stars: 4, followers: 40 }, plain: { stars: 3, followers: 10 }, rude: { likes: 1.5, comments: 20 } } as const
+/** What a Phây boost costs and does: price = share x the recent profit, up to a multiple of 10.000 and never under `min`; the next day the main shop's gap between customers is divided by `arrival`, tips are multiplied by `tip`, and the post and the shop win `followers`. */
+export const BOOST = {
+  small: { share: 0.225, min: 150_000, arrival: 1.15, tip: 1.1, followers: 200 },
+  medium: { share: 0.6, min: 450_000, arrival: 1.3, tip: 1.2, followers: 600 },
+  large: { share: 1.2, min: 900_000, arrival: 1.5, tip: 1.3, followers: 1800 },
+} as const

@@ -2,6 +2,7 @@ import {
   JOLLY_TIP,
   ANGRY_REVIEW,
   ARRIVE_MS,
+  BOOST,
   DAY_END_MIN,
   DAY_MINUTES,
   DAYS_PER_MONTH,
@@ -87,7 +88,7 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
-import { addPost, dayRoom, emptyFeed, growFollowers, openFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
+import { addPost, boostedToday, boostPrice, dayRoom, emptyFeed, growFollowers, MAX_BOOSTS, openFeed, REPLY_KINDS, type BoostTier, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
 import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -103,6 +104,7 @@ import type { Feature } from './unlocks'
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
 export type AnswerProblem = 'missing' | 'notComplaint' | 'answered'
+export type BoostProblem = 'missing' | 'notBoostable' | 'boosted' | 'today' | 'money'
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
@@ -528,7 +530,8 @@ export class SpaSim {
   /** What the gap between two customers is multiplied by today: shorter in a festival or a hot day, once when both. */
   eventArrivalFactor(): number {
     if (this.place !== null) return 1
-    return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1)
+    const boost = this.boostTier()
+    return Math.min(festivalOf(this.day) ? FESTIVAL_ARRIVAL : 1, this.hotToday() ? HOT_ARRIVAL : 1) / (boost ? BOOST[boost].arrival : 1)
   }
 
   /** What the gap between two customers is multiplied by: a branch's place sets its own, the main shop has the events'. */
@@ -539,7 +542,7 @@ export class SpaSim {
   /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival or a hot day, to go with the crowd. */
   private eventPatienceFactor(): number {
     if (this.place !== null) return 1
-    return festivalOf(this.day) || this.hotToday() ? FESTIVAL_PATIENCE : 1
+    return festivalOf(this.day) || this.hotToday() || this.boostTier() !== null ? FESTIVAL_PATIENCE : 1
   }
 
   /**
@@ -702,7 +705,7 @@ export class SpaSim {
     const spec = KINDS[c.kind]
     // a customer served while the power is out tips half again
     const tip = Math.round(
-      tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)) * (this.powerOut() ? POWER_TIP_FACTOR : 1),
+      tipFor(base, stars) * spec.tip[stars - 1] * (tipFactor(c.greet, technician?.stats.friendly ?? null) + (technician?.trait === 'jolly' ? JOLLY_TIP : 0)) * (this.powerOut() ? POWER_TIP_FACTOR : 1) * this.boostTipFactor(),
     )
     this.money += price + tip
     this.stats.income += price
@@ -1049,6 +1052,7 @@ export class SpaSim {
     if (book.plan && book.plan.day < this.day) book.plan = null
     book.count = 0
     book.inspected = false
+    this.feed.boosts = this.feed.boosts.filter(b => b.day >= this.day)
     this.progress.dayStart = structuredClone(this.progress.total)
     if (dayOfMonth(this.day) === 1) this.rank.month = { from: this.day, served: this.progress.total.served, lost: this.progress.total.lost }
     this.checkBadges()
@@ -1682,7 +1686,7 @@ export class SpaSim {
       this.dayOver = true
       payWages(this.crew)
       this.payQuests(closeNoWalk(this.progress))
-      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday(), this.day)
+      recordDay(this.progress, this.stats, festivalOf(this.day) !== null || this.hotToday() || this.boostTier() !== null, this.day)
       closeAwayDay(this.away, dayProfit(this.stats), this.stats.ownerServed, this.progress.dayStart ? this.progress.total.staff - this.progress.dayStart.staff : 0)
       if (this.place === null && isJudgeDay(this.day)) {
         const month = judgeMonth(this.rank, this.rankNow().input, this.day)
@@ -1943,6 +1947,45 @@ export class SpaSim {
     post.stars = stars
     post.comments = [shop, [post.name, answerText(reply, complaint.manager, rng)]]
     growFollowers(this.feed, followers)
+    return null
+  }
+
+  /** What a boost of `tier` costs the main shop today: its share of the recent profit, rounded up, never under the minimum. */
+  boostPrice(tier: BoostTier): number {
+    return boostPrice(tier, awayMean(this.away))
+  }
+
+  /** The tier of the boost running today, bought yesterday: the main shop's alone, a branch sees the same feed and none of it. */
+  boostTier(): BoostTier | null {
+    if (this.place !== null) return null
+    return this.feed.boosts.find(b => b.day === this.day)?.tier ?? null
+  }
+
+  /** What today's boost multiplies a tip by. */
+  private boostTipFactor(): number {
+    const tier = this.boostTier()
+    return tier ? BOOST[tier].tip : 1
+  }
+
+  /**
+   * Pays to boost a boostable post: the post's likes jump, the shop wins followers, and tomorrow the main shop gets more customers, more patience and bigger tips.
+   * One boost a day, bought on the main shop (`chain.main`); the price comes from the shared purse and no stat counts it.
+   */
+  boostPost(postId: number, tier: BoostTier): BoostProblem | null {
+    const post = this.feed.posts.find(p => p.id === postId)
+    if (!post) return 'missing'
+    if (!post.boostable) return 'notBoostable'
+    if (post.boosted !== null) return 'boosted'
+    if (boostedToday(this.feed, this.day)) return 'today'
+    const price = this.boostPrice(tier)
+    if (this.money < price) return 'money'
+    this.money -= price
+    post.boosted = tier
+    post.likes += BOOST[tier].followers * 4
+    this.feed.boosts = this.feed.boosts.filter(b => b.day >= this.day)
+    this.feed.boosts.push({ day: this.day + 1, tier, post: postId })
+    this.feed.boosts.splice(0, this.feed.boosts.length - MAX_BOOSTS)
+    growFollowers(this.feed, BOOST[tier].followers)
     return null
   }
 

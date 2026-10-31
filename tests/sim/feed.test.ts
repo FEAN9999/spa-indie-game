@@ -170,7 +170,7 @@ describe('repairFeed', () => {
   it('keeps only well-formed boosts, at most 2', () => {
     const boosts = [{ day: 3, tier: 'small' }, { day: 'x', tier: 'small' }, { day: 4, tier: 'huge' }, { day: 5, tier: 'large' }, { day: 6, tier: 'medium' }]
     const f = repairFeed({ open: true, followers: 80, posts: [], boosts }, old)
-    expect(f.boosts).toEqual([{ day: 3, tier: 'small' }, { day: 5, tier: 'large' }])
+    expect(f.boosts).toEqual([{ day: 3, tier: 'small', post: 0 }, { day: 5, tier: 'large', post: 0 }])
   })
 
   it('keeps a sound book as it is', () => {

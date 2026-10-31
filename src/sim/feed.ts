@@ -1,4 +1,4 @@
-import { FEED_DAY_CAP, FEED_EXTRA_COMMENTS, FEED_FANS, FEED_GAIN, FEED_MAX_POSTS, FEED_MILESTONES, FEED_REACH, FEED_REACH_CAP, FEED_SEED, FEED_START_FOLLOWERS, UNLOCK_DAY } from '../config'
+import { BOOST, FEED_DAY_CAP, FEED_EXTRA_COMMENTS, FEED_FANS, FEED_GAIN, FEED_MAX_POSTS, FEED_MILESTONES, FEED_REACH, FEED_REACH_CAP, FEED_SEED, FEED_START_FOLLOWERS, UNLOCK_DAY } from '../config'
 import { CUSTOMER_KINDS } from './customers'
 import type { CustomerKind } from './customers'
 import { IDOL_IDS } from './idols'
@@ -74,7 +74,7 @@ export interface FeedBook {
   milestones: number[]
   cheer: number[]
   today: { day: number; praise: number; complaint: number }
-  boosts: { day: number; tier: BoostTier }[]
+  boosts: { day: number; tier: BoostTier; post: number }[]
 }
 
 /** What an old save knows, to count the followers it would have had. */
@@ -85,7 +85,7 @@ export interface FeedSeedInfo {
   wins: number
 }
 
-const MAX_BOOSTS = 2
+export const MAX_BOOSTS = 2
 
 export function emptyFeed(): FeedBook {
   return { open: false, posts: [], nextId: 1, lastSeen: 0, followers: 0, milestones: [], cheer: [], today: { day: 0, praise: 0, complaint: 0 }, boosts: [] }
@@ -96,6 +96,17 @@ export function openFeed(feed: FeedBook): void {
   if (feed.open) return
   feed.open = true
   feed.followers = Math.max(feed.followers, FEED_START_FOLLOWERS)
+}
+
+/** What a boost of `tier` costs when the shop's recent profit averages `mean`: its share rounded up to 10.000, never under the minimum (a mean at or under 0 pays the minimum). */
+export function boostPrice(tier: BoostTier, mean: number): number {
+  const { share, min } = BOOST[tier]
+  return Math.max(min, Math.ceil((share * Math.max(mean, 0)) / 10_000) * 10_000)
+}
+
+/** True when a boost was bought on `day`: its entry is for the day after. */
+export function boostedToday(feed: FeedBook, day: number): boolean {
+  return feed.boosts.some(b => b.day === day + 1)
 }
 
 /** Adds `n` followers (never takes any away) and queues each milestone this crosses for the first time. */
@@ -239,7 +250,7 @@ export function repairFeed(x: unknown, old: FeedSeedInfo): FeedBook {
     : { day: 0, praise: 0, complaint: 0 }
   const boosts: FeedBook['boosts'] = []
   for (const b of Array.isArray(x.boosts) ? x.boosts : []) {
-    if (isObject(b) && isNonNegInt(b.day) && isOneOf(BOOST_TIERS, b.tier)) boosts.push({ day: b.day, tier: b.tier })
+    if (isObject(b) && isNonNegInt(b.day) && isOneOf(BOOST_TIERS, b.tier)) boosts.push({ day: b.day, tier: b.tier, post: isNonNegInt(b.post) ? b.post : 0 })
   }
   boosts.length = Math.min(boosts.length, MAX_BOOSTS)
   return {

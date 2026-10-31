@@ -2446,12 +2446,12 @@ describe('save version 36', () => {
     addPost(sim.feed, draft, 3, 110, createRng(2))
     sim.feed.lastSeen = 1
     sim.feed.followers += 500
-    sim.feed.boosts = [{ day: 3, tier: 'small' }]
+    sim.feed.boosts = [{ day: 3, tier: 'small', post: 2 }]
     expect(sim.toSave().v).toBe(SAVE_VERSION)
     const back = viaJson(sim)
     expect(back.feed).toEqual(sim.feed)
     expect(back.feed.posts).toHaveLength(2)
-    expect([back.feed.lastSeen, back.feed.followers, back.feed.boosts]).toEqual([1, sim.feed.followers, [{ day: 3, tier: 'small' }]])
+    expect([back.feed.lastSeen, back.feed.followers, back.feed.boosts]).toEqual([1, sim.feed.followers, [{ day: 3, tier: 'small', post: 2 }]])
   })
   it('repairs bad review ids by padding or trimming to the reviews', () => {
     const raw = (reviews: number[], reviewIds: unknown) => ({ ...structuredClone(v35), reviews, reviewIds })
