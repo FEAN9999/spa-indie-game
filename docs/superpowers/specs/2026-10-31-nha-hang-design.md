@@ -1,7 +1,7 @@
 # Nhà hàng cạnh tiệm spa
 
 - Ngày: 2026-10-31
-- Trạng thái: bản nháp, chờ chồng yêu duyệt
+- Trạng thái: chồng yêu đã duyệt ngày 2026-10-31 ("Duyệt, làm đi")
 - Thuộc: spec chung `2026-10-25-spa-game-design.md`. Nối tiếp phần mua nhà `2026-10-30-mo-rong-dat-design.md` (lưới 37 cột, 4 căn, thu phóng, thanh vị trí) và phần tầng `2026-10-28-dot-2-tang-design.md`.
 - Lý do: chồng yêu hỏi "Anh muốn mở thêm nhà hàng, em thấy sao?"
 - Phác thảo bố cục (chồng yêu duyệt cả 9 điểm): https://claude.ai/artifact/VMJsanDs8AacyggDiwv1Mb
