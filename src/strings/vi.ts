@@ -878,6 +878,9 @@ export const vi = {
   phayMilestone10k: 'Tiệm mình thành chủ đề bàn tán khắp phố rồi.',
   phayMilestone100k: 'Tên tiệm có tích xanh cạnh bên, như người nổi tiếng.',
   phayMilestone1m: 'Ảnh tiệm có viền vàng quanh. Tiệm này là cả một thương hiệu.',
+  phayReply: 'Trả lời',
+  phayReplyTitle: 'Trả lời {name}',
+  phayReplyLater: 'Để sau',
 } as const
 
 export type StringKey = keyof typeof vi

@@ -78,6 +78,11 @@ export function phayButtonShown(open: boolean, cardUp: boolean, bannerUp: boolea
   return open && !cardUp && !bannerUp
 }
 
+/** A complaint still waiting for the shop's answer gets the Trả lời button; one saved without its replies never does. */
+export function replyButtonShown(post: Post): boolean {
+  return post.complaint !== null && post.complaint.answered === null
+}
+
 /** How long a notice stays down, fades included. */
 export const NOTICE_MS = 4000
 const NOTICE_CHARS = 48

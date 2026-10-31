@@ -822,6 +822,12 @@ export class SpaScene extends Phaser.Scene {
         this.modal = false
         this.session.saveNow()
       },
+      // the complaint's customer is the main shop's, wherever the owner stands
+      replyLine: (postId, reply) => main.replyLine(postId, reply),
+      onAnswer: (postId, reply) => {
+        main.answerPost(postId, reply)
+        this.session.saveNow()
+      },
     }
     this.scene.launch('PhayScene', data)
   }

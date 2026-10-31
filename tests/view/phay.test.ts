@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { addPost, emptyFeed } from '../../src/sim/feed'
 import type { FeedBook, PostDraft } from '../../src/sim/feed'
 import { milestoneCard } from '../../src/view/phayCards'
-import { clampScroll, DRAG_PX, dragTo, inWindow, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, shortCount, stackPosts, unreadLabel } from '../../src/view/phay'
+import { clampScroll, DRAG_PX, dragTo, inWindow, isDrag, nextNotice, noticeLine, PHAY_BUTTON, phayButtonShown, postTime, replyButtonShown, shortCount, stackPosts, unreadLabel } from '../../src/view/phay'
 
 describe('the Phây button', () => {
   it('sits under the top bar on the right, lower at a branch under the ribbon', () => expect(PHAY_BUTTON).toEqual({ x: 1010, y: 280, r: 44, branchY: 330 }))
@@ -146,5 +146,23 @@ describe('the milestone card', () => {
     expect(milestoneCard(1_000_000).line).toContain('viền vàng')
     expect(milestoneCard(1_000).line).not.toContain('tích')
     expect(milestoneCard(10_000).name).toBe('10.000 người theo dõi!')
+  })
+})
+
+describe('the Trả lời button', () => {
+  const complaint = { reason: 'wait' as const, customerId: 7, replies: ['plain', 'right', 'rude'] as ('plain' | 'right' | 'rude')[], answered: null, manager: false }
+  const post = (over: Partial<PostDraft>) => {
+    const f = { ...emptyFeed(), open: true }
+    addPost(f, draft(over), 8, 0, () => 0.5)
+    return f.posts[0]
+  }
+
+  it('shows under a complaint not yet answered', () => expect(replyButtonShown(post({ kind: 'complaint', stars: 1, complaint }))).toBe(true))
+
+  it('is gone once the complaint is answered', () => expect(replyButtonShown(post({ kind: 'complaint', stars: 4, complaint: { ...complaint, answered: 'right' } }))).toBe(false))
+
+  it('never shows on a complaint saved without its replies, nor on praise', () => {
+    expect(replyButtonShown(post({ kind: 'complaint', stars: 2, complaint: null }))).toBe(false)
+    expect(replyButtonShown(post({ kind: 'praise', stars: 5 }))).toBe(false)
   })
 })
