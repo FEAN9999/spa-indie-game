@@ -32,6 +32,8 @@ const FLOOR_NAME: Record<number, StringKey> = { 1: 'floorName1', 2: 'floorName2'
 
 const pick = <T>(list: readonly T[], rng: Rng): T => list[Math.floor(rng() * list.length)]
 const lower = (s: string): string => s.toLocaleLowerCase('vi')
+/** Lowers only the first letter, so a proper noun inside (Xiêm, Phú Quốc) keeps its capitals. */
+const lowerFirst = (s: string): string => s.charAt(0).toLocaleLowerCase('vi') + s.slice(1)
 const serviceWord = (id: ServiceId): string => lower(t(SERVICES[id].name))
 
 /** A template with its `{word}` slots filled. */
@@ -86,7 +88,7 @@ export function shopText(news: ShopNews, shopName: string, rng: Rng): string {
       words = { place: news.place === null ? '' : place(news.place) }
       break
     case 'floor': pieces = SHOP_PIECES.floor; words = { floor: lower(t(FLOOR_NAME[news.floor] ?? 'floorName2')) }; break
-    case 'pet': pieces = SHOP_PIECES.pet; words = { name: news.name, breed: lower(BREED_NAME[news.breed]) }; break
+    case 'pet': pieces = SHOP_PIECES.pet; words = { name: news.name, breed: lowerFirst(BREED_NAME[news.breed]) }; break
     case 'festival': pieces = SHOP_PIECES.festival; words = { festival: t(FESTIVALS[news.festival].name) }; break
   }
   return sentence(pick(SHOP_OPENERS, rng), fill(pick(pieces, rng), { shop: shopName, ...words }))

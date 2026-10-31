@@ -13,7 +13,7 @@ import {
 } from '../../src/sim/feedText'
 import type { ShopNews } from '../../src/sim/feedText'
 import {
-  COMMENT_LINES, COMPLAINT_PIECES, IDOL_PIECES, KOL_PIECES, PRAISE_PIECES, STRANGER_NAMES, PHAY_KOL_NAME, PHAY_WARD_NAME, VIP_PIECES, managerName,
+  COMMENT_LINES, COMPLAINT_PIECES, IDOL_PIECES, KOL_PIECES, PRAISE_CLOSERS, PRAISE_PIECES, STRANGER_NAMES, WARD_OPENERS, PHAY_KOL_NAME, PHAY_WARD_NAME, VIP_PIECES, managerName,
 } from '../../src/strings/phay'
 import { IDOL_TEXT } from '../../src/strings/idols'
 import { t } from '../../src/strings/vi'
@@ -67,7 +67,7 @@ describe('feed text', () => {
     }
   })
 
-  it('no piece asks to "làm" or "từng" a service, which only some service names allow', () => {
+  it('no piece asks to "làm", "từng" or "đi" a service or calls it "êm", which only some service names allow', () => {
     const pieces = [PRAISE_PIECES, IDOL_PIECES, KOL_PIECES, VIP_PIECES, ...Object.values(COMPLAINT_PIECES)].flat()
     for (const id of SERVICE_IDS) {
       const name = t(SERVICES[id].name).toLocaleLowerCase('vi')
@@ -75,6 +75,8 @@ describe('feed text', () => {
         const s = piece.replaceAll('{service}', name)
         expect(s, `${id}: ${s}`).not.toContain(`làm ${name}`)
         expect(s, `${id}: ${s}`).not.toContain(`từng ${name}`)
+        expect(s, `${id}: ${s}`).not.toContain(`đi ${name}`)
+        expect(piece, `${id}: ${s}`).not.toMatch(/(^|\s)êm(\s|,|\.|$)/)
       }
     }
   })
@@ -102,6 +104,18 @@ describe('feed text', () => {
     const seen = new Set<string>()
     for (let seed = 1; seed <= 50; seed++) seen.add(praiseText('massage', 'office', createRng(seed)))
     expect(seen.size).toBeGreaterThan(20)
+  })
+
+  it('a pet breed keeps its proper noun: only the first letter is lowered', () => {
+    expect(shopText({ kind: 'pet', name: 'Vàng', breed: 'phuquoc' }, 'Spa Sen', createRng(1))).toContain('chó Phú Quốc')
+    expect(shopText({ kind: 'pet', name: 'Tuyết', breed: 'xiem' }, 'Spa Sen', createRng(1))).toContain('mèo Xiêm')
+  })
+
+  it("an old guest's closer fits any name, a walk-out in a power cut was never served, and the ward is the UBND", () => {
+    for (const line of PRAISE_CLOSERS.elder) expect(line).not.toMatch(/^(Bác|Bà|Ông|Cô|Chú) /)
+    for (const piece of COMPLAINT_PIECES.power) expect(piece).not.toContain('dở dang')
+    expect(WARD_OPENERS.join(' ')).not.toContain('chỉ huy')
+    expect(WARD_OPENERS).toContain('UBND phường xin báo:')
   })
 
   it('managerText speaks for the star', () => {

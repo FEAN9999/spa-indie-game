@@ -875,7 +875,7 @@ export const vi = {
   phayMilestoneHead: 'Phây · mốc mới',
   phayMilestoneName: '{n} người theo dõi!',
   phayMilestone1k: 'Cả phố bắt đầu biết tới tiệm rồi đấy.',
-  phayMilestone10k: 'Khách mới tìm tới tiệm mỗi ngày nhờ Phây.',
+  phayMilestone10k: 'Tiệm mình thành chủ đề bàn tán khắp phố rồi.',
   phayMilestone100k: 'Tên tiệm có tích xanh cạnh bên, như người nổi tiếng.',
   phayMilestone1m: 'Ảnh tiệm có viền vàng quanh. Tiệm này là cả một thương hiệu.',
 } as const

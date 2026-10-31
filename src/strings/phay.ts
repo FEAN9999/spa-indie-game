@@ -45,8 +45,8 @@ export const PRAISE_OPENERS: readonly string[] = [
   'Công nhận,',
 ]
 export const PRAISE_PIECES: readonly string[] = [
-  '{service} ở đây êm ru, thợ nhẹ tay.',
-  'đi {service} về thấy đáng đồng tiền.',
+  '{service} ở đây ưng ý lắm, thợ nhẹ tay.',
+  'dịch vụ {service} ở đây đáng đồng tiền.',
   '{service} ở đây thợ làm kỹ lắm, còn dễ thương.',
   'tiệm sạch sẽ thơm tho, {service} đã ghê.',
   'không phải chờ lâu, {service} xong gọn lẹ.',
@@ -58,7 +58,7 @@ export const PRAISE_CLOSERS: Record<CustomerKind, readonly string[]> = {
   student: ['Giá sinh viên mà xịn quá.', 'Sinh viên như mình đi được nha.', 'Cuối tuần rủ bạn đi tiếp.'],
   office: ['Dân văn phòng nên ghé một lần.', 'Hết giờ làm ghé là vừa.', 'Cổ vai gáy được cứu rồi.'],
   picky: ['Mình khó tính mà vẫn chấm 5 sao.', 'Khó tính như mình còn chịu.', 'Chỗ nào sạch mới được mình khen.'],
-  elder: ['Tuổi này được chiều vậy là quý.', 'Bác khen, con cháu nhớ ghé nha.', 'Dặn con cháu dẫn đi tiếp.'],
+  elder: ['Tuổi này được chiều vậy là quý.', 'Con cháu nhớ ghé thử nha.', 'Dặn con cháu dẫn đi tiếp.'],
   celeb: ['Người của công chúng cũng yên tâm.', 'Kín đáo và chuyên nghiệp.', 'Mình sẽ quay lại.'],
   tourist: ['Đi du lịch ghé là đúng bài.', 'Du khách như mình rất hài lòng.', 'Chuyến này nhớ nhất tiệm này.'],
   backpacker: ['Đi bụi mà được chiều là hết ý.', 'Đi bụi mỏi chân, ghé là hết mệt.', 'Balo nặng mấy cũng đỡ.'],
@@ -76,7 +76,7 @@ export const COMPLAINT_OPENERS: readonly string[] = [
 export const COMPLAINT_PIECES: Record<ComplaintReason, readonly string[]> = {
   wait: ['chờ lâu quá nên mình bỏ về luôn.', 'đợi cả buổi không tới lượt, đành về.', 'ngồi chờ {service} mãi, hết kiên nhẫn rồi.'],
   stock: ['{service} mà hết hàng, đi uổng công.', 'hỏi {service} thì nghe thiếu hàng, tiếc ghê.', 'tới nơi mới biết hết hàng, mất công.'],
-  power: ['hôm đó cúp điện nên {service} dở dang.', 'gặp ngày mất điện, chờ {service} không có máy.', 'điện cúp suốt, đợi {service} hoài không được.'],
+  power: ['hôm đó cúp điện nên {service} chưa kịp bắt đầu.', 'gặp ngày mất điện, chờ {service} không có máy.', 'điện cúp suốt, đợi {service} hoài không được.'],
   sloppy: ['{service} mà thợ làm vội quá, như chạy cho xong.', '{service} mà làm lẹ cho kịp, hơi cẩu thả.', 'thợ làm vội, {service} chưa tới nơi tới chốn.'],
   tech: ['{service} mà thợ còn lóng ngóng, chưa tới.', '{service} chưa kỹ, tay nghề thợ cần học thêm.', '{service} ở đây thợ còn vụng, chưa vừa ý.'],
   owner: ['{service} do chủ tiệm làm mà chưa tới, hơi tiếc.', '{service} mà chính chủ tiệm làm chưa kỹ lắm.', 'tưởng chủ tiệm làm thì {service} sẽ kỹ hơn.'],
@@ -109,12 +109,12 @@ export const IDOL_OPENERS: readonly string[] = [
   'Cuối ngày rồi,',
 ]
 export const IDOL_PIECES: readonly string[] = [
-  'ghé {shop} đi {service}, đã lắm.',
-  '{service} ở {shop} êm hết sức.',
+  'ghé {shop} thử {service}, đã lắm.',
+  '{service} ở {shop} ưng hết sức.',
   'được {shop} chiều với {service} nè.',
   'tới {shop} thử {service}, đáng tiền.',
   '{service} ở {shop} nhẹ nhàng ghê.',
-  'ghé {shop} thử {service}, êm ghê.',
+  'ghé {shop} thử {service}, mê ghê.',
 ]
 export const IDOL_CLOSERS: readonly string[] = [
   'Tối nay hát {song} phê lắm.',
@@ -160,11 +160,11 @@ export const KOL_OPENERS: readonly string[] = [
 ]
 export const KOL_PIECES: readonly string[] = [
   'thử {service} ở spa này, đáng tiền không nè.',
-  'đi {service} ở spa này, xem video nha.',
+  'dịch vụ {service} ở spa này, xem video nha.',
   'chấm điểm {service} của tiệm, bất ngờ lắm.',
-  'đi {service} đúng bài, quay video cho cả nhà.',
+  'thử {service} đúng bài, quay video cho cả nhà.',
   '{service} ở tiệm này nhẹ tay, Mi Mi khen thật lòng.',
-  'có ai đi {service} chỗ này chưa, kể Mi Mi nghe.',
+  'có ai thử {service} chỗ này chưa, kể Mi Mi nghe.',
 ]
 export const KOL_CLOSERS: readonly string[] = [
   'Thả tim và theo dõi Mi Mi nha!',
@@ -211,7 +211,7 @@ export const SHOP_PIECES = {
 export const WARD_OPENERS: readonly string[] = [
   'Thông báo từ phường:',
   'Tin vui trong phường:',
-  'Ban chỉ huy phường xin báo:',
+  'UBND phường xin báo:',
   'Phường xin thông báo,',
   'Có tin kiểm tra,',
   'Tin từ đoàn thanh tra:',
