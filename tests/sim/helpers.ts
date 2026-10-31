@@ -1,6 +1,7 @@
 import type { BadgeShop } from '../../src/sim/badges'
 import { Chain } from '../../src/sim/chain'
 import type { ItemKind } from '../../src/sim/items'
+import { RestaurantSim } from '../../src/sim/restaurant'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { SERVICE_IDS, type ServiceId } from '../../src/sim/services'
@@ -202,4 +203,9 @@ export function sixServiceLog(days = 4, before?: (chain: Chain) => void): { days
     out.push(row)
   }
   return { days: out, next: rng() }
+}
+
+/** A restaurant on the main shop's purse, clock and day; nobody walks in unless `autoSpawn`. */
+export function restaurantFor(main: SpaSim, opts?: { seed?: number; autoSpawn?: boolean }): RestaurantSim {
+  return new RestaurantSim({ host: main, rng: createRng((opts?.seed ?? 1) + 101), autoSpawn: opts?.autoSpawn ?? false })
 }

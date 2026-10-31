@@ -56,7 +56,7 @@ import {
 } from '../config'
 import { PET_NAME_IDEAS, t } from '../strings/vi'
 import { newBadges, type BadgeShop, type Badges } from './badges'
-import { claimed, doorReach, flood, offFloor, placeProblem, type BuildProblem } from './build'
+import { claimed, doorReach, flood, offFloor, placementProblem, sellRefund, type BuildProblem } from './build'
 import { drawKind, drawService, isMainKind, KINDS, type CustomerKind } from './customers'
 import { BRANCH_LAYOUT, PLACE_DECOR, placePrice, type PlaceId } from './places'
 import { dayOfMonth, daysLeftInMonth, monthOf, monthStart } from './calendar'
@@ -66,7 +66,6 @@ import { fire, greet, greeterAtDesk, hire, hireProblem, makeWayForOwner, payWage
 import { arrivalGapMs, arrivalIntervalMs, beautyArrivalFactor, dayEase, dayProfit, rating as ratingOf, reviewScore, serviceArrivalFactor, tipFor, type Stars } from './economy'
 import { bedSlotAt, besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
 import { clearIdolStale, dueIdol, emptyIdolBook, IDOL_IDS, IDOLS, planIdol, scoreIdol, type IdolBook, type IdolId } from './idols'
-import { placeableIn } from './dining'
 import { ITEMS, beautyOf, bedTile, deskSpot, itemsFromLayout, seatTiles, shellOf, workTile, type Item, type ItemKind } from './items'
 import { floorOf, towerOf } from './floors'
 import { NO_HOUSES, SHOP_LAYOUT, withHouses, type Houses, type Side } from './layout'
@@ -1427,10 +1426,8 @@ export class SpaSim {
 
   /** What stops a `kind` standing with its top-left on (x, y), or null; `movingId` is the item being moved, out of its own way. */
   canPlace(kind: ItemKind, x: number, y: number, flip: boolean, movingId?: number, turned = false): BuildProblem | null {
-    if (!placeableIn(kind, 'spa')) return 'wrongShop'
-    const others = this.items.filter(i => i.id !== movingId)
     const item = { id: movingId ?? this.nextItemId, kind, x, y, flip, ...(turned && { turned }) }
-    return placeProblem(parseLayout(this.shell), others, item, { door: this.grid.door, floors: this.floors })
+    return placementProblem('spa', parseLayout(this.shell), this.items, item, { door: this.grid.door, floors: this.floors })
   }
 
   buy(kind: ItemKind, x: number, y: number, flip: boolean, turned = false): BuildProblem | null {
@@ -1480,7 +1477,7 @@ export class SpaSim {
     if (kind === 'bed' && this.items.filter(i => i.kind === 'bed').length === 1) return 'lastBed'
     if (ITEMS[kind].group === 'seat' && this.items.filter(i => ITEMS[i.kind].group === 'seat').length === 1) return 'lastSeat'
     if (kind === 'desk' && this.items.filter(i => i.kind === 'desk').length === 1) return 'lastDesk'
-    this.money += Math.floor(ITEMS[kind].price / 2)
+    this.money += sellRefund(kind)
     this.items = this.items.filter(i => i.id !== id)
     this.changeRoom()
     return null

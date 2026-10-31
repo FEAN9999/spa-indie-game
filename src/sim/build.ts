@@ -2,6 +2,7 @@ import type { StringKey } from '../strings/vi'
 import { buildGrid, inBounds, isWalkable, tileEq, type Grid } from './grid'
 import { deskSpot, footprint, ITEMS, layerOf, workTile, type Item } from './items'
 import { FLOOR_ROWS } from '../config'
+import { placeableIn, type ShopSide } from './dining'
 import { floorOf } from './floors'
 import { DIRS, neighbours } from './path'
 import type { Tile } from './types'
@@ -98,6 +99,17 @@ export function placeProblem(shell: Grid, items: Item[], item: Item, extras: { d
   if (feet.every(reachedBeside)) return null
   const before = beside(doorReach(buildGrid(shell, items, floors), door))
   return feet.every(f => reachedBeside(f) || !before(f)) ? null : 'blocksPath'
+}
+
+/** What stops `item` standing in `shop`, or null: a piece the shop does not take, else placeProblem against `items` with `item` itself out of its own way. */
+export function placementProblem(shop: ShopSide, shell: Grid, items: Item[], item: Item, extras: { door: Tile; floors: number }): BuildProblem | null {
+  if (!placeableIn(item.kind, shop)) return 'wrongShop'
+  return placeProblem(shell, items.filter(i => i.id !== item.id), item, extras)
+}
+
+/** What selling a `kind` gives back: half its price. */
+export function sellRefund(kind: Item['kind']): number {
+  return Math.floor(ITEMS[kind].price / 2)
 }
 
 /** The tile nearest `from` that `fits`, trying square rings of growing size, each row by row; null when no tile on the grid fits. */

@@ -570,6 +570,28 @@ export const AWAY_PROFIT_DAYS = 3
 
 // ---------- The restaurant ----------
 
+/** It goes on sale from this day, for this price, and its grid is drawn from this world column on. */
+export const RESTAURANT_DAY = 10
+export const RESTAURANT_PRICE = 5_000_000
+export const RESTAURANT_X0 = SHOP_COLS
+
+/** What a dish costs, and the tip by stars (0 for a walk-out). */
+export const DISH_PRICE = { pho: 60_000 } as const
+export const DINER_TIP = [0, 5_000, 10_000, 20_000] as const
+
+/** A third of the diners walk over from the spa; the leg is this many tiles long, at the walker's speed. */
+export const WALK_OVER_CHANCE = 1 / 3
+export const WALK_OVER_TILES = SHOP_COLS
+
+/** Walk-ins come about every DINER_GAP_MIN game minutes, DINER_PEAK_FACTOR times as often in the peaks (clock minutes: 11 to 13 h, 17 to 20 h). */
+export const DINER_GAP_MIN = 45
+export const DINER_PEAK_FACTOR = 2.5
+export const DINER_PEAKS = [[660, 780], [1020, 1200]] as const
+
+/** A diner eats this long; the owner's ride between the shops takes this long. */
+export const EAT_MS = 8_000
+export const RIDE_MS = 3_000
+
 /** What the restaurant's three working pieces cost; its decor pieces carry their prices in ITEMS. */
 export const RESTAURANT_FURNITURE = { stove: 400_000, diningTable: 150_000, diningChair: 60_000 } as const
 
