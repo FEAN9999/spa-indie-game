@@ -6,6 +6,7 @@ import type { Rect } from './camera'
 import { drawFace } from './FloorBar'
 import type { StripLot } from './houses'
 import { STRIP, stripX } from './strip'
+import type { StripBlock } from './street'
 import { whenTapped } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -15,12 +16,13 @@ const DOT_R = 11
 /** A lot sits this far inside the bar; a lot for sale is outlined in dashes this long with gaps this long, its sign a square this wide. */
 const LOT = { inset: 4, dash: 8, gap: 6, sign: 8 }
 
-/** What the strip shows: the map's bounds and the part on screen, the neighbour houses, and the world x of the door, the owner and each customer waiting out of sight. */
+/** What the strip shows: the map's bounds and the part on screen, the neighbour houses, the street's blocks, and the world x of each door, the owner and each customer waiting out of sight. */
 export interface StripModel {
   bounds: Rect
   visible: Rect
   lots: StripLot[]
-  door: number
+  blocks: StripBlock[]
+  doors: number[]
   owner: number
   dots: number[]
   look: Look
@@ -66,6 +68,10 @@ export class PositionStrip {
     g.clear()
       .fillStyle(hex(C.cream), 1)
       .fillRoundedRect(STRIP.x, y - h / 2, STRIP.w, h, h / 2)
+    // the street's blocks: the spa's in the bar's own colour, the restaurant's in terracotta, inside the bar's rounded ends
+    for (const b of m.blocks) {
+      g.fillStyle(hex(b.restaurant ? C.terracotta : C.cream), 1).fillRect(x(b.from) + LOT.inset, y - h / 2 + LOT.inset, x(b.to) - x(b.from) - 2 * LOT.inset, h - 2 * LOT.inset)
+    }
     // each house: a bought one in its wall colour, one for sale as a dashed lot with a red sign
     for (const lot of m.lots) {
       const lx = x(lot.x) + LOT.inset
@@ -82,10 +88,8 @@ export class PositionStrip {
         g.fillStyle(hex(C.lantern), 1).fillRect(lx + lw / 2 - LOT.sign / 2, y - LOT.sign / 2, LOT.sign, LOT.sign)
       }
     }
-    g.lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(STRIP.x, y - h / 2, STRIP.w, h, h / 2)
-      .lineStyle(8, hex(C.mustard))
-      .lineBetween(x(m.door), y - TICK_H / 2, x(m.door), y + TICK_H / 2)
+    g.lineStyle(4, hex(C.ink)).strokeRoundedRect(STRIP.x, y - h / 2, STRIP.w, h, h / 2).lineStyle(8, hex(C.mustard))
+    for (const door of m.doors) g.lineBetween(x(door), y - TICK_H / 2, x(door), y + TICK_H / 2)
     const left = x(m.visible.x)
     g.lineStyle(6, hex(C.teal)).strokeRoundedRect(left, y - FRAME_H / 2, x(m.visible.x + m.visible.w) - left, FRAME_H, 10)
     // the face is drawn again only for a new look, over the bar and under the dots

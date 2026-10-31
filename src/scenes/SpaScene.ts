@@ -1049,7 +1049,7 @@ export class SpaScene extends Phaser.Scene {
     const visible = this.cam.visible()
     const door = this.room.tileToWorld(sim.grid.door).x
     const lots = stripLots(sim.houses, sim.shownHouses(), sim.place)
-    this.strip.show({ bounds: this.cam.bounds, visible, lots, door, owner: ownerX, dots: offscreenWaiting(sim.customers, this.viewFloor, visible), look: sim.ownerLook })
+    this.strip.show({ bounds: this.cam.bounds, visible, lots, doors: [door], blocks: [], owner: ownerX, dots: offscreenWaiting(sim.customers, this.viewFloor, visible), look: sim.ownerLook })
   }
 
   /** A viewed or open pill brings its floor into view; a locked one offers to open it. Nothing while waiting on an update check, which hides the pills on its next frame. */
