@@ -308,8 +308,9 @@ export class RestaurantSim {
     return chefCap(this.floors, housesBought(this.houses))
   }
 
-  /** What stops a candidate being hired now, whichever `index`: money is negative, or the cooks not leaving fill the cap; null if nothing. */
+  /** What stops today's candidate at `index` being hired now: there is none ('full'), money is negative, or the cooks not leaving fill the cap; null if nothing. */
   hireProblem(index: number): 'money' | 'full' | null {
+    if (!this.todayCandidates()[index]) return 'full'
     if (this.money < 0) return 'money'
     return this.chefs.filter(c => !c.leaving).length >= this.chefCap() ? 'full' : null
   }

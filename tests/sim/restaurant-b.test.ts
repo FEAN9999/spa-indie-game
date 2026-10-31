@@ -409,6 +409,19 @@ describe('the restaurant cooks', () => {
     expect(r.dayClosed).toBe(false)
     expect(tileEq(tileOf(c!.pos), r.chefHome(c!))).toBe(true)
   })
+
+  it('hires nothing for an index out of range, and never from a list drawn on another day', () => {
+    const { main, r } = setup()
+    const yesterday = r.todayCandidates()
+    expect([r.hireProblem(3), r.hire(3), r.hire(-1)]).toEqual(['full', 'full', 'full'])
+    expect(r.chefs).toEqual([])
+    expect(r.candidates).toHaveLength(3)
+    main.day++
+    expect(r.hire(0)).toBeNull()
+    expect(r.candidatesDay).toBe(main.day)
+    expect(r.candidates).not.toBe(yesterday)
+    expect(r.candidates).toHaveLength(2)
+  })
 })
 
 describe('lessons and the away money of the restaurant', () => {
