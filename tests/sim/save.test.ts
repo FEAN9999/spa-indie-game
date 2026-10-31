@@ -4,12 +4,12 @@ import { tipFor } from '../../src/sim/economy'
 import { placeProblem } from '../../src/sim/build'
 import { FLOOR_PRICE } from '../../src/config'
 import { beautyOf, DEFAULT_ITEMS, itemsFromLayout, type Item } from '../../src/sim/items'
-import { parseLayout } from '../../src/sim/grid'
+import { parseLayout, tileOf } from '../../src/sim/grid'
 import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
 import { emptyAwayBook } from '../../src/sim/away'
 import { emptyEventBook, makeHot } from '../../src/sim/events'
 import { emptyRankBook } from '../../src/sim/rank'
@@ -64,7 +64,7 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; place?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; place?: unknown; restaurant?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The old shop's furniture on the 13-column grid, as saves from before version 33 have it. */
 const LEGACY_ITEMS = itemsFromLayout(SPA_LAYOUT_1A)
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest, on the old grid. */
@@ -88,7 +88,7 @@ const wideCopy = <T extends object>(raw: T): T => {
   onWideGrid(out as unknown as Parameters<typeof onWideGrid>[0])
   return out
 }
-/** A raw save as today's code reads it: the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, the screens and desk of a shop saved before them added as its newest items, and an empty pet book (a branch's with the litter taken), in the main shop and each branch. */
+/** A raw save as today's code reads it: no restaurant, the new keys of the Chà muối biển, Ngâm chân and Sơn móng records (salt and polish in the stock, scrub, foot and nails in the tiers and the counts) filled in, the screens and desk of a shop saved before them added as its newest items, and an empty pet book (a branch's with the litter taken), in the main shop and each branch. */
 const withNewKeys = <T extends object>(raw: T): T => {
   const out = structuredClone(raw) as T & Shop & { chain?: { branches: Shop[] } }
   for (const shop of [out, ...(out.chain?.branches ?? [])]) {
@@ -96,6 +96,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.stock.polish ??= 20
     shop.lessonsPaid ??= []
     shop.houses ??= { left: 0, right: 0 }
+    shop.restaurant ??= null
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
@@ -122,8 +123,9 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('the wide grid in an older shop', () => {
-  it('is version 35', () => {
-    expect(SAVE_VERSION).toBe(35)
+  it('is the restaurant version', () => {
+    expect(SAVE_VERSION).toBe(RESTAURANT_SAVE_VERSION)
+    expect(RESTAURANT_SAVE_VERSION).toBe(36)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2421,5 +2423,196 @@ describe('wall pieces and rugs in a saved shop', () => {
   it('keeps them through a save and a load', () => {
     const sim = open(v35)
     expect(viaJson(sim).items).toEqual(sim.items)
+  })
+})
+
+describe('the restaurant in a saved chain', () => {
+  type Saved = { restaurant: { items: { kind: string; id: number; x: number; y: number; flip: boolean }[]; diners: object[]; nextItemId: number } | null; chain: { branches: { restaurant?: unknown }[] } }
+  /** A chain on day 10 that has bought the restaurant; nobody walks in unless the test makes them. */
+  const owned = (seed = 7) => {
+    const chain = new Chain(starShop(3, 20_000_000, seed), seed)
+    chain.main.day = 10
+    expect(chain.buyRestaurant()).toBeNull()
+    return { chain, main: chain.main, r: chain.restaurant!, street: chain.street! }
+  }
+  type Owned = ReturnType<typeof owned>
+  const runUntil = (chain: Chain, pred: () => boolean, maxMs = 60_000) => {
+    for (let t = 0; !pred(); t += 50) {
+      if (t > maxMs) throw new Error('condition not reached')
+      chain.advance(50)
+    }
+  }
+  const reload = (chain: Chain, seed = 7) => Chain.fromSave(parseSave(JSON.parse(JSON.stringify(chain.toSave()))), seed)
+  /** `n` students seated at the restaurant with their tickets up. */
+  const ordering = ({ chain, r }: Owned, n = 1) => {
+    const ds = Array.from({ length: n }, () => r.spawnDiner({ kind: 'student' })!)
+    runUntil(chain, () => ds.every(d => d.state === 'ordering'))
+    return ds
+  }
+  const rideOver = ({ chain, street }: Owned, t: { x: number; y: number }) => {
+    expect(street.tap('restaurant', t)).toBeNull()
+    runUntil(chain, () => street.where.at === 'restaurant')
+  }
+
+  it('loads a version 35 save with no restaurant and plays it as before', () => {
+    const data = parseSave(structuredClone(v35))
+    expect(data.restaurant).toBeNull()
+    const chain = Chain.fromSave(data, 5)
+    expect(chain.street).toBeNull()
+    const counts: Record<string, number> = {}
+    for (let t = 0; t < 60_000; t += 100) {
+      chain.advance(100)
+      for (const e of chain.active().drainEvents()) counts[e.type] = (counts[e.type] ?? 0) + 1
+    }
+    // recorded from this save before the restaurant was added to the code
+    expect({ money: chain.main.money, day: chain.main.day, served: chain.main.stats.served, customers: chain.main.customers.length, counts }).toEqual({
+      money: 1730000,
+      day: 3,
+      served: 0,
+      customers: 3,
+      counts: { customerArrived: 5, noSeat: 2, customerLeft: 2 },
+    })
+    expect(chain.main.clock.minutes).toBeCloseTo(768, 6)
+  })
+
+  it('writes no restaurant until it is bought, and ignores one in an older save', () => {
+    expect(Chain.fromSave(parseSave(structuredClone(v35)), 5).toSave().restaurant).toBeNull()
+    expect(parseSave({ ...structuredClone(v35), restaurant: owned().chain.toSave().restaurant }).restaurant).toBeNull()
+  })
+
+  it('round-trips a restaurant with diners, stats and furniture', () => {
+    const o = owned()
+    expect(o.r.buy('diningTable', 14, 13, false)).toBeNull()
+    const [a, b] = ordering(o, 2)
+    rideOver(o, a.chair!)
+    runUntil(o.chain, () => o.chain.cooking())
+    o.r.completeCooking(a.id, 3)
+    runUntil(o.chain, () => o.r.stats.served === 1)
+    expect(b.state).toBe('ordering')
+    const back = reload(o.chain)
+    const r = back.restaurant!
+    expect(r.items).toEqual(o.r.items)
+    expect(r.diners.map(d => [d.id, d.state, d.chair])).toEqual(o.r.diners.map(d => [d.id, d.state, d.chair]))
+    expect(r.diners.find(d => d.id === b.id)).toEqual(b)
+    expect(r.stats).toEqual(o.r.stats)
+    expect(r.stats.served).toBe(1)
+    expect(back.main.money).toBe(o.main.money)
+    expect(r.freeSeats()).toHaveLength(o.r.freeSeats().length)
+    // the next diner is numbered after the ones already seen
+    expect(r.spawnDiner({ kind: 'student' })!.id).toBe(o.r.spawnDiner({ kind: 'student' })!.id)
+  })
+
+  it('reloads a riding owner at the spa door and drops the walkers', () => {
+    const o = owned()
+    const [seated] = ordering(o)
+    const walker = o.r.spawnDiner({ kind: 'student' })!
+    Object.assign(walker, { state: 'street', fromSpa: true, legMs: 7_400 })
+    expect(o.street.tap('restaurant', seated.chair!)).toBeNull()
+    runUntil(o.chain, () => o.street.where.at === 'riding')
+    expect(o.r.stats.walkedAway).toBe(0)
+    const back = reload(o.chain)
+    expect(back.street!.where).toEqual({ at: 'spa' })
+    expect(tileOf(back.main.owner.pos)).toEqual(back.main.grid.door)
+    expect(back.main.owner.path).toEqual([])
+    expect(back.main.ownerNextDoor).toBe(false)
+    expect(back.restaurant!.ownerIn).toBe(false)
+    expect(back.restaurant!.diners.map(d => d.id)).toEqual([seated.id])
+    expect(back.restaurant!.stats.walkedAway).toBe(0)
+  })
+
+  it('reloads an owner still walking to the spa door at the door', () => {
+    const o = owned()
+    expect(o.street.tap('restaurant', o.r.grid.door)).toBeNull()
+    o.chain.advance(100)
+    expect(o.street.where.at).toBe('leaving')
+    expect(o.main.owner.path.length).toBeGreaterThan(0)
+    const back = reload(o.chain)
+    expect(back.street!.where).toEqual({ at: 'spa' })
+    expect(tileOf(back.main.owner.pos)).toEqual(back.main.grid.door)
+    expect(back.main.owner.path).toEqual([])
+  })
+
+  it('reloads an owner standing in the restaurant there', () => {
+    const o = owned()
+    ordering(o)
+    rideOver(o, o.r.grid.door)
+    expect(o.r.owner.task).toBeNull()
+    const before = { ...o.r.owner.pos }
+    const back = reload(o.chain)
+    expect(back.street!.where).toEqual({ at: 'restaurant' })
+    expect(back.main.ownerNextDoor).toBe(true)
+    expect(back.restaurant!.ownerIn).toBe(true)
+    expect(back.restaurant!.owner.pos).toEqual(before)
+  })
+
+  it('puts an owner with no task back at the restaurant door, and one with a task where she was', () => {
+    const o = owned()
+    const [d] = ordering(o)
+    rideOver(o, { x: 14, y: 12 })
+    o.chain.advance(100)
+    expect(o.r.owner.path.length).toBeGreaterThan(0)
+    expect(o.r.owner.task).toBeNull()
+    expect(reload(o.chain).restaurant!.owner).toMatchObject({ pos: o.r.grid.door, path: [], task: null })
+    o.r.tapTile(d.chair!)
+    o.chain.advance(100)
+    expect(o.r.owner.task).toEqual({ kind: 'order', dinerId: d.id })
+    const back = reload(o.chain).restaurant!
+    expect(back.owner).toEqual(o.r.owner)
+    expect(back.owner.path.length).toBeGreaterThan(0)
+  })
+
+  it('brings back a bowl that was cooking', () => {
+    const o = owned()
+    const [d] = ordering(o)
+    rideOver(o, d.chair!)
+    runUntil(o.chain, () => o.chain.cooking())
+    expect(o.r.cookingDinerId).toBe(d.id)
+    const back = reload(o.chain)
+    const r = back.restaurant!
+    expect(r.cookingDinerId).toBeNull()
+    expect(back.cooking()).toBe(false)
+    back.drainRestaurantEvents()
+    back.advance(STEP_MS)
+    const ready = back.drainRestaurantEvents().filter(e => e.type === 'cookReady')
+    expect(ready).toEqual([{ type: 'cookReady', dinerId: d.id, stoveId: expect.any(Number) }])
+    expect(r.stoves.find(s => s.id === (ready[0] as { stoveId: number }).stoveId)!.dinerId).toBe(d.id)
+    expect(back.cooking()).toBe(true)
+  })
+
+  it('keeps the owner off the street while she is at a branch', () => {
+    const o = owned()
+    expect(o.chain.open('beach')).toBeNull()
+    expect(o.chain.goTo('beach')).toBeNull()
+    const back = reload(o.chain)
+    expect(back.at).toBe('beach')
+    expect(back.restaurant!.ownerAway).toBe(true)
+    expect(back.street!.where).toEqual({ at: 'spa' })
+  })
+
+  it('never gives a branch a restaurant', () => {
+    const o = owned()
+    expect(o.chain.open('beach')).toBeNull()
+    const raw = JSON.parse(JSON.stringify(o.chain.toSave())) as Saved
+    raw.chain.branches[0].restaurant = structuredClone(raw.restaurant)
+    const data = parseSave(raw)
+    expect(data.chain!.branches[0].restaurant).toBeNull()
+    expect(data.restaurant).not.toBeNull()
+    expect(Chain.fromSave(data, 7).branches[0].toSave().restaurant).toBeNull()
+  })
+
+  it('drops diners and furniture it cannot read, never the restaurant', () => {
+    const o = owned()
+    const [d] = ordering(o)
+    const raw = JSON.parse(JSON.stringify(o.chain.toSave())) as Saved
+    const bed = { id: 90, kind: 'bed', x: 14, y: 12, flip: false }
+    const stray = { id: 91, kind: 'plant', x: 99, y: 99, flip: false }
+    raw.restaurant!.items.push(bed, stray)
+    raw.restaurant!.nextItemId = 1
+    raw.restaurant!.diners.push({ id: d.id }, { ...d, id: 77, state: 'street' }, 'x' as unknown as object, { ...d, id: 78, state: 'dancing' }, { ...d, id: 79, chair: { x: 1, y: 1 } })
+    const back = Chain.fromSave(parseSave(raw), 7).restaurant!
+    expect(back.items).toEqual(o.r.items)
+    expect(back.diners.map(x => x.id)).toEqual([d.id])
+    expect(back.spawnDiner({ kind: 'student' })!.id).toBeGreaterThan(d.id)
+    expect(back.buy('stove', 21, 3, false)).toBeNull()
   })
 })

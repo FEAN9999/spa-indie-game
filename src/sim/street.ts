@@ -27,6 +27,20 @@ export class Street {
     this.restaurant = restaurant
   }
 
+  /** Where the owner is as a save has it: a walk to the door or a ride is on the street. */
+  toSave(): 'spa' | 'restaurant' | 'street' {
+    return this.where.at === 'leaving' || this.where.at === 'riding' ? 'street' : this.where.at
+  }
+
+  /** The owner as saved: in the restaurant, or in the spa, a trip between the two ending at the spa door. */
+  static fromSave(spa: SpaSim, restaurant: RestaurantSim, at: 'spa' | 'restaurant' | 'street'): Street {
+    const street = new Street(spa, restaurant)
+    spa.ownerNextDoor = at === 'restaurant'
+    if (at === 'street') spa.ownerWalksIn()
+    street.where = { at: at === 'restaurant' ? 'restaurant' : 'spa' }
+    return street
+  }
+
   /** A tap on `side`'s floor: worked there if the owner is in, kept for when she gets there, or a trip over if it asks for her. */
   tap(side: ShopSide, t: Tile): TapResult {
     const w = this.where

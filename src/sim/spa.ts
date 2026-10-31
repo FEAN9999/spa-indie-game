@@ -908,8 +908,9 @@ export class SpaSim {
     return structuredClone({
       v: SAVE_VERSION,
       place: this.place,
-      // Chain.toSave fills in the real one
+      // Chain.toSave fills in the real chain and restaurant
       chain: this.place === null ? { at: null, told: false, branches: [] } : null,
+      restaurant: null,
       day: this.day,
       floors: this.floors,
       minutes: this.clock.minutes,

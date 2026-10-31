@@ -1,4 +1,7 @@
+import { towerOf } from './floors'
+import { parseLayout, type Grid } from './grid'
 import { footprint, ITEMS, type Item, type ItemKind } from './items'
+import { NO_HOUSES, widen, withHouses } from './layout'
 import type { Facing, Tile } from './types'
 
 /** The restaurant's bare room, 13 columns like the old spa shop, its stairs in the same place; widen() puts it on the wide grid. */
@@ -10,6 +13,9 @@ export const DINING_SHELL: string[] = [
   ...Array.from({ length: 7 }, () => '#...........#'),
   '######D######',
 ]
+
+/** The restaurant's bare room as a grid: walls, door and stairs, no furniture. */
+export const diningShellGrid = (): Grid => parseLayout(towerOf(withHouses(widen(DINING_SHELL), NO_HOUSES)))
 
 export type ShopSide = 'spa' | 'restaurant'
 

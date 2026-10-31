@@ -2,14 +2,14 @@ import { ARRIVE_MS, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DI
 import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { placementProblem, sellRefund, type BuildProblem } from './build'
 import { drawKind, KINDS, type CustomerKind } from './customers'
-import { DINING_SHELL, DINING_START, diningSeats, type DiningSeat } from './dining'
+import { DINING_START, diningSeats, diningShellGrid, type DiningSeat } from './dining'
 import { arrivalGapMs, type Stars } from './economy'
-import { besideSeat, buildGrid, isWalkable, manhattan, parseLayout, tileEq, tileOf, type Grid } from './grid'
-import { towerOf } from './floors'
-import { NO_HOUSES, widen, withHouses, type Houses } from './layout'
+import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
+import { NO_HOUSES, type Houses } from './layout'
 import { findPath } from './path'
 import { drawPhoTicket, type PhoTicket } from './pho'
 import { randomLook, type Rng } from './rng'
+import type { RestaurantSave } from './save'
 import { moveAlong, type SpaSim } from './spa'
 import type { Customer, Look, Mover, Tile } from './types'
 
@@ -107,6 +107,52 @@ export class RestaurantSim {
     this.rebuildStoves()
   }
 
+  /** The restaurant as plain JSON, a deep copy; where the owner stands in town is the street's to add. */
+  toSave(): Omit<RestaurantSave, 'ownerAt'> {
+    return structuredClone({
+      items: this.items,
+      nextItemId: this.nextItemId,
+      houses: this.houses,
+      floors: this.floors,
+      diners: this.diners,
+      nextDinerId: this.nextDinerId,
+      untilArrivalMs: this.untilDinerMs,
+      stats: this.stats,
+      owner: this.owner,
+      ownerIn: this.ownerIn,
+      cookingDinerId: this.cookingDinerId,
+    })
+  }
+
+  /**
+   * Rebuilds a saved restaurant. Walkers still on the street are gone, uncounted. The owner is in only if `ownerAt` says so: with a task of hers still
+   * standing she keeps her place (a bowl cooking is cooked again from the stove, its game reopening), else she stands at the door; and a diner whose bowl
+   * is lost leaves.
+   */
+  static fromSave(data: RestaurantSave, options: { host: RestaurantHost; rng: Rng; autoSpawn: boolean }): RestaurantSim {
+    const d = structuredClone(data)
+    const r = new RestaurantSim(options)
+    r.items = d.items
+    r.nextItemId = d.nextItemId
+    r.grid = buildGrid(r.shellGrid(), r.items, r.floors)
+    r.rebuildStoves()
+    r.diners = d.diners.filter(x => x.state !== 'street')
+    r.nextDinerId = d.nextDinerId
+    r.untilDinerMs = d.untilArrivalMs
+    r.stats = d.stats
+    r.ownerIn = d.ownerAt === 'restaurant'
+    const task = d.owner.task
+    const diner = task && r.diners.find(x => x.id === task.dinerId)
+    const stove = task?.kind === 'cook' ? r.stoves.find(s => s.id === task.stoveId) : undefined
+    const holds = r.ownerIn && task && diner && diner.state === (task.kind === 'order' ? 'ordering' : 'waitingFood') && (task.kind !== 'cook' || stove)
+    if (holds) {
+      r.owner = d.owner
+      if (stove) stove.dinerId = diner.id
+    }
+    for (const x of [...r.diners]) if (x.state === 'waitingFood' && !(holds && task.dinerId === x.id)) r.startLeaving(x)
+    return r
+  }
+
   get money(): number {
     return this.host.purse.money
   }
@@ -117,7 +163,7 @@ export class RestaurantSim {
 
   /** The bare room, walls and door and stairs, parsed once. */
   shellGrid(): Grid {
-    return (this.shell ??= parseLayout(towerOf(withHouses(widen(DINING_SHELL), NO_HOUSES))))
+    return (this.shell ??= diningShellGrid())
   }
 
   beauty(): number {

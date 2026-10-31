@@ -100,10 +100,10 @@ export class Chain {
   }
 
   /** Hooks the main shop, and only it, to the restaurant: paying customers may walk over, and its day stays open while anyone eats. */
-  private wire(restaurant: RestaurantSim): void {
+  private wire(restaurant: RestaurantSim, street = new Street(this.main, restaurant)): void {
     this.main.onCustomerGone = c => restaurant.walkOver(c)
     this.main.keepOpen = () => restaurant.busy()
-    this.street = new Street(this.main, restaurant)
+    this.street = street
   }
 
   /** The shop the owner is in. */
@@ -167,6 +167,14 @@ export class Chain {
     // a VIP already waiting at the main shop calls the owner, as one who arrives while she is away does
     if (chain.at !== null) chain.callForWaitingVips()
     for (const b of chain.branches) b.ownerHere = b.place === chain.at
+    // the restaurant of the main shop only; an owner at a branch is not on the street, and nobody new comes to the restaurant
+    const rs = data.restaurant
+    if (rs) {
+      const saved = { ...rs, ownerAt: chain.at === null ? rs.ownerAt : ('spa' as const) }
+      const restaurant = RestaurantSim.fromSave(saved, { host: chain.main, rng: createRng(seed + RESTAURANT_RNG_SALT), autoSpawn: chain.main.autoSpawn })
+      restaurant.ownerAway = chain.at !== null
+      chain.wire(restaurant, Street.fromSave(chain.main, restaurant, saved.ownerAt))
+    }
     // the events a shop queued while loading are routed like those of a shop the owner is away from; the owner's own shop keeps hers
     for (const s of [chain.main, ...chain.branches]) if (s !== chain.active()) chain.route(s, s.drainEvents())
     return chain
@@ -174,7 +182,13 @@ export class Chain {
 
   /** The main shop's save with the chain in it: each branch is a save of its own, at its place. */
   toSave(): SaveData {
-    return { ...this.main.toSave(), place: null, chain: { at: this.at, told: this.told, branches: this.branches.map(b => b.toSave()) } }
+    const street = this.street
+    return {
+      ...this.main.toSave(),
+      place: null,
+      restaurant: street ? { ...street.restaurant.toSave(), ownerAt: street.toSave() } : null,
+      chain: { at: this.at, told: this.told, branches: this.branches.map(b => b.toSave()) },
+    }
   }
 
   /** Back to the main shop is always allowed; a branch is not once the day has closed. */

@@ -1,4 +1,4 @@
-import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, HOUSES_PER_SIDE, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, SHOP_X0, STOCK_START } from '../config'
+import { CHAT_MS_MAX, DAY_START_MIN, EVENT_FROM_DAY, HEART_AT, HOT_DAYS, HOUSES_PER_SIDE, LATE_MIN, LOOK_COUNTS, MAX_FLOORS, MAX_TIER, PATIENCE_MS, PLACES, QUEST_RECENT_DAYS, QUEST_SWAPS_PER_DAY, QUESTS_PER_DAY, RARE_TIER, SHOP_X0, STOCK_START, FIRST_ARRIVAL_MS } from '../config'
 import { t } from '../strings/vi'
 import { BADGE_IDS, type Badges } from './badges'
 import { emptyIdolBook, IDOL_IDS, type IdolBook, type IdolId } from './idols'
@@ -6,7 +6,11 @@ import { emptyEventBook, EVENT_KINDS, type EventBook, type EventKind, type HotBy
 import { FESTIVAL_IDS, type FestivalBook, type FestivalId } from './festivals'
 import { CUSTOMER_KINDS, KINDS, MAIN_KINDS, type MainKind } from './customers'
 import { ITEM_KINDS, canTurn, itemsFromLayout, type Item, type ItemKind } from './items'
+import { placementProblem } from './build'
+import { diningSeats, diningShellGrid, type DiningSeat } from './dining'
+import { inBounds, tileEq, type Grid } from './grid'
 import { SPA_LAYOUT_1A, type Houses } from './layout'
+import type { Diner, DinerState, RestaurantSim, RestaurantStats } from './restaurant'
 import { cleanShopName, DEFAULT_OWNER_LOOK, isOwnerLook } from './profile'
 import { emptyRecipes, isMix, RECIPE_IDS, RECIPES, rightCount, type RecipeBook } from './recipes'
 import { emptyBook, heartsFor, REGULAR_IDS, type GuestBook, type RegularState } from './regulars'
@@ -24,8 +28,10 @@ import { emptyRankBook, RIVAL_IDS, type MonthResult, type RankBook, type RivalId
 import { emptyVipBook, VIP_IDS, type VipBook, type VipId } from './vips'
 import { HINT_IDS, TUTORIAL_HINTS, type Customer, type DayStats, type Facing, type HintId, type Look, type Owner, type Tile } from './types'
 
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs. */
-export const SAVE_VERSION = 35
+/** The save that first has the restaurant: origin/master's SAVE_VERSION + 1 at merge time. */
+export const RESTAURANT_SAVE_VERSION = 36
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the restaurant. */
+export const SAVE_VERSION = RESTAURANT_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -49,6 +55,24 @@ export interface ChainSave {
   branches: SaveData[]
 }
 
+/** The restaurant beside the main shop: its furniture and diners, its day's figures, and where the owner stands. */
+export interface RestaurantSave {
+  items: Item[]
+  nextItemId: number
+  /** No houses and one floor until the restaurant grows; kept for then. */
+  houses: Houses
+  floors: number
+  diners: Diner[]
+  nextDinerId: number
+  untilArrivalMs: number
+  stats: RestaurantStats
+  owner: RestaurantSim['owner']
+  ownerIn: boolean
+  cookingDinerId: number | null
+  /** A walk to the door and a ride between the shops are both 'street'. */
+  ownerAt: 'spa' | 'restaurant' | 'street'
+}
+
 /** The whole shop as plain JSON. */
 export interface SaveData {
   v: number
@@ -56,6 +80,8 @@ export interface SaveData {
   place: PlaceId | null
   /** The chain; only the main shop has one, a branch has null. */
   chain: ChainSave | null
+  /** The restaurant; only the main shop can have one, and null until it is bought. */
+  restaurant: RestaurantSave | null
   day: number
   /** How many floors are open; 1 in a save from before floors. */
   floors: number
@@ -210,6 +236,7 @@ export function parseSave(raw: unknown): SaveData {
   // only the main shop has a chain, and it is not at a place; shops saved before version 23 get an empty one
   data.place = null
   data.chain = repairChain((raw as Record<string, unknown>).chain, data)
+  data.restaurant = repairRestaurant(raw)
   return data
 }
 
@@ -242,12 +269,99 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
       if (s.place) taken.add(s.place)
     }
     if (!s.place) continue
-    // one clock and one purse for the chain; no chain inside a branch
-    kept.push({ ...s.data, place: s.place, chain: null, day: main.day, minutes: main.minutes, money: main.money })
+    // one clock and one purse for the chain; no chain and no restaurant inside a branch
+    kept.push({ ...s.data, place: s.place, chain: null, restaurant: null, day: main.day, minutes: main.minutes, money: main.money })
   }
   kept.sort((a, b) => PLACE_IDS.indexOf(a.place!) - PLACE_IDS.indexOf(b.place!))
   const at = isPlaceId(c.at) && kept.some(b => b.place === c.at) ? c.at : null
   return { at, told: c.told === true, branches: kept }
+}
+
+/** Diners who are inside or on their way out; one still walking over from the spa is not saved to be read back. */
+const DINER_STATES: readonly DinerState[] = ['arriving', 'toChair', 'ordering', 'waitingFood', 'eating', 'leaving', 'exiting']
+
+const isTile = (x: unknown): x is Tile => isObject(x) && Number.isInteger(x.x) && Number.isInteger(x.y)
+
+/** A diner whose fields are all readable and who sits at a chair that is there, else null; a diner on the way out has no chair. */
+function repairDiner(x: unknown, shell: Grid, seats: DiningSeat[]): Diner | null {
+  if (!isObject(x) || !Number.isInteger(x.id) || !DINER_STATES.includes(x.state as DinerState)) return null
+  if (!isNumber(x.stateMs) || !isNumber(x.patienceMs) || !isNumber(x.patienceMaxMs) || !isNumber(x.legMs)) return null
+  if (!isObject(x.pos) || !isNumber(x.pos.x) || !isNumber(x.pos.y) || !inBounds(shell, { x: Math.round(x.pos.x), y: Math.round(x.pos.y) })) return null
+  const t = x.ticket
+  if (!isObject(t) || (t.doneness !== 'tai' && t.doneness !== 'chin') || (t.onion !== 'little' && t.onion !== 'lots') || typeof t.chili !== 'boolean' || typeof t.extraHerb !== 'boolean') return null
+  const state = x.state as DinerState
+  const chair = state === 'leaving' || state === 'exiting' ? null : isTile(x.chair) ? { x: x.chair.x, y: x.chair.y } : undefined
+  if (chair === undefined || (chair && !seats.some(s => tileEq(s.tile, chair)))) return null
+  return {
+    id: x.id as number,
+    look: repairLook(x.look),
+    kind: CUSTOMER_KINDS.includes(x.kind as never) ? (x.kind as Diner['kind']) : 'office',
+    state,
+    stateMs: x.stateMs,
+    patienceMs: x.patienceMs,
+    patienceMaxMs: x.patienceMaxMs,
+    pos: { x: x.pos.x, y: x.pos.y },
+    facing: repairFacing(x.facing),
+    path: repairPath(x.path),
+    chair,
+    dish: 'pho',
+    ticket: { doneness: t.doneness, onion: t.onion, chili: t.chili, extraHerb: t.extraHerb },
+    stars: x.stars === 1 || x.stars === 2 || x.stars === 3 ? x.stars : null,
+    mood: x.mood === 'happy' || x.mood === 'ok' || x.mood === 'angry' ? x.mood : null,
+    fromSpa: x.fromSpa === true,
+    legMs: x.legMs,
+  }
+}
+
+/** A task of the owner's for a diner, or none. */
+function repairDiningTask(x: unknown): RestaurantSim['owner']['task'] {
+  if (!isObject(x) || !Number.isInteger(x.dinerId)) return null
+  const dinerId = x.dinerId as number
+  if (x.kind === 'order' || x.kind === 'carry') return { kind: x.kind, dinerId }
+  return x.kind === 'cook' && Number.isInteger(x.stoveId) ? { kind: 'cook', dinerId, stoveId: x.stoveId as number } : null
+}
+
+/** The restaurant of a main shop saved from RESTAURANT_SAVE_VERSION on, field by field; null for an older save or none. Diners and furniture it cannot read, or that break the room's rules, are dropped. */
+export function repairRestaurant(raw: unknown): RestaurantSave | null {
+  if (!isObject(raw) || !isNumber(raw.v) || raw.v < RESTAURANT_SAVE_VERSION || !isObject(raw.restaurant)) return null
+  const r = raw.restaurant
+  const shell = diningShellGrid()
+  const items: Item[] = []
+  for (const i of Array.isArray(r.items) ? r.items : []) {
+    if (!isObject(i) || !Number.isInteger(i.id) || !(ITEM_KINDS as unknown[]).includes(i.kind) || !Number.isInteger(i.x) || !Number.isInteger(i.y) || typeof i.flip !== 'boolean') continue
+    const kind = i.kind as ItemKind
+    const item: Item = { id: i.id as number, kind, x: i.x as number, y: i.y as number, flip: i.flip, ...(i.turned === true && canTurn(kind) && { turned: true }) }
+    if (!items.some(o => o.id === item.id) && placementProblem('restaurant', shell, items, item, { door: shell.door, floors: 1 }) === null) items.push(item)
+  }
+  const seats = diningSeats(items)
+  const diners: Diner[] = []
+  for (const d of Array.isArray(r.diners) ? r.diners : []) {
+    const diner = repairDiner(d, shell, seats)
+    if (!diner || diners.some(o => o.id === diner.id || (diner.chair && o.chair && tileEq(o.chair, diner.chair)))) continue
+    diners.push(diner)
+  }
+  const o = isObject(r.owner) ? r.owner : {}
+  const here = isObject(o.pos) && isNumber(o.pos.x) && isNumber(o.pos.y) && inBounds(shell, { x: Math.round(o.pos.x), y: Math.round(o.pos.y) })
+  const stats = isObject(r.stats) ? r.stats : {}
+  return {
+    items,
+    nextItemId: Math.max(isNumber(r.nextItemId) ? r.nextItemId : 1, ...items.map(i => i.id + 1)),
+    houses: repairHouses(r.houses),
+    floors: Number.isInteger(r.floors) && (r.floors as number) >= 1 && (r.floors as number) <= MAX_FLOORS ? (r.floors as number) : 1,
+    diners,
+    nextDinerId: Math.max(isNumber(r.nextDinerId) ? r.nextDinerId : 1, ...diners.map(d => d.id + 1)),
+    untilArrivalMs: isNumber(r.untilArrivalMs) ? r.untilArrivalMs : FIRST_ARRIVAL_MS,
+    stats: { served: repairCount(stats.served), income: repairCount(stats.income), tips: repairCount(stats.tips), walkedAway: repairCount(stats.walkedAway) },
+    owner: {
+      pos: here ? { x: (o.pos as Tile).x, y: (o.pos as Tile).y } : { ...shell.door },
+      facing: repairFacing(o.facing),
+      path: repairPath(o.path),
+      task: repairDiningTask(o.task),
+    },
+    ownerIn: r.ownerIn === true,
+    cookingDinerId: Number.isInteger(r.cookingDinerId) ? (r.cookingDinerId as number) : null,
+    ownerAt: r.ownerAt === 'restaurant' || r.ownerAt === 'street' ? r.ownerAt : 'spa',
+  }
 }
 
 /** A shop saved from version 3 to before the furnished version gets the default screens and desk as its newest items; one that already holds a screen or desk, which no save from before the version can, was furnished already and is a parsed save parsed again; anything else, damaged saves included, passes through for parseVersioned to judge. */
@@ -651,7 +765,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])
