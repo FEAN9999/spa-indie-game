@@ -7,10 +7,10 @@ import { svgDoc } from './svg'
 
 export type HouseKey = 'left1' | 'left2' | 'right1' | 'right2'
 
-/** Each neighbour house's wall, its dark band, its gạch bông (base, corners, flower) and its roof while it is for sale. */
 /** A house for sale's roof: corrugated tin, terracotta tiles, or flat concrete with a water tank. */
 export type Roof = 'tin' | 'tiles' | 'flat'
 
+/** Each neighbour house's wall, its dark band, its gạch bông (base, corners, flower) and its roof while it is for sale. */
 export const HOUSE_LOOK: Record<HouseKey, { wall: string; wallDark: string; tiles: [string, string, string]; roof: 'tin' | 'tiles' }> = {
   right1: { wall: C.houseRose, wallDark: C.houseRoseDark, tiles: [C.tile, C.teal, C.lotus], roof: 'tin' },
   left1: { wall: C.houseSky, wallDark: C.houseSkyDark, tiles: [C.cream, C.cobalt, C.terracotta], roof: 'tiles' },
