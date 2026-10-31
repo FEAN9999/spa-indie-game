@@ -7,14 +7,14 @@ import { svgDoc } from './svg'
 const f = (v: number) => +v.toFixed(3)
 
 /** Pale blue tiles checked in half tiles, one to a grid tile. */
-const BEACH_TILES =
+export const BEACH_TILES =
   `<pattern id="beachtiles" width="1" height="1" patternUnits="userSpaceOnUse">` +
   `<rect width="1" height="1" fill="${C.beachTile}"/>` +
   `<path d="M0,0 H0.5 V0.5 H0Z M0.5,0.5 H1 V1 H0.5Z" fill="${C.beachTileDark}"/>` +
   `<path d="M0,0 H1 V1" fill="none" stroke="${C.beachTileSeam}" stroke-width="${FINE}"/></pattern>`
 
 /** Sand-coloured planks half a tile tall, with staggered joints and a little grain. */
-const SAND_PLANKS =
+export const SAND_PLANKS =
   `<pattern id="sandplanks" width="2" height="1" patternUnits="userSpaceOnUse">` +
   `<rect width="2" height="1" fill="${C.beachPlank}"/>` +
   `<path d="M0,0.02 H2 M0,0.5 H2 M0.77,0 V0.5 M1.77,0 V0.5 M0.26,0.5 V1 M1.26,0.5 V1" stroke="${C.beachPlankLine}" stroke-width="0.04"/>` +
@@ -33,7 +33,7 @@ function porthole(cx: number, cy: number, id: string): string {
 }
 
 /** A life ring on the wall, red and cream by quarters. */
-function lifeRing(cx: number, cy: number): string {
+export function lifeRing(cx: number, cy: number): string {
   const r = 0.3
   const dash = f((2 * Math.PI * r) / 8)
   const ring = (stroke: string, w: number, extra = '') => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${stroke}" stroke-width="${w}" ${extra}/>`
@@ -41,7 +41,7 @@ function lifeRing(cx: number, cy: number): string {
 }
 
 /** A scallop shell hung by its hinge at (x, y), its fan above. */
-const seashell = (x: number, y: number, s = 1) =>
+export const seashell = (x: number, y: number, s = 1) =>
   `<g transform="translate(${x} ${y}) scale(${s})">` +
   `<path d="M0,0 l-0.205,-0.333 q0.205,-0.154 0.41,0Z" fill="${C.seashell}" ${outline(0.04)}/>` +
   `<path d="M0,0 l-0.103,-0.359 M0,0 v-0.385 M0,0 l0.103,-0.359" stroke="${C.ink}" stroke-width="0.025"/></g>`

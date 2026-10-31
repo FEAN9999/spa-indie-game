@@ -7,14 +7,14 @@ import { FINE, outline, rect, shopFront, STREET_TILES, street } from './room'
 import { svgDoc } from './svg'
 
 /** Dark wood planks a quarter tile tall, with staggered joints and a little grain. */
-const PHO_PLANKS =
+export const PHO_PLANKS =
   `<pattern id="phoplanks" width="2" height="0.5" patternUnits="userSpaceOnUse">` +
   `<rect width="2" height="0.5" fill="${C.phoPlank}"/>` +
   `<path d="M0,0.01 H2 M0.64,0 V0.5 M1.59,0 V0.5" stroke="${C.phoPlankLine}" stroke-width="0.04"/>` +
   `<path d="M0.15,0.26 h0.31 M1.03,0.2 h0.26" stroke="${C.phoPlankGrain}" stroke-width="0.025" stroke-linecap="round"/></pattern>`
 
 /** Gạch tàu: terracotta squares, a darker pair on the diagonal, with a couple of specks. */
-const PHO_TILES =
+export const PHO_TILES =
   `<pattern id="photiles" width="1.333" height="1.333" patternUnits="userSpaceOnUse">` +
   `<rect width="1.333" height="1.333" fill="${C.phoTile}"/>` +
   `<path d="M0.667,0 H1.333 V0.667 H0.667Z M0,0.667 H0.667 V1.333 H0Z" fill="${C.phoTileDark}"/>` +
@@ -37,7 +37,7 @@ function lanternString(cols: number): string {
 }
 
 /** A shuttered window: a dark frame with two wooden leaves, each slatted four times. */
-function shutters(x: number, y: number): string {
+export function shutters(x: number, y: number): string {
   const out = [rect(x, y, 1.69, 0.82, C.deepBrown, outline(0.05))]
   for (const lx of [x + 0.077, x + 0.885]) {
     out.push(rect(lx, y + 0.077, 0.73, 0.667, C.woodDark, outline(0.04)))

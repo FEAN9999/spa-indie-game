@@ -6,18 +6,21 @@ import { outline, rect, shopFront, STREET_TILES, street } from './room'
 import { svgDoc } from './svg'
 
 /** Light wood planks a quarter tile tall, with staggered joints. */
-const CAO_PLANKS =
+export const CAO_PLANKS =
   `<pattern id="caoplanks" width="3" height="0.5" patternUnits="userSpaceOnUse">` +
   `<rect width="3" height="0.5" fill="${C.caoPlank}"/>` +
   `<path d="M0,0.01 H3 M1.15,0 V0.5 M2.56,0 V0.5" stroke="${C.caoPlankLine}" stroke-width="0.032"/></pattern>`
 
-/** White marble in two-tile slabs: a gold seam along two edges, a grey one through the middle, and a few grey veins. */
-const MARBLE =
+/** White marble in two-tile slabs: a `seam` coloured seam along two edges, a grey one through the middle, and a few grey veins. */
+export const marble = (seam: string): string =>
   `<pattern id="marble" width="2" height="2" patternUnits="userSpaceOnUse">` +
   `<rect width="2" height="2" fill="${C.marble}"/>` +
-  `<path d="M0,0 H2 M0,0 V2" stroke="${C.caoGoldLight}" stroke-width="0.05"/>` +
+  `<path d="M0,0 H2 M0,0 V2" stroke="${seam}" stroke-width="0.05"/>` +
   `<path d="M1,0 V2 M0,1 H2" stroke="${C.marbleSeam}" stroke-width="0.026"/>` +
   `<path d="M0.1,0.51 Q0.51,0.28 0.74,0.59 T1.33,0.77 M1.23,1.41 Q1.54,1.23 1.92,1.51 M0.26,1.54 Q0.46,1.28 0.82,1.44" stroke="${C.marbleVein}" stroke-width="0.032" fill="none"/></pattern>`
+
+/** The uptown room's marble, with gold seams. */
+export const MARBLE = marble(C.caoGoldLight)
 
 /** The glass wall onto three towers: sky, towers with rows of lit windows, and gold mullions between the panes. */
 function glassWall(x: number, y: number, w: number, h: number): string {

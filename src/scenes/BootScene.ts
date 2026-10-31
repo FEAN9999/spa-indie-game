@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { badgeTextures } from '../art/badges'
 import { beachRoomTexture } from '../art/beach'
+import { branchHouseTextures } from '../art/branchHouses'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
 import { floorTextures } from '../art/floors'
@@ -46,6 +47,7 @@ export class BootScene extends Phaser.Scene {
       'chain-map': mapTexture(),
       ...floorTextures(),
       ...houseTextures(),
+      ...branchHouseTextures(parseLayout(BRANCH_ROOM)),
       ...furnitureTextures(),
       ...chibiTextures(),
       ...fxTextures(),

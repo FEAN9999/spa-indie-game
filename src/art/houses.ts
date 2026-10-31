@@ -8,6 +8,9 @@ import { svgDoc } from './svg'
 export type HouseKey = 'left1' | 'left2' | 'right1' | 'right2'
 
 /** Each neighbour house's wall, its dark band, its gạch bông (base, corners, flower) and its roof while it is for sale. */
+/** A house for sale's roof: corrugated tin, terracotta tiles, or flat concrete with a water tank. */
+export type Roof = 'tin' | 'tiles' | 'flat'
+
 export const HOUSE_LOOK: Record<HouseKey, { wall: string; wallDark: string; tiles: [string, string, string]; roof: 'tin' | 'tiles' }> = {
   right1: { wall: C.houseRose, wallDark: C.houseRoseDark, tiles: [C.tile, C.teal, C.lotus], roof: 'tin' },
   left1: { wall: C.houseSky, wallDark: C.houseSkyDark, tiles: [C.cream, C.cobalt, C.terracotta], roof: 'tiles' },
@@ -78,15 +81,28 @@ function floor3(look: (typeof HOUSE_LOOK)[HouseKey]): string {
 /** Where a house for sale's roof ends and its roller shutter starts. */
 const EAVE = 16.6
 
-/** A house for sale over its own six columns: its tin or tile roof, a closed roller shutter, the street. */
-function sale(look: (typeof HOUSE_LOOK)[HouseKey]): string {
+/** A house for sale over its own six columns: its tin, tile or flat roof, a closed roller shutter, the street. */
+export function saleTexture(roof: Roof): string {
   const w = 6
   const out: string[] = []
-  if (look.roof === 'tin') {
+  if (roof === 'tin') {
     out.push(rect(0, 0, w, EAVE, C.tin, outline()))
     const ribs: string[] = []
     for (let x = 0.2; x < w; x += 0.4) ribs.push(`M${x.toFixed(2)},0 V${EAVE}`)
     out.push(`<path d="${ribs.join(' ')}" stroke="${C.tinRib}" stroke-width="0.07"/>`)
+  } else if (roof === 'flat') {
+    out.push(rect(0, 0, w, EAVE, C.roofConcrete, outline()))
+    const joints: string[] = []
+    for (let x = 1.5; x < w; x += 1.5) joints.push(`M${x},0 V${EAVE}`)
+    for (let y = 1.5; y < EAVE; y += 1.5) joints.push(`M0,${y} H${w}`)
+    out.push(`<path d="${joints.join(' ')}" stroke="${C.roofConcreteLine}" stroke-width="0.04"/>`)
+    // the parapet round the edge, then a small water tank on legs at the back
+    const p = 0.3
+    out.push(rect(0, 0, w, p, C.silver, outline(0.04)), rect(0, EAVE - p, w, p, C.silver, outline(0.04)))
+    out.push(rect(0, 0, p, EAVE, C.silver, outline(0.04)), rect(w - p, 0, p, EAVE, C.silver, outline(0.04)))
+    out.push(rect(3.3, 1.9, 1.7, 0.25, C.roofConcreteLine, outline(0.03)))
+    out.push(rect(3.45, 0.75, 1.4, 1.3, C.tank, `rx="0.35" ${outline(0.045)}`))
+    out.push(`<path d="M3.5,1.15 H4.8 M3.5,1.55 H4.8" stroke="${C.tankRib}" stroke-width="0.05"/>`)
   } else {
     out.push(rect(0, 0, w, EAVE, C.terracotta, outline()))
     const courses: string[] = []
@@ -112,7 +128,7 @@ export function houseTextures(): Record<string, string> {
     out[`house-${key}-1`] = floor1(look)
     out[`house-${key}-2`] = floor2(look)
     out[`house-${key}-3`] = floor3(look)
-    out[`sale-${key}`] = sale(look)
+    out[`sale-${key}`] = saleTexture(look.roof)
   }
   return out
 }
