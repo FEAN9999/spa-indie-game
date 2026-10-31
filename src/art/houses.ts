@@ -43,7 +43,7 @@ function floor1(look: (typeof HOUSE_LOOK)[HouseKey]): string {
 }
 
 /** Floor 2: planks, a shuttered window in the house's wall, one glass door onto the shop's balcony, the road below. */
-function floor2(look: (typeof HOUSE_LOOK)[HouseKey]): string {
+export function floor2(look: { wall: string; wallDark: string }): string {
   const out: string[] = [`<defs>${GACH_BONG}${PLANKS}</defs>`]
   out.push(rect(0, 2, IN, ROWS - 2.45, 'url(#planks)'), rect(0, 2, IN, 0.1, C.ink, 'opacity="0.14"'))
   out.push(rect(0, 0, IN + 0.2, 2, look.wall, outline()), rect(0, 1.65, IN + 0.2, 0.35, look.wallDark, outline(0.04)))
@@ -60,7 +60,7 @@ function floor2(look: (typeof HOUSE_LOOK)[HouseKey]): string {
 }
 
 /** The rooftop: sky, gạch tàu, parapets in the house's wall with a terracotta cap, tin over the street. */
-function floor3(look: (typeof HOUSE_LOOK)[HouseKey]): string {
+export function floor3(look: { wall: string }): string {
   const tau =
     `<pattern id="gachtau" width="1" height="1" x="0.5" patternUnits="userSpaceOnUse"><rect width="1" height="1" fill="${C.gachTauBase}"/>` +
     `<rect x="0.035" y="0.035" width="0.93" height="0.93" fill="${C.gachTauFace}"/>` +

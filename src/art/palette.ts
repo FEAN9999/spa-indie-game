@@ -87,6 +87,15 @@ export const C = {
   houseLilacDark: '#C2B0D6',
   houseLeaf: '#CBE6C9',
   houseLeafDark: '#ADD2AA',
+  // the restaurant's neighbour houses' warm walls and their dark bands
+  restHouseMango: '#F4B86A',
+  restHouseMangoDark: '#DE9E4F',
+  restHouseClay: '#E9A388',
+  restHouseClayDark: '#D4876C',
+  restHouseButter: '#F3D99A',
+  restHouseButterDark: '#DEC07B',
+  restHouseCinnamon: '#D2A27A',
+  restHouseCinnamonDark: '#B98860',
   // the old town's neighbour houses' walls, the beach's board bands and uptown's trim, each with its dark tone
   phoHouseMoss: '#A9C29A',
   phoHouseMossDark: '#8FAA80',
