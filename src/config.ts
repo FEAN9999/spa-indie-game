@@ -589,3 +589,5 @@ export const FEED_FANS = { idol: [20_000, 60_000], kol: [5_000, 15_000] } as con
 export const FEED_GAIN = { praise: 0.4, complaint: 0, shop: 0.1, vip: 0.1, rival: 0, ward: 0.05, idol: 0.04, kol: 0.08 }
 /** extra = round(likes x this): the comments not shown. */
 export const FEED_EXTRA_COMMENTS = 0.03
+/** What answering a complaint does: a right or plain reply sets the customer's scores to `stars` and wins `followers`; a rude one makes `likes` times the likes and `comments` more comments. */
+export const FEED_REPLY = { right: { stars: 4, followers: 40 }, plain: { stars: 3, followers: 10 }, rude: { likes: 1.5, comments: 20 } } as const

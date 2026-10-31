@@ -6,7 +6,9 @@ import {
   DAY_MINUTES,
   DAYS_PER_MONTH,
   EXIT_MS,
+  FEED_EXTRA_COMMENTS,
   FEED_PRAISE_CHANCE,
+  FEED_REPLY,
   EVENT_REWARD_FACTOR,
   FESTIVAL_ARRIVAL,
   FESTIVAL_PATIENCE,
@@ -85,8 +87,8 @@ import { clearStale, dueVip, emptyVipBook, planBooking, scoreVip, VIP_IDS, VIP_K
 import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type AwayResult } from './away'
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
-import { addPost, dayRoom, emptyFeed, openFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft } from './feed'
-import { commentsFor, complaintText, idolText, kolText, managerText, praiseText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
+import { addPost, dayRoom, emptyFeed, growFollowers, openFeed, REPLY_KINDS, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
+import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
 import { clearStairs } from './stairs'
@@ -100,6 +102,7 @@ import type { Feature } from './unlocks'
 /** Customers on their way somewhere or sitting; a build change may put furniture in their way. */
 const ON_FOOT: CustomerState[] = ['toSeat', 'waiting', 'toStation', 'leaving']
 
+export type AnswerProblem = 'missing' | 'notComplaint' | 'answered'
 export type HireProblem = 'money' | 'full'
 /** `max`: no such floor to open, or it is open already; `day`: floors are not on offer yet; `order`: the floor below is not open; `blocked`: the door cannot reach the foot of the stairs below it; `money`: too dear. */
 export type FloorProblem = 'max' | 'day' | 'order' | 'blocked' | 'money'
@@ -1898,6 +1901,49 @@ export class SpaSim {
   /** The feed's stream for one guest's post: the guest's id is mixed in, so two guests paying between the same two arrivals never draw alike (salts stay under 16). */
   private guestRng(c: Customer, salt: number): Rng {
     return this.feedRng(salt + c.id * 16)
+  }
+
+  /** The stream for the words answering post `postId` draws; the post id stands in for the guest's (salts stay under 16). */
+  private postRng(postId: number, salt: number): Rng {
+    return createRng(this.day * 9431 + postId * 16 + salt)
+  }
+
+  /** The shop's own line answering a complaint with `reply`, exactly as answerPost posts it today. */
+  replyLine(postId: number, reply: ReplyKind): string {
+    const complaint = this.feed.posts.find(p => p.id === postId)?.complaint
+    return complaint ? replyText(reply, complaint.reason, this.postRng(postId, 3)) : ''
+  }
+
+  /**
+   * Answers a complaint in the feed. Call it on the main shop (`chain.main`): the guest was its own.
+   * Right or plain turns every score of that guest still in the window into 4 or 3 and the post with it, and wins followers;
+   * rude changes no score and makes the post drama. Phây never touches money, guests or arrivals.
+   */
+  answerPost(postId: number, reply: ReplyKind): AnswerProblem | null {
+    const post = this.feed.posts.find(p => p.id === postId)
+    if (!post) return 'missing'
+    const complaint = post.complaint
+    if (!complaint) return 'notComplaint'
+    if (complaint.answered !== null) return 'answered'
+    complaint.answered = reply
+    const rng = this.postRng(postId, 3)
+    const shop: [string, string] = [this.shopName, replyText(reply, complaint.reason, rng)]
+    if (reply === 'rude') {
+      post.comments = [shop, dramaComment(rng)]
+      post.likes = Math.round(post.likes * FEED_REPLY.rude.likes)
+      post.extra = Math.round(post.likes * FEED_EXTRA_COMMENTS) + FEED_REPLY.rude.comments
+      return null
+    }
+    const { stars, followers } = FEED_REPLY[reply]
+    if (complaint.customerId !== 0) {
+      this.reviewIds.forEach((id, i) => {
+        if (id === complaint.customerId) this.reviews[i] = stars
+      })
+    }
+    post.stars = stars
+    post.comments = [shop, [post.name, answerText(reply, complaint.manager, rng)]]
+    growFollowers(this.feed, followers)
+    return null
   }
 
   /** The regulars met, by name, who may comment under a post of `name`'s. */

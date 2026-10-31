@@ -98,6 +98,18 @@ export function openFeed(feed: FeedBook): void {
   feed.followers = Math.max(feed.followers, FEED_START_FOLLOWERS)
 }
 
+/** Adds `n` followers (never takes any away) and queues each milestone this crosses for the first time. */
+export function growFollowers(feed: FeedBook, n: number): void {
+  const before = feed.followers
+  feed.followers = before + n
+  for (const m of FEED_MILESTONES) {
+    if (before < m && feed.followers >= m && !feed.milestones.includes(m)) {
+      feed.milestones.push(m)
+      feed.cheer.push(m)
+    }
+  }
+}
+
 /** Numbers and files a post, works its likes from the kind and the followers, grows the followers, queues the milestones crossed, and keeps the newest FEED_MAX_POSTS. */
 export function addPost(feed: FeedBook, draft: PostDraft, day: number, minute: number, rng: Rng): Post {
   const r = rng()
@@ -114,14 +126,7 @@ export function addPost(feed: FeedBook, draft: PostDraft, day: number, minute: n
   feed.posts.push(post)
   if (feed.posts.length > FEED_MAX_POSTS) feed.posts.splice(0, feed.posts.length - FEED_MAX_POSTS)
 
-  const before = feed.followers
-  feed.followers = before + Math.round(likes * FEED_GAIN[draft.kind])
-  for (const m of FEED_MILESTONES) {
-    if (before < m && feed.followers >= m && !feed.milestones.includes(m)) {
-      feed.milestones.push(m)
-      feed.cheer.push(m)
-    }
-  }
+  growFollowers(feed, Math.round(likes * FEED_GAIN[draft.kind]))
 
   if (feed.today.day !== day) feed.today = { day, praise: 0, complaint: 0 }
   if (draft.kind === 'praise' || draft.kind === 'complaint') feed.today[draft.kind]++
