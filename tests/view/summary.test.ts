@@ -123,6 +123,7 @@ describe('the restaurant on the summary', () => {
     expect(l.restaurantTop).toBeGreaterThanOrEqual(l.chainTop + 3 * l.chainRowH)
     expect(l.buttonY - l.restaurantTop).toBeGreaterThanOrEqual(4 * l.chainRowH)
     expect(l.top + l.cardH).toBeLessThanOrEqual(GAME_H - 40)
+    expect(l.restaurantOneLine).toBe(false)
     const alone = summaryLayout(kinds, 0, 0, 3)
     expect([alone.top, alone.rowH, alone.headingH, alone.chainRowH]).toEqual([200, 66, 50, 58])
     expect(alone.top + alone.cardH).toBeLessThanOrEqual(GAME_H - 40)
@@ -132,5 +133,18 @@ describe('the restaurant on the summary', () => {
     const kinds: SummaryRow['kind'][] = ['count', 'heading', 'money']
     expect(summaryLayout(kinds, 0, 0, 0)).toEqual(summaryLayout(kinds, 0, 0))
     expect(summaryLayout(kinds, 2, 120, 0)).toEqual(summaryLayout(kinds, 2, 120))
+  })
+
+  it('falls back to a one-line block in the worst case, keeping the card on the screen', () => {
+    // every optional row (11 rows, 2 headings), 3 branches, the restaurant and 400 px of notes
+    const kinds: SummaryRow['kind'][] = ['count', 'count', 'heading', 'money', 'money', 'money', 'money', 'heading', 'money', 'money', 'money', 'money', 'money']
+    const l = summaryLayout(kinds, 3, 400, 3)
+    expect(l.restaurantOneLine).toBe(true)
+    expect(l.top).toBeGreaterThanOrEqual(0)
+    expect(l.top + l.cardH).toBeLessThanOrEqual(GAME_H - 40)
+    expect(l.restaurantTop).toBeGreaterThanOrEqual(l.chainTop + 5 * l.chainRowH)
+    expect(l.buttonY - l.restaurantTop).toBeGreaterThanOrEqual(l.chainRowH)
+    // without the restaurant it is the layout it always was
+    expect(summaryLayout(kinds, 3, 400, 0).restaurantOneLine).toBe(false)
   })
 })

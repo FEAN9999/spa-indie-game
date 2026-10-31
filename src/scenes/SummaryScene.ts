@@ -121,20 +121,27 @@ export class SummaryScene extends Phaser.Scene {
       })
     }
     if (restaurantLines.length > 0) {
-      // the restaurant's own block under the chain's: a heading and a line each for diners, dish money and tips
-      const h = (restaurantLines.length + 1) * L.chainRowH + 20
+      // the restaurant's own block under the chain's: a heading and a line each for diners, dish money and tips; or, when the card is too tall for that, one line
+      const h = (L.restaurantOneLine ? 1 : restaurantLines.length + 1) * L.chainRowH + 20
       card
         .fillStyle(hex(C.tealPale), 1)
         .fillRoundedRect(120, L.restaurantTop, 840, h, 34)
         .lineStyle(4, hex(C.teal))
         .strokeRoundedRect(120, L.restaurantTop, 840, h, 34)
       let y = L.restaurantTop + 10 + L.chainRowH / 2
-      this.add.text(GAME_W / 2, y, t('summaryRestaurant'), textStyle(38, '800', C.tealDark)).setOrigin(0.5)
-      y += L.chainRowH
-      for (const line of restaurantLines) {
-        this.add.text(160, y, t(line.label), textStyle(36, '600')).setOrigin(0, 0.5)
-        this.add.text(920, y, line.kind === 'money' ? formatMoney(line.value) : String(line.value), textStyle(40, '800')).setOrigin(1, 0.5)
+      if (L.restaurantOneLine) {
+        this.add.text(160, y, t('summaryRestaurant'), textStyle(38, '800', C.tealDark)).setOrigin(0, 0.5)
+        const [served, income, tips] = restaurantLines.map(line => line.value)
+        this.add.text(920, y, t('restaurantOneLine', { n: served, money: formatMoney(income + tips) }), textStyle(40, '800')).setOrigin(1, 0.5)
+      }
+      else {
+        this.add.text(GAME_W / 2, y, t('summaryRestaurant'), textStyle(38, '800', C.tealDark)).setOrigin(0.5)
         y += L.chainRowH
+        for (const line of restaurantLines) {
+          this.add.text(160, y, t(line.label), textStyle(36, '600')).setOrigin(0, 0.5)
+          this.add.text(920, y, line.kind === 'money' ? formatMoney(line.value) : String(line.value), textStyle(40, '800')).setOrigin(1, 0.5)
+          y += L.chainRowH
+        }
       }
     }
     this.tweens.addCounter({

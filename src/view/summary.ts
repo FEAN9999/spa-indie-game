@@ -60,6 +60,8 @@ export interface SummaryLayout {
   chainRowH: number
   /** Where the restaurant block starts, under the chain block (or the rows); it is the end of the card's content when there is none. */
   restaurantTop: number
+  /** True when the restaurant block is the one-line form (it would not fit as a heading and rows): its box is one row high. */
+  restaurantOneLine: boolean
   /** Where the first note under the rows (and the chain block) goes. */
   notesTop: number
   buttonY: number
@@ -68,14 +70,22 @@ export interface SummaryLayout {
 
 const CHAIN_GAP = 24
 const CHAIN_PAD = 20
+/** The one-line restaurant form's gap above it; a little tighter than CHAIN_GAP. */
+const ONE_LINE_GAP = 16
 /** The lowest the compact card may reach. */
 const CARD_BOTTOM = GAME_H - 40
 
 /**
  * Where the end-of-day card's parts sit. With no chain shops it is the card as it always was; with some, a compact card that leaves room for the chain block,
- * moved up over the top bar when its notes would take it past CARD_BOTTOM. A restaurant block (`restaurantRows` rows under a heading) goes after the chain block, on the same compact card.
+ * moved up over the top bar when its notes would take it past CARD_BOTTOM. A restaurant block (`restaurantRows` rows under a heading) goes after the chain block, on the same compact card;
+ * when that would lift the card's top off the screen, the block is one line instead (`restaurantOneLine`).
  */
 export function summaryLayout(kinds: SummaryRow['kind'][], chainShops: number, notesH: number, restaurantRows = 0): SummaryLayout {
+  const full = layoutOf(kinds, chainShops, notesH, restaurantRows, false)
+  return restaurantRows > 0 && full.top < 0 ? layoutOf(kinds, chainShops, notesH, restaurantRows, true) : full
+}
+
+function layoutOf(kinds: SummaryRow['kind'][], chainShops: number, notesH: number, restaurantRows: number, oneLine: boolean): SummaryLayout {
   const chain = chainShops > 0
   const compact = chain || restaurantRows > 0
   const l = compact
@@ -85,9 +95,10 @@ export function summaryLayout(kinds: SummaryRow['kind'][], chainShops: number, n
   const chainTop = rowsEnd + CHAIN_GAP
   // the block: a heading, a row per shop, the total, and some air
   const chainEnd = chain ? chainTop + (chainShops + 2) * l.chainRowH + CHAIN_PAD : rowsEnd
-  // the restaurant's block: a heading, its rows and some air, the same gap under whatever came before
-  const restaurantTop = chainEnd + (restaurantRows > 0 ? CHAIN_GAP : 0)
-  const contentEnd = restaurantRows > 0 ? restaurantTop + (restaurantRows + 1) * l.chainRowH + CHAIN_PAD : chainEnd
+  // the restaurant's block: a heading, its rows and some air, the same gap under whatever came before; or one row and a little air
+  const restaurantTop = chainEnd + (restaurantRows > 0 ? (oneLine ? ONE_LINE_GAP : CHAIN_GAP) : 0)
+  const blockH = oneLine ? l.chainRowH + CHAIN_PAD : (restaurantRows + 1) * l.chainRowH + CHAIN_PAD
+  const contentEnd = restaurantRows > 0 ? restaurantTop + blockH : chainEnd
   const buttonY = contentEnd + (notesH ? 20 + notesH : 0) + 95
   const cardH = buttonY + 75 + 60 - l.top
   const lift = compact ? Math.max(0, l.top + cardH - CARD_BOTTOM) : 0
@@ -99,6 +110,7 @@ export function summaryLayout(kinds: SummaryRow['kind'][], chainShops: number, n
     rowsTop: l.rowsTop - lift,
     chainTop: chainTop - lift,
     restaurantTop: restaurantTop - lift,
+    restaurantOneLine: restaurantRows > 0 && oneLine,
     notesTop: contentEnd + 20 - lift,
     buttonY: buttonY - lift,
     cardH,

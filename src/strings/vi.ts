@@ -121,6 +121,7 @@ export const vi = {
   restaurantServed: 'Khách ăn',
   restaurantIncome: 'Tiền món',
   restaurantTips: 'Tiền boa',
+  restaurantOneLine: '{n} khách · {money}',
   summaryFirstDay: 'Bấm Ngày mới để mở cửa tiếp. Game tự lưu.',
   served: 'Khách đã phục vụ',
   leftUnhappy: 'Khách bỏ về',
