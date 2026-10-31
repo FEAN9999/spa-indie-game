@@ -54,6 +54,7 @@ import v29 from '../fixtures/save-v29.json'
 import v30 from '../fixtures/save-v30.json'
 import v31 from '../fixtures/save-v31.json'
 import v32 from '../fixtures/save-v32.json'
+import v35 from '../fixtures/save-v35.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -121,8 +122,8 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('the wide grid in an older shop', () => {
-  it('is version 34', () => {
-    expect(SAVE_VERSION).toBe(34)
+  it('is version 35', () => {
+    expect(SAVE_VERSION).toBe(35)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2404,5 +2405,21 @@ describe('save version 32', () => {
     const back = Chain.fromSave(parseSave(JSON.parse(JSON.stringify(chain.toSave()))), 8)
     expect(back.main.pets).toEqual({ owned: [{ id: 1, breed: 'chota', name: 'Ki' }, { id: 2, breed: 'xiem', name: 'Sữa' }], nextId: 3, litter: true })
     expect(back.branches[0].pets).toEqual({ owned: [], nextId: 1, litter: true })
+  })
+})
+
+describe('wall pieces and rugs in a saved shop', () => {
+  it('opens a v35 shop with a mirror on the wall and a rug under a bed, the grid as without them', () => {
+    const sim = open(v35)
+    expect(sim.items.filter(i => i.kind === 'rattanMirror' || i.kind === 'brocadeRug').map(({ kind, x, y }) => ({ kind, x, y }))).toEqual([
+      { kind: 'rattanMirror', x: 15, y: 1 },
+      { kind: 'brocadeRug', x: 14, y: 2 },
+    ])
+    const bare = open({ ...v35, items: v35.items.filter(i => i.kind !== 'rattanMirror' && i.kind !== 'brocadeRug') })
+    expect(sim.grid).toEqual(bare.grid)
+  })
+  it('keeps them through a save and a load', () => {
+    const sim = open(v35)
+    expect(viaJson(sim).items).toEqual(sim.items)
   })
 })
