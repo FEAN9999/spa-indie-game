@@ -110,7 +110,7 @@ export type MixOutcome = { kind: 'tried'; right: number } | { kind: 'repeat'; ri
 const emptyStats = (): DayStats => ({ served: 0, angry: 0, walkedAway: 0, income: 0, tips: 0, wages: 0, restock: 0, gifts: 0, quests: 0, ownerServed: 0 })
 
 /** Moves along the path at `speed` tiles per second; facing follows the movement. A step onto another floor is a climb: they stand on the foot for STAIRS_MS, then appear on the other foot. */
-function moveAlong(m: Mover, speed: number, dtMs: number): void {
+export function moveAlong(m: Mover, speed: number, dtMs: number): void {
   let budget = (speed * dtMs) / 1000
   if (m.climbMs !== undefined && (m.path.length === 0 || floorOf(m.path[0].y) === floorOf(m.pos.y))) delete m.climbMs
   while (budget > 0 && m.path.length > 0) {
