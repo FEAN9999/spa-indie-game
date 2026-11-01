@@ -243,7 +243,7 @@ describe('facings', () => {
     expect(nextFacing(nextFacing(tea))).toEqual({ ...tea, flip: true })
   })
   it('only mirrors square pieces that are not beds', () => {
-    expect(ITEM_KINDS.filter(canTurn).filter(k => ITEMS[k].group !== 'bed').sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'brocadeRug', 'cabinet', 'cashierCounter', 'danTranh', 'desk', 'diningTable', 'dishCabinet', 'fishTank', 'gardenSwing', 'goldBoard', 'grillTable', 'hammock', 'karaoke', 'lightArch', 'lotus', 'lowTable', 'planter', 'redRug', 'regularsBoard', 'runnerRug', 'screen', 'servingCounter', 'sewingMachine', 'shelf', 'silkScreen', 'sink', 'slippers', 'starWall', 'stove', 'sunLounger', 'tea', 'teaChest', 'umbrellaTable', 'vanity', 'velvetSofa', 'waterfall'])
+    expect(ITEM_KINDS.filter(canTurn).filter(k => ITEMS[k].group !== 'bed').sort()).toEqual(['bambooBench', 'bambooShelf', 'bambooTea', 'bench', 'brocadeRug', 'cabinet', 'cashierCounter', 'danTranh', 'desk', 'diningTable', 'dishCabinet', 'fishTank', 'gardenSwing', 'goldBoard', 'grillTable', 'hammock', 'karaoke', 'lightArch', 'lockers', 'lotus', 'lowTable', 'oilShelf', 'planter', 'redRug', 'regularsBoard', 'runnerRug', 'screen', 'servingCounter', 'sewingMachine', 'shelf', 'silkScreen', 'sink', 'slippers', 'starWall', 'stove', 'sunLounger', 'tea', 'teaChest', 'umbrellaTable', 'vanity', 'velvetSofa', 'waterfall'])
     const plant: Item = { id: 3, kind: 'plant', x: 1, y: 16, flip: false }
     expect(nextFacing(plant)).toEqual({ ...plant, flip: true })
   })

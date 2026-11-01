@@ -701,6 +701,135 @@ const danTranhTurned =
   rect(0.26, 1.86, 0.58, 0.18, C.woodDark, `rx="0.04" ${ink(0.03)}`) + dot(0.55, 1.95, 0.04, C.mustard, 0.01) +
   rect(0.3, 0.06, 0.5, 0.14, C.woodDark, `rx="0.04" ${ink(0.03)}`)
 
+// ---------- Spa: đồ trang trí tầng 2 ----------
+
+/** Một ô tủ locker góc trên trái (x, y): cánh gỗ sáng, khe thông gió, biển số đồng và ổ khoá có dây đeo. */
+const lockerDoor = (x: number, y: number, w: number, h: number) =>
+  rect(x, y, w, h, C.woodLight, `rx="0.03" ${ink(0.03)}`) +
+  [0.12, 0.18, 0.24].map(d => line(`M${f(x + 0.12)},${f(y + d)} H${f(x + w - 0.12)}`, C.wood, 0.02)).join('') +
+  rect(f(x + w / 2 - 0.08), f(y + 0.32), 0.16, 0.09, C.mustard, `rx="0.02" ${ink(0.015)}`) +
+  dot(x + w - 0.12, y + h / 2 + 0.08, 0.035, C.silver, 0.012) +
+  line(`M${f(x + w - 0.12)},${f(y + h / 2 + 0.11)} q0.02,0.12 -0.04,0.16`, C.teal, 0.02)
+
+// tủ đồ khách: tủ locker gỗ hai cột hai tầng, mỗi ô có biển số và khoá, nóc tủ có giỏ khăn
+const lockers =
+  rect(0.1, 0.12, 1.8, 1.78, C.wood, `rx="0.04" ${ink()}`) +
+  lockerDoor(0.18, 0.2, 0.8, 0.8) + lockerDoor(1.02, 0.2, 0.8, 0.8) +
+  lockerDoor(0.18, 1.04, 0.8, 0.78) + lockerDoor(1.02, 1.04, 0.8, 0.78) +
+  rect(0.2, 1.9, 0.12, 0.06, C.woodDark, ink(0.015)) + rect(1.68, 1.9, 0.12, 0.06, C.woodDark, ink(0.015)) +
+  `<path d="M1.3,0.12 L1.34,0.02 H1.76 L1.8,0.12Z" fill="${C.weave}" ${ink(0.02)}/>`
+
+// tủ đồ khách dựng đứng: nhìn từ một đầu tủ, mặt bên gỗ chạy dọc, mép cánh tủ có ổ khoá ở cạnh phải
+const lockersTurned =
+  rect(0.82, 0.18, 0.2, 2.6, C.woodLight, `rx="0.03" ${ink(0.03)}`) +
+  [0.6, 1.5].map(y => dot(0.92, y, 0.035, C.silver, 0.012)).join('') +
+  line('M0.84,1.06 H1.0', C.wood, 0.03) +
+  rect(0.08, 0.1, 0.78, 2.7, C.wood, `rx="0.04" ${ink()}`) +
+  line('M0.2,0.2 V2.6', C.woodLight, 0.04) +
+  rect(0.12, 2.78, 0.12, 0.06, C.woodDark, ink(0.015)) + rect(0.7, 2.78, 0.12, 0.06, C.woodDark, ink(0.015))
+
+// xe đẩy khăn: khung inox hai tầng có bánh xe, tầng trên chai tinh dầu và khăn gấp, tầng dưới khăn cuộn
+const towelCart =
+  line('M0.16,0.4 V1.36 M0.84,0.4 V1.36', C.ink, 0.07) +
+  line('M0.16,0.4 V1.36 M0.84,0.4 V1.36', C.silver, 0.035) +
+  `<path d="M0.84,0.4 q0.08,-0.04 0.08,-0.14" stroke="${C.silver}" stroke-width="0.04" fill="none" stroke-linecap="round"/>` +
+  bottle(0.24, 0.58, 0.16, C.mustard, C.woodDark) + bottle(0.4, 0.58, 0.2, C.mintTeal, C.cream) +
+  rect(0.56, 0.44, 0.26, 0.14, C.pinkPale, `rx="0.03" ${ink(0.02)}`) + rect(0.58, 0.36, 0.22, 0.09, C.cream, `rx="0.03" ${ink(0.02)}`) +
+  rect(0.1, 0.58, 0.8, 0.06, C.silver, `rx="0.02" ${ink(0.02)}`) +
+  [0.26, 0.5, 0.74].map((x, i) => towelRoll(x, 1.02, i % 2 ? C.mint : C.cream)).join('') +
+  [0.38, 0.62].map((x, i) => towelRoll(x, 0.86, i % 2 ? C.cream : C.pinkPale)).join('') +
+  rect(0.1, 1.1, 0.8, 0.06, C.silver, `rx="0.02" ${ink(0.02)}`) +
+  dot(0.16, 1.42, 0.06, C.stone, 0.02) + dot(0.84, 1.42, 0.06, C.stone, 0.02)
+
+// đèn đá muối: khối đá muối hồng cam gồ ghề phát sáng ấm, đặt trên đế gỗ tròn
+const saltLamp =
+  `<circle cx="0.5" cy="0.8" r="0.46" fill="${C.glow}" opacity="0.4"/>` +
+  rect(0.24, 1.18, 0.52, 0.16, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  `<path d="M0.3,1.2 L0.22,0.86 L0.34,0.56 L0.46,0.38 L0.62,0.44 L0.74,0.7 L0.8,0.98 L0.7,1.2Z" fill="${C.stoneHot}" opacity="0.85" ${ink(0.035)}/>` +
+  `<path d="M0.34,1.1 L0.32,0.84 L0.42,0.62 L0.54,0.56 L0.64,0.76 L0.66,1.04Z" fill="${C.glow}" opacity="0.75"/>` +
+  line('M0.46,0.38 L0.5,0.7 L0.74,0.7 M0.22,0.86 L0.5,0.7 M0.5,0.7 L0.56,1.18', C.lantern, 0.015)
+
+// chậu lưỡi hổ: chậu xi măng xám, những lá thẳng nhọn xanh sẫm viền vàng, có vằn ngang
+const snakeLeaf = (x: number, tilt: number, top: number, wide: number) =>
+  `<path d="M${f(x - wide)},1.36 Q${f(x - wide * 0.8 + tilt / 2)},${f((1.36 + top) / 2)} ${f(x + tilt)},${top} Q${f(x + wide * 0.8 + tilt / 2)},${f((1.36 + top) / 2)} ${f(x + wide)},1.36Z" fill="${C.tealDark}" stroke="${C.bamboo}" stroke-width="0.025"/>` +
+  [0.3, 0.5, 0.7].map(t => {
+    const y = f(1.36 - (1.36 - top) * t)
+    return line(`M${f(x + tilt * t - wide * 0.5 * (1 - t))},${y} q${f(wide * 0.5 * (1 - t))},-0.03 ${f(wide * (1 - t))},0`, C.leafLight, 0.015)
+  }).join('')
+const snakePlant =
+  snakeLeaf(0.3, -0.1, 0.5, 0.07) +
+  snakeLeaf(0.7, 0.1, 0.46, 0.07) +
+  snakeLeaf(0.42, -0.04, 0.22, 0.08) +
+  snakeLeaf(0.58, 0.05, 0.3, 0.08) +
+  snakeLeaf(0.5, 0.0, 0.62, 0.07) +
+  rect(0.18, 1.32, 0.64, 0.56, C.stoneLight, `rx="0.06" ${ink(0.04)}`) +
+  line('M0.22,1.44 H0.78', C.stone, 0.025)
+
+// tranh hoa sen: khung gỗ nâu, nền lụa xanh ngọc nhạt, hai lá sen to, một bông sen hồng nở và một nụ
+const lotusPetal = (cx: number, cy: number, angle: number, len: number, fill: string) =>
+  `<path d="M${cx},${cy} Q${f(cx - 0.08)},${f(cy - len * 0.6)} ${cx},${f(cy - len)} Q${f(cx + 0.08)},${f(cy - len * 0.6)} ${cx},${cy}Z" transform="rotate(${angle} ${cx} ${cy})" fill="${fill}" ${ink(0.015)}/>`
+const lotusPainting =
+  hook(1, 0.12, 0.3) + line('M0.3,0.34 L1,0.14 L1.7,0.34', C.ink, 0.02) +
+  rect(0.22, 0.3, 1.56, 1.14, C.woodDark, `rx="0.04" ${ink()}`) +
+  rect(0.32, 0.4, 1.36, 0.94, C.tealPale, ink(FINE)) +
+  line('M0.9,1.34 Q0.92,1.0 0.98,0.82 M1.3,1.34 Q1.28,1.1 1.36,0.98', C.leaf, 0.025) +
+  `<ellipse cx="0.62" cy="1.12" rx="0.26" ry="0.12" fill="${C.leaf}" ${ink(0.02)}/>` +
+  line('M0.62,1.12 L0.42,1.06 M0.62,1.12 L0.8,1.04 M0.62,1.12 L0.62,1.22', C.leafLight, 0.015) +
+  `<ellipse cx="1.46" cy="1.2" rx="0.18" ry="0.08" fill="${C.leafLight}" ${ink(0.02)}/>` +
+  [-50, -25, 0, 25, 50].map((a, i) => lotusPetal(0.98, 0.84, a, 0.26, i % 2 ? C.lotusDark : C.lotus)).join('') +
+  dot(0.98, 0.8, 0.04, C.mustard, 0.01) +
+  lotusPetal(1.36, 0.98, 10, 0.22, C.lotus) +
+  rect(1.52, 0.48, 0.08, 0.08, C.lantern, `rx="0.01"`)
+
+// chuông gió: giá gỗ nhô từ tường, đĩa gỗ tròn treo năm ống tre dài ngắn, quả lắc và mảnh giấy đỏ đón gió
+const windChime =
+  rect(0.16, 0.28, 0.1, 0.24, C.woodDark, `rx="0.02" ${ink(0.025)}`) +
+  `<path d="M0.22,0.32 H0.5 V0.4" stroke="${C.woodDark}" stroke-width="0.05" fill="none" stroke-linecap="round"/>` +
+  line('M0.5,0.4 V0.5', C.ink, 0.015) +
+  `<ellipse cx="0.5" cy="0.54" rx="0.26" ry="0.06" fill="${C.wood}" ${ink(0.025)}/>` +
+  [[0.3, 0.42], [0.4, 0.52], [0.5, 0.6], [0.6, 0.5], [0.7, 0.4]].map(([x, len]) =>
+    line(`M${x},0.56 V0.64`, C.ink, 0.01) + rect(f(x - 0.03), 0.64, 0.06, len, C.bamboo, `rx="0.02" ${ink(0.012)}`) + line(`M${f(x - 0.03)},${f(0.64 + len / 2)} h0.06`, C.bambooDark, 0.012),
+  ).join('') +
+  line('M0.5,0.56 V1.36', C.ink, 0.012) +
+  dot(0.5, 0.98, 0.05, C.woodLight, 0.015) +
+  rect(0.42, 1.36, 0.16, 0.22, C.lantern, `rx="0.02" ${ink(0.015)}`)
+
+// gương toàn thân: gương cao vòm trên đứng trong khung gỗ, kính có vệt sáng, hai chân đỡ phía sau
+const fullMirror =
+  line('M0.26,1.6 L0.14,2.04 M0.74,1.6 L0.86,2.04', C.woodDark, 0.06) +
+  `<path d="M0.22,2.0 V0.5 Q0.22,0.12 0.5,0.12 Q0.78,0.12 0.78,0.5 V2.0Z" fill="${C.wood}" ${ink(0.04)}/>` +
+  `<path d="M0.3,1.92 V0.52 Q0.3,0.22 0.5,0.22 Q0.7,0.22 0.7,0.52 V1.92Z" fill="${C.glass}" ${ink(0.02)}/>` +
+  line('M0.38,0.7 L0.5,0.5 M0.38,1.0 L0.58,0.66 M0.5,1.7 L0.62,1.5', '#FFFFFF', 0.03)
+
+// kệ tinh dầu: kệ gỗ thấp hai tầng, tầng trên chai tinh dầu hổ phách và hai ngọn nến, tầng dưới chồng đá nóng và khăn
+const candle = (cx: number, base: number) =>
+  rect(f(cx - 0.05), f(base - 0.14), 0.1, 0.14, C.cream, `rx="0.02" ${ink(0.015)}`) +
+  `<path d="M${cx},${f(base - 0.15)} q-0.04,-0.05 0,-0.11 q0.04,0.06 0,0.11Z" fill="${C.stoneHot}"/>` +
+  `<circle cx="${cx}" cy="${f(base - 0.2)}" r="0.08" fill="${C.glow}" opacity="0.5"/>`
+const stoneStack = (cx: number, base: number) =>
+  [0, 1, 2].map(i => `<ellipse cx="${cx}" cy="${f(base - 0.05 - i * 0.08)}" rx="${f(0.16 - i * 0.03)}" ry="0.045" fill="${C.stone}" ${ink(0.015)}/>`).join('')
+const oilShelf =
+  rect(0.1, 0.5, 0.08, 1.0, C.woodDark, ink(0.025)) +
+  rect(1.82, 0.5, 0.08, 1.0, C.woodDark, ink(0.025)) +
+  bottle(0.3, 0.92, 0.22, C.mustardDark, C.woodDark) + bottle(0.48, 0.92, 0.18, C.mustard, C.woodDark) + bottle(0.66, 0.92, 0.24, C.clay, C.cream) +
+  candle(1.1, 0.92) + candle(1.36, 0.92) +
+  `<path d="M1.56,0.92 Q1.56,0.8 1.66,0.78 Q1.76,0.8 1.76,0.92Z" fill="${C.lotus}" ${ink(0.015)}/>` +
+  rect(0.06, 0.92, 1.88, 0.09, C.wood, `rx="0.03" ${ink(0.03)}`) +
+  stoneStack(0.5, 1.4) +
+  rect(1.08, 1.22, 0.56, 0.18, C.mint, `rx="0.04" ${ink(0.02)}`) + rect(1.12, 1.14, 0.48, 0.09, C.cream, `rx="0.03" ${ink(0.02)}`) +
+  rect(0.06, 1.4, 1.88, 0.09, C.wood, `rx="0.03" ${ink(0.03)}`)
+
+// kệ tinh dầu dựng đứng: nhìn từ một đầu, mặt kệ chạy dọc lên, chai và nến ở đầu xa, đá nóng và khăn ở đầu gần
+const oilShelfTurned =
+  rect(0.82, 0.3, 0.12, 1.9, C.woodDark, ink(0.025)) +
+  rect(0.1, 0.3, 0.76, 1.9, C.wood, `rx="0.05" ${ink(0.04)}`) +
+  bottle(0.24, 0.66, 0.2, C.mustardDark, C.woodDark) + bottle(0.42, 0.66, 0.24, C.clay, C.cream) +
+  candle(0.66, 0.66) +
+  candle(0.4, 1.06) +
+  stoneStack(0.48, 1.56) +
+  rect(0.2, 1.7, 0.56, 0.16, C.mint, `rx="0.04" ${ink(0.02)}`) +
+  rect(0.08, 2.14, 0.8, 0.12, C.wood, `rx="0.03" ${ink(0.03)}`)
+
 /** Hình của từng món, đặt khoá theo kiểu `decor-` của furniture.ts; món xoay được có thêm hình `-turned`. */
 export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> = {
   'decor-velvetSofa': { w: 3, h: 1.35, body: velvetSofa },
@@ -749,4 +878,14 @@ export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> 
   'decor-moneyPlant': { w: 1, h: 1.95, body: moneyPlant },
   'decor-danTranh': { w: 2, h: 1.45, body: danTranh },
   'decor-danTranh-turned': { w: 1.1, h: 2.45, body: danTranhTurned },
+  'decor-lockers': { w: 2, h: 1.96, body: lockers },
+  'decor-lockers-turned': { w: 1.1, h: 2.84, body: lockersTurned },
+  'decor-towelCart': { w: 1, h: 1.5, body: towelCart },
+  'decor-saltLamp': { w: 1, h: 1.36, body: saltLamp },
+  'decor-snakePlant': { w: 1, h: 1.9, body: snakePlant },
+  'decor-lotusPainting': { w: 2, h: 2, body: lotusPainting },
+  'decor-windChime': { w: 1, h: 2, body: windChime },
+  'decor-fullMirror': { w: 1, h: 2.06, body: fullMirror },
+  'decor-oilShelf': { w: 2, h: 1.52, body: oilShelf },
+  'decor-oilShelf-turned': { w: 1.1, h: 2.3, body: oilShelfTurned },
 }

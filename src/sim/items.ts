@@ -17,6 +17,7 @@ export type ItemKind =
   | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
   | 'velvetSofa' | 'rattanArmchair' | 'vanity' | 'towelSteamer' | 'aromaDiffuser' | 'tileRug' | 'tearCalendar' | 'pool'
+  | 'lockers' | 'towelCart' | 'saltLamp' | 'snakePlant' | 'lotusPainting' | 'windChime' | 'fullMirror' | 'oilShelf'
   | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
   | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
   | 'sunLounger' | 'charcoalGrill' | 'lightArch' | 'gardenSwing' | 'hammock' | 'bananaPlant'
@@ -137,6 +138,14 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   tileRug: { w: 2, h: 2, price: 195_000, beauty: 3, group: 'decor', layer: 'rug', name: 'itemTileRug' },
   tearCalendar: { w: 1, h: 1, price: 60_000, beauty: 1, group: 'decor', layer: 'wall', name: 'itemTearCalendar' },
   pool: { w: 4, h: 4, price: 1_200_000, beauty: 8, group: 'decor', name: 'itemPool' },
+  lockers: { w: 2, h: 1, price: 300_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemLockers' },
+  towelCart: { w: 1, h: 1, price: 135_000, beauty: 1, group: 'decor', shop: 'spa', name: 'itemTowelCart' },
+  saltLamp: { w: 1, h: 1, price: 120_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemSaltLamp' },
+  snakePlant: { w: 1, h: 1, price: 90_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemSnakePlant' },
+  lotusPainting: { w: 2, h: 1, price: 240_000, beauty: 4, group: 'decor', shop: 'spa', layer: 'wall', name: 'itemLotusPainting' },
+  windChime: { w: 1, h: 1, price: 75_000, beauty: 1, group: 'decor', shop: 'spa', layer: 'wall', name: 'itemWindChime' },
+  fullMirror: { w: 1, h: 1, price: 150_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemFullMirror' },
+  oilShelf: { w: 2, h: 1, price: 210_000, beauty: 3, group: 'decor', shop: 'spa', name: 'itemOilShelf' },
   stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
   diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
   diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },

@@ -8,7 +8,7 @@ import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { advanceUntil, seatAndWait, startService } from './helpers'
+import { advanceUntil, seatAndWait, starShop, startService } from './helpers'
 
 const shop = () => {
   const sim = new SpaSim({ rng: createRng(1), autoSpawn: false })
@@ -148,6 +148,16 @@ describe('building the shop', () => {
     expect(sim.buy('bench', 18, 9, false)).toBeNull()
     expect(sim.sell(bench)).toBeNull()
     expect(sim.seats.map(s => s.tile)).toEqual([{ x: 18, y: 9 }, { x: 19, y: 9 }, { x: 20, y: 9 }])
+  })
+
+  it("dresses the spa's floor 2 with its own pieces: a lotus painting and a wind chime on the back wall, the lockers and the oil shelf on the floor", () => {
+    const sim = starShop(3, 50_000_000)
+    expect(sim.openFloor(2)).toBeNull()
+    expect(sim.buy('lotusPainting', 13, 19, false)).toBeNull()
+    expect(sim.buy('windChime', 16, 19, false)).toBeNull()
+    expect(sim.buy('lockers', 13, 20, false)).toBeNull()
+    expect(sim.buy('oilShelf', 16, 20, false)).toBeNull()
+    expect(sim.canPlace('saltLamp', 13, 20, false)).toBe('overlap')
   })
 
   it('lets a customer wait on the velvet sofa and the rattan armchair', () => {
