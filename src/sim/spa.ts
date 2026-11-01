@@ -93,7 +93,7 @@ import { emptyFriends, type FriendBook } from './friends'
 import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
-import { clearStairs } from './stairs'
+import { clearStairs, moveOldDecor } from './stairs'
 import { isPast, newStarter, pastStarter, settleStarter, STARTER_OPENS, starterRunning, type StarterBook, type StarterShop } from './starter'
 import { BASIC_SERVICES, isLessonService, LESSON_SERVICES, isRecipeService, SERVICE_IDS, SERVICES, serviceOfBed, type LessonService, type ServiceId, type ServiceProblem } from './services'
 import { fullStock, STOCK_ITEMS, STOCK_USES, type StockItem } from './stock'
@@ -976,6 +976,8 @@ export class SpaSim {
     sim.houses = d.houses
     sim.rebuildShell()
     const shell = parseLayout(sim.shell)
+    // an older branch's own piece moves off the foot of the stairs first, where it can
+    if (d.clearStairs && d.place !== null) moveOldDecor(d, d.place, shell)
     // an older shop may have furniture where the stairs now are: it goes first, with a refund
     const note = d.clearStairs ? clearStairs(d, shell) : null
     const stray = d.items.find(i => offFloor(shell, i, sim.floors))
@@ -1420,7 +1422,7 @@ export class SpaSim {
     this.floors = floor
     this.changeRoom()
     this.emit({ type: 'floorOpened', floor })
-    this.postNews({ kind: 'floor', floor })
+    this.postNews({ kind: 'floor', floor, place: this.place })
     return null
   }
 

@@ -2,10 +2,11 @@ import { FLOOR_PRICE, FLOOR_ROWS, STAIRS_MS, UNLOCK_DAY } from '../config'
 import { floorOf } from '../sim/floors'
 import { ITEMS, layerOf, size, type Item, type ItemKind } from '../sim/items'
 import type { RestaurantSim } from '../sim/restaurant'
+import type { PlaceId } from '../sim/places'
 import type { SpaSim } from '../sim/spa'
 import type { Vec } from '../sim/types'
 import { formatMoney } from '../strings/format'
-import { t } from '../strings/vi'
+import { t, type StringKey } from '../strings/vi'
 
 /** How far, in tiles, someone mid-climb rises toward the stairs before the next floor takes them. */
 const CLIMB_LIFT_TILES = 2.5
@@ -24,6 +25,18 @@ export function climbPose(m: { pos: Vec; climbMs?: number }): { lift: number; al
   if (m.climbMs === undefined || !(m.climbMs > 0)) return null
   const k = m.climbMs / STAIRS_MS
   return { lift: CLIMB_LIFT_TILES * k, alpha: 1 - k }
+}
+
+/** What floor 2 and the rooftop look like at each branch. */
+const BRANCH_FLOOR_LOOK: Record<PlaceId, Record<2 | 3, StringKey>> = {
+  oldTown: { 2: 'floorLine2aOldTown', 3: 'floorLine3aOldTown' },
+  beach: { 2: 'floorLine2aBeach', 3: 'floorLine3aBeach' },
+  uptown: { 2: 'floorLine2aUptown', 3: 'floorLine3aUptown' },
+}
+
+/** The card's two lines for opening `floor` at `place` (null for the main shop): what the floor looks like there, then what it adds. */
+export function floorCardLines(place: PlaceId | null, floor: 2 | 3): [string, string] {
+  return [t(place ? BRANCH_FLOOR_LOOK[place][floor] : `floorLine${floor}a`), t(`floorLine${floor}b`)]
 }
 
 /** The floor buttons show once floors have opened for the day and the layout has stairs. */

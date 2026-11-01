@@ -150,6 +150,8 @@ export class Chain {
     for (const b of saved?.branches ?? []) {
       try {
         const branch = SpaSim.fromSave(b, { rng: createRng(seed + 1 + PLACE_IDS.indexOf(b.place!)) })
+        // what clearing an older branch's stairs refunded goes into the one purse
+        chain.main.money += branch.money - b.money
         branch.purse = chain.main.purse
         branch.feed = chain.main.feed
         chain.wireIncoming(branch)

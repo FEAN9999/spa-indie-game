@@ -47,9 +47,9 @@ export const innerFloor = (h: Houses): { left: number; top: number; right: numbe
   bottom: 17,
 })
 
-/** A bought house's texture on `floor`: the main shop's (place null) by floor, a branch's by its place. */
+/** A bought house's texture on `floor`: the main shop's (place null), or a branch's at its place. */
 export const houseTextureKey = (place: PlaceId | null, h: House, floor: number): string =>
-  place ? `house-${place}-${houseKey(h)}` : `house-${houseKey(h)}-${floor}`
+  place ? `house-${place}-${houseKey(h)}-${floor}` : `house-${houseKey(h)}-${floor}`
 
 /** A house for sale's roof: the main shop's (place null) by house, a branch's one for the place. */
 export const saleTextureKey = (place: PlaceId | null, h: House): string => (place ? `sale-${place}` : `sale-${houseKey(h)}`)

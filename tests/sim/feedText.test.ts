@@ -21,8 +21,8 @@ import { t } from '../../src/strings/vi'
 const LONG_SHOP = 'Spa Hoa Sen Vàng Rực Rỡ 24' // the longest a shop name can be is 24 letters
 const NEWS: ShopNews[] = [
   { kind: 'rank', stars: 4 }, { kind: 'year', place: 1 }, { kind: 'year', place: 3 },
-  ...PLACE_IDS.flatMap((place): ShopNews[] => [{ kind: 'branch', place }, { kind: 'house', place }]),
-  { kind: 'house', place: null }, { kind: 'floor', floor: 2 }, { kind: 'floor', floor: 3 },
+  ...PLACE_IDS.flatMap((place): ShopNews[] => [{ kind: 'branch', place }, { kind: 'house', place }, { kind: 'floor', floor: 2, place }, { kind: 'floor', floor: 3, place }]),
+  { kind: 'house', place: null }, { kind: 'floor', floor: 2, place: null }, { kind: 'floor', floor: 3, place: null },
   ...BREED_IDS.map((breed): ShopNews => ({ kind: 'pet', name: 'Bánh Mì Nướng 12', breed })),
   ...FESTIVAL_IDS.map((festival): ShopNews => ({ kind: 'festival', festival })),
 ]
@@ -144,6 +144,11 @@ describe('feed text', () => {
     expect(shopText({ kind: 'rank', stars: 4 }, 'Spa Sen', createRng(1))).toMatch(/4/)
     expect(shopText({ kind: 'pet', name: 'Mướp', breed: 'muop' }, 'Spa Sen', createRng(1))).toContain('Mướp')
     expect(shopText({ kind: 'branch', place: 'beach' }, 'Spa Sen', createRng(1))).toContain('Bãi biển')
+    for (let seed = 1; seed <= 20; seed++) {
+      const text = shopText({ kind: 'floor', floor: 3, place: 'uptown' }, 'Spa Sen', createRng(seed))
+      expect(text).toContain(t('placeUptown'))
+      expect(text).toContain('sân thượng')
+    }
     expect(shopText({ kind: 'festival', festival: 'tet' }, 'Spa Sen', createRng(1))).toContain('Tết')
   })
 

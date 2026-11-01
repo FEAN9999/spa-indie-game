@@ -48,7 +48,7 @@ import { closingCard, idolCallCard, noTechCard, placeName, unlockCard, vipCallCa
 import { OUTFIT_NAME } from '../view/outfits'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from '../view/CharacterView'
 import { FloorBar } from '../view/FloorBar'
-import { climbPose, followFloor, pills, restaurantPills, showPills, stairsToasts } from '../view/floors'
+import { climbPose, floorCardLines, followFloor, pills, restaurantPills, showPills, stairsToasts } from '../view/floors'
 import { MAP_VIEW, mapBounds, type Rect } from '../view/camera'
 import { RestaurantLayer } from '../view/RestaurantLayer'
 import { DOOR_X, doorWalk, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
@@ -1403,8 +1403,7 @@ export class SpaScene extends Phaser.Scene {
       this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
       addCard(this.ui, 90, 760, 900, 640),
       this.ui.add.text(GAME_W / 2, 810, t(`floorName${floor}` as StringKey), textStyle(60, '800')).setOrigin(0.5, 0),
-      this.ui.add.text(GAME_W / 2, 910, `${t(`floorLine${floor}a` as StringKey)}
-${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
+      this.ui.add.text(GAME_W / 2, 910, floorCardLines(sim.place, floor as 2 | 3).join('\n'), { ...textStyle(44, '600'), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0),
     ]
     if (note) parts.push(this.ui.add.text(GAME_W / 2, 1130, note, { ...textStyle(48, '800', C.lantern), align: 'center', wordWrap: { width: 780 } }).setOrigin(0.5, 0))
     // the open button is wide enough for its price; "Để sau" beside it is narrower, so the pair keeps even margins inside the card
@@ -1525,8 +1524,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       this.session.saveNow()
     }
     const title = `houseTitle${side === 'right' ? 'Right' : 'Left'}${n}` as StringKey
-    // a branch has one floor and its place's own floors, not the main shop's three and its gạch bông
-    const lines = sim.place === null ? [t('houseLine1'), t('houseLine2')] : [t('houseBranchLine1'), t('houseBranchLine2')]
+    // a branch lays its place's own floors, not the main shop's gạch bông
+    const lines = [t('houseLine1'), t(sim.place === null ? 'houseLine2' : 'houseBranchLine2')]
     const parts: (Phaser.GameObjects.GameObject & Phaser.GameObjects.Components.Depth)[] = [
       this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive(),
       addCard(this.ui, 90, 740, 900, 680),

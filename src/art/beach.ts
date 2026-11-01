@@ -21,7 +21,7 @@ export const SAND_PLANKS =
   `<path d="M0.18,0.23 h0.23 M1.41,0.74 h0.28" stroke="${C.beachPlankGrain}" stroke-width="0.025" stroke-linecap="round"/></pattern>`
 
 /** A round window on the sea: a silver frame round sky over water, with one wave. */
-function porthole(cx: number, cy: number, id: string): string {
+export function porthole(cx: number, cy: number, id: string): string {
   const r = 0.27
   return (
     `<circle cx="${cx}" cy="${cy}" r="0.385" fill="${C.silver}" ${outline()}/>` +
