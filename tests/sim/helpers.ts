@@ -159,6 +159,14 @@ export function learnFoot(chain: Chain): void {
   chain.sync()
 }
 
+/** A 5-star main shop that has learned Chà muối biển, Ngâm chân and Sơn móng, with their beds placed and the branches told. */
+export function learnNails(chain: Chain): void {
+  learnFoot(chain)
+  chain.main.services = [...OLD_SERVICES, 'scrub', 'foot', 'nails']
+  placeFirst(chain.main, 'nailDesk')
+  chain.sync()
+}
+
 /**
  * Four days of a 3-star chain with the six old services open: who came to each shop, who applied and which quests were given.
  * Compared against a log made before Chà muối biển, it checks that a shop that has not learned it draws exactly as before.

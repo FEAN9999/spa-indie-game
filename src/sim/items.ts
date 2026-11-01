@@ -4,7 +4,7 @@ import { SHOP_LAYOUT } from './layout'
 import type { Facing, Tile, Vec } from './types'
 
 export type ItemKind =
-  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers' | 'screen' | 'desk'
+  | 'bed' | 'maskBed' | 'massageBed' | 'steamTent' | 'stoneBed' | 'mudTub' | 'scrubBed' | 'footChair' | 'nailDesk' | 'cuppingBed' | 'bench' | 'plant' | 'tea' | 'planter' | 'slippers' | 'screen' | 'desk'
   | 'shelf' | 'cabinet' | 'lotus' | 'vase' | 'teaChest' | 'jar'
   | 'bambooBench' | 'bambooTea' | 'bambooShelf' | 'bambooLamp' | 'clayJar' | 'areca'
   | 'vyPainting' | 'silkScreen' | 'regularsBoard'
@@ -57,6 +57,7 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   scrubBed: { w: 1, h: 3, price: 900_000, beauty: 0, group: 'bed', name: 'itemScrubBed' },
   footChair: { w: 1, h: 2, price: 975_000, beauty: 0, group: 'bed', name: 'itemFootChair' },
   nailDesk: { w: 2, h: 2, price: 1_125_000, beauty: 0, group: 'bed', name: 'itemNailDesk' },
+  cuppingBed: { w: 1, h: 3, price: 1_200_000, beauty: 0, group: 'bed', name: 'itemCuppingBed' },
   bench: { w: 3, h: 1, price: 225000, beauty: 1, group: 'seat', name: 'itemBench' },
   plant: { w: 1, h: 1, price: 60000, beauty: 1, group: 'decor', name: 'itemPlant' },
   tea: { w: 2, h: 1, price: 90000, beauty: 2, group: 'decor', name: 'itemTea' },

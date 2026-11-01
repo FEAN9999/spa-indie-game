@@ -328,3 +328,71 @@ describe('Sơn móng', () => {
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
+
+describe('Giác hơi', () => {
+  it('needs 5 stars, massage open and 1.800.000 đ', () => {
+    expect(starShop(4).lessonProblem('cupping')).toBe('stars')
+    expect(starShop(5).lessonProblem('cupping')).toBeNull()
+    expect(starShop(5, 1_799_999).lessonProblem('cupping')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Giường giác hơi and starts the alcohol at 20', () => {
+    const sim = starShop(5)
+    const money = sim.money
+    expect(sim.payLesson('cupping')).toBeNull()
+    expect(sim.payLesson('cupping')).toBeNull()
+    expect(money - sim.money).toBe(1_800_000)
+    sim.passLesson('cupping')
+    expect(sim.book.gifts.filter(g => g === 'cuppingBed')).toHaveLength(1)
+    expect(sim.stock.alcohol).toBe(20)
+  })
+
+  it('is learned in any order with the other lessons, and is the last one offered', () => {
+    const sim = starShop(5)
+    for (const id of ['scrub', 'foot', 'nails'] as const) {
+      expect(sim.learnable()).toBe(id)
+      sim.payLesson(id)
+      sim.passLesson(id)
+    }
+    expect(sim.learnable()).toBe('cupping')
+    sim.payLesson('cupping')
+    sim.passLesson('cupping')
+    expect(sim.services.slice(-4)).toEqual(['scrub', 'foot', 'nails', 'cupping'])
+    expect(sim.learnable()).toBeNull()
+  })
+
+  it('opens at a branch only with its bed there, and never brings more customers', () => {
+    const chain = new Chain(starShop(5, 25_000_000), 11)
+    chain.open('beach')
+    const beach = chain.shop('beach')!
+    chain.main.payLesson('cupping')
+    chain.main.passLesson('cupping')
+    chain.sync()
+    const rng = createRng(5)
+    for (let i = 0; i < 300; i++) expect(drawService('tourist', beach.availableServices(), rng)).not.toBe('cupping')
+    const before = serviceArrivalFactor(beach.availableServices())
+    placeFirst(beach, 'cuppingBed')
+    let seen = false
+    for (let i = 0; i < 300; i++) if (drawService('tourist', beach.availableServices(), rng) === 'cupping') seen = true
+    expect(seen).toBe(true)
+    expect(serviceArrivalFactor(beach.availableServices())).toBe(before)
+  })
+
+  it('is served by staff for the ranked price, using alcohol and a towel', () => {
+    const main = starShop(5)
+    main.payLesson('cupping')
+    main.passLesson('cupping')
+    placeFirst(main, 'cuppingBed')
+    hireStaff(main, 'technician', undefined, {})
+    const alcohol = main.stock.alcohol
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'elder', service: 'cupping' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(110_000, 5))
+    expect(main.stock.alcohol).toBe(alcohol - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})

@@ -129,6 +129,17 @@ const stoneBedTurned =
   STONE_YS.filter((_, i) => i % 2).map(x => `<ellipse cx="${x}" cy="0.47" rx="0.185" ry="0.15" fill="${C.mustard}"/>`).join('') +
   STONE_YS.map(x => `<ellipse cx="${x}" cy="0.47" rx="0.14" ry="0.115" fill="${STONE}" ${ink(FINE)}/>`).join('')
 
+// cupping bed: the massage bed with six glass cups set in pairs down the sheet, the lower four over a red mark
+const CUP_YS = [1.2, 1.6, 2.0]
+const glassCup = (x: number, y: number, mark: boolean) =>
+  (mark ? `<circle cx="${x}" cy="${y}" r="0.1" fill="${C.lotus}"/>` : '') +
+  `<circle cx="${x}" cy="${y}" r="0.13" fill="${C.glass}" fill-opacity="0.75" ${ink(FINE)}/>` +
+  `<path d="M${f(x - 0.07)},${f(y - 0.03)} Q${f(x - 0.06)},${f(y - 0.08)} ${f(x - 0.01)},${f(y - 0.09)}" stroke="${C.cream}" stroke-width="0.03" fill="none" stroke-linecap="round"/>`
+const cuppingBed = massageBed + CUP_YS.flatMap((y, i) => [0.36, 0.74].map(x => glassCup(x, y, i > 0))).join('')
+
+// cupping bed lying across: the massage bed lying across with the six cups in pairs along the sheet
+const cuppingBedTurned = massageBedTurned + CUP_YS.flatMap((x, i) => [0.3, 0.64].map(y => glassCup(x, y, i > 0))).join('')
+
 // mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
 const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
 const mudTub =
@@ -1308,6 +1319,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'footChair-turned': { w: 2.1, h: 1.2, body: footChairTurned },
   nailDesk: { w: 2.1, h: 2.45, body: nailDesk },
   'nailDesk-turned': { w: 2.1, h: 2.45, body: nailDeskTurned },
+  cuppingBed: { w: 1.1, h: 3.15, body: cuppingBed },
+  'cuppingBed-turned': { w: 3.1, h: 1.15, body: cuppingBedTurned },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

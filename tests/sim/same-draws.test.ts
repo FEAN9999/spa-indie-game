@@ -3,7 +3,8 @@ import fixture from '../fixtures/run-before-quests.json'
 import sixFixture from '../fixtures/draws-six-services.json'
 import sevenFixture from '../fixtures/draws-seven-services.json'
 import eightFixture from '../fixtures/draws-eight-services.json'
-import { learnFoot, learnScrub, runLog, sixServiceLog } from './helpers'
+import nineFixture from '../fixtures/draws-nine-services.json'
+import { learnFoot, learnNails, learnScrub, runLog, sixServiceLog } from './helpers'
 
 describe('the shop draws', () => {
   it('brings the same customers and candidates as before quests, day after day', () => {
@@ -34,5 +35,13 @@ describe('the shop draws', () => {
 
   it('draws the same when the Sơn móng tuition is paid and the lesson not passed', () => {
     expect(sixServiceLog(4, c => { learnFoot(c); expect(c.main.payLesson('nails')).toBeNull() })).toEqual(eightFixture)
+  })
+
+  it('draws the same in a 5-star chain with Chà muối biển, Ngâm chân and Sơn móng learned while Giác hơi is not', () => {
+    expect(sixServiceLog(4, learnNails)).toEqual(nineFixture)
+  })
+
+  it('draws the same when the Giác hơi tuition is paid and the lesson not passed', () => {
+    expect(sixServiceLog(4, c => { learnNails(c); expect(c.main.payLesson('cupping')).toBeNull() })).toEqual(nineFixture)
   })
 })

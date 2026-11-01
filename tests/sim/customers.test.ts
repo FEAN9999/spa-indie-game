@@ -42,7 +42,7 @@ describe('kinds of customer', () => {
   })
 
   it('has elders like Xông lá as well as massage, and picky customers like every service', () => {
-    expect(KINDS.elder.prefers).toEqual(['massage', 'steam', 'foot'])
+    expect(KINDS.elder.prefers).toContain('steam')
     expect(KINDS.picky.prefers).toContain('steam')
   })
 
@@ -60,12 +60,17 @@ describe('kinds of customer', () => {
 
   it('has students and tourists like Chà muối biển too', () => {
     expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub'])
-    expect([...KINDS.tourist.prefers]).toEqual(['mud', 'stone', 'massage', 'scrub'])
+    expect([...KINDS.tourist.prefers].slice(0, 4)).toEqual(['mud', 'stone', 'massage', 'scrub'])
   })
 
   it('has elders and backpackers like Ngâm chân thảo mộc too', () => {
-    expect([...KINDS.elder.prefers]).toEqual(['massage', 'steam', 'foot'])
+    expect([...KINDS.elder.prefers].slice(0, 3)).toEqual(['massage', 'steam', 'foot'])
     expect([...KINDS.backpacker.prefers]).toEqual(['massage', 'steam', 'shampoo', 'foot'])
+  })
+
+  it('has elders and tourists like Giác hơi too', () => {
+    expect([...KINDS.elder.prefers]).toEqual(['massage', 'steam', 'foot', 'cupping'])
+    expect([...KINDS.tourist.prefers]).toEqual(['mud', 'stone', 'massage', 'scrub', 'cupping'])
   })
 
   it('draws no number when the shop has one service', () => {

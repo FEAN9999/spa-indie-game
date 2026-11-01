@@ -14,13 +14,13 @@ const fresh = (day = 5) => {
   return sim
 }
 
-const FULL = { shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20 }
+const FULL = { shampoo: 20, towel: 20, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20, alcohol: 20 }
 const OFFICE = { kind: 'office', service: 'shampoo' } as const
 
 describe('herbs for Xông lá', () => {
   it('starts with 20 herbs, sells 20 more for 440 000, and gives a Xông lá customer one herbs and one towel', () => {
     expect(fullStock().herbs).toBe(20)
-    expect(STOCK_ITEMS).toEqual(['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud', 'salt', 'polish'])
+    expect(STOCK_ITEMS).toEqual(['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud', 'salt', 'polish', 'alcohol'])
     expect(STOCK_NAME.herbs).toBe('stockHerbs')
     expect(STOCK_USES.steam).toEqual(['herbs', 'towel'])
     expect(RESTOCK_PRICE.herbs).toBe(440_000)
@@ -64,13 +64,13 @@ describe('using up stock', () => {
 
     const owner = fresh()
     startService(owner)
-    expect(owner.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20 })
+    expect(owner.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20, alcohol: 20 })
 
     const crew = fresh()
     hireStaff(crew, 'technician')
     const c = seatAndWait(crew)
     advanceUntil(crew, () => c.state === 'toStation' || c.state === 'inService')
-    expect(crew.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20 })
+    expect(crew.stock).toEqual({ shampoo: 19, towel: 19, mask: 20, oil: 20, herbs: 20, mud: 20, salt: 20, polish: 20, alcohol: 20 })
   })
 
   it('restocks 20 for its price at any money, and counts it as today\'s spending', () => {
@@ -286,7 +286,7 @@ describe('stockUsers', () => {
 describe('salt for Chà muối biển', () => {
   const six = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud'] as const
   it('starts with 20, sells 20 more for 400 000, and goes into a Chà muối biển customer with a towel', () => {
-    expect(STOCK_ITEMS.slice(-2)).toEqual(['salt', 'polish'])
+    expect(STOCK_ITEMS.slice(-3, -1)).toEqual(['salt', 'polish'])
     expect(STOCK_USES.scrub).toEqual(['salt', 'towel'])
     expect(STOCK_NAME.salt).toBe('stockSalt')
     expect(fullStock().salt).toBe(20)

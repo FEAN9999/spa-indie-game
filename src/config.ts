@@ -45,12 +45,12 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
-export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5 } as const
+export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000 } as const
+export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -259,8 +259,24 @@ export const NAILS_GOOD = { lit: 0.8, smudges: 1 }
 /** Most wrong picks and fewest good nails for 2 stars. */
 export const NAILS_STARS = { wrong2: 1, good2: 3 }
 
+// Giác hơi game: tap a mark on the back to set a cup from the tray there; the skin under each cup reddens, and a tap lifts the cup.
+// A cup lifted while the red is in the good band is right, one lifted light or dark is not. Times are in ms.
+export const CUPPING_LIMIT_MS = 25000
+export const CUPPING_MARKS = 6
+/** How many cups the tray holds: no more than this sit on the back at once. */
+export const CUPPING_CUPS = 3
+/** The red under a cup that is just right to lift; below is light, above is dark. */
+export const CUPPING_GOOD = { min: 0.6, max: 0.9 }
+/** A cup left on until this red comes off by itself, dark. */
+export const CUPPING_MAX_RED = 1.3
+/** Red gained per second under a cup; a picky customer's skin reddens faster. */
+export const CUPPING_RATE = { min: 0.18, max: 0.26 }
+export const CUPPING_RATE_HARD = { min: 0.24, max: 0.34 }
+/** Score (good cups minus dark ones) for 3 and 2 stars. */
+export const CUPPING_STARS = { three: 5, two: 3 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 

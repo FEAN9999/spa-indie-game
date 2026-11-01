@@ -64,8 +64,8 @@ describe('opening Xông lá', () => {
   it('lists the basic services, then the recipe ones', () => {
     expect(BASIC_SERVICES).toEqual(['shampoo', 'mask', 'massage'])
     expect(RECIPE_SERVICES).toEqual(['steam', 'stone', 'mud'])
-    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails'])
-    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true, false, false, false])
+    expect(SERVICE_IDS).toEqual(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails', 'cupping'])
+    expect(SERVICE_IDS.map(isRecipeService)).toEqual([false, false, false, true, true, true, false, false, false, false])
     expect(SERVICES.steam).toEqual({ price: 50_000, openCost: 750_000, bed: 'steamTent', name: 'serviceSteam', busy: 'busySteam' })
     expect([t('serviceSteam'), t('itemSteamTent'), t('stockHerbs'), t('busySteam')]).toEqual(['Xông lá', 'Lều xông lá', 'Gói lá xông', 'Lều xông đang bận'])
   })
@@ -284,7 +284,7 @@ describe('the owner and the technician on mask chairs', () => {
 
 describe('Chà muối biển', () => {
   it('is the first service learned in a lesson, at 3 stars, with its bed, price and tuition', () => {
-    expect(LESSON_SERVICES).toEqual(['scrub', 'foot', 'nails'])
+    expect(LESSON_SERVICES).toEqual(['scrub', 'foot', 'nails', 'cupping'])
     expect(isLessonService('scrub')).toBe(true)
     expect(isLessonService('mud')).toBe(false)
     expect(LESSON_STARS.scrub).toBe(3)
@@ -306,11 +306,22 @@ describe('Ngâm chân thảo mộc', () => {
 
 describe('Sơn móng', () => {
   it('is the third service learned in a lesson, at 5 stars, with its desk, price and tuition', () => {
-    expect(SERVICE_IDS.slice(-3)).toEqual(['scrub', 'foot', 'nails'])
+    expect(SERVICE_IDS.slice(-4, -1)).toEqual(['scrub', 'foot', 'nails'])
     expect(isLessonService('nails')).toBe(true)
     expect(LESSON_STARS.nails).toBe(5)
     expect(SERVICES.nails).toEqual({ price: 100_000, openCost: 1_500_000, bed: 'nailDesk', name: 'serviceNails', busy: 'busyNails' })
     expect(serviceOfBed('nailDesk')).toBe('nails')
     expect([t('serviceNails'), t('itemNailDesk'), t('stockPolish'), t('busyNails')]).toEqual(['Sơn móng', 'Bàn làm móng', 'Sơn móng', 'Bàn làm móng đang bận'])
+  })
+})
+
+describe('Giác hơi', () => {
+  it('is the fourth service learned in a lesson, at 5 stars, with its bed, price and tuition', () => {
+    expect(SERVICE_IDS.at(-1)).toBe('cupping')
+    expect(isLessonService('cupping')).toBe(true)
+    expect(LESSON_STARS.cupping).toBe(5)
+    expect(SERVICES.cupping).toEqual({ price: 110_000, openCost: 1_800_000, bed: 'cuppingBed', name: 'serviceCupping', busy: 'busyCupping' })
+    expect(serviceOfBed('cuppingBed')).toBe('cupping')
+    expect([t('serviceCupping'), t('itemCuppingBed'), t('stockAlcohol'), t('busyCupping')]).toEqual(['Giác hơi', 'Giường giác hơi', 'Cồn & bông', 'Giường giác hơi đang bận'])
   })
 })

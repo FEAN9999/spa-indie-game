@@ -2,10 +2,10 @@ import { STOCK_START } from '../config'
 import type { StringKey } from '../strings/vi'
 import type { ServiceId } from './services'
 
-export type StockItem = 'shampoo' | 'towel' | 'mask' | 'oil' | 'herbs' | 'mud' | 'salt' | 'polish'
+export type StockItem = 'shampoo' | 'towel' | 'mask' | 'oil' | 'herbs' | 'mud' | 'salt' | 'polish' | 'alcohol'
 
 /** Every item, in the order the stock panel lists them. */
-export const STOCK_ITEMS: StockItem[] = ['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud', 'salt', 'polish']
+export const STOCK_ITEMS: StockItem[] = ['shampoo', 'towel', 'mask', 'oil', 'herbs', 'mud', 'salt', 'polish', 'alcohol']
 
 /** What one customer of a service uses: the service's own item first, then a towel. */
 export const STOCK_USES: Record<ServiceId, StockItem[]> = {
@@ -18,6 +18,7 @@ export const STOCK_USES: Record<ServiceId, StockItem[]> = {
   scrub: ['salt', 'towel'],
   foot: ['herbs', 'towel'],
   nails: ['polish', 'towel'],
+  cupping: ['alcohol', 'towel'],
 }
 
 /** The open services whose own item this is; none for the towel, which every service uses. */
@@ -35,7 +36,8 @@ export const STOCK_NAME: Record<StockItem, StringKey> = {
   mud: 'stockMud',
   salt: 'stockSalt',
   polish: 'stockPolish',
+  alcohol: 'stockAlcohol',
 }
 
 /** A shop's first stock: the same of every item. */
-export const fullStock = (): Record<StockItem, number> => ({ shampoo: STOCK_START, towel: STOCK_START, mask: STOCK_START, oil: STOCK_START, herbs: STOCK_START, mud: STOCK_START, salt: STOCK_START, polish: STOCK_START })
+export const fullStock = (): Record<StockItem, number> => ({ shampoo: STOCK_START, towel: STOCK_START, mask: STOCK_START, oil: STOCK_START, herbs: STOCK_START, mud: STOCK_START, salt: STOCK_START, polish: STOCK_START, alcohol: STOCK_START })

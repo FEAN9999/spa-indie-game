@@ -24,9 +24,9 @@ export interface LessonData {
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const MID = GAME_W / 2
 /** The lesson's game scene, by service. */
-const GAME_SCENE: Record<LessonService, string> = { scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene' }
+const GAME_SCENE: Record<LessonService, string> = { scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene', cupping: 'CuppingScene' }
 /** The hand that shows the lesson game once, by service. */
-const LESSON_DEMO: Record<LessonService, HintId> = { scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails' }
+const LESSON_DEMO: Record<LessonService, HintId> = { scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails', cupping: 'demoCupping' }
 const TITLE_Y = 100
 const TITLE_MAX_W = 800
 const BOTTOM_PAD = 55
