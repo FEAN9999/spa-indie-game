@@ -1,13 +1,21 @@
 const VERSION = '__VERSION__'
 const FILES = __FILES__
+/** The built files whose names carry their content hash: a copy an older version cached is the same file. */
+const HASHED = new Set(__HASHED__)
 const CACHE = `spa-${VERSION}`
 const NAV_TIMEOUT_MS = 3000
 
 self.addEventListener('install', e => {
-  // from the network, never an older copy the browser kept in its HTTP cache
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))))
+  e.waitUntil(caches.open(CACHE).then(c => Promise.all(FILES.map(f => precache(c, f)))))
   self.skipWaiting()
 })
+
+// A hashed file an older version cached is copied over, so a phone does not download Phaser again on every deploy;
+// everything else comes from the network, never an older copy the browser kept in its HTTP cache
+async function precache(cache, f) {
+  const kept = HASHED.has(f) ? await caches.match(f, { ignoreVary: true }) : undefined
+  return kept ? cache.put(f, kept) : cache.add(new Request(f, { cache: 'reload' }))
+}
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys()

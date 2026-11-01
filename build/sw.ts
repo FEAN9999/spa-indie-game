@@ -10,7 +10,13 @@ export function precacheList(bundleFiles: string[], publicFiles: string[]): stri
   return ['./', ...kept]
 }
 
-export function renderServiceWorker(template: string, version: string, files: string[]): string {
+/** The built files whose names carry their content hash: Vite writes them under assets/. Public files never count, whatever their folder. */
+export const hashedFiles = (bundleFiles: string[]): string[] => bundleFiles.filter(f => f.startsWith('assets/') && !SKIP.test(f)).sort()
+
+export function renderServiceWorker(template: string, version: string, files: string[], hashed: string[]): string {
   // replacer functions, so a "$" in a file name is not read as a replacement pattern
-  return template.replace("'__VERSION__'", () => JSON.stringify(version)).replace('__FILES__', () => JSON.stringify(files))
+  return template
+    .replace("'__VERSION__'", () => JSON.stringify(version))
+    .replace('__FILES__', () => JSON.stringify(files))
+    .replace('__HASHED__', () => JSON.stringify(hashed))
 }
