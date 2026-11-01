@@ -78,6 +78,7 @@ describe('the restaurant furniture', () => {
     for (const kind of ['velvetSofa', 'rattanArmchair', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(placeableIn(kind, 'restaurant'), kind).toBe(false)
     for (const kind of ['streetTable', 'roundTable', 'plasticStool', 'bambooChair', 'menuBoard', 'drinkFridge', 'icedTeaStand'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
     for (const kind of ['sunLounger', 'charcoalGrill', 'lightArch', 'gardenSwing', 'hammock', 'bananaPlant'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
+    for (const kind of ['dishCabinet', 'wineJarShelf', 'karaoke', 'wallFan', 'calligraphy', 'familyPhotos', 'moneyPlant', 'danTranh'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
     for (const kind of ['tileRug', 'tearCalendar', 'pool'] as const) expect([placeableIn(kind, 'spa'), placeableIn(kind, 'restaurant')], kind).toEqual([true, true])
   })
 })

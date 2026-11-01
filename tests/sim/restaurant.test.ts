@@ -118,6 +118,18 @@ describe('the restaurant room', () => {
     expect(main.canPlace('hammock', 13, 12, false)).toBe('wrongShop')
   })
 
+  it("dresses floor 2 with the restaurant's own pieces: a calligraphy and a fan on its back wall, the dish cabinet and the karaoke on its floor", () => {
+    const { main, r } = setup()
+    main.money = 50_000_000
+    expect(r.openFloor(2)).toBeNull()
+    expect(r.buy('calligraphy', 13, 19, false)).toBeNull()
+    expect(r.buy('wallFan', 16, 19, false)).toBeNull()
+    expect(r.buy('dishCabinet', 13, 20, false)).toBeNull()
+    expect(r.buy('karaoke', 16, 20, false)).toBeNull()
+    expect(r.canPlace('familyPhotos', 14, 19, false)).toBe('overlap')
+    expect(main.canPlace('karaoke', 13, 12, false)).toBe('wrongShop')
+  })
+
   it('tells the view the room changed, and counts beauty from its pieces', () => {
     const { r } = setup()
     expect(r.drainEvents()).toEqual([])

@@ -131,7 +131,8 @@ describe('build mode catalogue', () => {
     expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(4)
     const { pages } = catalogPage('decor', 0, ALL_SERVICES, [], 'all', 'restaurant')
     const decor = Array.from({ length: pages }, (_, p) => kinds(catalogPage('decor', p, ALL_SERVICES, [], 'all', 'restaurant'))).flat()
-    expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant', 'menuBoard', 'drinkFridge', 'icedTeaStand', 'tileRug', 'tearCalendar', 'pool', 'sunLounger', 'charcoalGrill', 'lightArch', 'gardenSwing', 'hammock', 'bananaPlant']))
+    expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant', 'menuBoard', 'drinkFridge', 'icedTeaStand', 'tileRug', 'tearCalendar', 'pool', 'sunLounger', 'charcoalGrill', 'lightArch', 'gardenSwing', 'hammock', 'bananaPlant',
+      'dishCabinet', 'wineJarShelf', 'karaoke', 'wallFan', 'calligraphy', 'familyPhotos', 'moneyPlant', 'danTranh']))
     for (const k of ['bed', 'bench', 'desk', 'velvetSofa', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(decor).not.toContain(k)
   })
 

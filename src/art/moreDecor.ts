@@ -537,6 +537,170 @@ const floorCushion =
   dot(0.5, 0.76, 0.04, C.lanternDark, 0.012) +
   line('M0.3,0.72 L0.46,0.76 M0.7,0.72 L0.54,0.76', C.mustardDark, 0.015)
 
+// ---------- Nhà hàng: đồ trang trí tầng 2 ----------
+
+/** Chồng đĩa sứ trắng viền xanh nhìn nghiêng, đáy ở (cx, base). */
+const dishStack = (cx: number, base: number, n: number) =>
+  Array.from({ length: n }, (_, i) => `<ellipse cx="${cx}" cy="${f(base - i * 0.05)}" rx="0.14" ry="0.035" fill="${C.cream}" stroke="${C.cobalt}" stroke-width="0.015"/>`).join('')
+/** Chiếc bát úp, tâm đáy ở (cx, base). */
+const bowlUp = (cx: number, base: number) =>
+  `<path d="M${f(cx - 0.11)},${base} Q${f(cx - 0.11)},${f(base - 0.12)} ${cx},${f(base - 0.12)} Q${f(cx + 0.11)},${f(base - 0.12)} ${f(cx + 0.11)},${base}Z" fill="${C.cream}" ${ink(0.015)}/>` +
+  line(`M${f(cx - 0.08)},${f(base - 0.05)} H${f(cx + 0.08)}`, C.cobalt, 0.015)
+
+// tủ chén: tủ gỗ cao hai cánh kính, trong bày bát đĩa sứ, dưới là hai ngăn kéo, nóc có gờ
+const dishCabinet =
+  rect(0.1, 0.1, 1.8, 0.12, C.woodDark, `rx="0.04" ${ink(0.035)}`) +
+  rect(0.14, 0.2, 1.72, 1.66, C.wood, `rx="0.05" ${ink()}`) +
+  rect(0.24, 0.3, 0.72, 0.86, C.glass, ink(FINE)) +
+  rect(1.04, 0.3, 0.72, 0.86, C.glass, ink(FINE)) +
+  line('M0.26,0.74 H0.94 M1.06,0.74 H1.74', C.woodLight, 0.035) +
+  dishStack(0.45, 0.68, 4) + bowlUp(0.76, 0.7) + bowlUp(1.26, 0.7) + dishStack(1.56, 0.68, 4) +
+  bowlUp(0.42, 1.1) + bowlUp(0.66, 1.1) + dishStack(1.3, 1.08, 3) + bowlUp(1.6, 1.1) +
+  line('M0.36,0.36 L0.5,0.5 M1.16,0.36 L1.3,0.5', '#FFFFFF', 0.03) +
+  dot(0.9, 0.74, 0.03, C.mustard, 0.01) + dot(1.1, 0.74, 0.03, C.mustard, 0.01) +
+  rect(0.24, 1.26, 0.72, 0.5, C.woodLight, `rx="0.04" ${ink(0.03)}`) +
+  rect(1.04, 1.26, 0.72, 0.5, C.woodLight, `rx="0.04" ${ink(0.03)}`) +
+  dot(0.6, 1.5, 0.035, C.mustard, 0.012) + dot(1.4, 1.5, 0.035, C.mustard, 0.012) +
+  rect(0.18, 1.84, 0.12, 0.1, C.woodDark, ink(0.02)) +
+  rect(1.7, 1.84, 0.12, 0.1, C.woodDark, ink(0.02))
+
+// tủ chén dựng đứng: nhìn từ một đầu tủ, mặt bên gỗ chạy dọc lên, cánh kính ở cạnh phải, ngăn kéo ở đầu gần
+const dishCabinetTurned =
+  rect(0.82, 0.2, 0.2, 2.5, C.glass, `rx="0.04" ${ink(FINE)}`) +
+  [0.5, 1.0, 1.5].map(y => line(`M0.86,${y} H1.0`, C.cream, 0.04)).join('') +
+  rect(0.08, 0.1, 0.78, 2.6, C.wood, `rx="0.05" ${ink()}`) +
+  line('M0.2,0.2 V2.0', C.woodLight, 0.04) +
+  rect(0.06, 0.04, 1.0, 0.12, C.woodDark, `rx="0.04" ${ink(0.035)}`) +
+  rect(0.14, 2.06, 0.66, 0.54, C.woodLight, `rx="0.04" ${ink(0.03)}`) +
+  dot(0.47, 2.33, 0.035, C.mustard, 0.012) +
+  rect(0.12, 2.7, 0.12, 0.1, C.woodDark, ink(0.02)) +
+  rect(0.7, 2.7, 0.12, 0.1, C.woodDark, ink(0.02))
+
+// kệ rượu ngâm: kệ gỗ hai tầng, trên mỗi tầng một bình thuỷ tinh rượu ngâm vàng hổ phách có trái cây, rễ cây trong bình
+const wineJar = (cx: number, base: number, fill: string, bits: string) =>
+  rect(f(cx - 0.17), f(base - 0.4), 0.34, 0.4, C.glass, `rx="0.08" ${ink(0.025)}`) +
+  rect(f(cx - 0.14), f(base - 0.3), 0.28, 0.27, fill, `rx="0.06" opacity="0.85"`) +
+  bits +
+  rect(f(cx - 0.12), f(base - 0.48), 0.24, 0.09, C.woodDark, `rx="0.03" ${ink(0.02)}`) +
+  line(`M${f(cx - 0.12)},${f(base - 0.36)} L${f(cx - 0.06)},${f(base - 0.08)}`, '#FFFFFF', 0.02)
+const wineJarShelf =
+  rect(0.08, 0.14, 0.08, 1.3, C.woodDark, ink(0.025)) +
+  rect(0.84, 0.14, 0.08, 1.3, C.woodDark, ink(0.025)) +
+  wineJar(0.5, 0.66, C.mustardDark, dot(0.42, 0.52, 0.04, C.lantern, 0.01) + dot(0.56, 0.56, 0.04, C.lantern, 0.01) + dot(0.48, 0.42, 0.035, C.lantern, 0.01)) +
+  rect(0.04, 0.66, 0.92, 0.08, C.wood, `rx="0.03" ${ink(0.03)}`) +
+  wineJar(0.5, 1.3, C.mustard, line('M0.44,1.06 Q0.5,1.16 0.46,1.26 M0.54,1.04 Q0.6,1.14 0.56,1.24', C.clay, 0.03)) +
+  rect(0.04, 1.3, 0.92, 0.08, C.wood, `rx="0.03" ${ink(0.03)}`)
+
+// dàn karaoke: tivi màn hình hiện lời bài hát trên tủ thấp, hai loa thùng đứng hai bên, micro đặt trên tủ
+const speaker = (x: number) =>
+  rect(x, 0.62, 0.36, 0.8, C.deepBrown, `rx="0.04" ${ink(0.035)}`) +
+  dot(x + 0.18, 0.82, 0.09, C.stone, 0.02) + dot(x + 0.18, 0.82, 0.035, C.stoneLight, 0.01) +
+  dot(x + 0.18, 1.14, 0.13, C.stone, 0.02) + dot(x + 0.18, 1.14, 0.05, C.stoneLight, 0.01)
+const karaokeScreen = (x: number, y: number, w: number, h: number) =>
+  rect(x, y, w, h, C.deepBrown, `rx="0.04" ${ink(0.035)}`) +
+  rect(f(x + 0.05), f(y + 0.05), f(w - 0.1), f(h - 0.1), C.cobalt) +
+  `<path d="M${f(x + 0.05)},${f(y + h * 0.6)} Q${f(x + w * 0.4)},${f(y + h * 0.35)} ${f(x + w - 0.05)},${f(y + h * 0.55)} V${f(y + h - 0.05)} H${f(x + 0.05)}Z" fill="${C.tealLight}"/>` +
+  line(`M${f(x + w * 0.2)},${f(y + h * 0.72)} H${f(x + w * 0.62)}`, C.gold, 0.03) +
+  line(`M${f(x + w * 0.62)},${f(y + h * 0.72)} H${f(x + w * 0.8)}`, C.cream, 0.03) +
+  line(`M${f(x + w * 0.28)},${f(y + h * 0.84)} H${f(x + w * 0.72)}`, C.cream, 0.025)
+const karaoke =
+  speaker(0.04) +
+  speaker(1.6) +
+  karaokeScreen(0.46, 0.16, 1.08, 0.66) +
+  rect(0.94, 0.82, 0.12, 0.08, C.deepBrown, ink(0.02)) +
+  rect(0.44, 0.9, 1.12, 0.52, C.wood, `rx="0.04" ${ink(0.04)}`) +
+  line('M1.0,0.94 V1.38', C.woodDark, 0.025) +
+  rect(0.56, 1.0, 0.36, 0.1, C.deepBrown, `rx="0.02"`) + dot(0.62, 1.05, 0.02, C.leafLight, 0.006) +
+  `<g transform="rotate(-70 1.3 0.86)">${rect(1.18, 0.83, 0.26, 0.06, C.tankRib, `rx="0.03" ${ink(0.015)}`)}${dot(1.46, 0.86, 0.05, C.stone, 0.012)}</g>` +
+  rect(0.5, 1.4, 0.1, 0.06, C.woodDark) + rect(1.4, 1.4, 0.1, 0.06, C.woodDark)
+
+// dàn karaoke dựng đứng: nhìn từ một đầu, loa gần ở dưới, tủ chạy dọc lên, tivi nhìn nghiêng mỏng đứng trên tủ, loa xa ở trên
+const karaokeTurned =
+  rect(0.3, 0.06, 0.4, 0.5, C.deepBrown, `rx="0.04" ${ink(0.03)}`) + dot(0.5, 0.3, 0.1, C.stone, 0.02) +
+  rect(0.14, 0.56, 0.72, 1.5, C.wood, `rx="0.04" ${ink(0.04)}`) +
+  rect(0.44, 0.66, 0.12, 1.02, C.deepBrown, `rx="0.03" ${ink(0.025)}`) +
+  rect(0.4, 1.1, 0.2, 0.1, C.deepBrown, ink(0.015)) +
+  rect(0.24, 1.72, 0.52, 0.8, C.deepBrown, `rx="0.04" ${ink(0.035)}`) +
+  dot(0.5, 1.92, 0.09, C.stone, 0.02) + dot(0.5, 2.24, 0.15, C.stone, 0.02) + dot(0.5, 2.24, 0.05, C.stoneLight, 0.01)
+
+// quạt treo tường: giá gắn tường, lồng quạt tròn màu kem có ba cánh xanh và núm cam, dây kéo thả xuống
+const wallFan =
+  rect(0.42, 0.98, 0.16, 0.24, C.cream, `rx="0.04" ${ink(0.03)}`) +
+  line('M0.62,1.06 V1.4', C.ink, 0.015) + dot(0.62, 1.42, 0.03, C.lantern, 0.01) +
+  dot(0.5, 0.64, 0.36, C.cream, 0.04) +
+  [0, 120, 240].map(a => `<ellipse cx="0.5" cy="0.47" rx="0.09" ry="0.15" transform="rotate(${a} 0.5 0.64)" fill="${C.mintTeal}" ${ink(0.02)}/>`).join('') +
+  `<g fill="none" stroke="${C.tankRib}" stroke-width="0.018"><circle cx="0.5" cy="0.64" r="0.36"/><circle cx="0.5" cy="0.64" r="0.24"/><path d="M0.14,0.64 H0.86 M0.5,0.28 V1.0"/></g>` +
+  dot(0.5, 0.64, 0.06, C.stoneHot, 0.02)
+
+// tranh thư pháp: cuộn giấy kem nền đỏ hai trục gỗ, chữ "Phúc" viết nét bút lông nghiêng và con dấu đỏ ở góc
+const calligraphy =
+  hook(1, 0.14, 0.3) + line('M0.3,0.34 L1,0.16 L1.7,0.34', C.ink, 0.02) +
+  rect(0.22, 0.3, 1.56, 1.14, C.lanternDark, `rx="0.03" ${ink(0.04)}`) +
+  rect(0.32, 0.38, 1.36, 0.98, C.paper, ink(FINE)) +
+  rect(0.16, 0.28, 1.68, 0.08, C.woodDark, `rx="0.04" ${ink(0.025)}`) +
+  rect(0.16, 1.4, 1.68, 0.08, C.woodDark, `rx="0.04" ${ink(0.025)}`) +
+  `<text x="0.98" y="1.04" font-family="'Snell Roundhand', 'Brush Script MT', cursive, serif" font-style="italic" font-weight="700" font-size="0.46" text-anchor="middle" fill="${C.ink}">Phúc</text>` +
+  rect(1.48, 1.12, 0.12, 0.12, C.lantern, `rx="0.02"`)
+
+// ảnh gia đình: ba khung ảnh treo lệch nhau, mỗi khung một tấm ảnh nền màu có người cười
+const portrait = (x: number, y: number, w: number, h: number, frame: string, bg: string, people: number) =>
+  rect(x, y, w, h, frame, `rx="0.02" ${ink(0.03)}`) +
+  rect(f(x + 0.04), f(y + 0.04), f(w - 0.08), f(h - 0.08), bg) +
+  Array.from({ length: people }, (_, i) => {
+    const cx = x + (w * (i + 1)) / (people + 1)
+    return dot(cx, y + h * 0.42, 0.045, C.cream, 0.01) + `<path d="M${f(cx - 0.06)},${f(y + h - 0.05)} Q${f(cx)},${f(y + h * 0.5)} ${f(cx + 0.06)},${f(y + h - 0.05)}Z" fill="${C.terracotta}"/>`
+  }).join('')
+const familyPhotos =
+  hook(0.5, 0.24, 0.34) +
+  portrait(0.18, 0.34, 0.64, 0.46, C.mustard, C.water, 3) +
+  portrait(0.1, 0.9, 0.38, 0.5, C.woodDark, C.tealPale, 1) +
+  portrait(0.54, 0.9, 0.38, 0.4, C.cream, C.goldPale, 2)
+
+// chậu kim tiền: chậu sứ trắng viền vàng, những cọng thẳng mọc lá bầu dục xanh bóng xếp đôi hai bên
+const zzStem = (x0: number, x1: number, top: number, n: number) => {
+  const leaves = Array.from({ length: n }, (_, i) => {
+    const t = (i + 1) / (n + 1)
+    const x = f(x0 + (x1 - x0) * t)
+    const y = f(1.36 - (1.36 - top) * t)
+    return [-1, 1].map(s => `<ellipse cx="${f(x + s * 0.07)}" cy="${y}" rx="0.07" ry="0.035" transform="rotate(${s * -30} ${f(x + s * 0.07)} ${y})" fill="${i % 2 ? C.leafLight : C.leaf}" ${ink(0.012)}/>`).join('')
+  }).join('')
+  return line(`M${x0},1.36 L${x1},${top}`, C.leaf, 0.03) + leaves
+}
+const moneyPlant =
+  zzStem(0.42, 0.24, 0.3, 5) +
+  zzStem(0.5, 0.52, 0.12, 6) +
+  zzStem(0.58, 0.78, 0.36, 5) +
+  `<path d="M0.2,1.34 H0.8 L0.72,1.86 Q0.5,1.94 0.28,1.86Z" fill="${C.cream}" ${ink(0.04)}/>` +
+  rect(0.16, 1.3, 0.68, 0.1, C.cream, `rx="0.04" ${ink(0.035)}`) +
+  line('M0.24,1.52 H0.76', C.gold, 0.035)
+
+// đàn tranh: thân đàn gỗ dài cong nhẹ đặt trên giá chữ X, dây đàn chạy dọc với hàng nhạn chéo, đầu đàn chạm hoa văn
+const danTranhBody = (len: number) => {
+  const strings = Array.from({ length: 6 }, (_, i) => line(`M0.22,${f(0.62 + i * 0.035)} H${f(len - 0.2)}`, C.cream, 0.008)).join('')
+  const bridges = Array.from({ length: 6 }, (_, i) => `<path d="M${f(0.6 + i * 0.18)},${f(0.64 + i * 0.035)} l0.04,-0.06 l0.04,0.06Z" fill="${C.cream}" ${ink(0.01)}/>`).join('')
+  return (
+    `<path d="M0.1,0.6 Q${f(len / 2)},0.5 ${f(len - 0.1)},0.6 L${f(len - 0.1)},0.88 Q${f(len / 2)},0.8 0.1,0.88Z" fill="${C.wood}" ${ink(0.04)}/>` +
+    `<path d="M0.1,0.6 Q${f(len / 2)},0.5 ${f(len - 0.1)},0.6" stroke="${C.woodLight}" stroke-width="0.04" fill="none"/>` +
+    strings + bridges +
+    rect(0.06, 0.56, 0.18, 0.36, C.woodDark, `rx="0.04" ${ink(0.03)}`) + dot(0.15, 0.74, 0.04, C.mustard, 0.01) +
+    rect(f(len - 0.22), 0.56, 0.16, 0.36, C.woodDark, `rx="0.04" ${ink(0.03)}`)
+  )
+}
+const danTranh =
+  line('M0.3,0.86 L0.62,1.4 M0.62,0.86 L0.3,1.4 M1.38,0.86 L1.7,1.4 M1.7,0.86 L1.38,1.4', C.ink, 0.07) +
+  line('M0.3,0.86 L0.62,1.4 M0.62,0.86 L0.3,1.4 M1.38,0.86 L1.7,1.4 M1.7,0.86 L1.38,1.4', C.woodDark, 0.04) +
+  danTranhBody(2)
+
+// đàn tranh dựng đứng: nhìn từ đầu đàn, thân đàn chạy dọc lên, dây đàn dọc với nhạn ngang, giá chữ X ở đầu gần
+const danTranhTurned =
+  line('M0.2,1.9 L0.9,2.4 M0.9,1.9 L0.2,2.4', C.ink, 0.07) +
+  line('M0.2,1.9 L0.9,2.4 M0.9,1.9 L0.2,2.4', C.woodDark, 0.04) +
+  `<path d="M0.3,0.1 Q0.2,1.0 0.3,2.0 H0.8 Q0.9,1.0 0.8,0.1Z" fill="${C.wood}" ${ink(0.04)}/>` +
+  Array.from({ length: 5 }, (_, i) => line(`M${f(0.38 + i * 0.085)},0.3 V1.82`, C.cream, 0.008)).join('') +
+  Array.from({ length: 5 }, (_, i) => `<path d="M${f(0.34 + i * 0.085)},${f(0.6 + i * 0.2)} h0.08" stroke="${C.cream}" stroke-width="0.03"/>`).join('') +
+  rect(0.26, 1.86, 0.58, 0.18, C.woodDark, `rx="0.04" ${ink(0.03)}`) + dot(0.55, 1.95, 0.04, C.mustard, 0.01) +
+  rect(0.3, 0.06, 0.5, 0.14, C.woodDark, `rx="0.04" ${ink(0.03)}`)
+
 /** Hình của từng món, đặt khoá theo kiểu `decor-` của furniture.ts; món xoay được có thêm hình `-turned`. */
 export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> = {
   'decor-velvetSofa': { w: 3, h: 1.35, body: velvetSofa },
@@ -574,4 +738,15 @@ export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> 
   'decor-barStool': { w: 1, h: 1.6, body: barStool },
   'decor-foldingChair': { w: 1, h: 1.45, body: foldingChair },
   'decor-floorCushion': { w: 1, h: 1.05, body: floorCushion },
+  'decor-dishCabinet': { w: 2, h: 1.95, body: dishCabinet },
+  'decor-dishCabinet-turned': { w: 1.1, h: 2.82, body: dishCabinetTurned },
+  'decor-wineJarShelf': { w: 1, h: 1.45, body: wineJarShelf },
+  'decor-karaoke': { w: 2, h: 1.48, body: karaoke },
+  'decor-karaoke-turned': { w: 1.1, h: 2.55, body: karaokeTurned },
+  'decor-wallFan': { w: 1, h: 2, body: wallFan },
+  'decor-calligraphy': { w: 2, h: 2, body: calligraphy },
+  'decor-familyPhotos': { w: 1, h: 2, body: familyPhotos },
+  'decor-moneyPlant': { w: 1, h: 1.95, body: moneyPlant },
+  'decor-danTranh': { w: 2, h: 1.45, body: danTranh },
+  'decor-danTranh-turned': { w: 1.1, h: 2.45, body: danTranhTurned },
 }

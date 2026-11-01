@@ -21,6 +21,7 @@ export type ItemKind =
   | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
   | 'sunLounger' | 'charcoalGrill' | 'lightArch' | 'gardenSwing' | 'hammock' | 'bananaPlant'
   | 'grillTable' | 'barTable' | 'lowTable' | 'barStool' | 'foldingChair' | 'floorCushion'
+  | 'dishCabinet' | 'wineJarShelf' | 'karaoke' | 'wallFan' | 'calligraphy' | 'familyPhotos' | 'moneyPlant' | 'danTranh'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
@@ -163,6 +164,14 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   gardenSwing: { w: 2, h: 1, price: 300_000, beauty: 3, group: 'decor', shop: 'restaurant', name: 'itemGardenSwing' },
   hammock: { w: 3, h: 1, price: 165_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemHammock' },
   bananaPlant: { w: 1, h: 1, price: 120_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemBananaPlant' },
+  dishCabinet: { w: 2, h: 1, price: 270_000, beauty: 3, group: 'decor', shop: 'restaurant', name: 'itemDishCabinet' },
+  wineJarShelf: { w: 1, h: 1, price: 165_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemWineJarShelf' },
+  karaoke: { w: 2, h: 1, price: 360_000, beauty: 3, group: 'decor', shop: 'restaurant', name: 'itemKaraoke' },
+  wallFan: { w: 1, h: 1, price: 90_000, beauty: 1, group: 'decor', shop: 'restaurant', layer: 'wall', name: 'itemWallFan' },
+  calligraphy: { w: 2, h: 1, price: 210_000, beauty: 3, group: 'decor', shop: 'restaurant', layer: 'wall', name: 'itemCalligraphy' },
+  familyPhotos: { w: 1, h: 1, price: 75_000, beauty: 2, group: 'decor', shop: 'restaurant', layer: 'wall', name: 'itemFamilyPhotos' },
+  moneyPlant: { w: 1, h: 1, price: 105_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemMoneyPlant' },
+  danTranh: { w: 2, h: 1, price: 330_000, beauty: 4, group: 'decor', shop: 'restaurant', name: 'itemDanTranh' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]
