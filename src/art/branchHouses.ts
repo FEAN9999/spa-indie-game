@@ -1,7 +1,8 @@
-import { TILE } from '../config'
+import { FLOOR_ROWS, TILE } from '../config'
 import type { Grid } from '../sim/grid'
 import type { PlaceId } from '../sim/places'
 import { BEACH_TILES, lifeRing, SAND_PLANKS, seashell } from './beach'
+import { balcony, beyond, BRANCH_UPPER, frontWall, roofBelow } from './branchFloors'
 import type { HouseKey, Roof } from './houses'
 import { saleTexture } from './houses'
 import { silkLantern } from './lantern'
@@ -108,11 +109,50 @@ function branchHouse(grid: Grid, place: PlaceId, key: HouseKey): string {
   return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
 }
 
-/** Every branch's four houses, 'house-<place>-<key>', drawn for a right-hand house on `grid` (the branch room), and its roof for sale, 'sale-<place>'. */
+/** Floor 2 of a branch's house: the place's floor 2 (uptown's marble seamed in the house's colour), its back wall in the house's colour, a glass door onto the place's balcony, the road. */
+function branchHouse2(place: PlaceId, key: HouseKey): string {
+  const rows = FLOOR_ROWS
+  const look = BRANCH_HOUSE_LOOK[place]
+  const col = look.colors[key]
+  const dark = look.darks[key]
+  const up = BRANCH_UPPER[place]
+  const wall = place === 'oldTown' ? C.phoWood : dark
+  const out: string[] = [`<defs>${place === 'uptown' ? CAO_PLANKS + marble(col) : up.defs()}</defs>`]
+  out.push(`<g transform="translate(0.5 0)">${rect(-0.5, 2, IN, rows - 2.45, `url(#${up.floor2})`)}</g>`)
+  out.push(rect(0, 2, IN, 0.1, C.ink, 'opacity="0.14"'), `<path d="M0,2 V${rows - 0.45}" stroke="${C.ink}" stroke-width="0.05" opacity="0.35"/>`)
+  out.push(backWall(place, key, col, dark))
+  out.push(rect(IN, 0, 0.2, rows, wall, outline(0.04)))
+  out.push(frontWall(0, IN + 0.2, wall, [2]))
+  out.push(balcony(place, 0, IN + 0.2), rect(0, rows + 1.88, W, STREET_TILES - 1.88, C.road))
+  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
+}
+
+/** The rooftop of a branch's house: sky and what lies beyond, the place's rooftop floor, low walls in the house's colour (the old town's) or capped in it, the neighbour's roof below. */
+function branchHouse3(place: PlaceId, key: HouseKey): string {
+  const rows = FLOOR_ROWS
+  const col = BRANCH_HOUSE_LOOK[place].colors[key]
+  const up = BRANCH_UPPER[place]
+  const parapet = place === 'oldTown' ? col : up.parapet
+  const cap = place === 'oldTown' ? up.cap : col
+  const out: string[] = [`<defs>${up.defs()}</defs>`]
+  out.push(rect(0, 0, W, 2, C.glass), `<ellipse cx="3.6" cy="0.4" rx="0.8" ry="0.17" fill="${C.cloud}" opacity="0.8"/>`, beyond(place, 0, W))
+  out.push(`<g transform="translate(0.5 0)">${rect(-0.5, 2, IN, rows - 2.45, `url(#${up.roof})`)}</g>`, rect(0, 2, IN, 0.12, C.ink, 'opacity="0.12"'))
+  out.push(rect(0, 1.45, IN + 0.2, 0.55, parapet, outline(0.045)), rect(0, 1.4, IN + 0.2, 0.12, cap, outline(0.035)))
+  out.push(rect(IN, 1.45, 0.2, rows - 1.45, parapet, outline(0.04)))
+  out.push(roofBelow(place, 0, W))
+  out.push(rect(0, rows - 0.45, IN + 0.2, 0.5, parapet, outline(0.045)), rect(0, rows - 0.5, IN + 0.2, 0.12, cap, outline(0.035)))
+  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
+}
+
+/** Every branch's four houses on each floor, 'house-<place>-<key>-<floor>', drawn for a right-hand house on `grid` (the branch room), and its roof for sale, 'sale-<place>'. */
 export function branchHouseTextures(grid: Grid): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [place, look] of Object.entries(BRANCH_HOUSE_LOOK) as [PlaceId, (typeof BRANCH_HOUSE_LOOK)[PlaceId]][]) {
-    for (const key of Object.keys(look.colors) as HouseKey[]) out[`house-${place}-${key}`] = branchHouse(grid, place, key)
+    for (const key of Object.keys(look.colors) as HouseKey[]) {
+      out[`house-${place}-${key}-1`] = branchHouse(grid, place, key)
+      out[`house-${place}-${key}-2`] = branchHouse2(place, key)
+      out[`house-${place}-${key}-3`] = branchHouse3(place, key)
+    }
     out[`sale-${place}`] = saleTexture(look.roof)
   }
   return out

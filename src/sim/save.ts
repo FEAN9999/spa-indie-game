@@ -40,8 +40,10 @@ export const RESTAURANT_B_SAVE_VERSION = 38
 export const RESTAURANT_C_SAVE_VERSION = 39
 /** The save that first has the shop's code for friends and its list of friends' shops: origin/master's SAVE_VERSION + 1 at merge time. */
 export const FRIENDS_SAVE_VERSION = 40
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list. */
-export const SAVE_VERSION = FRIENDS_SAVE_VERSION
+/** The save that first has a branch's stairs and floors: origin/master's SAVE_VERSION + 1 at merge time. A branch saved before it has its stairs spot cleared on load. */
+export const BRANCH_FLOORS_SAVE_VERSION = 41
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list, 41 the branches' floors. */
+export const SAVE_VERSION = BRANCH_FLOORS_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -273,7 +275,11 @@ function repairChain(raw: unknown, main: SaveData): ChainSave {
   for (const b of Array.isArray(c.branches) ? c.branches : []) {
     if (!isObject(b)) continue
     try {
+      // read before parseShop, which raises `v` for a branch moved onto the wide grid
+      const stairless = typeof b.v === 'number' && b.v < BRANCH_FLOORS_SAVE_VERSION
       const data = parseShop(b)
+      // a branch from before its stairs has their spot cleared on load, as an older main shop does
+      if (stairless) data.clearStairs = true
       shops.push({ data, place: isPlaceId(b.place) ? b.place : null })
     } catch (e) {
       if (!(e instanceof SaveError)) throw e
@@ -900,7 +906,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== 39 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== 39 && raw.v !== 40 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

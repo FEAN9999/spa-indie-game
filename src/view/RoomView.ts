@@ -172,12 +172,12 @@ export class RoomView {
   /** The roof and sign of each house for sale, by its key. */
   private readonly sales = new Map<string, SalePart[]>()
 
-  /** `place` is where the shop is, null for the main shop: the beach has its own floor 1, and a branch has no rank plaque. */
+  /** `place` is where the shop is, null for the main shop: a branch has its own room on every floor, and no rank plaque. */
   constructor(
     private readonly scene: Phaser.Scene,
     private readonly place: PlaceId | null,
   ) {
-    this.room = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, this.groundRoom()).setOrigin(0, 0).setDepth(0)
+    this.room = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, this.roomKey(1)).setOrigin(0, 0).setDepth(0)
     this.upper = scene.add.image(MAP_X + SHOP_X0 * TILE, MAP_Y, 'spa-upper').setOrigin(0, 0).setDepth(UPPER_DEPTH).setVisible(false)
     this.bunting = scene.add.graphics().setDepth(FESTIVAL_DEPTH)
     this.sign = scene.add.text(0, 0, '', textStyle(25)).setOrigin(0.5).setDepth(FESTIVAL_DEPTH)
@@ -261,9 +261,10 @@ export class RoomView {
     }
   }
 
-  /** Floor 1's room: the place's own at a branch, or the main shop's. */
-  private groundRoom(): string {
-    return this.place ? `room-${this.place}` : 'room'
+  /** The room on `floor`: the place's own at a branch, or the main shop's. */
+  private roomKey(floor: number): string {
+    if (floor === 1) return this.place ? `room-${this.place}` : 'room'
+    return this.place ? `room-${this.place}-${floor}` : `room-${floor}`
   }
 
   /**
@@ -273,7 +274,7 @@ export class RoomView {
   setFloor(floor: number, floors: number, maxFloors: number): void {
     this.floor = floor
     this.closed = floor > floors
-    this.room.setTexture(floor === 1 ? this.groundRoom() : floor === 2 ? 'room-2' : 'room-3')
+    this.room.setTexture(this.roomKey(floor))
     this.upper.setVisible(this.closed)
     for (const h of housesBetween(NO_HOUSES, this.houses)) this.houseImages.get(houseKey(h))?.setTexture(houseTextureKey(this.place, h, floor))
     // the rooftop has the coop where the stairs are, and no rope

@@ -9,7 +9,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { FRIENDS_SAVE_VERSION, oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError, type SaveData } from '../../src/sim/save'
+import { BRANCH_FLOORS_SAVE_VERSION, FRIENDS_SAVE_VERSION, oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError, type SaveData } from '../../src/sim/save'
 import { emptyFriends } from '../../src/sim/friends'
 import { emptyAwayBook } from '../../src/sim/away'
 import { fullRestaurantStock } from '../../src/sim/menu'
@@ -64,6 +64,7 @@ import v37 from '../fixtures/save-v37.json'
 import v38 from '../fixtures/save-v38.json'
 import v39 from '../fixtures/save-v39.json'
 import v40 from '../fixtures/save-v40.json'
+import v41 from '../fixtures/save-v41.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -111,6 +112,8 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
     shop.friends ??= emptyFriends()
     const v = shop.v ?? (out as { v?: number }).v ?? 0
+    // a branch from before its stairs is read with their spot to clear
+    if (shop !== out && v < BRANCH_FLOORS_SAVE_VERSION) (shop as { clearStairs?: true }).clearStairs = true
     if (v >= 3 && v < 30) {
       shop.items.push(...LEGACY_ITEMS.slice(-3).map((item, i) => ({ ...item, id: shop.nextItemId + i })))
       shop.nextItemId += 3
@@ -135,7 +138,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('every older save', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39, v40 }
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39, v40, v41 }
 
   it('opens every older save and saves it as the current version', () => {
     for (const [name, raw] of Object.entries(fixtures)) {
@@ -146,10 +149,11 @@ describe('every older save', () => {
 })
 
 describe('the wide grid in an older shop', () => {
-  it("is version 40, the friends' code and list", () => {
-    expect(SAVE_VERSION).toBe(FRIENDS_SAVE_VERSION)
+  it("is version 41, the branches' floors", () => {
+    expect(SAVE_VERSION).toBe(BRANCH_FLOORS_SAVE_VERSION)
     expect(RESTAURANT_C_SAVE_VERSION).toBe(39)
     expect(FRIENDS_SAVE_VERSION).toBe(40)
+    expect(BRANCH_FLOORS_SAVE_VERSION).toBe(41)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2843,5 +2847,25 @@ describe("the friends' code and list", () => {
     const raw = structuredClone(v40) as { friends: unknown }
     raw.friends = { code: 'k7p-0qx', open: 'yes', list: [{ code: 'b2kcg2', name: '  Spa   Sen  ' }, { code: 'nope' }, 'x', { code: 'K7P2QX', name: 'self' }] }
     expect(parseSave(raw).friends).toEqual({ code: '', open: false, list: [{ code: 'B2KCG2', name: 'Spa Sen' }, { code: 'K7P2QX', name: 'self' }] })
+  })
+})
+
+describe("the branches' floors", () => {
+  it('reads the v41 fixture with the beach on floor 2 and its bed upstairs', () => {
+    const data = parseSave(structuredClone(v41))
+    expect(data.v).toBe(BRANCH_FLOORS_SAVE_VERSION)
+    const saved = data.chain!.branches[0]
+    expect([saved.place, saved.floors, saved.clearStairs]).toEqual(['beach', 2, undefined])
+    const beach = Chain.fromSave(data, 8).shop('beach')!
+    expect([beach.floors, beach.maxFloors()]).toEqual([2, 3])
+    expect(beach.items.some(i => i.kind === 'bed' && i.x === 14 && i.y === 20)).toBe(true)
+    expect(beach.items.filter(i => i.gift).map(i => [i.kind, i.x, i.y])).toEqual([['surfboard', 13, 10]])
+  })
+
+  it('clears the stairs spot of a branch from before version 41 only, never of its main shop', () => {
+    const data = parseSave(structuredClone(v32))
+    expect(data.clearStairs).toBeUndefined()
+    expect(data.chain!.branches.map(b => b.clearStairs)).toEqual([true])
+    expect(parseSave(structuredClone(v41)).chain!.branches.map(b => b.clearStairs)).toEqual([undefined])
   })
 })

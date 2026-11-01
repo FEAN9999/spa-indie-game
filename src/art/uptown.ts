@@ -23,7 +23,7 @@ export const marble = (seam: string): string =>
 export const MARBLE = marble(C.caoGoldLight)
 
 /** The glass wall onto three towers: sky, towers with rows of lit windows, and gold mullions between the panes. */
-function glassWall(x: number, y: number, w: number, h: number): string {
+export function glassWall(x: number, y: number, w: number, h: number): string {
   const out = [rect(x, y, w, h, C.caoGlass, outline(0.05))]
   for (const [tx, tw, th, col] of [[0.08, 0.5, 0.9, C.towerFar], [0.62, 0.42, 0.7, C.towerNear], [1.1, 0.6, 1.05, C.towerMid], [1.76, 0.6, 0.8, C.towerNear]] as const) {
     const top = y + h - th * 0.98
@@ -38,7 +38,7 @@ function glassWall(x: number, y: number, w: number, h: number): string {
 }
 
 /** A gold-framed landscape: a pale mat, a green hill and a mustard sun. */
-function landscape(x: number, y: number): string {
+export function landscape(x: number, y: number): string {
   return (
     rect(x, y, 1.92, 0.97, C.caoGold, `rx="0.05" ${outline(0.04)}`) +
     rect(x + 0.13, y + 0.13, 1.67, 0.72, C.caoMat, outline(0.026)) +

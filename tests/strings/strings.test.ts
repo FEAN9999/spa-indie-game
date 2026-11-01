@@ -110,8 +110,8 @@ describe('strings', () => {
     expect([t('saleSign1'), t('saleSign2')]).toEqual(['BÁN NHÀ', 'CHÍNH CHỦ'])
   })
 
-  it("tells a branch's buy card of one floor and the branch's own floor", () => {
-    expect(t('houseBranchLine1')).toBe('Thêm 6 ô bề ngang.')
+  it("tells a branch's buy card of the three floors and the branch's own floor", () => {
+    expect(t('houseLine1')).toBe('Thêm 6 ô bề ngang cho cả ba tầng.')
     expect(t('houseBranchLine2')).toBe('Đục tường thông sang, lát sàn như tiệm, giữ màu tường của nhà cũ.')
   })
 })
