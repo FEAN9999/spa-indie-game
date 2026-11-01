@@ -8,7 +8,7 @@ import type { Item } from '../../src/sim/items'
 import type { Customer } from '../../src/sim/types'
 import { formatMoney } from '../../src/strings/format'
 import { t } from '../../src/strings/vi'
-import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, pills, restaurantPills, showPills, stairsParts, stairsToasts } from '../../src/view/floors'
+import { carryTo, retagFloors, followFloor, climbPose, clampToFloor, deskCandle, floorCardLines, pills, restaurantPills, showPills, stairsParts, stairsToasts } from '../../src/view/floors'
 import { restaurantFor } from '../sim/helpers'
 
 const simWith = (owner: { y: number; task?: { kind: string }; climbMs?: number }) =>
@@ -66,6 +66,22 @@ describe('showPills', () => {
     const sim = newSim(widen(SPA_LAYOUT_1A.map(r => r.replace(/U/g, '.'))))
     sim.day = 6
     expect(showPills(sim)).toBe(false)
+  })
+})
+
+describe('floorCardLines', () => {
+  it("tells the main shop's floor, or each branch's own, then what the floor adds", () => {
+    expect(floorCardLines(null, 2)).toEqual([t('floorLine2a'), t('floorLine2b')])
+    expect(floorCardLines('beach', 3)).toEqual([t('floorLine3aBeach'), t('floorLine3b')])
+    const looks = (['oldTown', 'beach', 'uptown'] as const).flatMap(p => [floorCardLines(p, 2)[0], floorCardLines(p, 3)[0]])
+    expect(new Set([...looks, t('floorLine2a'), t('floorLine3a')]).size).toBe(8)
+  })
+
+  it('opens the floor buttons at a branch, which has the stairs now', () => {
+    const branch = SpaSim.newBranch('uptown', newSim(), createRng(3))
+    branch.day = 6
+    expect(showPills(branch)).toBe(true)
+    expect(pills(branch, 1).map(p => p.state)).toEqual(['viewed', 'locked', 'locked'])
   })
 })
 

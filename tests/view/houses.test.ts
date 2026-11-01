@@ -13,7 +13,8 @@ const colX = (col: number) => MAP_X + (col + 0.5) * TILE
 describe('the neighbour houses on the map', () => {
   it("names each house's texture by its place", () => {
     expect(houseTextureKey(null, { side: 'right', n: 1 }, 2)).toBe('house-right1-2')
-    expect(houseTextureKey('beach', { side: 'left', n: 2 }, 1)).toBe('house-beach-left2')
+    expect(houseTextureKey('beach', { side: 'left', n: 2 }, 1)).toBe('house-beach-left2-1')
+    expect(houseTextureKey('uptown', { side: 'right', n: 1 }, 3)).toBe('house-uptown-right1-3')
     expect(saleTextureKey(null, { side: 'left', n: 1 })).toBe('sale-left1')
     expect(saleTextureKey('uptown', { side: 'left', n: 1 })).toBe('sale-uptown')
   })

@@ -1,6 +1,7 @@
 import { claimed, nearestSpot, placeProblem } from './build'
 import { tileEq, type Grid } from './grid'
 import { ITEMS, type Item, type ItemKind } from './items'
+import { OLD_DECOR_TILE, PLACE_DECOR, type PlaceId } from './places'
 import type { SaveData } from './save'
 
 /** What clearing the stairs spot did: how many items went (what they refunded, and how many were gifts back in the guest book), the one the shop cannot do without and has no room for, and the customers sent home. */
@@ -56,4 +57,16 @@ export function clearStairs(d: SaveData, shell: Grid): StairsNote {
   const task = d.owner.task
   if (task && note.leavers.includes(task.customerId)) d.owner.task = null
   return note
+}
+
+/**
+ * A branch saved before its stairs has its place's piece where their foot now is: in `d`, it moves to the piece's new tile on `shell` when it can
+ * stand there, and is otherwise left where it is for clearStairs to send back to the guest book.
+ */
+export function moveOldDecor(d: SaveData, place: PlaceId, shell: Grid): void {
+  const { kind, x, y } = PLACE_DECOR[place]
+  const piece = d.items.find(i => i.gift && i.kind === kind && i.x === OLD_DECOR_TILE.x && i.y === OLD_DECOR_TILE.y)
+  if (!piece) return
+  const others = d.items.filter(i => i !== piece)
+  if (placeProblem(shell, others, { ...piece, x, y }, { door: shell.door, floors: d.floors }) === null) Object.assign(piece, { x, y })
 }

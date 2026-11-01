@@ -24,7 +24,7 @@ export { REASON_LINE }
 
 export type ShopNews =
   | { kind: 'rank'; stars: number } | { kind: 'year'; place: number } | { kind: 'branch'; place: PlaceId }
-  | { kind: 'house'; place: PlaceId | null } | { kind: 'floor'; floor: number } | { kind: 'pet'; name: string; breed: BreedId }
+  | { kind: 'house'; place: PlaceId | null } | { kind: 'floor'; floor: number; place: PlaceId | null } | { kind: 'pet'; name: string; breed: BreedId }
   | { kind: 'festival'; festival: FestivalId }
 
 const PLACE_NAME: Record<PlaceId, StringKey> = { beach: 'placeBeach', oldTown: 'placeOldTown', uptown: 'placeUptown' }
@@ -87,7 +87,10 @@ export function shopText(news: ShopNews, shopName: string, rng: Rng): string {
       pieces = news.place === null ? SHOP_PIECES.houseMain : SHOP_PIECES.houseBranch
       words = { place: news.place === null ? '' : place(news.place) }
       break
-    case 'floor': pieces = SHOP_PIECES.floor; words = { floor: lower(t(FLOOR_NAME[news.floor] ?? 'floorName2')) }; break
+    case 'floor':
+      pieces = news.place === null ? SHOP_PIECES.floor : SHOP_PIECES.floorBranch
+      words = { floor: lower(t(FLOOR_NAME[news.floor] ?? 'floorName2')), place: news.place === null ? '' : place(news.place) }
+      break
     case 'pet': pieces = SHOP_PIECES.pet; words = { name: news.name, breed: lowerFirst(BREED_NAME[news.breed]) }; break
     case 'festival': pieces = SHOP_PIECES.festival; words = { festival: t(FESTIVALS[news.festival].name) }; break
   }

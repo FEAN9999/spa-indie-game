@@ -25,7 +25,7 @@ export const PHO_TILES =
 const STRING_SILK = [C.lantern, C.tealLight, C.lotus, C.lantern, C.tealLight, C.lotus, C.lantern]
 
 /** A cord sagging across the wall, with seven silk lanterns hung along it. */
-function lanternString(cols: number): string {
+export function lanternString(cols: number): string {
   const [x0, x1, yEnd, yCtl] = [0.45, cols - 0.45, 0.45, 1.1]
   const out = [`<path d="M${x0},${yEnd} Q${f(cols / 2)},${yCtl} ${x1},${yEnd}" fill="none" stroke="${C.ink}" stroke-width="0.04"/>`]
   STRING_SILK.forEach((col, i) => {

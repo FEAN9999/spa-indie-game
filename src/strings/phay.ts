@@ -204,6 +204,7 @@ export const SHOP_PIECES = {
   houseMain: ['{shop} mua thêm nhà kế bên, rộng hơn rồi.', 'tiệm {shop} được mở rộng, mua thêm nhà bên cạnh.', '{shop} có thêm nhà, thêm chỗ cho khách.'],
   houseBranch: ['chi nhánh {place} mua thêm nhà, rộng rãi hơn.', 'chi nhánh {place} của {shop} vừa mở rộng.', '{shop} thêm nhà ở {place}, chỗ rộng hơn.'],
   floor: ['{shop} mở thêm {floor}, thêm chỗ cho khách.', '{floor} của {shop} đã mở cửa.', 'tiệm {shop} cao thêm rồi, mở {floor}.'],
+  floorBranch: ['chi nhánh {place} mở thêm {floor}, thêm chỗ cho khách.', '{floor} ở chi nhánh {place} của {shop} đã mở cửa.', '{shop} ở {place} cao thêm rồi, mở {floor}.'],
   pet: ['{shop} có thêm bé {breed} tên {name}.', 'bé {name} ({breed}) vừa về {shop}, ghé chơi nha.', 'nhà mình có thành viên mới: {name}, một bé {breed}.'],
   festival: ['dịp {festival} tới rồi, {shop} trang trí đón khách.', '{shop} đón {festival} cùng mọi người.', 'mùa {festival} đã về, ghé {shop} chơi nha.'],
 } as const
