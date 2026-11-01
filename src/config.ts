@@ -45,12 +45,12 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
-export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5 } as const
+export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5, lashes: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000 } as const
+export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000, lashes: 120000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000, lashes: 2100000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -275,8 +275,22 @@ export const CUPPING_RATE_HARD = { min: 0.24, max: 0.34 }
 /** Score (good cups minus dark ones) for 3 and 2 stars. */
 export const CUPPING_STARS = { three: 5, two: 3 }
 
+// Nối mi game: drag a short, middle or long lash from the tray onto each dot along the closed lid, to the length the sample card asks there.
+// Positions are game pixels on the card; times are in ms.
+export const LASHES_LIMIT_MS = 25000
+/** How many dots run along the lid; a picky customer has more, closer together. */
+export const LASHES_SLOTS = 7
+export const LASHES_SLOTS_HARD = 9
+/** The lid: the middle of its line, how wide the dots run, and how far its middle sags below its ends. */
+export const LASHES_LID = { x: 540, y: 960, span: 600, sag: 70 }
+/** How far from a dot a dropped lash still lands on it; a picky customer's reach is shorter. */
+export const LASHES_REACH = 70
+export const LASHES_REACH_HARD = 52
+/** Lashes dropped on a dot that already has one ("stuck") allowed for 3 and 2 stars, and dots left not right allowed for 2 stars. */
+export const LASHES_STARS = { stuck3: 1, stuck2: 3, miss2: 2 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000, lashKit: 640000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 

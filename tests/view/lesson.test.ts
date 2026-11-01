@@ -24,6 +24,9 @@ describe('lesson texts', () => {
     expect(lessonTitle('cupping')).toBe('Học Giác hơi')
     expect(lessonHowTo('cupping')).toEqual(['Chạm điểm sáng trên lưng để đặt ống giác.', 'Chạm ống để gỡ khi da vừa đỏ, đừng để thâm.'])
     expect(lessonPassLine('cupping')).toBe('Tiệm đã có Giác hơi. Quà: một Giường giác hơi trong hộp quà.')
+    expect(lessonTitle('lashes')).toBe('Học Nối mi')
+    expect(lessonHowTo('lashes')).toEqual(['Xem thẻ mẫu: chỗ nào mi ngắn, vừa hay dài.', 'Kéo sợi mi đúng độ dài lên từng chấm trên mí.'])
+    expect(lessonPassLine('lashes')).toBe('Tiệm đã có Nối mi. Quà: một Giường nối mi trong hộp quà.')
   })
   it('passes at 2 stars', () => {
     expect(LESSON_PASS_STARS).toBe(2)

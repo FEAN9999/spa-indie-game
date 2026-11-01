@@ -133,8 +133,9 @@ describe('staff tiers', () => {
     expect(noTiers().foot).toBe(0)
     expect(candidatePool(['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot']).slice(-2)).toEqual(['scrub', 'foot'])
     expect(noTiers().nails).toBe(0)
-    expect(candidatePool(SERVICE_IDS).slice(-4)).toEqual(['scrub', 'foot', 'nails', 'cupping'])
+    expect(candidatePool(SERVICE_IDS).slice(-5)).toEqual(['scrub', 'foot', 'nails', 'cupping', 'lashes'])
     expect(noTiers().cupping).toBe(0)
+    expect(noTiers().lashes).toBe(0)
   })
 
   it('draws a steam specialty only once steam is open', () => {

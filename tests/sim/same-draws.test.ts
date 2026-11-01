@@ -5,7 +5,9 @@ import sevenFixture from '../fixtures/draws-seven-services.json'
 import eightFixture from '../fixtures/draws-eight-services.json'
 import nineFixture from '../fixtures/draws-nine-services.json'
 import restaurantFixture from '../fixtures/draws-restaurant.json'
-import { learnFoot, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
+import restaurantBunChaFixture from '../fixtures/draws-restaurant-bun-cha.json'
+import tenFixture from '../fixtures/draws-ten-services.json'
+import { learnCupping, learnFoot, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
 
 describe('the shop draws', () => {
   it('brings the same customers and candidates as before quests, day after day', () => {
@@ -45,11 +47,23 @@ describe('the shop draws', () => {
   it('draws the same when the Giác hơi tuition is paid and the lesson not passed', () => {
     expect(sixServiceLog(4, c => { learnNails(c); expect(c.main.payLesson('cupping')).toBeNull() })).toEqual(nineFixture)
   })
+
+  it('draws the same in a 5-star chain with every lesson up to Giác hơi learned while Nối mi is not', () => {
+    expect(sixServiceLog(4, learnCupping)).toEqual(tenFixture)
+  })
+
+  it('draws the same when the Nối mi tuition is paid and the lesson not passed', () => {
+    expect(sixServiceLog(4, c => { learnCupping(c); expect(c.main.payLesson('lashes')).toBeNull() })).toEqual(tenFixture)
+  })
 })
 
 describe('the restaurant draws', () => {
   it('seats the same diners with the same tickets and offers the same cooks while Bún chả is not bought', () => {
     expect(restaurantLog()).toEqual(restaurantFixture)
+  })
+
+  it('draws the same with Bún chả bought while Gỏi cuốn is not', () => {
+    expect(restaurantLog(r => { r.buyDish('bunCha') })).toEqual(restaurantBunChaFixture)
   })
 
   it('draws differently once Bún chả is on the menu, with diners ordering it', () => {

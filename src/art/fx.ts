@@ -312,6 +312,13 @@ export function fxTextures(): Record<string, string> {
         `<path d="M15,38 V24 Q15,12 28,12 Q41,12 41,24 V38Z" fill="${C.glass}" ${INNER}/>` +
         `<path d="M19.5,32 V24 Q19.5,17 25,16" stroke="${C.cream}" stroke-width="2.6" fill="none" stroke-linecap="round"/>`,
     ),
+    // a closed eye with long lashes, a sparkle at the outer corner
+    'svc-lashes': badge(
+      C.pinkPale,
+      `<path d="M10,26 Q28,42 46,26" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>` +
+        [[14, 30, 9, 40], [20, 34, 16, 45], [28, 35, 27, 47], [36, 34, 39, 45], [42, 30, 48, 39]].map(([x1, y1, x2, y2]) => `<path d="M${x1},${y1} L${x2},${y2}" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`).join('') +
+        `<path d="M44,10 L46,15 L51,17 L46,19 L44,24 L42,19 L37,17 L42,15Z" fill="${C.gold}" ${INNER}/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -379,6 +386,15 @@ export function fxTextures(): Record<string, string> {
         `<rect x="11" y="17" width="18" height="29" rx="5" fill="${C.cream}" ${INNER}/>` +
         `<path d="M20,25 V36 M14.5,30.5 H25.5" stroke="${C.lantern}" stroke-width="3.2" stroke-linecap="round"/>` +
         `<path d="M32,44 Q29,44 29,40 Q29,36 33,36 Q34,31 39,32 Q44,31 45,36 Q48,37 47,41 Q46,44 43,44Z" fill="${C.cloud}" ${INNER}/>`,
+    ),
+    // a strip of false lashes beside a small bottle of glue
+    'stock-lashKit': badge(
+      C.pinkPale,
+      `<path d="M8,30 Q20,22 32,30" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linecap="round"/>` +
+        [[11, 28, 8, 18], [16, 25, 14, 14], [21, 24, 21, 13], [26, 25, 28, 14], [30, 28, 34, 18]].map(([x1, y1, x2, y2]) => `<path d="M${x1},${y1} L${x2},${y2}" stroke="${C.ink}" stroke-width="2.6" stroke-linecap="round"/>`).join('') +
+        `<rect x="36" y="24" width="12" height="7" rx="2" fill="${C.ink}" ${INNER}/>` +
+        `<rect x="33" y="30" width="18" height="18" rx="5" fill="${C.cream}" ${INNER}/>` +
+        `<path d="M37,38 H47" stroke="${C.lotus}" stroke-width="3" stroke-linecap="round"/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(

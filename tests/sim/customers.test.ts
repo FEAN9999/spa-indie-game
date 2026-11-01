@@ -55,17 +55,22 @@ describe('kinds of customer', () => {
   it('has office workers, celebrities and ladies like Sơn móng', () => {
     expect([...KINDS.office.prefers]).toEqual(['shampoo', 'mask', 'stone', 'nails'])
     expect([...KINDS.celeb.prefers]).toEqual(['massage', 'mask', 'mud', 'nails'])
-    expect([...KINDS.lady.prefers]).toEqual(['mask', 'mud', 'stone', 'nails'])
+    expect([...KINDS.lady.prefers].slice(0, 4)).toEqual(['mask', 'mud', 'stone', 'nails'])
   })
 
   it('has students and tourists like Chà muối biển too', () => {
-    expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub'])
+    expect([...KINDS.student.prefers].slice(0, 2)).toEqual(['shampoo', 'scrub'])
     expect([...KINDS.tourist.prefers].slice(0, 4)).toEqual(['mud', 'stone', 'massage', 'scrub'])
   })
 
   it('has elders and backpackers like Ngâm chân thảo mộc too', () => {
     expect([...KINDS.elder.prefers].slice(0, 3)).toEqual(['massage', 'steam', 'foot'])
     expect([...KINDS.backpacker.prefers]).toEqual(['massage', 'steam', 'shampoo', 'foot'])
+  })
+
+  it('has students and ladies like Nối mi too', () => {
+    expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub', 'lashes'])
+    expect([...KINDS.lady.prefers]).toEqual(['mask', 'mud', 'stone', 'nails', 'lashes'])
   })
 
   it('has elders and tourists like Giác hơi too', () => {
@@ -162,6 +167,6 @@ describe("the rival's day", () => {
 describe('the backpacker and the lady', () => {
   it('are the two place-only kinds', () => {
     expect(KINDS.backpacker).toEqual({ fromDay: 1, weight: 0, patience: 1.3, tip: [0.5, 1, 2], prefers: ['massage', 'steam', 'shampoo', 'foot'], grading: 'normal', reviews: 1, speed: 5, hard: false })
-    expect(KINDS.lady).toEqual({ fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone', 'nails'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true })
+    expect(KINDS.lady).toEqual({ fromDay: 1, weight: 0, patience: 0.7, tip: [0, 1, 4], prefers: ['mask', 'mud', 'stone', 'nails', 'lashes'], grading: 'harsh', reviews: 2, speed: 3.5, hard: true })
   })
 })

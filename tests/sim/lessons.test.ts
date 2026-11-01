@@ -347,7 +347,7 @@ describe('Giác hơi', () => {
     expect(sim.stock.alcohol).toBe(20)
   })
 
-  it('is learned in any order with the other lessons, and is the last one offered', () => {
+  it('is learned in any order with the other lessons, and is offered after Sơn móng', () => {
     const sim = starShop(5)
     for (const id of ['scrub', 'foot', 'nails'] as const) {
       expect(sim.learnable()).toBe(id)
@@ -358,7 +358,7 @@ describe('Giác hơi', () => {
     sim.payLesson('cupping')
     sim.passLesson('cupping')
     expect(sim.services.slice(-4)).toEqual(['scrub', 'foot', 'nails', 'cupping'])
-    expect(sim.learnable()).toBeNull()
+    expect(sim.learnable()).toBe('lashes')
   })
 
   it('opens at a branch only with its bed there, and never brings more customers', () => {
@@ -393,6 +393,61 @@ describe('Giác hơi', () => {
     const paid = events.find(e => e.type === 'paid')
     expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(110_000, 5))
     expect(main.stock.alcohol).toBe(alcohol - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})
+
+describe('Nối mi', () => {
+  it('needs 5 stars, massage open and 2.100.000 đ', () => {
+    expect(starShop(4).lessonProblem('lashes')).toBe('stars')
+    expect(starShop(5).lessonProblem('lashes')).toBeNull()
+    expect(starShop(5, 2_099_999).lessonProblem('lashes')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Giường nối mi and starts the lash kits at 20', () => {
+    const sim = starShop(5)
+    const money = sim.money
+    expect(sim.payLesson('lashes')).toBeNull()
+    expect(sim.payLesson('lashes')).toBeNull()
+    expect(money - sim.money).toBe(2_100_000)
+    sim.passLesson('lashes')
+    expect(sim.book.gifts.filter(g => g === 'lashBed')).toHaveLength(1)
+    expect(sim.stock.lashKit).toBe(20)
+    expect(sim.learnable()).toBe('scrub')
+  })
+
+  it('opens at a branch only with its bed there, and never brings more customers', () => {
+    const chain = new Chain(starShop(5, 25_000_000), 11)
+    chain.open('uptown')
+    const uptown = chain.shop('uptown')!
+    chain.main.payLesson('lashes')
+    chain.main.passLesson('lashes')
+    chain.sync()
+    const rng = createRng(5)
+    for (let i = 0; i < 300; i++) expect(drawService('lady', uptown.availableServices(), rng)).not.toBe('lashes')
+    const before = serviceArrivalFactor(uptown.availableServices())
+    placeFirst(uptown, 'lashBed')
+    let seen = false
+    for (let i = 0; i < 300; i++) if (drawService('lady', uptown.availableServices(), rng) === 'lashes') seen = true
+    expect(seen).toBe(true)
+    expect(serviceArrivalFactor(uptown.availableServices())).toBe(before)
+  })
+
+  it('is served by staff for the ranked price, using a lash kit and a towel', () => {
+    const main = starShop(5)
+    main.payLesson('lashes')
+    main.passLesson('lashes')
+    placeFirst(main, 'lashBed')
+    hireStaff(main, 'technician', undefined, {})
+    const kit = main.stock.lashKit
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'student', service: 'lashes' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(120_000, 5))
+    expect(main.stock.lashKit).toBe(kit - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
 })

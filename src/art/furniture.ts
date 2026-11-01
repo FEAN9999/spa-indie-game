@@ -140,6 +140,36 @@ const cuppingBed = massageBed + CUP_YS.flatMap((y, i) => [0.36, 0.74].map(x => g
 // cupping bed lying across: the massage bed lying across with the six cups in pairs along the sheet
 const cuppingBedTurned = massageBedTurned + CUP_YS.flatMap((x, i) => [0.3, 0.64].map(y => glassCup(x, y, i > 0))).join('')
 
+// lash bed: a padded bed with a pink sheet and a pillow at the head, a ring lamp standing over the pillow's right and a small tray of lashes at the foot
+const ringLamp = (x: number, y: number) =>
+  `<circle cx="${x}" cy="${y}" r="0.2" fill="none" stroke="${C.ink}" stroke-width="0.1"/>` +
+  `<circle cx="${x}" cy="${y}" r="0.2" fill="none" stroke="${C.glow}" stroke-width="0.06"/>`
+const lashTray = (x: number, y: number) =>
+  rect(x, y, 0.44, 0.24, C.cream, `rx="0.05" ${ink(FINE)}`) +
+  `<path d="M${f(x + 0.08)},${f(y + 0.16)} q0.06,-0.1 0.12,0 M${f(x + 0.24)},${f(y + 0.16)} q0.06,-0.1 0.12,0" stroke="${C.ink}" stroke-width="0.025" fill="none"/>`
+const lashBed =
+  rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 0.82, 2.72, C.pinkPale, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.24, 0.2, 0.62, 0.38, C.cream, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M0.18,2.66 H0.92" stroke="${C.lotus}" stroke-width="0.035"/>` +
+  lashTray(0.33, 2.2) +
+  ringLamp(0.86, 0.3) +
+  rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
+
+// lash bed lying across: the pink bed along the floor, the pillow at the head on the left, the ring lamp over it and the tray at the foot
+const lashBedTurned =
+  rect(0.05, 0.05, 3.0, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 2.82, 0.75, C.pinkPale, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.22, 0.2, 0.38, 0.56, C.cream, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M2.66,0.15 V0.83" stroke="${C.lotus}" stroke-width="0.035"/>` +
+  lashTray(2.1, 0.36) +
+  ringLamp(0.42, 0.22) +
+  rect(0.05, 0.83, 3.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 0.97, 0.12, 0.14, C.woodDark, ink(0.025))
+
 // mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
 const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
 const mudTub =
@@ -1321,6 +1351,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'nailDesk-turned': { w: 2.1, h: 2.45, body: nailDeskTurned },
   cuppingBed: { w: 1.1, h: 3.15, body: cuppingBed },
   'cuppingBed-turned': { w: 3.1, h: 1.15, body: cuppingBedTurned },
+  lashBed: { w: 1.1, h: 3.15, body: lashBed },
+  'lashBed-turned': { w: 3.1, h: 1.15, body: lashBedTurned },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.
