@@ -1,9 +1,7 @@
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
+import { emptyFriends, FRIEND_CODE_LENGTH, friendCodeFrom, parseFriendCode } from '../sim/friends'
 import { SaveTooNewError, type SaveData } from '../sim/save'
 
-/** Letters and digits that are never taken for one another when read out or typed: no 0, O, 1, I or L. */
-const ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-export const VISIT_CODE_LENGTH = 6
 /** The address's parameter that opens a friend's shop: `?ghe=K7P2QX`. */
 export const VISIT_PARAM = 'ghe'
 /** Trystero's name for the game: only pages with the same one find each other. */
@@ -12,16 +10,9 @@ const APP_ID = 'fean9999-tiem-spa'
 const NAME_MAX = 40
 
 /** A new code for a shop that invites friends. */
-export function newVisitCode(): string {
-  const picks = crypto.getRandomValues(new Uint32Array(VISIT_CODE_LENGTH))
-  return Array.from(picks, n => ALPHABET[n % ALPHABET.length]).join('')
-}
+export const newVisitCode = (): string => friendCodeFrom(crypto.getRandomValues(new Uint32Array(FRIEND_CODE_LENGTH)))
 
-/** The code typed or pasted back, whatever its case, spaces or the dash it is shown with; null when it is not one. */
-export function parseVisitCode(text: string): string | null {
-  const clean = text.toUpperCase().replace(/[\s-]/g, '')
-  return clean.length === VISIT_CODE_LENGTH && [...clean].every(ch => ALPHABET.includes(ch)) ? clean : null
-}
+export const parseVisitCode = parseFriendCode
 
 /** In two halves, easy to read out: "K7P-2QX". */
 export const showVisitCode = (code: string): string => `${code.slice(0, 3)}-${code.slice(3)}`
@@ -47,15 +38,20 @@ export function homeLink(href: string): string {
   return url.toString()
 }
 
-/** A room as a visit uses it: who joins, and two kinds of line, each a string. Trystero's in the game, a fake in the tests. */
+/** What a visitor tells the host: its shop's name, and its code for the host to visit back, null for a page with no shop of its own. */
+export interface Hello {
+  name: string
+  code: string | null
+}
+
+/** A room as a visit uses it: who joins, the host's shop and a visitor's hello. Trystero's in the game, a fake in the tests. */
 export interface VisitRoom {
   onJoin: ((peer: string) => void) | null
   /** The host's shop, as a save code. */
   onShop: ((code: string, peer: string) => void) | null
-  /** A visitor's own shop name. */
-  onHello: ((name: string, peer: string) => void) | null
+  onHello: ((hello: Hello, peer: string) => void) | null
   sendShop(code: string, peer: string): void
-  sendHello(name: string, peer: string): void
+  sendHello(hello: Hello, peer: string): void
   leave(): void
 }
 
@@ -67,7 +63,7 @@ const joinTrystero: JoinVisitRoom = async (code, onError) => {
   const { joinRoom } = await import('trystero')
   const room = joinRoom({ appId: APP_ID }, code, { onJoinError: () => onError() })
   const shop = room.makeAction<string>('shop')
-  const hello = room.makeAction<string>('hello')
+  const hello = room.makeAction<{ name: string; code: string | null }>('hello')
   // a peer that left before the line went out needs nothing
   const quiet = () => {}
   const visit: VisitRoom = {
@@ -75,7 +71,7 @@ const joinTrystero: JoinVisitRoom = async (code, onError) => {
     onShop: null,
     onHello: null,
     sendShop: (text, peer) => void shop.send(text, { target: peer }).catch(quiet),
-    sendHello: (name, peer) => void hello.send(name, { target: peer }).catch(quiet),
+    sendHello: (h, peer) => void hello.send({ name: h.name, code: h.code }, { target: peer }).catch(quiet),
     leave: () => void room.leave().catch(quiet),
   }
   room.onPeerJoin = peer => visit.onJoin?.(peer)
@@ -83,7 +79,8 @@ const joinTrystero: JoinVisitRoom = async (code, onError) => {
     if (typeof data === 'string') visit.onShop?.(data, peerId)
   }
   hello.onMessage = (data, { peerId }) => {
-    if (typeof data === 'string') visit.onHello?.(data, peerId)
+    const h = data as Partial<Hello> | null
+    if (typeof h?.name === 'string' && (typeof h.code === 'string' || h.code === null)) visit.onHello?.({ name: h.name, code: h.code }, peerId)
   }
   return visit
 }
@@ -94,21 +91,22 @@ export interface House {
   close(): void
 }
 
-let house: (House & { save: () => SaveData; onGuest: (name: string) => void }) | null = null
+let house: (House & { save: () => SaveData; onGuest: (hello: Hello) => void }) | null = null
 
 /** The invitation open on this page, if any. */
 export const currentHouse = (): House | null => house
 
 /**
- * Opens the shop to friends until the page closes: whoever joins with its code is sent the shop as it is at that moment,
- * and `onGuest` hears their shop's name. Opening it again keeps the code and takes the new `save` and `onGuest`.
+ * Opens the shop to friends with its code until the page closes or it is closed: whoever joins is sent the shop as it is at that moment,
+ * without its own list of friends, and `onGuest` hears their hello. Opening it again with the same code takes the new `save` and `onGuest`.
  */
-export function openHouse(save: () => SaveData, onGuest: (name: string) => void, join: JoinVisitRoom = joinTrystero, code = newVisitCode()): House {
-  if (house) {
+export function openHouse(code: string, save: () => SaveData, onGuest: (hello: Hello) => void, join: JoinVisitRoom = joinTrystero): House {
+  if (house?.code === code) {
     house.save = save
     house.onGuest = onGuest
     return house
   }
+  house?.close()
   let room: VisitRoom | null = null
   let closed = false
   const open = {
@@ -126,8 +124,8 @@ export function openHouse(save: () => SaveData, onGuest: (name: string) => void,
     r => {
       if (closed) return r.leave()
       room = r
-      r.onJoin = peer => void encodeSaveCode(open.save()).then(text => r.sendShop(text, peer))
-      r.onHello = name => open.onGuest(name.slice(0, NAME_MAX))
+      r.onJoin = peer => void encodeSaveCode({ ...open.save(), friends: emptyFriends() }).then(text => r.sendShop(text, peer))
+      r.onHello = h => open.onGuest({ name: h.name.slice(0, NAME_MAX), code: h.code === null ? null : parseFriendCode(h.code) })
     },
     () => open.close(),
   )
@@ -143,8 +141,8 @@ export class VisitError extends Error {
   }
 }
 
-/** Finds the shop with the code and fetches it, telling its host this player's shop name; VisitError when none comes within `waitMs`. */
-export function visitHouse(code: string, name: string, waitMs: number, join: JoinVisitRoom = joinTrystero): Promise<SaveData> {
+/** Finds the shop with the code and fetches it, greeting its host with `hello`; VisitError when none comes within `waitMs`. */
+export function visitHouse(code: string, hello: Hello, waitMs: number, join: JoinVisitRoom = joinTrystero): Promise<SaveData> {
   return new Promise((resolve, reject) => {
     let done = false
     let room: VisitRoom | null = null
@@ -163,7 +161,7 @@ export function visitHouse(code: string, name: string, waitMs: number, join: Joi
       r => {
         if (done) return r.leave()
         room = r
-        r.onJoin = peer => r.sendHello(name, peer)
+        r.onJoin = peer => r.sendHello(hello, peer)
         r.onShop = text =>
           void decodeSaveCode(text).then(
             data => finish(() => resolve(data)),

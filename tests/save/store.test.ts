@@ -86,3 +86,37 @@ describe('save slots', () => {
     expect(new SaveStore(mem).flag('installCardSeen')).toBe(true)
   })
 })
+
+describe("friends' shops met on a visit", () => {
+  it('keeps them per slot, the latest first and each once, until the shop takes them', () => {
+    const s = new SaveStore(new MemStorage())
+    s.addMet(1, { code: 'B2KCG2', name: 'Spa Sen' })
+    s.addMet(1, { code: 'WHUURP', name: 'Tiệm Lan' })
+    s.addMet(1, { code: 'B2KCG2', name: 'Spa Sen Hồng' })
+    s.addMet(2, { code: 'K7P2QX', name: 'Ô hai' })
+    expect(s.takeMet(1)).toEqual([
+      { code: 'B2KCG2', name: 'Spa Sen Hồng' },
+      { code: 'WHUURP', name: 'Tiệm Lan' },
+    ])
+    expect(s.takeMet(1)).toEqual([])
+    expect(s.takeMet(2)).toEqual([{ code: 'K7P2QX', name: 'Ô hai' }])
+  })
+
+  it('never touches the shop in the slot', () => {
+    const mem = new MemStorage()
+    const s = new SaveStore(mem)
+    s.save(1, shop(5))
+    const before = mem.getItem('spa.slot.1')
+    s.addMet(1, { code: 'B2KCG2', name: 'Spa Sen' })
+    expect(mem.getItem('spa.slot.1')).toBe(before)
+  })
+
+  it('reads a damaged list as empty or skips its bad entries', () => {
+    const mem = new MemStorage()
+    mem.setItem('spa.slot.1.met', '{oops')
+    mem.setItem('spa.slot.2.met', JSON.stringify([{ code: 'B2KCG2', name: 'Spa Sen' }, 'x', { code: 3 }]))
+    const s = new SaveStore(mem)
+    expect(s.takeMet(1)).toEqual([])
+    expect(s.takeMet(2)).toEqual([{ code: 'B2KCG2', name: 'Spa Sen' }])
+  })
+})

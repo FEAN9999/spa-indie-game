@@ -5,7 +5,7 @@ import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
 import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
-import { homeLink, showVisitCode, visitCodeIn, VisitError, visitHouse, type VisitProblem } from '../net/visit'
+import { currentHouse, homeLink, newVisitCode, openHouse, showVisitCode, visitCodeIn, VisitError, visitHouse, type Hello, type VisitProblem } from '../net/visit'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
@@ -18,6 +18,7 @@ import { markRead, takeCheer, unreadCount, type Post } from '../sim/feed'
 import { monthOf } from '../sim/calendar'
 import { MACHINES, rivalToday } from '../sim/events'
 import { festivalOf } from '../sim/festivals'
+import { addFriend } from '../sim/friends'
 import { floorOf } from '../sim/floors'
 import { onBed, tileEq, tileOf } from '../sim/grid'
 import type { OutfitId } from '../sim/outfits'
@@ -314,6 +315,7 @@ export class SpaScene extends Phaser.Scene {
     }
     this.chain = switched?.chain ?? this.openChain(saved)
     this.sim = this.chain.active()
+    if (!this.visit) this.meetFriends()
     // back at the main shop, its cards come out from where they were kept; at a branch they stay aside
     this.attention = new Attention(this.sim.place === null, switched?.held ?? [], () => this.shopState())
     this.phayNotified = this.chain.main.feed.nextId - 1
@@ -565,8 +567,16 @@ export class SpaScene extends Phaser.Scene {
   /** Looks for the friend's shop with the code over the empty page; once it comes, the scene starts again on a copy of it. */
   private findShop(code: string): void {
     this.finding = true
+    // this page's own shop, read and never written: its name and code go to the host, who can visit back
     const own = openStore()
-    const name = own.info(own.currentSlot())?.name ?? t('guestSomeone')
+    const slot = own.currentSlot()
+    let mine: SaveData | null = null
+    try {
+      mine = own.load(slot)
+    } catch {
+      // a shop from a newer version introduces itself by no name
+    }
+    const hello: Hello = { name: mine?.shopName ?? t('guestSomeone'), code: mine?.friends.code || null }
     this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
     addCard(this.ui, 90, 760, 900, 640)
     const text = this.ui.add
@@ -579,7 +589,7 @@ export class SpaScene extends Phaser.Scene {
       addButton(this.ui, GAME_W / 2 - 190, 1280, 340, 120, t('visitHome'), 'plain', () => this.goHome(), 40)
       addButton(this.ui, GAME_W / 2 + 190, 1280, 340, 120, t('visitRetry'), 'primary', () => location.reload(), 40)
     }
-    visitHouse(code, name, VISIT_WAIT_MS).then(
+    visitHouse(code, hello, VISIT_WAIT_MS).then(
       data => {
         let chain: Chain
         try {
@@ -588,12 +598,35 @@ export class SpaScene extends Phaser.Scene {
           failed('bad')
           return
         }
+        // the friend joins this player's list when their own shop next opens
+        own.addMet(slot, { code, name: data.shopName })
         this.ui.clear()
         const next: SpaSceneData = { chain, held: [], arrived: false, visit: true }
         this.scene.restart(next)
       },
       e => failed(e instanceof VisitError ? e.problem : 'noLink'),
     )
+  }
+
+  /** The shop's code for friends, given once; the friends visited since it last opened join its list, and its door opens if it lets friends in. */
+  private meetFriends(): void {
+    const friends = this.chain.main.friends
+    if (!friends.code) friends.code = newVisitCode()
+    // the latest met goes in last, so it ends on top
+    for (const f of this.store.takeMet(this.session.slot).reverse()) addFriend(friends, f.code, f.name)
+    if (friends.open) this.openDoor()
+  }
+
+  /** Lets friends in with the shop's code while the game is open. */
+  private openDoor(): void {
+    openHouse(this.chain.main.friends.code, () => this.chain.toSave(), h => this.welcome(h))
+  }
+
+  /** A friend has come to look round: they go to the top of the list, and the owner hears of it. */
+  private welcome(h: Hello): void {
+    if (h.code) addFriend(this.chain.main.friends, h.code, h.name)
+    this.hud.toast(t('guestArrivedToast', { name: h.name }))
+    this.session.saveNow()
   }
 
   /** Back to the player's own shop: the page opens again without the friend's code. */
@@ -642,7 +675,13 @@ export class SpaScene extends Phaser.Scene {
       onResume: () => this.resume(),
       onEditProfile: () => this.openOwnerCard('edit', () => this.pause()),
       save: () => this.chain.toSave(),
-      onGuest: name => this.hud.toast(t('guestArrivedToast', { name })),
+      friends: this.chain.main.friends,
+      onDoor: open => {
+        this.chain.main.friends.open = open
+        if (open) this.openDoor()
+        else currentHouse()?.close()
+        this.session.saveNow()
+      },
     }
     this.scene.launch('PauseScene', data)
   }

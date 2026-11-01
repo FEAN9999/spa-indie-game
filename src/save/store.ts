@@ -1,3 +1,5 @@
+import { FRIENDS_MAX } from '../config'
+import type { Friend } from '../sim/friends'
 import { parseSave, SaveTooNewError, type SaveData } from '../sim/save'
 
 export type SlotId = 1 | 2 | 3
@@ -15,6 +17,8 @@ type Flag = 'installCardSeen'
 const CURRENT = 'spa.current'
 const slotKey = (slot: SlotId) => `spa.slot.${slot}`
 const flagKey = (name: Flag) => `spa.${name}`
+/** Friends' shops visited from the slot, waiting for its shop to take them into its list. */
+const metKey = (slot: SlotId) => `${slotKey(slot)}.met`
 
 /** Three save slots and a few flags in browser storage. Never throws: a storage that fails reads as empty. */
 export class SaveStore {
@@ -75,6 +79,28 @@ export class SaveStore {
     if (this.isTooNew(slot)) return null
     const d = this.load(slot)
     return d && { day: d.day, money: d.money, name: d.shopName }
+  }
+
+  /** Keeps a friend's shop visited from the slot for its shop to take in when it next opens: a visit never writes the shop itself. */
+  addMet(slot: SlotId, friend: Friend): void {
+    const rest = this.met(slot).filter(f => f.code !== friend.code)
+    this.write(metKey(slot), JSON.stringify([friend, ...rest].slice(0, FRIENDS_MAX)))
+  }
+
+  /** The friends' shops visited since the slot's shop last opened, the latest first, forgotten once taken. */
+  takeMet(slot: SlotId): Friend[] {
+    const met = this.met(slot)
+    if (met.length > 0) this.remove(metKey(slot))
+    return met
+  }
+
+  private met(slot: SlotId): Friend[] {
+    try {
+      const list: unknown = JSON.parse(this.read(metKey(slot)) ?? '[]')
+      return Array.isArray(list) ? list.filter((f): f is Friend => typeof f?.code === 'string' && typeof f?.name === 'string') : []
+    } catch {
+      return []
+    }
   }
 
   flag(name: Flag): boolean {

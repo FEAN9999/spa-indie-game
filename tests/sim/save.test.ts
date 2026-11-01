@@ -9,7 +9,8 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError } from '../../src/sim/save'
+import { FRIENDS_SAVE_VERSION, oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError, type SaveData } from '../../src/sim/save'
+import { emptyFriends } from '../../src/sim/friends'
 import { emptyAwayBook } from '../../src/sim/away'
 import { fullRestaurantStock } from '../../src/sim/menu'
 import { addPost, emptyFeed, openFeed, seededFeed } from '../../src/sim/feed'
@@ -62,6 +63,7 @@ import v35 from '../fixtures/save-v35.json'
 import v37 from '../fixtures/save-v37.json'
 import v38 from '../fixtures/save-v38.json'
 import v39 from '../fixtures/save-v39.json'
+import v40 from '../fixtures/save-v40.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -71,7 +73,7 @@ const opts = () => ({ rng: createRng(2), autoSpawn: false })
 const viaJson = (sim: SpaSim) => SpaSim.fromSave(parseSave(JSON.parse(JSON.stringify(sim.toSave()))), opts())
 const open = (raw: unknown) => SpaSim.fromSave(parseSave(structuredClone(raw)), opts())
 
-type Shop = { v?: number; day: number; reviews: number[]; reviewIds?: unknown; feed?: unknown; rank?: { stars: number; wins: number }; idol?: { idols: Record<string, { visits: number }> }; place?: unknown; restaurant?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
+type Shop = { v?: number; day: number; reviews: number[]; reviewIds?: unknown; feed?: unknown; friends?: unknown; rank?: { stars: number; wins: number }; idol?: { idols: Record<string, { visits: number }> }; place?: unknown; restaurant?: unknown; pets?: unknown; houses?: unknown; items: object[]; nextItemId: number; lessonsPaid: unknown; stock: Record<string, number>; staff: { tiers: Record<string, number> }[]; candidates: { tiers: Record<string, number> }[]; progress: { total: { services: Record<string, number> }; dayStart: unknown } }
 /** The old shop's furniture on the 13-column grid, as saves from before version 33 have it. */
 const LEGACY_ITEMS = itemsFromLayout(SPA_LAYOUT_1A)
 /** The items of a shop saved before the screens and desk were furniture, with them added as the newest, on the old grid. */
@@ -107,6 +109,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
     shop.reviewIds ??= shop.reviews.map(() => 0)
     shop.feed ??= (shop.place ?? null) !== null ? emptyFeed() : seededFeed({ day: shop.day, rankStars: shop.rank?.stars ?? 1, idolsMet: Object.values(shop.idol?.idols ?? {}).filter(i => i.visits > 0).length, wins: shop.rank?.wins ?? 0 })
     shop.pets ??= { owned: [], nextId: 1, litter: (shop.place ?? null) !== null }
+    shop.friends ??= emptyFriends()
     const v = shop.v ?? (out as { v?: number }).v ?? 0
     if (v >= 3 && v < 30) {
       shop.items.push(...LEGACY_ITEMS.slice(-3).map((item, i) => ({ ...item, id: shop.nextItemId + i })))
@@ -132,7 +135,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('every older save', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39 }
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39, v40 }
 
   it('opens every older save and saves it as the current version', () => {
     for (const [name, raw] of Object.entries(fixtures)) {
@@ -143,9 +146,10 @@ describe('every older save', () => {
 })
 
 describe('the wide grid in an older shop', () => {
-  it("is version 39, the restaurant's houses and floors", () => {
-    expect(SAVE_VERSION).toBe(RESTAURANT_C_SAVE_VERSION)
+  it("is version 40, the friends' code and list", () => {
+    expect(SAVE_VERSION).toBe(FRIENDS_SAVE_VERSION)
     expect(RESTAURANT_C_SAVE_VERSION).toBe(39)
+    expect(FRIENDS_SAVE_VERSION).toBe(40)
   })
 
   it('moves every tile of the main shop and each branch 12 columns right', () => {
@@ -2811,5 +2815,33 @@ describe('save version 36', () => {
     expect(parseSave(raw([5, 4], 'x')).reviewIds).toEqual([0, 0])
     expect(parseSave(raw([5, 4], [1.5, 2])).reviewIds).toEqual([0, 0])
     expect(parseSave(raw([5, 4], [1, 2])).reviewIds).toEqual([1, 2])
+  })
+})
+
+describe("the friends' code and list", () => {
+  it('reads the v40 fixture with its code, open door and two friends, latest first', () => {
+    const data = parseSave(structuredClone(v40))
+    expect(data.v).toBe(FRIENDS_SAVE_VERSION)
+    expect(data.friends).toEqual(v40.friends)
+    expect(Chain.fromSave(data, 7).main.friends).toEqual(v40.friends)
+  })
+
+  it('gives a shop from before friends no code, a closed door and nobody in its list', () => {
+    for (const raw of [v1, v20, v38, v39]) expect(parseSave(structuredClone(raw)).friends).toEqual(emptyFriends())
+  })
+
+  it('round-trips the book through the chain, and a branch saves an empty one', () => {
+    const chain = new Chain(starShop(), 7)
+    chain.main.friends = { code: 'K7P2QX', open: true, list: [{ code: 'B2KCG2', name: 'Spa Sen Hồng' }] }
+    chain.open('beach')
+    const saved = JSON.parse(JSON.stringify(chain.toSave())) as SaveData
+    expect(saved.chain!.branches[0].friends).toEqual(emptyFriends())
+    expect(Chain.fromSave(parseSave(saved), 8).main.friends).toEqual(chain.main.friends)
+  })
+
+  it('repairs a damaged book field by field', () => {
+    const raw = structuredClone(v40) as { friends: unknown }
+    raw.friends = { code: 'k7p-0qx', open: 'yes', list: [{ code: 'b2kcg2', name: '  Spa   Sen  ' }, { code: 'nope' }, 'x', { code: 'K7P2QX', name: 'self' }] }
+    expect(parseSave(raw).friends).toEqual({ code: '', open: false, list: [{ code: 'B2KCG2', name: 'Spa Sen' }, { code: 'K7P2QX', name: 'self' }] })
   })
 })

@@ -3,10 +3,11 @@ import { canPromptInstall, currentInstallEnv, inSafari, installPlatform, promptI
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
-import { currentHouse, openHouse, parseVisitCode, showVisitCode, visitLink } from '../net/visit'
+import { parseVisitCode, showVisitCode, visitLink } from '../net/visit'
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
 import type { SaveSession } from '../save/session'
 import { SLOTS, type SaveStore, type SlotId } from '../save/store'
+import { removeFriend, type Friend, type FriendBook } from '../sim/friends'
 import type { SaveData } from '../sim/save'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
@@ -26,8 +27,10 @@ export interface PauseData {
   onEditProfile: () => void
   /** The whole chain's save, which the main shop's own save lacks: for save codes and for friends who visit. */
   save: () => SaveData
-  /** A friend has come to look round, with their shop's name. */
-  onGuest: (name: string) => void
+  /** The main shop's code for friends, its open door and its friends' shops. */
+  friends: FriendBook
+  /** Lets friends in whenever the game is open, or stops it. */
+  onDoor: (open: boolean) => void
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -221,48 +224,89 @@ export class PauseScene extends Phaser.Scene {
     this.shown.push(...parts)
   }
 
-  /** Friends: open this shop to them with a code until the game closes, or go and look round theirs by its code. */
+  /** Friends: let them into this shop with its code whenever the game is open, or go and look round theirs, from the list or by a code. */
   private showFriends(): void {
     this.clear()
-    const { sim, session } = this.params
+    const { sim, friends, onDoor } = this.params
     this.title(t('friendsTitle'))
     this.keep(this.add.text(MID, CARD_TOP + 240, t('inviteHeading'), textStyle(44, '800')).setOrigin(0.5))
-    const house = currentHouse()
-    if (house) {
-      const code = showVisitCode(house.code)
+    if (friends.open) {
+      const code = showVisitCode(friends.code)
       this.keep(this.add.text(MID, CARD_TOP + 345, code, textStyle(88, '800', C.teal)).setOrigin(0.5))
-      this.note(CARD_TOP + 410, t('inviteHint'))
-      const text = t('inviteText', { shop: sim.shopName, link: visitLink(location.href, house.code), code })
+      this.note(CARD_TOP + 410, t('inviteOn'))
+      const text = t('inviteText', { shop: sim.shopName, link: visitLink(location.href, friends.code), code })
       this.keep(
-        domButton(this, MID, CARD_TOP + 590, t('inviteCopy'), async b => {
+        domButton(this, MID, CARD_TOP + 575, t('inviteCopy'), async b => {
           // no clipboard here: the code on the card is read out instead
           b.textContent = (await copyText(text, null)) ? t('copied') : code
         }),
       )
+      this.button(CARD_TOP + 705, t('inviteStop'), 'plain', () => {
+        onDoor(false)
+        this.showFriends()
+      }, 100)
     } else {
       this.button(CARD_TOP + 360, t('inviteOpen'), 'primary', () => {
-        openHouse(this.params.save, this.params.onGuest)
+        onDoor(true)
         this.showFriends()
       })
       this.note(CARD_TOP + 450, t('inviteHint'))
     }
-    this.keep(this.add.text(MID, CARD_TOP + 750, t('visitHeading'), textStyle(44, '800')).setOrigin(0.5))
-    const box = nameInput(this, MID, CARD_TOP + 870, { value: '', placeholder: t('visitPlaceholder'), maxLength: 8 })
+    this.keep(this.add.text(MID, CARD_TOP + 830, t('visitHeading'), textStyle(44, '800')).setOrigin(0.5))
+    this.button(CARD_TOP + 940, t('friendsList', { n: friends.list.length }), 'plain', () => this.showFriendList())
+    const box = nameInput(this, MID, CARD_TOP + 1080, { value: '', placeholder: t('visitPlaceholder'), maxLength: 8 })
     box.input.setAttribute('autocapitalize', 'characters')
     this.keep(box.dom)
-    const error = this.note(CARD_TOP + 1080, '', C.lantern)
-    this.button(CARD_TOP + 1010, t('visitGo'), 'primary', () => {
+    const error = this.note(CARD_TOP + 1280, '', C.lantern)
+    this.button(CARD_TOP + 1210, t('visitGo'), 'primary', () => {
       const code = parseVisitCode(box.input.value)
-      if (!code) {
-        error.setText(t('visitBadCode'))
-        return
-      }
-      // this shop is saved as it is, then the page opens on the friend's, which is never saved
-      session.saveNow()
-      location.assign(visitLink(location.href, code))
+      if (code) this.goVisit(code)
+      else error.setText(t('visitBadCode'))
     })
-    this.button(CARD_TOP + 1210, t('back'), 'plain', () => this.showMenu())
-    this.card(CARD_TOP + 1340)
+    this.button(CARD_TOP + 1410, t('back'), 'plain', () => this.showMenu())
+    this.card(CARD_TOP + 1540)
+  }
+
+  /** The friends' shops, the latest met first: each one visited with a tap, or taken off the list. */
+  private showFriendList(): void {
+    this.clear()
+    const { friends, session } = this.params
+    this.title(t('friendsListTitle'))
+    let y = CARD_TOP + 260
+    if (friends.list.length === 0) {
+      const empty = this.note(y - 40, t('friendsEmpty'))
+      y += empty.height
+    }
+    for (const f of friends.list) {
+      this.friendRow(f, y, () => {
+        removeFriend(friends, f.code)
+        session.saveNow()
+        this.showFriendList()
+      })
+      y += ROW_STEP
+    }
+    this.button(y + 20, t('back'), 'plain', () => this.showFriends())
+    this.card(y + 20 + ROW_H / 2 + 70)
+  }
+
+  /** A friend's shop in the list: its name and code, Ghé to visit and a cross to take it off. */
+  private friendRow(f: Friend, y: number, onRemove: () => void): void {
+    const left = MID - ROW_W / 2
+    this.keep(this.add.graphics())
+      .fillStyle(hex(C.cream), 1)
+      .fillRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
+    fitWidth(this.keep(this.add.text(left + 50, y - 22, f.name, textStyle(40, '800')).setOrigin(0, 0.5)), 400)
+    this.keep(this.add.text(left + 50, y + 28, showVisitCode(f.code), textStyle(32, '600')).setOrigin(0, 0.5))
+    this.keep(addButton(this, left + ROW_W - 175, y, 140, 80, t('friendVisit'), 'primary', () => this.goVisit(f.code), 34))
+    this.keep(addButton(this, left + ROW_W - 55, y, 80, 80, '×', 'plain', onRemove, 44))
+  }
+
+  /** This shop is saved as it is, then the page opens on the friend's, which is never saved. */
+  private goVisit(code: string): void {
+    this.params.session.saveNow()
+    location.assign(visitLink(location.href, code))
   }
 
   /** How to put the game on the home screen. On iOS the app gets its own storage, so a shop past day 1 is carried over by save code. */

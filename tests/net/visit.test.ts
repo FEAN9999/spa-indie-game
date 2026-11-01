@@ -10,11 +10,13 @@ import {
   VisitError,
   visitHouse,
   visitLink,
+  type Hello,
   type JoinVisitRoom,
   type VisitProblem,
   type VisitRoom,
 } from '../../src/net/visit'
 import { encodeSaveCode } from '../../src/save/code'
+import { emptyFriends } from '../../src/sim/friends'
 import { SAVE_VERSION } from '../../src/sim/save'
 import { busyShop } from '../sim/helpers'
 
@@ -32,7 +34,7 @@ function fakeNet(onJoin?: (code: string, onError: () => void) => void) {
       onShop: null,
       onHello: null,
       sendShop: (text, peer) => void setTimeout(() => peers.get(peer)?.onShop?.(text, id)),
-      sendHello: (name, peer) => void setTimeout(() => peers.get(peer)?.onHello?.(name, id)),
+      sendHello: (hello, peer) => void setTimeout(() => peers.get(peer)?.onHello?.(hello, id)),
       leave: () => void peers.delete(id),
     }
     const before = [...peers.keys()]
@@ -92,74 +94,90 @@ describe('visit codes and links', () => {
 })
 
 describe('visiting a friend', () => {
-  it("brings the host's shop over and tells the host who came", async () => {
+  const hi = (name: string, code: string | null = null): Hello => ({ name, code })
+
+  it("brings the host's shop over and tells the host who came, with the code to visit back", async () => {
     const net = fakeNet()
     const sim = busyShop()
-    const guests: string[] = []
-    openHouse(() => sim.toSave(), name => guests.push(name), net.join, 'K7P2QX')
-    const shop = await visitHouse('K7P2QX', 'Spa Lan', 1000, net.join)
+    const guests: Hello[] = []
+    openHouse('K7P2QX', () => sim.toSave(), h => guests.push(h), net.join)
+    const shop = await visitHouse('K7P2QX', hi('Spa Lan', 'b2k-cg2'), 1000, net.join)
     expect(shop).toEqual(sim.toSave())
     await new Promise(r => setTimeout(r, 10))
-    expect(guests).toEqual(['Spa Lan'])
+    expect(guests).toEqual([{ name: 'Spa Lan', code: 'B2KCG2' }])
     // the visitor leaves the room once it has the shop; the host stays for the next friend
     expect(net.size('K7P2QX')).toBe(1)
+  })
+
+  it("sends the shop without its own code and list of friends, which stay the host's", async () => {
+    const net = fakeNet()
+    const sim = busyShop()
+    sim.friends = { code: 'K7P2QX', open: true, list: [{ code: 'WHUURP', name: 'Tiệm Lan' }] }
+    openHouse('K7P2QX', () => sim.toSave(), () => {}, net.join)
+    const shop = await visitHouse('K7P2QX', hi('A'), 1000, net.join)
+    expect(shop.friends).toEqual(emptyFriends())
+    expect(sim.friends.list).toHaveLength(1)
   })
 
   it('sends the shop as it is when each friend comes', async () => {
     const net = fakeNet()
     const sim = busyShop()
-    openHouse(() => sim.toSave(), () => {}, net.join, 'K7P2QX')
-    expect((await visitHouse('K7P2QX', 'A', 1000, net.join)).money).toBe(123456)
+    openHouse('K7P2QX', () => sim.toSave(), () => {}, net.join)
+    expect((await visitHouse('K7P2QX', hi('A'), 1000, net.join)).money).toBe(123456)
     sim.money = 777
-    expect((await visitHouse('K7P2QX', 'B', 1000, net.join)).money).toBe(777)
+    expect((await visitHouse('K7P2QX', hi('B'), 1000, net.join)).money).toBe(777)
   })
 
   it('serves two friends who come at once, who never take each other for the host', async () => {
     const net = fakeNet()
     const sim = busyShop()
     const guests: string[] = []
-    openHouse(() => sim.toSave(), name => guests.push(name), net.join, 'K7P2QX')
-    const [a, b] = await Promise.all([visitHouse('K7P2QX', 'A', 1000, net.join), visitHouse('K7P2QX', 'B', 1000, net.join)])
+    openHouse('K7P2QX', () => sim.toSave(), h => guests.push(h.name), net.join)
+    const [a, b] = await Promise.all([visitHouse('K7P2QX', hi('A'), 1000, net.join), visitHouse('K7P2QX', hi('B'), 1000, net.join)])
     expect(a).toEqual(sim.toSave())
     expect(b).toEqual(sim.toSave())
     await new Promise(r => setTimeout(r, 10))
     expect(guests.sort()).toEqual(['A', 'B'])
   })
 
-  it('shortens a long visitor name for the toast', async () => {
+  it("shortens a long visitor name and drops a visitor's code that is not one", async () => {
     const net = fakeNet()
-    const guests: string[] = []
-    openHouse(() => busyShop().toSave(), name => guests.push(name), net.join, 'K7P2QX')
-    await visitHouse('K7P2QX', 'x'.repeat(200), 1000, net.join)
+    const guests: Hello[] = []
+    openHouse('K7P2QX', () => busyShop().toSave(), h => guests.push(h), net.join)
+    await visitHouse('K7P2QX', hi('x'.repeat(200), 'nope'), 1000, net.join)
     await new Promise(r => setTimeout(r, 10))
-    expect(guests[0]).toHaveLength(40)
+    expect(guests[0].name).toHaveLength(40)
+    expect(guests[0].code).toBeNull()
   })
 
-  it('keeps one invitation per page: opening it again keeps the code, closing it leaves the room', async () => {
+  it('keeps one invitation per page: the same code keeps the room, another code moves to a new one, closing leaves it', async () => {
     const net = fakeNet()
-    const first = openHouse(() => busyShop().toSave(), () => {}, net.join, 'K7P2QX')
-    expect(openHouse(() => busyShop().toSave(), () => {}, net.join).code).toBe('K7P2QX')
+    const first = openHouse('K7P2QX', () => busyShop().toSave(), () => {}, net.join)
+    expect(openHouse('K7P2QX', () => busyShop().toSave(), () => {}, net.join)).toBe(first)
     await new Promise(r => setTimeout(r, 10))
     expect(net.size('K7P2QX')).toBe(1)
-    first.close()
+    const second = openHouse('B2KCG2', () => busyShop().toSave(), () => {}, net.join)
+    await new Promise(r => setTimeout(r, 10))
+    expect([net.size('K7P2QX'), net.size('B2KCG2'), currentHouse()?.code]).toEqual([0, 1, 'B2KCG2'])
+    second.close()
     expect(currentHouse()).toBeNull()
-    expect(net.size('K7P2QX')).toBe(0)
+    expect(net.size('B2KCG2')).toBe(0)
   })
 
   it('gives up when nobody hosts the code', async () => {
     const net = fakeNet()
-    expect(await problemOf(visitHouse('K7P2QX', 'A', 30, net.join))).toBe('notFound')
+    expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 30, net.join))).toBe('notFound')
     expect(net.size('K7P2QX')).toBe(0)
   })
 
   it('says the network would not connect when a peer was found but never reached', async () => {
     const net = fakeNet((_, onError) => setTimeout(onError))
-    expect(await problemOf(visitHouse('K7P2QX', 'A', 30, net.join))).toBe('noLink')
+    expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 30, net.join))).toBe('noLink')
   })
 
   it('says so when the network cannot be joined at all', async () => {
     const join: JoinVisitRoom = () => Promise.reject(new Error('offline'))
-    expect(await problemOf(visitHouse('K7P2QX', 'A', 1000, join))).toBe('noLink')
+    expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 1000, join))).toBe('noLink')
   })
 
   it('tells a shop from a newer version from one that is broken', async () => {
@@ -167,8 +185,8 @@ describe('visiting a friend', () => {
     const newer = await encodeSaveCode({ ...busyShop().toSave(), v: SAVE_VERSION + 1 })
     const host = net.join('K7P2QX', () => {}) as VisitRoom
     host.onJoin = peer => host.sendShop(newer, peer)
-    expect(await problemOf(visitHouse('K7P2QX', 'A', 1000, net.join))).toBe('tooNew')
+    expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 1000, net.join))).toBe('tooNew')
     host.onJoin = peer => host.sendShop('SPA1.notashop', peer)
-    expect(await problemOf(visitHouse('K7P2QX', 'A', 1000, net.join))).toBe('bad')
+    expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 1000, net.join))).toBe('bad')
   })
 })

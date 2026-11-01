@@ -89,6 +89,7 @@ import { awayMean, awayPay, closeAwayDay, emptyAwayBook, type AwayBook, type Awa
 import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { addPost, boostedToday, boostPrice, dayRoom, emptyFeed, growFollowers, MAX_BOOSTS, openFeed, REPLY_KINDS, type BoostTier, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
+import { emptyFriends, type FriendBook } from './friends'
 import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -234,6 +235,8 @@ export class SpaSim {
   houses: Houses = { ...NO_HOUSES }
   /** The Phây feed: the main shop's, the same object on every branch. */
   feed: FeedBook = emptyFeed()
+  /** The shop's code for friends, whether they may visit, and their shops: the main shop's; a branch keeps an empty one. */
+  friends: FriendBook = emptyFriends()
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -956,6 +959,7 @@ export class SpaSim {
       houses: this.houses,
       // a branch shares the main shop's feed and saves none
       feed: this.place === null ? this.feed : emptyFeed(),
+      friends: this.place === null ? this.friends : emptyFriends(),
       savedAt: null,
     })
   }
@@ -1000,6 +1004,7 @@ export class SpaSim {
     sim.starter = d.place === null ? d.starter : pastStarter()
     sim.pets = d.place === null ? d.pets : branchPetBook()
     sim.feed = d.feed
+    sim.friends = d.friends
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
