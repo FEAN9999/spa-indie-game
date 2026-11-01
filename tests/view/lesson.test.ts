@@ -30,6 +30,9 @@ describe('lesson texts', () => {
     expect(lessonTitle('acupressure')).toBe('Học Bấm huyệt')
     expect(lessonHowTo('acupressure')).toEqual(['Huyệt nào sáng thì đặt ngón tay lên và giữ.', 'Thả tay khi vòng lực vào vạch xanh, giữ lâu quá là đau.'])
     expect(lessonPassLine('acupressure')).toBe('Tiệm đã có Bấm huyệt. Quà: một Giường bấm huyệt trong hộp quà.')
+    expect(lessonTitle('acne')).toBe('Học Lấy nhân mụn')
+    expect(lessonHowTo('acne')).toEqual(['Giữ ngón trên nốt mụn đầu trắng tới khi ra nhân, rồi nhấc tay ngay.', 'Đừng ấn nốt mụn đỏ; xong thì chạm từng chỗ để chấm gel.'])
+    expect(lessonPassLine('acne')).toBe('Tiệm đã có Lấy nhân mụn. Quà: một Giường chăm da trong hộp quà.')
   })
   it('passes at 2 stars', () => {
     expect(LESSON_PASS_STARS).toBe(2)

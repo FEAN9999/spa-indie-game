@@ -9,7 +9,9 @@ import restaurantBunChaFixture from '../fixtures/draws-restaurant-bun-cha.json'
 import tenFixture from '../fixtures/draws-ten-services.json'
 import elevenFixture from '../fixtures/draws-eleven-services.json'
 import restaurantGoiCuonFixture from '../fixtures/draws-restaurant-goi-cuon.json'
-import { learnCupping, learnFoot, learnLashes, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
+import twelveFixture from '../fixtures/draws-twelve-services.json'
+import restaurantComTamFixture from '../fixtures/draws-restaurant-com-tam.json'
+import { learnAcupressure, learnCupping, learnFoot, learnLashes, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
 
 describe('the shop draws', () => {
   it('brings the same customers and candidates as before quests, day after day', () => {
@@ -65,6 +67,14 @@ describe('the shop draws', () => {
   it('draws the same when the Bấm huyệt tuition is paid and the lesson not passed', () => {
     expect(sixServiceLog(4, c => { learnLashes(c); expect(c.main.payLesson('acupressure')).toBeNull() })).toEqual(elevenFixture)
   })
+
+  it('draws the same in a 5-star chain with every lesson up to Bấm huyệt learned while Lấy nhân mụn is not', () => {
+    expect(sixServiceLog(4, learnAcupressure)).toEqual(twelveFixture)
+  })
+
+  it('draws the same when the Lấy nhân mụn tuition is paid and the lesson not passed', () => {
+    expect(sixServiceLog(4, c => { learnAcupressure(c); expect(c.main.payLesson('acne')).toBeNull() })).toEqual(twelveFixture)
+  })
 })
 
 describe('the restaurant draws', () => {
@@ -78,6 +88,10 @@ describe('the restaurant draws', () => {
 
   it('draws the same with Bún chả and Gỏi cuốn bought while Cơm tấm is not', () => {
     expect(restaurantLog(r => { r.buyDish('bunCha'); r.buyDish('goiCuon') })).toEqual(restaurantGoiCuonFixture)
+  })
+
+  it('draws the same with Bún chả, Gỏi cuốn and Cơm tấm bought while Cà phê sữa đá is not', () => {
+    expect(restaurantLog(r => { r.buyDish('bunCha'); r.buyDish('goiCuon'); r.buyDish('comTam') })).toEqual(restaurantComTamFixture)
   })
 
   it('draws differently once Cơm tấm is on the menu too, with diners ordering it', () => {

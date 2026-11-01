@@ -184,6 +184,14 @@ export function learnLashes(chain: Chain): void {
   chain.sync()
 }
 
+/** A 5-star main shop that has learned every lesson up to Bấm huyệt, with their beds placed and the branches told. */
+export function learnAcupressure(chain: Chain): void {
+  learnLashes(chain)
+  chain.main.services = [...OLD_SERVICES, 'scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure']
+  placeFirst(chain.main, 'acuBed')
+  chain.sync()
+}
+
 /**
  * Four days of a 3-star chain with the six old services open: who came to each shop, who applied and which quests were given.
  * Compared against a log made before Chà muối biển, it checks that a shop that has not learned it draws exactly as before.

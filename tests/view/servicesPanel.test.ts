@@ -9,17 +9,18 @@ import { starShop } from '../sim/helpers'
 const SIX = SERVICE_IDS.slice(0, 6)
 
 describe('panelPage', () => {
-  it('puts six services on the first page and scrub on the second', () => {
+  it('puts six services on the first page, scrub and five more on the second, and Lấy nhân mụn on the third', () => {
     const p0 = panelPage(SERVICE_IDS, 0)
-    expect(p0.pages).toBe(2)
+    expect(p0.pages).toBe(3)
     expect(p0.rows).toEqual(SIX)
     expect(panelPage(SERVICE_IDS, 1).rows).toEqual(['scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure'])
+    expect(panelPage(SERVICE_IDS, 2).rows).toEqual(['acne'])
   })
   it('wraps the page both ways', () => {
-    expect(panelPage(SERVICE_IDS, 2).page).toBe(0)
-    expect(panelPage(SERVICE_IDS, 2).rows).toEqual(SIX)
-    expect(panelPage(SERVICE_IDS, -1).page).toBe(1)
-    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure'])
+    expect(panelPage(SERVICE_IDS, 3).page).toBe(0)
+    expect(panelPage(SERVICE_IDS, 3).rows).toEqual(SIX)
+    expect(panelPage(SERVICE_IDS, -1).page).toBe(2)
+    expect(panelPage(SERVICE_IDS, -1).rows).toEqual(['acne'])
   })
   it('keeps six rows on one page', () => {
     expect(panelPage(SIX, 0).pages).toBe(1)
@@ -109,6 +110,11 @@ describe('lessonAction', () => {
   it('offers the Bấm huyệt lesson at 5 stars', () => {
     expect(lessonAction(starShop(4), 'acupressure')).toEqual({ kind: 'note', text: 'Đạt 5★' })
     expect(lessonAction(starShop(5), 'acupressure')).toEqual({ kind: 'learn', label: 'Học nghề\n2.400.000 đ', faded: false })
+  })
+
+  it('offers the Lấy nhân mụn lesson at 5 stars', () => {
+    expect(lessonAction(starShop(4), 'acne')).toEqual({ kind: 'note', text: 'Đạt 5★' })
+    expect(lessonAction(starShop(5), 'acne')).toEqual({ kind: 'learn', label: 'Học nghề\n2.700.000 đ', faded: false })
     expect(servicesOpening(starShop(5), true, false)).toEqual({ tab: 'services', page: 1 })
   })
   it('goes on once paid, also after a reload', () => {

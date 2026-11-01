@@ -470,7 +470,7 @@ describe('Bấm huyệt', () => {
     expect(sim.stock.balm).toBe(20)
   })
 
-  it('is the last lesson offered once every other is learned', () => {
+  it('is offered after Nối mi, and then Lấy nhân mụn', () => {
     const sim = starShop(5)
     for (const id of ['scrub', 'foot', 'nails', 'cupping', 'lashes'] as const) {
       sim.payLesson(id)
@@ -479,7 +479,7 @@ describe('Bấm huyệt', () => {
     expect(sim.learnable()).toBe('acupressure')
     sim.payLesson('acupressure')
     sim.passLesson('acupressure')
-    expect(sim.learnable()).toBeNull()
+    expect(sim.learnable()).toBe('acne')
   })
 
   it('opens at a branch only with its bed there, and never brings more customers', () => {
@@ -511,6 +511,69 @@ describe('Bấm huyệt', () => {
     const paid = events.find(e => e.type === 'paid')
     expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(130_000, 5))
     expect(main.stock.balm).toBe(balm - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})
+
+describe('Lấy nhân mụn', () => {
+  it('needs 5 stars, massage open and 2.700.000 đ', () => {
+    expect(starShop(4).lessonProblem('acne')).toBe('stars')
+    expect(starShop(5).lessonProblem('acne')).toBeNull()
+    expect(starShop(5, 2_699_999).lessonProblem('acne')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Giường chăm da and starts the gel at 20', () => {
+    const sim = starShop(5)
+    const money = sim.money
+    expect(sim.payLesson('acne')).toBeNull()
+    expect(sim.payLesson('acne')).toBeNull()
+    expect(money - sim.money).toBe(2_700_000)
+    sim.passLesson('acne')
+    expect(sim.book.gifts.filter(g => g === 'facialBed')).toHaveLength(1)
+    expect(sim.stock.gel).toBe(20)
+  })
+
+  it('is the last lesson offered once every other is learned', () => {
+    const sim = starShop(5)
+    for (const id of ['scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure'] as const) {
+      sim.payLesson(id)
+      sim.passLesson(id)
+    }
+    expect(sim.learnable()).toBe('acne')
+    sim.payLesson('acne')
+    sim.passLesson('acne')
+    expect(sim.learnable()).toBeNull()
+  })
+
+  it('opens at a branch only with its bed there, and never brings more customers', () => {
+    const chain = new Chain(starShop(5, 25_000_000), 11)
+    chain.open('beach')
+    const beach = chain.shop('beach')!
+    chain.main.payLesson('acne')
+    chain.main.passLesson('acne')
+    chain.sync()
+    const before = serviceArrivalFactor(beach.availableServices())
+    expect(beach.availableServices()).not.toContain('acne')
+    placeFirst(beach, 'facialBed')
+    expect(beach.availableServices()).toContain('acne')
+    expect(serviceArrivalFactor(beach.availableServices())).toBe(before)
+  })
+
+  it('is served by staff for the ranked price, using gel and a towel', () => {
+    const main = starShop(5)
+    main.payLesson('acne')
+    main.passLesson('acne')
+    placeFirst(main, 'facialBed')
+    hireStaff(main, 'technician', undefined, {})
+    const gel = main.stock.gel
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'student', service: 'acne' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(140_000, 5))
+    expect(main.stock.gel).toBe(gel - 1)
     expect(main.stock.towel).toBe(towel - 1)
   })
 })

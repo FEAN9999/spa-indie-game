@@ -27,7 +27,8 @@ describe('save codes', () => {
   it('makes a code short enough to paste in a chat', async () => {
     const code = await encodeSaveCode(busyShop().toSave())
     expect(code).toMatch(/^SPA1\.[A-Za-z0-9_-]+$/)
-    expect(code.length).toBeLessThan(2250)
+    // master's busy shop was 2203 characters; the seven new services add a tier and a count each to every record (2253), so the budget allows them with room to spare
+    expect(code.length).toBeLessThan(2350)
   })
 
   it('keeps a shop with a full feed of 50 posts under 10.000 characters', async () => {

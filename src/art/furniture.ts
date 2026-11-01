@@ -181,6 +181,36 @@ const acuBed = massageBed + ACU_YS.flatMap(y => [0.38, 0.72].map(x => acuPoint(x
 // acupressure bed lying across: the massage bed lying across with the six points in pairs along the sheet and the balm at the foot
 const acuBedTurned = massageBedTurned + ACU_YS.flatMap(x => [0.32, 0.62].map(y => acuPoint(x, y))).join('') + balmTin(2.55, 0.66)
 
+// facial bed: a padded bed with a mint sheet and a pillow at the head, a magnifier lamp leaning over the pillow on its arm, and a tube of gel at the foot
+const magnifier = (x: number, y: number, armX: number, armY: number) =>
+  `<path d="M${armX},${armY} L${x},${y}" stroke="${C.stoneLight}" stroke-width="0.05"/>` +
+  `<circle cx="${x}" cy="${y}" r="0.17" fill="${C.glass}" ${ink(FINE)}/>` +
+  `<path d="M${f(x - 0.08)},${f(y - 0.03)} Q${f(x - 0.06)},${f(y - 0.1)} ${f(x + 0.01)},${f(y - 0.11)}" stroke="${C.cream}" stroke-width="0.03" fill="none"/>`
+const gelTube = (x: number, y: number) =>
+  rect(x, y, 0.36, 0.13, C.mintTeal, `rx="0.05" ${ink(0.02)}`) + rect(x + 0.34, y + 0.03, 0.07, 0.07, C.cream, ink(0.015))
+const facialBed =
+  rect(0.05, 0.05, 1.0, 2.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 0.82, 2.72, C.mint, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.24, 0.2, 0.62, 0.38, C.cream, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M0.18,2.66 H0.92" stroke="${C.mintTeal}" stroke-width="0.035"/>` +
+  magnifier(0.62, 0.5, 0.98, 0.15) +
+  gelTube(0.36, 2.3) +
+  rect(0.05, 2.83, 1.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 2.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(0.88, 2.97, 0.12, 0.14, C.woodDark, ink(0.025))
+
+// facial bed lying across: the mint bed along the floor, the pillow at the head on the left with the magnifier over it, and the gel at the foot
+const facialBedTurned =
+  rect(0.05, 0.05, 3.0, 0.85, C.wood, `rx="0.12" ${ink()}`) +
+  rect(0.14, 0.11, 2.82, 0.75, C.mint, `rx="0.1" ${ink(FINE)}`) +
+  rect(0.22, 0.2, 0.38, 0.56, C.cream, `rx="0.16" ${ink(FINE)}`) +
+  `<path d="M2.66,0.15 V0.83" stroke="${C.mintTeal}" stroke-width="0.035"/>` +
+  magnifier(0.55, 0.42, 0.95, 0.12) +
+  gelTube(2.1, 0.42) +
+  rect(0.05, 0.83, 3.0, 0.17, C.woodDark, `rx="0.05" ${ink(0.04)}`) +
+  rect(0.1, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
+  rect(2.88, 0.97, 0.12, 0.14, C.woodDark, ink(0.025))
+
 // mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
 const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
 const mudTub =
@@ -1366,6 +1396,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'lashBed-turned': { w: 3.1, h: 1.15, body: lashBedTurned },
   acuBed: { w: 1.1, h: 3.15, body: acuBed },
   'acuBed-turned': { w: 3.1, h: 1.15, body: acuBedTurned },
+  facialBed: { w: 1.1, h: 3.15, body: facialBed },
+  'facialBed-turned': { w: 3.1, h: 1.15, body: facialBedTurned },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

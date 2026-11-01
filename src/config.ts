@@ -45,12 +45,12 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
-export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5, lashes: 5, acupressure: 5 } as const
+export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5, lashes: 5, acupressure: 5, acne: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000, lashes: 120000, acupressure: 130000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000, lashes: 2100000, acupressure: 2400000 } as const
+export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000, lashes: 120000, acupressure: 130000, acne: 140000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000, lashes: 2100000, acupressure: 2400000, acne: 2700000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -306,8 +306,28 @@ export const ACU_GOOD_HARD = { min: 0.55, max: 0.78 }
 /** Score (good presses minus painful ones) short of the point count still giving 3 and 2 stars. */
 export const ACU_STARS = { short3: 1, short2: 3 }
 
+// Lấy nhân mụn game: blemishes dot the cheek; a whitehead is held until its core pops and then let go at once, a red one is
+// left alone; once every whitehead is cleared, each spot that gave its core is dabbed with gel. Times are in ms, places game pixels.
+export const ACNE_LIMIT_MS = 25000
+/** How many blemishes there are and how many of them are whiteheads; a picky customer has more. */
+export const ACNE_SPOTS = { total: 6, white: 4 }
+export const ACNE_SPOTS_HARD = { total: 8, white: 5 }
+/** Where blemishes can sit on the cheek. */
+export const ACNE_AT = [
+  { x: 360, y: 880 }, { x: 520, y: 860 }, { x: 700, y: 900 }, { x: 300, y: 1010 }, { x: 450, y: 995 },
+  { x: 620, y: 1020 }, { x: 790, y: 1030 }, { x: 380, y: 1145 }, { x: 560, y: 1155 }, { x: 725, y: 1170 },
+] as const
+/** A hold pops the core in this long; after the pop the finger must lift within the grace (shorter for a picky customer), else the skin bruises. */
+export const ACNE_POP_MS = 900
+export const ACNE_LIFT_MS = 500
+export const ACNE_LIFT_MS_HARD = 350
+/** How close a touch must land to a blemish. */
+export const ACNE_TAP_R = 70
+/** Mistakes (bruises and red ones pressed) allowed for 3 and 2 stars, and steps left undone (whiteheads not cleared, spots not dabbed) allowed for 2. */
+export const ACNE_STARS = { mistakes3: 0, mistakes2: 2, left2: 1 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000, lashKit: 640000, balm: 680000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000, lashKit: 640000, balm: 680000, gel: 720000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 

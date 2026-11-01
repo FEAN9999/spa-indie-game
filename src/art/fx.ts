@@ -328,6 +328,16 @@ export function fxTextures(): Record<string, string> {
         `<path d="M22,37 V16 Q22,9 28,9 Q34,9 34,16 V37Z" fill="${SKIN_TONE}" ${INNER}/>` +
         `<path d="M24.5,16 Q24.5,12 28,12 Q31.5,12 31.5,16" fill="${C.cream}" ${INNER}/>`,
     ),
+    // a cheek with a small white-headed bump under a magnifier
+    'svc-acne': badge(
+      C.mint,
+      `<path d="M8.4,40 A23,23 0 0 0 47.6,40 Q28,30 8.4,40Z" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<circle cx="24" cy="38" r="4.5" fill="${C.lotus}" ${INNER}/>` +
+        `<circle cx="24" cy="37" r="1.8" fill="${C.cloud}"/>` +
+        `<circle cx="26" cy="22" r="12" fill="${C.glass}" fill-opacity=".6" ${INNER}/>` +
+        `<path d="M34,30 L44,40" stroke="${C.ink}" stroke-width="5" stroke-linecap="round"/>` +
+        `<path d="M20,18 Q22,14 27,13" stroke="${C.cream}" stroke-width="2.4" fill="none" stroke-linecap="round"/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -412,6 +422,15 @@ export function fxTextures(): Record<string, string> {
         `<ellipse cx="28" cy="26" rx="16" ry="7" fill="${C.gold}" ${INNER}/>` +
         `<ellipse cx="28" cy="26" rx="8" ry="3.4" fill="${C.lantern}"/>` +
         `<path d="M16,36 Q28,40 40,36" stroke="${C.gold}" stroke-width="2.5" fill="none"/>`,
+    ),
+    // a mint tube of soothing gel with its cap, a drop squeezed out
+    'stock-gel': badge(
+      C.mint,
+      `<path d="M14,16 H38 L36,40 H16Z" fill="${C.mintTeal}" ${INNER}/>` +
+        `<rect x="20" y="40" width="12" height="7" rx="2" fill="${C.cream}" ${INNER}/>` +
+        `<path d="M18,16 V12 H34 V16" fill="${C.mintTeal}" ${INNER}/>` +
+        `<path d="M22,24 H30" stroke="${C.cream}" stroke-width="3" stroke-linecap="round"/>` +
+        `<path d="M43,30 Q47,36 43,40 Q39,36 43,30Z" fill="${C.leafLight}" ${INNER}/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(

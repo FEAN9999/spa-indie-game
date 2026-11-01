@@ -39,6 +39,7 @@ import { NailsScene } from './scenes/NailsScene'
 import { CuppingScene } from './scenes/CuppingScene'
 import { LashesScene } from './scenes/LashesScene'
 import { AcupressureScene } from './scenes/AcupressureScene'
+import { AcneScene } from './scenes/AcneScene'
 import { BunChaScene } from './scenes/BunChaScene'
 import { GoiCuonScene } from './scenes/GoiCuonScene'
 import { ComTamScene } from './scenes/ComTamScene'
@@ -71,7 +72,7 @@ async function start() {
     audio: { noAudio: true },
     // two fingers on the map pinch it
     input: { activePointers: 2 },
-    scene: [BootScene, SpaScene, HudScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, CuppingScene, LashesScene, AcupressureScene, PhoScene, BanhXeoScene, CheScene, BunChaScene, GoiCuonScene, ComTamScene, MenuScene, ChefScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, PetGiveScene, ChoiceScene, ChainScene, AwayScene, StarterScene, PhayScene, BustleScene],
+    scene: [BootScene, SpaScene, HudScene, ShampooScene, MaskScene, MassageScene, SteamScene, StoneScene, MudScene, SummaryScene, PauseScene, OwnerScene, BuildScene, StaffScene, ServicesScene, GuestBookScene, RecipeScene, LessonScene, ScrubScene, FootScene, NailsScene, CuppingScene, LashesScene, AcupressureScene, AcneScene, PhoScene, BanhXeoScene, CheScene, BunChaScene, GoiCuonScene, ComTamScene, MenuScene, ChefScene, QuestsScene, InspectScene, RankScene, WardrobeScene, NewOutfitScene, LitterScene, PetNameScene, PetGiveScene, ChoiceScene, ChainScene, AwayScene, StarterScene, PhayScene, BustleScene],
   })
   if (import.meta.env.DEV) (window as any).__spa = { game, audio: sound }
   // frame timing over the game for measuring on a phone, only with ?perf in the address
