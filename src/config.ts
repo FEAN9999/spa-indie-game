@@ -617,11 +617,13 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000 } as const
+export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000 } as const
+/** What putting a new dish on the menu costs, once; its stock starts at STOCK_START. */
+export const DISH_BUY_PRICE = { bunCha: 1_200_000 } as const
 export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
 
 /** What 20 portions of each restaurant stock item cost to restock (herbs are shared by every dish). */
-export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, herbs: 40_000 } as const
+export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, herbs: 40_000 } as const
 
 /** How many cooks the restaurant can hold: base, plus per extra floor, plus per house, never above max. */
 export const CHEF_CAP = { base: 2, perFloor: 2, perHouse: 1, max: 10 } as const
@@ -689,6 +691,20 @@ export const CHE_ICE_MS_PER_TAP = 400
 /** Passes of the coconut milk across the glass, for a plain and a hard diner (extra coconut), and the swipe distance (game pixels) that makes one pass. */
 export const CHE_POUR_PASSES = { base: 4, extra: 6 } as const
 export const CHE_PASS_PX = 220
+
+/** Bún chả: the game's time limit, and how long one side of the grill basket takes to brown through. */
+export const BC_LIMIT_MS = 25_000
+export const BC_BROWN_MS = 3_500
+/** The browning bands on the needle for each grill, a hard diner's band shrunk by the shrink on each edge, and a turn this close outside a band is "near". */
+export const BC_BAND = { vua: [0.45, 0.62], chay: [0.68, 0.85] } as const
+export const BC_BAND_HARD_SHRINK = 0.04
+export const BC_FLIP_NEAR = 0.08
+/** Holding the pour fills the bowl in this long; the sauce is right within the tolerance of the line (a hard diner's is tighter), and "near" a little farther. */
+export const BC_POUR_MS = 2_500
+export const BC_SAUCE_LINE = 0.7
+export const BC_SAUCE_TOL = 0.07
+export const BC_SAUCE_TOL_HARD = 0.05
+export const BC_SAUCE_NEAR = 0.1
 
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50

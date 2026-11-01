@@ -1,4 +1,4 @@
-import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, FLOOR_PRICE, HOUSE_PRICE, HOUSES_PER_SIDE, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
+import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_BUY_PRICE, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, FLOOR_PRICE, HOUSE_PRICE, HOUSES_PER_SIDE, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
 import { beautyOf, footprint, isDiningChair, isDiningTable, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { doorReach, placementProblem, sellRefund, type BuildProblem } from './build'
 import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
@@ -9,7 +9,7 @@ import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { floorOf } from './floors'
 import { housesBought, NO_HOUSES, type House, type Houses, type Side } from './layout'
-import { DISH_IDS, DISH_STOCK, drawTicket, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock, type RestaurantStockItem } from './menu'
+import { DISH_IDS, DISH_STOCK, drawTicket, EXTRA_DISHES, fullRestaurantStock, isExtraDish, stockItemsForMenu, type DishId, type DishTicket, type ExtraDish, type RestaurantStock, type RestaurantStockItem } from './menu'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
 import type { RestaurantSave } from './save'
@@ -124,6 +124,8 @@ export class RestaurantSim {
   dayClosed = false
   /** The dishes the owner has cooked at least once; the first cook of each comes with a lesson. */
   learned: DishId[] = []
+  /** The dishes put on the menu by paying for them, in the menu's order. */
+  bought: ExtraDish[] = []
   /** What the restaurant needs to pay itself while the owner is away. */
   away: AwayBook = emptyAwayBook()
 
@@ -158,6 +160,7 @@ export class RestaurantSim {
       candidates: this.candidates,
       candidatesDay: this.candidatesDay,
       learned: this.learned,
+      bought: this.bought,
       away: this.away,
     })
   }
@@ -188,6 +191,7 @@ export class RestaurantSim {
     r.candidates = d.candidates
     r.candidatesDay = d.candidatesDay
     r.learned = d.learned
+    r.bought = d.bought
     r.away = d.away
     r.ownerIn = d.ownerAt === 'restaurant'
     const task = d.owner.task
@@ -399,9 +403,29 @@ export class RestaurantSim {
     return this.diners.filter(d => d.state === 'street' || d.state === 'arriving' || d.state === 'toChair' || d.state === 'ordering')
   }
 
-  /** The dishes the kitchen can make now: those with a portion left, while there is a stove. */
+  /** The dishes on the menu: the first three, and those bought. */
+  menu(): DishId[] {
+    return DISH_IDS.filter(dish => !isExtraDish(dish) || this.bought.includes(dish))
+  }
+
+  /** What stops `dish` going on the menu now: it is there already, money is negative, or the purse is short. */
+  buyProblem(dish: ExtraDish): 'have' | 'money' | null {
+    if (this.bought.includes(dish)) return 'have'
+    return this.money < 0 || this.money < DISH_BUY_PRICE[dish] ? 'money' : null
+  }
+
+  /** Pays for `dish` once and puts it on the menu; its item has sat at STOCK_START unused until now. */
+  buyDish(dish: ExtraDish): 'have' | 'money' | null {
+    const problem = this.buyProblem(dish)
+    if (problem) return problem
+    this.host.purse.money -= DISH_BUY_PRICE[dish]
+    this.bought = EXTRA_DISHES.filter(d => d === dish || this.bought.includes(d))
+    return null
+  }
+
+  /** The dishes the kitchen can make now: those on the menu with a portion left, while there is a stove. */
   sellableDishes(): DishId[] {
-    return this.items.some(i => i.kind === 'stove') ? DISH_IDS.filter(dish => this.portionsLeft(dish) > 0) : []
+    return this.items.some(i => i.kind === 'stove') ? this.menu().filter(dish => this.portionsLeft(dish) > 0) : []
   }
 
   /** Buys RESTOCK_AMOUNT more of an item for its price, even when the purse is short. */
@@ -426,7 +450,7 @@ export class RestaurantSim {
       const taken = [...this.chefs.map(c => c.name), ...this.host.staff.map(s => s.name)]
       this.candidates = []
       for (let i = 0; i < CANDIDATES_PER_DAY; i++) {
-        const c = makeChefCandidate(this.rng, taken)
+        const c = makeChefCandidate(this.rng, taken, this.menu())
         taken.push(c.name)
         this.candidates.push(c)
       }
@@ -663,9 +687,9 @@ export class RestaurantSim {
     }
   }
 
-  /** With the owner at a branch, every item at the low mark or under is bought again if the purse can pay. */
+  /** With the owner at a branch, every item the menu uses at the low mark or under is bought again if the purse can pay. */
   private restockAlone(): void {
-    for (const item of RESTAURANT_STOCK_ITEMS) if (this.stock[item] <= LOW_STOCK && this.host.purse.money >= RESTAURANT_RESTOCK_PRICE[item]) this.restock(item)
+    for (const item of stockItemsForMenu(this.menu())) if (this.stock[item] <= LOW_STOCK && this.host.purse.money >= RESTAURANT_RESTOCK_PRICE[item]) this.restock(item)
   }
 
   /** The diner's dish item and a herb leave the stock as their dish is started; the view hears when one is low or gone. */

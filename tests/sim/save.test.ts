@@ -9,7 +9,7 @@ import { createRng } from '../../src/sim/rng'
 import { emptyBook, REGULAR_IDS } from '../../src/sim/regulars'
 import { DEFAULT_OWNER_LOOK } from '../../src/sim/profile'
 import { emptyRecipes } from '../../src/sim/recipes'
-import { BRANCH_FLOORS_SAVE_VERSION, BUSTLE_SAVE_VERSION, FRIENDS_SAVE_VERSION, oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError, type SaveData } from '../../src/sim/save'
+import { BRANCH_FLOORS_SAVE_VERSION, BUSTLE_SAVE_VERSION, CUPPING_BUN_CHA_SAVE_VERSION, FRIENDS_SAVE_VERSION, oldShopKinds, parseSave, repairBadges, repairEvents, repairFestival, repairOutfits, repairRank, RESTAURANT_B_SAVE_VERSION, RESTAURANT_C_SAVE_VERSION, RESTAURANT_SAVE_VERSION, SAVE_VERSION, SaveError, SaveTooNewError, type SaveData } from '../../src/sim/save'
 import { emptyFriends } from '../../src/sim/friends'
 import { emptyAwayBook } from '../../src/sim/away'
 import { fullRestaurantStock } from '../../src/sim/menu'
@@ -66,6 +66,7 @@ import v39 from '../fixtures/save-v39.json'
 import v40 from '../fixtures/save-v40.json'
 import v41 from '../fixtures/save-v41.json'
 import v42 from '../fixtures/save-v42.json'
+import v43 from '../fixtures/save-v43.json'
 import { Chain } from '../../src/sim/chain'
 import { emptyIdolBook, IDOL_IDS, IDOLS } from '../../src/sim/idols'
 import { HOT_DAYS, IDOL_PRICE_FACTOR, STEP_MS } from '../../src/config'
@@ -144,7 +145,7 @@ const withNewKeys = <T extends object>(raw: T): T => {
 }
 
 describe('every older save', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39, v40, v41, v42 }
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39, v40, v41, v42, v43 }
 
   it('opens every older save and saves it as the current version', () => {
     for (const [name, raw] of Object.entries(fixtures)) {
@@ -155,8 +156,9 @@ describe('every older save', () => {
 })
 
 describe('the wide grid in an older shop', () => {
-  it("is version 42, the street's pieces", () => {
-    expect(SAVE_VERSION).toBe(BUSTLE_SAVE_VERSION)
+  it('is version 43, Giác hơi and Bún chả', () => {
+    expect(SAVE_VERSION).toBe(CUPPING_BUN_CHA_SAVE_VERSION)
+    expect(CUPPING_BUN_CHA_SAVE_VERSION).toBe(43)
     expect(RESTAURANT_C_SAVE_VERSION).toBe(39)
     expect(FRIENDS_SAVE_VERSION).toBe(40)
     expect(BRANCH_FLOORS_SAVE_VERSION).toBe(41)
@@ -2656,7 +2658,8 @@ describe('the restaurant in a saved chain', () => {
     const che = r.diners.find(d => d.dish === 'che')!
     expect([che.state, che.chefId]).toEqual(['ordering', null])
     expect(che.ticket).toHaveProperty('ice')
-    expect(r.stock).toEqual(v38.restaurant.stock)
+    expect(r.stock).toEqual({ ...v38.restaurant.stock, chaKit: STOCK_START })
+    expect(r.bought).toEqual([])
     expect(r.stock.batter).toBeLessThan(STOCK_START)
     expect(r.learned).toEqual(['pho'])
     expect(r.away.profits).toHaveLength(1)
@@ -2697,12 +2700,12 @@ describe('the restaurant in a saved chain', () => {
     rs.chefs.push({ id: 'x' }, 'y' as unknown as Record<string, unknown>)
     rs.candidates = [{ ...(rs.candidates as object[])[0], stats: { skill: 2.5, speed: 3 } }, null]
     const r = parseSave(raw).restaurant!
-    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, herbs: STOCK_START })
+    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, herbs: STOCK_START })
     expect(r.learned).toEqual(['che'])
     expect(r.away).toEqual({ profits: [1000], ok: true, tipSeen: false })
     expect(r.diners.map(x => x.id)).toEqual([])
     expect(r.chefs).toHaveLength(1)
-    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0 }, null])
+    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0, bunCha: 0 }, null])
     expect(r.candidates).toHaveLength(1)
     expect(r.candidates[0].stats).toEqual({ skill: 1, speed: 3 })
   })
@@ -2908,5 +2911,49 @@ describe("the street's pieces", () => {
     expect(parseSave(raw(['park', 'fountain', 'park', 3, 'lamps'])).bustle).toEqual(['park', 'lamps'])
     expect(parseSave(raw('park')).bustle).toEqual([])
     expect(parseSave(raw(null)).bustle).toEqual([])
+  })
+})
+
+describe('save version 43: Giác hơi and Bún chả', () => {
+  it('reads the v43 fixture with Giác hơi learned, its alcohol and tiers, and Bún chả on the menu with its stock and a diner', () => {
+    const data = parseSave(structuredClone(v43))
+    expect(data.v).toBe(CUPPING_BUN_CHA_SAVE_VERSION)
+    expect(data.services).toContain('cupping')
+    expect(data.stock.alcohol).toBe(13)
+    expect(data.staff[0].tiers.cupping).toBe(2)
+    const r = data.restaurant!
+    expect(r.bought).toEqual(['bunCha'])
+    expect(r.stock.chaKit).toBe(15)
+    expect(r.learned).toEqual(['pho', 'bunCha'])
+    expect(r.diners.map(d => [d.dish, d.ticket])).toEqual([['bunCha', { grill: 'vua', chili: false, extraHerb: false }]])
+    const chain = Chain.fromSave(data, 8)
+    expect(chain.main.availableServices()).toContain('cupping')
+    expect(chain.restaurant!.menu()).toContain('bunCha')
+    const again = parseSave(JSON.parse(JSON.stringify(chain.toSave())))
+    expect(again.v).toBe(SAVE_VERSION)
+    expect(again.restaurant!.bought).toEqual(['bunCha'])
+    expect(again.stock.alcohol).toBe(13)
+  })
+
+  it('opens a v42 save with no Giác hơi, nothing bought for the menu, and full new stock', () => {
+    const data = parseSave(structuredClone(v42))
+    expect(data.services).not.toContain('cupping')
+    expect(data.stock.alcohol).toBe(20)
+    expect(data.restaurant!.bought).toEqual([])
+    expect(data.restaurant!.stock.chaKit).toBe(20)
+    for (const s of data.staff) expect(s.tiers.cupping).toBe(0)
+    expect(Chain.fromSave(data, 8).restaurant!.menu()).toEqual(['pho', 'banhXeo', 'che'])
+  })
+
+  it('opens versions 42 and 43, and refuses a newer one', () => {
+    expect(parseSave(structuredClone(v42)).v).toBe(BUSTLE_SAVE_VERSION)
+    expect(parseSave(structuredClone(v43)).v).toBe(SAVE_VERSION)
+    expect(() => parseSave({ ...structuredClone(v43), v: SAVE_VERSION + 1 })).toThrow(SaveTooNewError)
+  })
+
+  it('drops a diner whose Bún chả ticket is damaged', () => {
+    const raw = structuredClone(v43) as { restaurant: { diners: { ticket: unknown }[] } }
+    raw.restaurant.diners[0].ticket = { grill: 'medium', chili: false, extraHerb: false }
+    expect(parseSave(raw).restaurant!.diners).toEqual([])
   })
 })

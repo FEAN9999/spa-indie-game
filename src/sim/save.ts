@@ -22,7 +22,7 @@ import { drawTiers, drawTrait, noTiers, workMs, RECEPTIONIST_TRAITS, TRAIT_IDS, 
 import { isPlaceId, PLACE_IDS, type PlaceId } from './places'
 import { emptyAwayBook, repairAway, type AwayBook } from './away'
 import { chefWage, type Chef, type ChefCandidate, type ChefTask, type DishTiers } from './chefs'
-import { DISH_IDS, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type RestaurantStock } from './menu'
+import { DISH_IDS, EXTRA_DISHES, fullRestaurantStock, RESTAURANT_STOCK_ITEMS, type DishId, type DishTicket, type ExtraDish, type RestaurantStock } from './menu'
 import { repairStarter, type StarterBook } from './starter'
 import { emptyFeed, repairFeed, type FeedBook } from './feed'
 import { emptyFriends, repairFriends, type FriendBook } from './friends'
@@ -45,8 +45,10 @@ export const FRIENDS_SAVE_VERSION = 40
 export const BRANCH_FLOORS_SAVE_VERSION = 41
 /** The save that first has the pieces bought for the street in front of the main shop: origin/master's SAVE_VERSION + 1 at merge time. */
 export const BUSTLE_SAVE_VERSION = 42
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list, 41 the branches' floors, 42 the street's pieces. */
-export const SAVE_VERSION = BUSTLE_SAVE_VERSION
+/** The save that first has Giác hơi (its alcohol in the stock, its tiers and counts) and Bún chả (the dishes bought for the restaurant's menu, their stock and tiers): origin/master's SAVE_VERSION + 1 at merge time. */
+export const CUPPING_BUN_CHA_SAVE_VERSION = 43
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list, 41 the branches' floors, 42 the street's pieces, 43 Giác hơi and Bún chả. */
+export const SAVE_VERSION = CUPPING_BUN_CHA_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
 /** The version from which the screens and the reception desk are furniture: a shop saved from before it, main or branch, gets them where they always stood, numbered after its other items. */
@@ -95,6 +97,8 @@ export interface RestaurantSave {
   candidatesDay: number
   /** The dishes the owner has cooked at least once. */
   learned: DishId[]
+  /** The dishes put on the menu by paying for them; none in a save from before they could be. */
+  bought: ExtraDish[]
   away: AwayBook
 }
 
@@ -326,6 +330,8 @@ function repairTicket(dish: DishId, t: unknown): DishTicket | null {
     return (t.doneness === 'tai' || t.doneness === 'chin') && (t.onion === 'little' || t.onion === 'lots') && typeof t.chili === 'boolean' && typeof t.extraHerb === 'boolean'
       ? { doneness: t.doneness, onion: t.onion, chili: t.chili, extraHerb: t.extraHerb }
       : null
+  if (dish === 'bunCha')
+    return (t.grill === 'vua' || t.grill === 'chay') && typeof t.chili === 'boolean' && typeof t.extraHerb === 'boolean' ? { grill: t.grill, chili: t.chili, extraHerb: t.extraHerb } : null
   if (dish === 'banhXeo')
     return (t.filling === 'tom' || t.filling === 'thit') && (t.crisp === 'vua' || t.crisp === 'ky') && typeof t.extraSprouts === 'boolean'
       ? { filling: t.filling, crisp: t.crisp, extraSprouts: t.extraSprouts }
@@ -503,6 +509,7 @@ export function repairRestaurant(raw: unknown): RestaurantSave | null {
     candidates: cooks && Array.isArray(r.candidates) ? r.candidates.map(repairChefCandidate).filter((c): c is ChefCandidate => c !== null) : [],
     candidatesDay: cooks ? repairCount(r.candidatesDay) : 0,
     learned: DISH_IDS.filter(id => learned.includes(id)).sort((a, b) => learned.indexOf(a) - learned.indexOf(b)),
+    bought: Array.isArray(r.bought) ? EXTRA_DISHES.filter(id => (r.bought as unknown[]).includes(id)) : [],
     away: cooks ? repairAway(r.away) : emptyAwayBook(),
   }
 }
@@ -913,7 +920,7 @@ const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x ==
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
   if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
-  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== 39 && raw.v !== 40 && raw.v !== 41 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
+  if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== 39 && raw.v !== 40 && raw.v !== 41 && raw.v !== 42 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)
   for (const key of ['reviews', 'customers'])

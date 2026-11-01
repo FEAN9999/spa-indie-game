@@ -1,7 +1,7 @@
 import { CHEF_CAP, CHEF_WAGE_PER_DOT, RARE_CHANCE, RARE_TIER, TIER_WORK_FACTOR, WAGE_BASE, WORK_FLOOR_MS } from '../config'
 import { STAFF_NAMES } from '../strings/vi'
 import type { Stars } from './economy'
-import { DISH_IDS, type DishId } from './menu'
+import { BASE_DISHES, DISH_IDS, type DishId } from './menu'
 import { randomLook, type Rng } from './rng'
 import { workMs } from './staff'
 import type { Look, Mover } from './types'
@@ -44,8 +44,8 @@ export function chefCap(floors: number, houses: number): number {
   return Math.min(CHEF_CAP.max, CHEF_CAP.base + (floors - 1) * CHEF_CAP.perFloor + houses * CHEF_CAP.perHouse)
 }
 
-/** A random cook whose name is not in `taken`, with one specialty dish. */
-export function makeChefCandidate(rng: Rng, taken: string[]): ChefCandidate {
+/** A random cook whose name is not in `taken`, with one specialty dish among `menu`, the dishes the restaurant sells. */
+export function makeChefCandidate(rng: Rng, taken: string[], menu: readonly DishId[] = BASE_DISHES): ChefCandidate {
   const rare = rng() < RARE_CHANCE
   const stat = () => (rare ? 4 + Math.floor(rng() * 2) : 1 + Math.floor(rng() * 3))
   const skill = stat()
@@ -54,7 +54,7 @@ export function makeChefCandidate(rng: Rng, taken: string[]): ChefCandidate {
   const free = STAFF_NAMES.filter(n => !taken.includes(n))
   const name = free[Math.floor(rng() * free.length)]
   const tiers = Object.fromEntries(DISH_IDS.map(d => [d, 0])) as DishTiers
-  tiers[DISH_IDS[Math.floor(rng() * DISH_IDS.length)]] = rare ? RARE_TIER : 1
+  tiers[menu[Math.floor(rng() * menu.length)]] = rare ? RARE_TIER : 1
   const stats = { skill, speed }
   return { name, look, stats, wage: chefWage(stats), rare, tiers }
 }

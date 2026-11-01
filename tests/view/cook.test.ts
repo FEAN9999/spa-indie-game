@@ -21,6 +21,6 @@ describe('cook scene parts', () => {
   })
 
   it('opens each dish in its own scene', () => {
-    expect(COOK_SCENE).toEqual({ pho: 'PhoScene', banhXeo: 'BanhXeoScene', che: 'CheScene' })
+    expect(COOK_SCENE).toEqual({ pho: 'PhoScene', banhXeo: 'BanhXeoScene', che: 'CheScene', bunCha: 'BunChaScene' })
   })
 })

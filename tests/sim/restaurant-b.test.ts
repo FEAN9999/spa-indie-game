@@ -4,7 +4,7 @@ import { Chain } from '../../src/sim/chain'
 import { parseSave } from '../../src/sim/save'
 import { chefWage, type Chef, type ChefStats } from '../../src/sim/chefs'
 import { tileEq, tileOf } from '../../src/sim/grid'
-import { DISH_IDS, RESTAURANT_STOCK_ITEMS } from '../../src/sim/menu'
+import { BASE_DISHES, RESTAURANT_STOCK_ITEMS } from '../../src/sim/menu'
 import type { Diner, DinerState, DishId, RestaurantEvent, RestaurantSim } from '../../src/sim/restaurant'
 import type { Customer } from '../../src/sim/types'
 import { STAFF_NAMES } from '../../src/strings/vi'
@@ -65,7 +65,7 @@ describe('the restaurant menu and its stock', () => {
       expect(d.chefId).toBeNull()
       r.clearOut()
     }
-    expect([...seen].sort()).toEqual([...DISH_IDS].sort())
+    expect([...seen].sort()).toEqual([...BASE_DISHES].sort())
   })
 
   it("reserves a seated diner's portion and stops the dish when none is left", () => {

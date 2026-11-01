@@ -1,16 +1,16 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
-import { DISH_PRICE, GAME_H, GAME_W, LOW_STOCK, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT } from '../config'
-import { DISH_IDS, DISH_NAME, DISH_STOCK, RSTOCK_NAME, type DishId, type RestaurantStockItem } from '../sim/menu'
+import { DISH_BUY_PRICE, DISH_PRICE, GAME_H, GAME_W, LOW_STOCK, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT } from '../config'
+import { DISH_IDS, DISH_NAME, DISH_STOCK, isExtraDish, RSTOCK_NAME, type DishId, type ExtraDish, type RestaurantStockItem } from '../sim/menu'
 import type { RestaurantSim } from '../sim/restaurant'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, addToast } from '../view/ui'
 
 export interface MenuData {
   restaurant: RestaurantSim
-  /** After a restock: save. */
+  /** After a restock or a new dish: save. */
   onChange: () => void
   onClose: () => void
 }
@@ -33,15 +33,21 @@ const ACTION_H = 110
 const NAME_W = RESTOCK_X - RESTOCK_W / 2 - 16 - TEXT_X
 const HERBS_WRAP = 330
 const DONE_Y = 1895
+/** A dish not on the menu yet is drawn faded behind its buy button; a problem is told in a toast over the done button. */
+const FADED_ALPHA = 0.45
+const TOAST_Y = 1760
+const TOAST_DEPTH = 10
 
 /**
- * The restaurant's menu over the frozen shop: each dish with its price and portions left, the shared herbs, and a restock button per stock item.
+ * The restaurant's menu over the frozen shop: each dish with its price and portions left, the shared herbs, and a restock button per stock item;
+ * a dish not bought yet has a button to put it on the menu instead.
  * Every tap stays in this scene, so the shop, its top bar and its buttons wait underneath.
  */
 export class MenuScene extends Phaser.Scene {
   private params!: MenuData
   /** Everything drawn for the panel on screen, destroyed when it is redrawn. */
   private shown: Phaser.GameObjects.GameObject[] = []
+  private toastBox: Phaser.GameObjects.Container | null = null
 
   constructor() {
     super('MenuScene')
@@ -50,6 +56,7 @@ export class MenuScene extends Phaser.Scene {
   init(data: MenuData) {
     this.params = data
     this.shown = []
+    this.toastBox = null
   }
 
   create() {
@@ -85,6 +92,10 @@ export class MenuScene extends Phaser.Scene {
   private dishRow(dish: DishId, y0: number): void {
     const { restaurant } = this.params
     const cy = y0 + ROW_H / 2
+    if (isExtraDish(dish) && !restaurant.bought.includes(dish)) {
+      this.buyRow(dish, cy)
+      return
+    }
     const left = restaurant.portionsLeft(dish)
     this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(1.5))
     const name = this.keep(this.add.text(TEXT_X, cy - 30, t('menuDish', { name: t(DISH_NAME[dish]), money: formatMoney(DISH_PRICE[dish]) }), textStyle(40)).setOrigin(0, 0.5))
@@ -92,6 +103,34 @@ export class MenuScene extends Phaser.Scene {
     const text = left === 0 ? t('menuPaused') : t('menuLeft', { n: left })
     this.keep(this.add.text(TEXT_X, cy + 26, text, textStyle(30, '800', left <= LOW_STOCK ? C.lantern : C.ink)).setOrigin(0, 0.5))
     this.restockButton(DISH_STOCK[dish], cy)
+  }
+
+  /** A dish not on the menu yet: faded, with the button that buys it, itself faded while the purse cannot. */
+  private buyRow(dish: ExtraDish, cy: number): void {
+    const first = this.shown.length
+    this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(1.5))
+    const name = this.keep(this.add.text(TEXT_X, cy - 30, t('menuDish', { name: t(DISH_NAME[dish]), money: formatMoney(DISH_PRICE[dish]) }), textStyle(40)).setOrigin(0, 0.5))
+    name.setScale(Math.min(1, NAME_W / name.width))
+    const note = this.keep(this.add.text(TEXT_X, cy + 26, t('menuNotYet'), textStyle(30, '800', C.soft)).setOrigin(0, 0.5))
+    note.setScale(Math.min(1, NAME_W / note.width))
+    for (const obj of this.shown.slice(first)) (obj as Phaser.GameObjects.Image).setAlpha(FADED_ALPHA)
+    const button = this.keep(addButton(this, RESTOCK_X, cy, RESTOCK_W, ACTION_H, t('menuBuy', { money: formatMoney(DISH_BUY_PRICE[dish]) }), 'primary', () => this.buy(dish), 28))
+    ;(button.list[1] as Phaser.GameObjects.Text).setAlign('center')
+    if (this.params.restaurant.buyProblem(dish) !== null) button.setAlpha(FADED_ALPHA)
+  }
+
+  /** Puts the dish on the menu; short of money it says so and takes nothing. */
+  private buy(dish: ExtraDish): void {
+    const { restaurant } = this.params
+    const problem = restaurant.buyDish(dish)
+    if (problem === 'money') {
+      this.toastBox?.destroy()
+      const text = restaurant.money < 0 ? t('menuDebt') : t('problemMoney', { money: formatMoney(DISH_BUY_PRICE[dish] - restaurant.money) })
+      this.toastBox = addToast(this, MID, TOAST_Y, text).setDepth(TOAST_DEPTH)
+      return
+    }
+    this.params.onChange()
+    this.show()
   }
 
   /** The herbs every dish uses: what is left, who uses them, and the restock button. */

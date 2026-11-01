@@ -30,6 +30,17 @@ const CHE =
   `<path d="M24,16 H66 L62,80 H28Z" fill="none" ${ink(4)}/>` +
   wave('M54,22 L64,4', C.lantern, 5)
 
+// bún chả: a bowl of dipping sauce with two grilled patties and a slice of papaya, beside a nest of rice noodles
+const BUN_CHA =
+  `<ellipse cx="28" cy="66" rx="22" ry="14" fill="${C.paper}" ${ink(3.5)}/>` +
+  wave('M12,64 q8,-6 16,0 t16,0', C.tileSeam, 3) +
+  `<path d="M34,40 H86 Q82,80 60,82 Q38,80 34,40Z" fill="${C.cream}" ${ink(4)}/>` +
+  `<ellipse cx="60" cy="42" rx="26" ry="8" fill="${C.mustardDark}" ${ink(3.5)}/>` +
+  `<ellipse cx="52" cy="40" rx="9" ry="6" fill="${C.woodDark}" ${ink(2.5)}/>` +
+  `<ellipse cx="68" cy="41" rx="9" ry="6" fill="${C.wood}" ${ink(2.5)}/>` +
+  wave('M42,40 q4,-4 8,0', C.bambooLight, 4) +
+  wave('M48,26 q-4,-6 0,-12 M64,24 q-4,-6 0,-12', C.cloud, 3)
+
 // stock: a bundle of rice noodles tied with a band
 const PHO_KIT =
   wave('M14,14 Q10,30 14,46 M24,10 Q20,30 24,50 M34,8 Q30,30 34,52 M44,10 Q40,30 44,50 M52,14 Q50,30 52,46', C.sand, 8) +
@@ -50,6 +61,13 @@ const CHE_KIT =
   [[20, 24, C.lantern], [28, 22, C.olive], [36, 25, C.lantern], [43, 23, C.olive]].map(([x, y, c]) => `<ellipse cx="${x}" cy="${y}" rx="4" ry="2.6" fill="${c}"/>`).join('') +
   wave('M22,38 q8,6 16,0', C.clay, 3)
 
+// stock: two patties of minced pork on a sheet of paper
+const CHA_KIT =
+  `<path d="M6,40 L30,52 L56,40 L32,28Z" fill="${C.paper}" ${ink(3)}/>` +
+  `<ellipse cx="22" cy="30" rx="13" ry="9" fill="${C.houseRose}" ${ink(3)}/>` +
+  `<ellipse cx="38" cy="24" rx="13" ry="9" fill="${C.houseRoseDark}" ${ink(3)}/>` +
+  wave('M16,30 q6,-3 12,0 M32,24 q6,-3 12,0', C.cream, 2.5)
+
 // stock: a basil sprig with three leaves on its stem
 const HERBS =
   wave('M30,54 V16', C.leaf, 4) +
@@ -58,15 +76,17 @@ const HERBS =
   `<path d="M30,34 Q20,26 8,32 Q14,44 30,34Z" fill="${C.leafLight}" ${ink(3)}/>` +
   `<path d="M30,34 Q40,26 52,32 Q46,44 30,34Z" fill="${C.leaf}" ${ink(3)}/>`
 
-/** The menu's pictures: a dish each at 90×90, and the four restaurant stock items at 60×60. */
+/** The menu's pictures: a dish each at 90×90, and each restaurant stock item at 60×60. */
 export function menuTextures(): Record<string, string> {
   return {
     'dish-pho': svgDoc([0, 0, 90, 90], 1, PHO),
     'dish-banhXeo': svgDoc([0, 0, 90, 90], 1, BANH_XEO),
     'dish-che': svgDoc([0, 0, 90, 90], 1, CHE),
+    'dish-bunCha': svgDoc([0, 0, 90, 90], 1, BUN_CHA),
     'rstock-phoKit': svgDoc([0, 0, 60, 60], 1, PHO_KIT),
     'rstock-batter': svgDoc([0, 0, 60, 60], 1, BATTER),
     'rstock-cheKit': svgDoc([0, 0, 60, 60], 1, CHE_KIT),
+    'rstock-chaKit': svgDoc([0, 0, 60, 60], 1, CHA_KIT),
     'rstock-herbs': svgDoc([0, 0, 60, 60], 1, HERBS),
   }
 }

@@ -1,6 +1,7 @@
 import type { BadgeShop } from '../../src/sim/badges'
 import { Chain } from '../../src/sim/chain'
 import type { ItemKind } from '../../src/sim/items'
+import { DISH_IDS } from '../../src/sim/menu'
 import { RestaurantSim } from '../../src/sim/restaurant'
 import { createRng } from '../../src/sim/rng'
 import { SpaSim } from '../../src/sim/spa'
@@ -211,6 +212,33 @@ export function sixServiceLog(days = 4, before?: (chain: Chain) => void): { days
     out.push(row)
   }
   return { days: out, next: rng() }
+}
+
+/**
+ * A restaurant left to itself for ten minutes on a 3-star main shop, then three days of cooks to hire: each diner as they came, with their dish and ticket, and each cook with their specialty.
+ * Compared against a log made before Bún chả, it checks that a restaurant that has not bought it draws exactly as before.
+ */
+export function restaurantLog(before?: (r: RestaurantSim) => void): { diners: string[]; candidates: string[][] } {
+  const main = starShop(3, 50_000_000, 4)
+  const r = restaurantFor(main, { seed: 4, autoSpawn: true })
+  before?.(r)
+  const seen = new Set<number>()
+  const diners: string[] = []
+  for (let t = 0; t < 600_000; t += 100) {
+    r.advance(100)
+    r.drainEvents()
+    for (const d of r.diners)
+      if (!seen.has(d.id)) {
+        seen.add(d.id)
+        diners.push(`${d.id}:${d.kind}:${d.dish}:${JSON.stringify(d.ticket)}`)
+      }
+  }
+  const candidates: string[][] = []
+  for (let i = 0; i < 3; i++) {
+    candidates.push(r.todayCandidates().map(c => `${c.name}:${c.rare}:${DISH_IDS.filter(d => c.tiers[d] > 0).map(d => `${d}${c.tiers[d]}`).join(',')}`))
+    main.day++
+  }
+  return { diners, candidates }
 }
 
 /** A restaurant on the main shop's purse, clock and day; nobody walks in unless `autoSpawn`. */
