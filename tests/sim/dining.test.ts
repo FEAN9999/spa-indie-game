@@ -61,6 +61,7 @@ describe('the restaurant furniture', () => {
   it("keeps the spa's own decor out of the restaurant and the restaurant's out of the spa", () => {
     for (const kind of ['velvetSofa', 'rattanArmchair', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(placeableIn(kind, 'restaurant'), kind).toBe(false)
     for (const kind of ['streetTable', 'roundTable', 'plasticStool', 'bambooChair', 'menuBoard', 'drinkFridge', 'icedTeaStand'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
-    for (const kind of ['tileRug', 'tearCalendar'] as const) expect([placeableIn(kind, 'spa'), placeableIn(kind, 'restaurant')], kind).toEqual([true, true])
+    for (const kind of ['sunLounger', 'charcoalGrill', 'lightArch', 'gardenSwing', 'hammock', 'bananaPlant'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
+    for (const kind of ['tileRug', 'tearCalendar', 'pool'] as const) expect([placeableIn(kind, 'spa'), placeableIn(kind, 'restaurant')], kind).toEqual([true, true])
   })
 })

@@ -260,6 +260,173 @@ const icedTeaStand =
   iceGlass(0.66, 0.98) +
   iceGlass(0.66, 0.78)
 
+// ---------- Dùng chung: bể bơi ----------
+
+// bể bơi: nhìn từ trên xuống, thành lát gạch kem, nước xanh có gợn sóng và vệt nắng, thang inox ở mép sau, phao bơi đỏ trắng
+const PHAO = [C.lantern, C.cream, C.lantern, C.cream, C.lantern, C.cream, C.lantern, C.cream]
+const pool =
+  `<defs><pattern id="coping" width="0.26" height="0.26" patternUnits="userSpaceOnUse"><rect width="0.26" height="0.26" fill="${C.tile}"/><path d="M0,0.13 H0.26 M0.13,0 V0.26" stroke="${C.tileSeam}" stroke-width="0.02"/></pattern></defs>` +
+  rect(0.06, 0.26, 3.88, 3.88, 'url(#coping)', `rx="0.12" ${ink()}`) +
+  rect(0.32, 0.52, 3.36, 3.36, C.waterDeep, `rx="0.08" ${ink(0.04)}`) +
+  rect(0.34, 0.54, 3.32, 0.22, C.cobalt, `opacity="0.25"`) +
+  rect(0.34, 0.54, 0.2, 3.32, C.cobalt, `opacity="0.15"`) +
+  [1.1, 1.7, 2.3, 2.9, 3.5].map((y, i) => line(`M${f(0.6 + (i % 2) * 0.3)},${y} q0.18,-0.08 0.36,0 t0.36,0 M${f(2.0 - (i % 2) * 0.2)},${f(y + 0.1)} q0.18,-0.08 0.36,0 t0.36,0`, C.water, 0.04)).join('') +
+  line('M0.8,1.4 l0.5,-0.3 M2.6,3.1 l0.6,-0.32 M1.6,2.6 l0.3,-0.16', '#FFFFFF', 0.03) +
+  // thang inox: hai tay vịn vòng qua mép sau, ba bậc chìm dưới nước
+  [0.5, 0.8].map(d => rect(f(2.6 + 0.04), f(0.6 + d * 0.4), 0.36, 0.05, C.water, `opacity="0.9"`)).join('') +
+  [2.6, 3.04].map(x => `<path d="M${x},1.05 V0.36 Q${x},0.12 ${f(x + 0.12)},0.16" stroke="${C.ink}" stroke-width="0.075" fill="none" stroke-linecap="round"/><path d="M${x},1.05 V0.36 Q${x},0.12 ${f(x + 0.12)},0.16" stroke="${C.silver}" stroke-width="0.045" fill="none" stroke-linecap="round"/>`).join('') +
+  // phao bơi: tám múi đỏ trắng xen nhau
+  PHAO.map((col, i) => {
+    const a = (i * Math.PI) / 4
+    const b = ((i + 1) * Math.PI) / 4
+    const [cx, cy, ro, ri] = [1.25, 2.55, 0.34, 0.16]
+    const p = (r: number, t: number) => `${f(cx + Math.cos(t) * r)},${f(cy + Math.sin(t) * r)}`
+    return `<path d="M${p(ri, a)} L${p(ro, a)} A${ro},${ro} 0 0 1 ${p(ro, b)} L${p(ri, b)} A${ri},${ri} 0 0 0 ${p(ri, a)}Z" fill="${col}"/>`
+  }).join('') +
+  `<circle cx="1.25" cy="2.55" r="0.34" fill="none" ${ink(0.035)}/><circle cx="1.25" cy="2.55" r="0.16" fill="none" ${ink(0.025)}/>` +
+  // quả bóng biển trôi gần thành phải
+  dot(3.2, 2.0, 0.17, C.gold, 0.03) +
+  `<path d="M3.2,1.83 Q3.06,2.0 3.2,2.17 M3.2,1.83 Q3.34,2.0 3.2,2.17" stroke="${C.lantern}" stroke-width="0.05" fill="none"/>`
+
+// ---------- Nhà hàng: đồ tầng thượng ----------
+
+/** Nệm sọc xanh kem dài `w`, góc trên trái ở (x, y). */
+const stripedPad = (x: number, y: number, w: number, h: number) =>
+  rect(x, y, w, h, C.cream, `rx="0.06" ${ink(0.035)}`) +
+  Array.from({ length: Math.floor(w / 0.24) }, (_, i) => rect(f(x + 0.06 + i * 0.24), f(y + 0.02), 0.12, f(h - 0.04), C.tealLight)).join('') +
+  rect(x, y, w, h, 'none', `rx="0.06" ${ink(0.035)}`)
+
+// ghế tắm nắng: nhìn ngang, khung gỗ có lưng dựng nghiêng bên trái, nệm sọc xanh kem, khăn cuộn ở cuối ghế
+const sunLounger =
+  rect(0.3, 0.86, 0.08, 0.3, C.woodDark, ink(0.025)) +
+  rect(0.82, 0.86, 0.08, 0.3, C.woodDark, ink(0.025)) +
+  rect(1.78, 0.86, 0.08, 0.3, C.woodDark, ink(0.025)) +
+  rect(0.24, 0.76, 1.7, 0.12, C.woodLight, `rx="0.04" ${ink(0.035)}`) +
+  `<path d="M0.12,0.22 L0.3,0.14 L0.66,0.76 L0.46,0.82Z" fill="${C.woodLight}" ${ink(0.035)}/>` +
+  `<path d="M0.2,0.2 L0.34,0.16 L0.64,0.66 L0.5,0.72Z" fill="${C.tealLight}" ${ink(0.025)}/>` +
+  stripedPad(0.5, 0.6, 1.42, 0.17) +
+  rect(1.56, 0.46, 0.3, 0.16, C.lotus, `rx="0.08" ${ink(0.025)}`) +
+  line('M1.64,0.48 V0.6 M1.72,0.48 V0.6', C.lotusDark, 0.015)
+
+// ghế tắm nắng dựng đứng: nhìn từ cuối ghế, nệm chạy dọc lên, lưng ghế dựng ở đầu xa, chân ở đầu gần
+const sunLoungerTurned =
+  rect(0.18, 2.02, 0.08, 0.26, C.woodDark, ink(0.025)) +
+  rect(0.76, 2.02, 0.08, 0.26, C.woodDark, ink(0.025)) +
+  rect(0.1, 0.5, 0.82, 1.56, C.woodLight, `rx="0.06" ${ink(0.04)}`) +
+  rect(0.16, 0.16, 0.7, 0.46, C.woodLight, `rx="0.06" ${ink(0.04)}`) +
+  rect(0.22, 0.22, 0.58, 0.36, C.tealLight, `rx="0.05" ${ink(0.025)}`) +
+  rect(0.18, 0.62, 0.66, 1.36, C.cream, `rx="0.06" ${ink(0.03)}`) +
+  [0.68, 0.92, 1.16, 1.4, 1.64].map(y => rect(0.2, y, 0.62, 0.12, C.tealLight)).join('') +
+  rect(0.18, 0.62, 0.66, 1.36, 'none', `rx="0.06" ${ink(0.03)}`) +
+  rect(0.26, 1.7, 0.5, 0.22, C.lotus, `rx="0.1" ${ink(0.025)}`)
+
+// bếp nướng than: thùng sắt trên bốn chân, than hồng, vỉ nướng có hai xiên thịt, khói bay
+const skewer = (y: number) =>
+  line(`M0.16,${y} L0.84,${f(y - 0.04)}`, C.bambooDark, 0.025) +
+  [0.3, 0.46, 0.62].map((x, i) => `<ellipse cx="${x}" cy="${f(y - 0.02 - i * 0.006)}" rx="0.07" ry="0.05" fill="${i % 2 ? C.clay : C.terracotta}" ${ink(0.015)}/>`).join('')
+const charcoalGrill =
+  line('M0.34,0.42 q-0.08,-0.1 0,-0.18 t0,-0.18 M0.6,0.4 q-0.08,-0.1 0,-0.18 t0,-0.18', C.steamBlue, 0.04) +
+  rect(0.2, 0.96, 0.07, 0.46, C.stone, ink(0.025)) +
+  rect(0.73, 0.96, 0.07, 0.46, C.stone, ink(0.025)) +
+  line('M0.24,1.24 H0.76', C.stone, 0.04) +
+  `<path d="M0.08,0.62 H0.92 L0.82,1.0 H0.18Z" fill="${C.stone}" ${ink(0.04)}/>` +
+  `<ellipse cx="0.5" cy="0.64" rx="0.4" ry="0.08" fill="${C.deepBrown}" ${ink(0.025)}/>` +
+  [0.28, 0.42, 0.56, 0.7].map((x, i) => dot(x, 0.64, 0.045, i % 2 ? C.lantern : C.stoneHot, 0.01)).join('') +
+  line('M0.14,0.6 H0.86', C.tankRib, 0.025) +
+  skewer(0.58) +
+  rect(0.04, 0.6, 0.08, 0.06, C.stone, ink(0.015)) +
+  rect(0.88, 0.6, 0.08, 0.06, C.stone, ink(0.015))
+
+/** Một bóng đèn tròn treo dưới dây tại (x, y), có quầng sáng nhạt. */
+const bulb = (x: number, y: number) =>
+  `<circle cx="${f(x)}" cy="${f(y + 0.1)}" r="0.13" fill="${C.glow}" opacity="0.45"/>` +
+  line(`M${f(x)},${f(y)} V${f(y + 0.04)}`, C.ink, 0.02) +
+  rect(f(x - 0.03), f(y + 0.02), 0.06, 0.04, C.tankRib) +
+  dot(x, y + 0.1, 0.06, C.mustard, 0.015)
+/** Dây điện cong từ (x0, y0) qua điểm kéo (mx, my) tới (x1, y1), kèm `n` bóng đèn rải đều dọc dây. */
+const sagWire = (x0: number, y0: number, mx: number, my: number, x1: number, y1: number, n: number) => {
+  const at = (t: number) => [(1 - t) ** 2 * x0 + 2 * (1 - t) * t * mx + t ** 2 * x1, (1 - t) ** 2 * y0 + 2 * (1 - t) * t * my + t ** 2 * y1]
+  return (
+    `<path d="M${x0},${y0} Q${f(mx)},${f(my)} ${x1},${y1}" stroke="${C.ink}" stroke-width="0.025" fill="none"/>` +
+    Array.from({ length: n }, (_, i) => at((i + 1) / (n + 1))).map(([x, y]) => bulb(x, y)).join('')
+  )
+}
+
+// giàn đèn dây: hai cột gỗ hai đầu, dây đèn bóng tròn võng xuống giữa, chân cột cắm trong chậu xi măng
+const archPost = (x: number, top: number, bottom: number) =>
+  rect(f(x - 0.05), top, 0.1, f(bottom - top - 0.2), C.woodDark, `rx="0.03" ${ink(0.03)}`) +
+  `<path d="M${f(x - 0.16)},${f(bottom - 0.24)} H${f(x + 0.16)} L${f(x + 0.12)},${bottom} H${f(x - 0.12)}Z" fill="${C.stoneLight}" ${ink(0.03)}/>`
+const lightArch =
+  archPost(0.2, 0.2, 1.95) +
+  archPost(2.8, 0.2, 1.95) +
+  sagWire(0.2, 0.26, 1.5, 1.26, 2.8, 0.26, 6)
+
+// giàn đèn dây dựng đứng: nhìn dọc theo dây, cột gần to ở dưới, cột xa nhỏ ở trên, bóng đèn chạy dọc giữa
+const lightArchTurned =
+  archPost(0.55, 0.1, 1.2) +
+  sagWire(0.55, 0.16, 0.2, 0.9, 0.55, 1.5, 5) +
+  archPost(0.55, 1.42, 3.0)
+
+// xích đu: khung chữ A hai bên, mái vải sọc, ghế băng treo bằng xích có nệm bạc hà
+const swingSeat = (x: number, w: number) =>
+  rect(x, 0.66, w, 0.34, C.woodLight, `rx="0.06" ${ink(0.035)}`) +
+  rect(f(x + 0.06), 0.72, f(w - 0.12), 0.22, C.mint, `rx="0.06" ${ink(0.02)}`) +
+  rect(f(x - 0.04), 0.98, f(w + 0.08), 0.13, C.wood, `rx="0.04" ${ink(0.035)}`)
+const gardenSwing =
+  line('M0.08,1.95 L0.26,0.3 L0.44,1.95 M1.56,1.95 L1.74,0.3 L1.92,1.95', C.ink, 0.09) +
+  line('M0.08,1.95 L0.26,0.3 L0.44,1.95 M1.56,1.95 L1.74,0.3 L1.92,1.95', C.tealDark, 0.05) +
+  rect(0.16, 0.24, 1.68, 0.09, C.tealDark, `rx="0.03" ${ink(0.025)}`) +
+  rect(0.1, 0.04, 1.8, 0.2, C.cream, `rx="0.05" ${ink(0.03)}`) +
+  [0.18, 0.54, 0.9, 1.26, 1.62].map(x => rect(x, 0.06, 0.18, 0.16, C.lantern)).join('') +
+  rect(0.1, 0.04, 1.8, 0.2, 'none', `rx="0.05" ${ink(0.03)}`) +
+  line('M0.56,0.33 V0.7 M1.44,0.33 V0.7', C.tankRib, 0.03) +
+  swingSeat(0.46, 1.08)
+
+// xích đu dựng đứng: nhìn từ một đầu, khung chữ A, ghế nhìn nghiêng hình chữ L treo dưới thanh ngang, mái vải phía trên
+const gardenSwingTurned =
+  line('M0.08,2.4 L0.55,0.4 L1.02,2.4', C.ink, 0.09) +
+  line('M0.08,2.4 L0.55,0.4 L1.02,2.4', C.tealDark, 0.05) +
+  `<path d="M0.1,0.42 Q0.55,0.1 1.0,0.42Z" fill="${C.lantern}" ${ink(0.03)}/>` +
+  line('M0.55,0.42 V1.3', C.tankRib, 0.03) +
+  rect(0.3, 1.3, 0.5, 0.14, C.wood, `rx="0.04" ${ink(0.03)}`) +
+  rect(0.3, 0.86, 0.12, 0.5, C.woodLight, `rx="0.04" ${ink(0.03)}`) +
+  rect(0.42, 1.2, 0.36, 0.12, C.mint, `rx="0.05" ${ink(0.02)}`) +
+  line('M0.3,1.72 H0.8', C.tealDark, 0.04)
+
+// võng: hai cột gỗ, võng dù xanh có mắt lưới võng xuống giữa, dây buộc hai đầu
+const hammockPost = (x: number) => rect(x, 0.2, 0.14, 1.36, C.woodDark, `rx="0.04" ${ink(0.035)}`) + dot(x + 0.07, 0.22, 0.06, C.wood, 0.02)
+const hammock =
+  hammockPost(0.06) +
+  hammockPost(2.8) +
+  line('M0.2,0.4 L0.62,0.62 M2.8,0.4 L2.38,0.62', C.sand, 0.03) +
+  `<path d="M0.6,0.6 Q1.5,1.5 2.4,0.6 Q1.5,0.84 0.6,0.6Z" fill="${C.tealLight}" ${ink(0.035)}/>` +
+  line('M0.9,0.74 Q1.5,1.3 2.1,0.74 M1.2,0.8 Q1.5,1.08 1.8,0.8', C.teal, 0.02) +
+  line('M0.6,0.6 Q1.5,1.5 2.4,0.6', C.mustard, 0.03)
+
+// võng dựng đứng: nhìn dọc theo võng, cột gần ở dưới, cột xa ở trên, thân võng thuôn chạy dọc giữa
+const hammockTurned =
+  rect(0.48, 0.1, 0.12, 0.72, C.woodDark, `rx="0.04" ${ink(0.03)}`) +
+  line('M0.54,0.3 V0.6 M0.54,2.1 V2.4', C.sand, 0.03) +
+  `<path d="M0.54,0.6 Q0.12,1.36 0.54,2.12 Q0.96,1.36 0.54,0.6Z" fill="${C.tealLight}" ${ink(0.035)}/>` +
+  line('M0.54,0.74 V1.98 M0.36,1.1 Q0.54,1.36 0.36,1.7 M0.72,1.1 Q0.54,1.36 0.72,1.7', C.teal, 0.02) +
+  rect(0.46, 1.72, 0.16, 1.24, C.woodDark, `rx="0.04" ${ink(0.035)}`) +
+  dot(0.54, 1.74, 0.07, C.wood, 0.02)
+
+// chậu chuối cảnh: chậu đất nung to, vài tàu lá chuối rộng xoè lên có gân giữa
+const bananaLeaf = (x: number, y: number, angle: number, len: number, fill: string) =>
+  `<g transform="rotate(${angle} ${x} ${y})"><path d="M${x},${y} Q${f(x - 0.2)},${f(y - len * 0.5)} ${x},${f(y - len)} Q${f(x + 0.2)},${f(y - len * 0.5)} ${x},${y}Z" fill="${fill}" ${ink(0.025)}/>` +
+  `<path d="M${x},${y} V${f(y - len + 0.04)}" stroke="${C.leafLight}" stroke-width="0.02"/></g>`
+const bananaPlant =
+  line('M0.5,1.5 V1.0 M0.46,1.5 Q0.4,1.2 0.36,1.0 M0.54,1.5 Q0.62,1.2 0.66,1.0', C.leaf, 0.06) +
+  bananaLeaf(0.44, 1.2, -52, 0.48, C.leaf) +
+  bananaLeaf(0.56, 1.2, 54, 0.46, C.leaf) +
+  bananaLeaf(0.4, 1.1, -28, 0.66, C.leaf) +
+  bananaLeaf(0.6, 1.1, 28, 0.66, C.leafLight) +
+  bananaLeaf(0.5, 1.0, -6, 0.92, C.leafLight) +
+  `<path d="M0.16,1.46 H0.84 L0.74,2.14 H0.26Z" fill="${C.terracotta}" ${ink(0.04)}/>` +
+  rect(0.12, 1.4, 0.76, 0.12, C.terracotta, `rx="0.04" ${ink(0.035)}`) +
+  line('M0.22,1.7 H0.78', C.lanternDark, 0.025)
+
 /** Hình của từng món, đặt khoá theo kiểu `decor-` của furniture.ts; món xoay được có thêm hình `-turned`. */
 export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> = {
   'decor-velvetSofa': { w: 3, h: 1.35, body: velvetSofa },
@@ -278,4 +445,15 @@ export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> 
   'decor-menuBoard': { w: 2, h: 2, body: menuBoard },
   'decor-drinkFridge': { w: 1, h: 2.05, body: drinkFridge },
   'decor-icedTeaStand': { w: 1, h: 1.5, body: icedTeaStand },
+  'decor-pool': { w: 4, h: 4.2, body: pool },
+  'decor-sunLounger': { w: 2, h: 1.2, body: sunLounger },
+  'decor-sunLounger-turned': { w: 1.1, h: 2.3, body: sunLoungerTurned },
+  'decor-charcoalGrill': { w: 1, h: 1.45, body: charcoalGrill },
+  'decor-lightArch': { w: 3, h: 2, body: lightArch },
+  'decor-lightArch-turned': { w: 1.1, h: 3, body: lightArchTurned },
+  'decor-gardenSwing': { w: 2, h: 2, body: gardenSwing },
+  'decor-gardenSwing-turned': { w: 1.1, h: 2.45, body: gardenSwingTurned },
+  'decor-hammock': { w: 3, h: 1.6, body: hammock },
+  'decor-hammock-turned': { w: 1.1, h: 3, body: hammockTurned },
+  'decor-bananaPlant': { w: 1, h: 2.2, body: bananaPlant },
 }

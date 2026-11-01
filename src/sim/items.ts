@@ -16,9 +16,10 @@ export type ItemKind =
   | 'gramophone' | 'standFan' | 'sewingMachine' | 'pendulumClock' | 'birdCage' | 'redRug'
   | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
-  | 'velvetSofa' | 'rattanArmchair' | 'vanity' | 'towelSteamer' | 'aromaDiffuser' | 'tileRug' | 'tearCalendar'
+  | 'velvetSofa' | 'rattanArmchair' | 'vanity' | 'towelSteamer' | 'aromaDiffuser' | 'tileRug' | 'tearCalendar' | 'pool'
   | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
   | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
+  | 'sunLounger' | 'charcoalGrill' | 'lightArch' | 'gardenSwing' | 'hammock' | 'bananaPlant'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
@@ -133,6 +134,7 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   aromaDiffuser: { w: 1, h: 1, price: 105_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemAromaDiffuser' },
   tileRug: { w: 2, h: 2, price: 195_000, beauty: 3, group: 'decor', layer: 'rug', name: 'itemTileRug' },
   tearCalendar: { w: 1, h: 1, price: 60_000, beauty: 1, group: 'decor', layer: 'wall', name: 'itemTearCalendar' },
+  pool: { w: 4, h: 4, price: 1_200_000, beauty: 8, group: 'decor', name: 'itemPool' },
   stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
   diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
   diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },
@@ -148,6 +150,12 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   menuBoard: { w: 2, h: 1, price: 150_000, beauty: 2, group: 'decor', shop: 'restaurant', layer: 'wall', name: 'itemMenuBoard' },
   drinkFridge: { w: 1, h: 1, price: 270_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemDrinkFridge' },
   icedTeaStand: { w: 1, h: 1, price: 90_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIcedTeaStand' },
+  sunLounger: { w: 2, h: 1, price: 180_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemSunLounger' },
+  charcoalGrill: { w: 1, h: 1, price: 150_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemCharcoalGrill' },
+  lightArch: { w: 3, h: 1, price: 240_000, beauty: 3, group: 'decor', shop: 'restaurant', name: 'itemLightArch' },
+  gardenSwing: { w: 2, h: 1, price: 300_000, beauty: 3, group: 'decor', shop: 'restaurant', name: 'itemGardenSwing' },
+  hammock: { w: 3, h: 1, price: 165_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemHammock' },
+  bananaPlant: { w: 1, h: 1, price: 120_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemBananaPlant' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]

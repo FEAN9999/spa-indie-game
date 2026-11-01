@@ -105,6 +105,19 @@ describe('the restaurant room', () => {
     expect(r.spawnDiner()).not.toBeNull()
   })
 
+  it('puts the pool and the rooftop pieces on any open floor, and the pool in the spa too', () => {
+    const { main, r } = setup()
+    main.money = 50_000_000
+    expect(r.openFloor(2)).toBeNull()
+    expect(r.openFloor(3)).toBeNull()
+    expect(r.buy('pool', 13, 38, false)).toBeNull()
+    expect(r.buy('hammock', 13, 20, false)).toBeNull()
+    expect(r.canPlace('pool', 13, 10, false)).toBeNull()
+    expect(main.buy('pool', 13, 8, false)).toBeNull()
+    expect(r.grid.cells[39][14]).toBe('decor')
+    expect(main.canPlace('hammock', 13, 12, false)).toBe('wrongShop')
+  })
+
   it('tells the view the room changed, and counts beauty from its pieces', () => {
     const { r } = setup()
     expect(r.drainEvents()).toEqual([])
