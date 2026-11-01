@@ -9,7 +9,7 @@ import { arrivalGapMs, type Stars } from './economy'
 import { besideSeat, buildGrid, isWalkable, manhattan, tileEq, tileOf, type Grid } from './grid'
 import { floorOf } from './floors'
 import { housesBought, NO_HOUSES, type House, type Houses, type Side } from './layout'
-import { DISH_IDS, DISH_STOCK, drawTicket, EXTRA_DISHES, fullRestaurantStock, isExtraDish, stockItemsForMenu, type DishId, type DishTicket, type ExtraDish, type RestaurantStock, type RestaurantStockItem } from './menu'
+import { DISH_IDS, DISH_STOCK, drawTicket, EXTRA_DISHES, fullRestaurantStock, isExtraDish, stockItemsForMenu, usesHerbs, type DishId, type DishTicket, type ExtraDish, type RestaurantStock, type RestaurantStockItem } from './menu'
 import { findPath } from './path'
 import { randomLook, type Rng } from './rng'
 import type { RestaurantSave } from './save'
@@ -386,16 +386,16 @@ export class RestaurantSim {
       .sort((a, b) => floorOf(a.tile.y) - floorOf(b.tile.y))
   }
 
-  /** How many more diners `dish` can take: its stock and the herbs, less the portions held by diners not yet cooked for. */
+  /** How many more diners `dish` can take: its stock and, for a dish with herbs, the herbs, less the portions held by diners not yet cooked for. */
   portionsLeft(dish: DishId): number {
     const held = this.heldDiners()
-    const own = this.stock[DISH_STOCK[dish]] - held.filter(d => d.dish === dish).length
-    return Math.max(0, Math.min(own, this.herbsLeft()))
+    const own = Math.max(0, this.stock[DISH_STOCK[dish]] - held.filter(d => d.dish === dish).length)
+    return usesHerbs(dish) ? Math.min(own, this.herbsLeft()) : own
   }
 
-  /** The herbs not yet promised: the stock less one for every diner not yet cooked for. */
+  /** The herbs not yet promised: the stock less one for every diner not yet cooked for whose dish takes herbs. */
   herbsLeft(): number {
-    return Math.max(0, this.stock.herbs - this.heldDiners().length)
+    return Math.max(0, this.stock.herbs - this.heldDiners().filter(d => usesHerbs(d.dish)).length)
   }
 
   /** The diners who hold a portion, and a herb, until they are cooked for. */
@@ -692,9 +692,9 @@ export class RestaurantSim {
     for (const item of stockItemsForMenu(this.menu())) if (this.stock[item] <= LOW_STOCK && this.host.purse.money >= RESTAURANT_RESTOCK_PRICE[item]) this.restock(item)
   }
 
-  /** The diner's dish item and a herb leave the stock as their dish is started; the view hears when one is low or gone. */
+  /** The diner's dish item, and a herb unless it is a drink, leave the stock as their dish is started; the view hears when one is low or gone. */
   private takePortion(d: Diner): void {
-    for (const item of [DISH_STOCK[d.dish], 'herbs'] as const) {
+    for (const item of usesHerbs(d.dish) ? [DISH_STOCK[d.dish], 'herbs' as const] : [DISH_STOCK[d.dish]]) {
       const left = --this.stock[item]
       if (left === LOW_STOCK) this.events.push({ type: 'stockLow', item, out: false })
       else if (left === 0) this.events.push({ type: 'stockLow', item, out: true })

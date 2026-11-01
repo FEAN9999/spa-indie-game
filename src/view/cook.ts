@@ -4,6 +4,7 @@ import type { BanhXeoTicket } from '../sim/banhXeo'
 import type { BunChaTicket } from '../sim/bunCha'
 import type { GoiCuonTicket } from '../sim/goiCuon'
 import type { ComTamTicket } from '../sim/comTam'
+import type { CaPheTicket } from '../sim/caPhe'
 import type { CheTicket } from '../sim/che'
 import type { DishId, DishTicket } from '../sim/menu'
 import type { PhoTicket } from '../sim/pho'
@@ -17,7 +18,7 @@ export interface CookData<T extends DishTicket = DishTicket> extends MiniGameDat
 }
 
 /** The scene each dish is cooked in. */
-export const COOK_SCENE: Record<DishId, string> = { pho: 'PhoScene', banhXeo: 'BanhXeoScene', che: 'CheScene', bunCha: 'BunChaScene', goiCuon: 'GoiCuonScene', comTam: 'ComTamScene' }
+export const COOK_SCENE: Record<DishId, string> = { pho: 'PhoScene', banhXeo: 'BanhXeoScene', che: 'CheScene', bunCha: 'BunChaScene', goiCuon: 'GoiCuonScene', comTam: 'ComTamScene', caPhe: 'CaPheScene' }
 
 /** The three step pills down the left, beside the ticket at the top right, and the ticket's lines. */
 export const PILL = { x: 285, w: 370, h: 64, ys: [520, 600, 680], size: 34 }
@@ -37,6 +38,10 @@ export function ticketLines(dish: DishId, ticket: DishTicket): StringKey[] {
   if (dish === 'bunCha') {
     const tk = ticket as BunChaTicket
     return [tk.grill === 'vua' ? 'bcVua' : 'bcChay', tk.chili ? 'phoChili' : 'phoNoChili', 'bcPapayaLine', tk.extraHerb ? 'phoExtraHerb' : 'phoHerbLine']
+  }
+  if (dish === 'caPhe') {
+    const tk = ticket as CaPheTicket
+    return [tk.sweet === 'it' ? 'cfSweetIt' : 'cfSweetVua', tk.ice === 'it' ? 'cfIceIt' : 'cfIceNhieu', tk.strong ? 'cfStrong' : 'cfMild']
   }
   if (dish === 'comTam') {
     const tk = ticket as ComTamTicket

@@ -4,26 +4,31 @@ import { drawBanhXeoTicket, type BanhXeoTicket } from './banhXeo'
 import { drawBunChaTicket, type BunChaTicket } from './bunCha'
 import { drawGoiCuonTicket, type GoiCuonTicket } from './goiCuon'
 import { drawComTamTicket, type ComTamTicket } from './comTam'
+import { drawCaPheTicket, type CaPheTicket } from './caPhe'
 import { drawCheTicket, type CheTicket } from './che'
 import { drawPhoTicket, type PhoTicket } from './pho'
 import type { Rng } from './rng'
 
-export type DishId = 'pho' | 'banhXeo' | 'che' | 'bunCha' | 'goiCuon' | 'comTam'
+export type DishId = 'pho' | 'banhXeo' | 'che' | 'bunCha' | 'goiCuon' | 'comTam' | 'caPhe'
 /** The dishes every restaurant has from the day it is bought. */
 export const BASE_DISHES: readonly DishId[] = ['pho', 'banhXeo', 'che']
 /** The dishes the owner puts on the menu by paying for them once, in the order the menu lists them. */
-export type ExtraDish = 'bunCha' | 'goiCuon' | 'comTam'
-export const EXTRA_DISHES: readonly ExtraDish[] = ['bunCha', 'goiCuon', 'comTam']
+export type ExtraDish = 'bunCha' | 'goiCuon' | 'comTam' | 'caPhe'
+export const EXTRA_DISHES: readonly ExtraDish[] = ['bunCha', 'goiCuon', 'comTam', 'caPhe']
 export const DISH_IDS: readonly DishId[] = [...BASE_DISHES, ...EXTRA_DISHES]
 export const isExtraDish = (d: DishId): d is ExtraDish => (EXTRA_DISHES as readonly DishId[]).includes(d)
 
-export type DishTicket = PhoTicket | BanhXeoTicket | CheTicket | BunChaTicket | GoiCuonTicket | ComTamTicket
+export type DishTicket = PhoTicket | BanhXeoTicket | CheTicket | BunChaTicket | GoiCuonTicket | ComTamTicket | CaPheTicket
 
-export type RestaurantStockItem = 'phoKit' | 'batter' | 'cheKit' | 'chaKit' | 'cuonKit' | 'tamKit' | 'herbs'
-export const RESTAURANT_STOCK_ITEMS: readonly RestaurantStockItem[] = ['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit', 'tamKit', 'herbs']
+export type RestaurantStockItem = 'phoKit' | 'batter' | 'cheKit' | 'chaKit' | 'cuonKit' | 'tamKit' | 'cafeKit' | 'herbs'
+export const RESTAURANT_STOCK_ITEMS: readonly RestaurantStockItem[] = ['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit', 'tamKit', 'cafeKit', 'herbs']
 
-/** The item each dish uses up; every dish also uses one herbs. */
-export const DISH_STOCK: Record<DishId, Exclude<RestaurantStockItem, 'herbs'>> = { pho: 'phoKit', banhXeo: 'batter', che: 'cheKit', bunCha: 'chaKit', goiCuon: 'cuonKit', comTam: 'tamKit' }
+/** The drinks, which take no herbs; every other dish uses one herbs beside its own item. */
+export const NO_HERB_DISHES: readonly DishId[] = ['caPhe']
+export const usesHerbs = (d: DishId): boolean => !NO_HERB_DISHES.includes(d)
+
+/** The item each dish uses up. */
+export const DISH_STOCK: Record<DishId, Exclude<RestaurantStockItem, 'herbs'>> = { pho: 'phoKit', banhXeo: 'batter', che: 'cheKit', bunCha: 'chaKit', goiCuon: 'cuonKit', comTam: 'tamKit', caPhe: 'cafeKit' }
 
 /** The stock items the dishes `menu` use, and the herbs, in the menu's order. */
 export const stockItemsForMenu = (menu: readonly DishId[]): RestaurantStockItem[] => RESTAURANT_STOCK_ITEMS.filter(item => item === 'herbs' || menu.some(d => DISH_STOCK[d] === item))
@@ -31,7 +36,7 @@ export const stockItemsForMenu = (menu: readonly DishId[]): RestaurantStockItem[
 export type RestaurantStock = Record<RestaurantStockItem, number>
 
 /** What a newly bought restaurant starts with: STOCK_START of each item. */
-export const fullRestaurantStock = (): RestaurantStock => ({ phoKit: STOCK_START, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, herbs: STOCK_START })
+export const fullRestaurantStock = (): RestaurantStock => ({ phoKit: STOCK_START, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, cafeKit: STOCK_START, herbs: STOCK_START })
 
 /** A ticket for `dish`, drawn with that dish's own rolls. */
 export function drawTicket(dish: DishId, rng: Rng, hard: boolean): DishTicket {
@@ -40,9 +45,10 @@ export function drawTicket(dish: DishId, rng: Rng, hard: boolean): DishTicket {
   if (dish === 'bunCha') return drawBunChaTicket(rng, hard)
   if (dish === 'goiCuon') return drawGoiCuonTicket(rng, hard)
   if (dish === 'comTam') return drawComTamTicket(rng, hard)
+  if (dish === 'caPhe') return drawCaPheTicket(rng, hard)
   return drawCheTicket(rng, hard)
 }
 
-export const DISH_NAME: Record<DishId, StringKey> = { pho: 'dishPho', banhXeo: 'dishBanhXeo', che: 'dishChe', bunCha: 'dishBunCha', goiCuon: 'dishGoiCuon', comTam: 'dishComTam' }
+export const DISH_NAME: Record<DishId, StringKey> = { pho: 'dishPho', banhXeo: 'dishBanhXeo', che: 'dishChe', bunCha: 'dishBunCha', goiCuon: 'dishGoiCuon', comTam: 'dishComTam', caPhe: 'dishCaPhe' }
 
-export const RSTOCK_NAME: Record<RestaurantStockItem, StringKey> = { phoKit: 'rstockPhoKit', batter: 'rstockBatter', cheKit: 'rstockCheKit', chaKit: 'rstockChaKit', cuonKit: 'rstockCuonKit', tamKit: 'rstockTamKit', herbs: 'rstockHerbs' }
+export const RSTOCK_NAME: Record<RestaurantStockItem, StringKey> = { phoKit: 'rstockPhoKit', batter: 'rstockBatter', cheKit: 'rstockCheKit', chaKit: 'rstockChaKit', cuonKit: 'rstockCuonKit', tamKit: 'rstockTamKit', cafeKit: 'rstockCafeKit', herbs: 'rstockHerbs' }

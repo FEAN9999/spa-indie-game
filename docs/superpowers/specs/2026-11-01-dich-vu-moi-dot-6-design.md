@@ -1,7 +1,7 @@
 # Đợt 6: thêm dịch vụ spa và món nhà hàng
 
 - Ngày: 2026-11-01
-- Trạng thái: Chồng yêu đã chọn cách làm và danh sách (2026-11-01); lô 1, 2 và 3 đã làm, lô 4 chưa làm.
+- Trạng thái: Chồng yêu đã chọn cách làm và danh sách (2026-11-01); cả 4 lô đã làm, chờ Chồng yêu duyệt để merge.
 
 Cách đọc giống các spec trước:
 - **(anh chọn)** là điều Chồng yêu đã quyết.
@@ -20,7 +20,7 @@ Cách đọc giống các spec trước:
 | 1 (đã làm) | Giác hơi | Bún chả |
 | 2 (đã làm) | Nối mi | Gỏi cuốn |
 | 3 (đã làm) | Bấm huyệt | Cơm tấm |
-| 4 | Lấy nhân mụn | Cà phê sữa đá |
+| 4 (đã làm) | Lấy nhân mụn | Cà phê sữa đá |
 
 ## 2. Luật chung **(em đề xuất)**
 
@@ -145,6 +145,48 @@ Mini-game (30 giây), 3 bước:
 
 - Tìm trên GitHub ("acupressure game", "shiatsu game", "pressure point tap game", "broken rice game", "fan fire minigame"): chỉ có Drag-Drop Reflexology (Vasundhara-Boomi), một trò kéo-thả ghép huyệt với hình để học, kiểu chơi khác. Luật lô 3 là của mình.
 
-## 6. Save
+## 6. Lô 4
 
-- Bản 43 (`NEW_SERVICES_SAVE_VERSION`, chưa lên master nên các lô dùng chung): thêm `alcohol`, `lashKit`, `balm` trong kho, `cupping`, `lashes`, `acupressure` trong bậc thợ và số đếm, `bought`, `chaKit`, `cuonKit`, `tamKit` của nhà hàng, bậc `bunCha`, `goiCuon`, `comTam` của đầu bếp. Save cũ đọc được, thiếu thì lấy mặc định.
+### 6.1 Lấy nhân mụn
+
+| Mục | Số |
+|---|---|
+| Mở học | 5★, đã mở Massage (học sau Bấm huyệt trong danh sách gợi ý; là nghề cuối cùng) |
+| Học phí | 2.700.000 đ |
+| Khách trả | 140.000 đ |
+| Giường chăm da | 1.650.000 đ (1×3), tặng một cái khi học xong |
+| Kho | Gel làm dịu, 720.000 đ / 20, mỗi khách 1 gel + 1 khăn |
+| Khách thích | học sinh, người nổi tiếng |
+
+Mini-game (25 giây):
+- Trên má có 6 nốt (khách khó tính 8), trong đó 4 nốt đầu trắng (khách khó tính 5), còn lại là mụn đỏ; vị trí rút ngẫu nhiên.
+- Giữ ngón trên nốt đầu trắng: sau 0,9 giây thì ra nhân, phải nhấc tay trong 0,5 giây (khách khó tính 0,35 giây), quá là "bầm". Nhấc trước khi ra nhân thì nốt còn nguyên, làm lại được.
+- Ấn vào mụn đỏ là lỗi ("đừng nặn"). Lấy hết nhân xong thì chạm từng chỗ để chấm gel.
+- 3★: làm hết, không lỗi; 2★: sót tối đa 1 việc (nốt chưa lấy hoặc chỗ chưa chấm gel) và tối đa 2 lỗi.
+
+### 6.2 Cà phê sữa đá
+
+| Mục | Số |
+|---|---|
+| Giá thêm vào thực đơn | 800.000 đ (một lần) |
+| Khách trả | 20.000 đ |
+| Kho | Cà phê & sữa đặc, 140.000 đ / 20; là đồ uống nên không tốn rau thơm (món ăn vẫn tốn 1 rau thơm như cũ) |
+
+Mini-game (30 giây), 3 bước:
+1. **Sữa đặc:** giữ nút để rót, thả khi sữa tới vạch: "ít ngọt" 15% ly, "ngọt vừa" 25% ly, sai số ±4% (khách khó tính ±3%).
+2. **Pha phin:** cà phê nhỏ giọt lên trên lớp sữa (10% ly mỗi giây); bấm "Nhấc phin" khi ly ở 55–68% ("pha vừa") hoặc 64–76% ("pha đậm", phiếu của khách khó tính). Để đầy ly là tràn.
+3. **Thêm đá:** chạm xô đá đúng số viên: "ít đá" 2 viên, "nhiều đá" 4 viên, rồi Xong.
+- Sao: 1 + (sữa vừa) + (cà phê vừa) − (cà phê lệch xa) − (sai số đá), trong khoảng 1–3.
+
+### 6.3 Tham khảo mã nguồn mở
+
+- **Pimple Popper** (Crazy-Marvin, Godot, 47★): mỗi nốt đi qua bình thường → đang ấn → vỡ → làm sạch. Em lấy ý "ấn tới khi ra nhân", thêm phần riêng: mụn đỏ phải chừa, nhấc tay kịp để khỏi bầm, chấm gel sau cùng.
+- **Coffee Brewing Mini-Game** (Manasaveenakasala): mỗi thông số pha có đích và sai số. Em dùng cho mức sữa và mức cà phê theo phiếu.
+
+### 6.4 Mã save để dán vào chat
+
+- Test giữ mã save của một tiệm đông khách dưới 2250 ký tự. Trên master mã dài 2203; 7 dịch vụ mới thêm một ô bậc thợ và một ô đếm vào mỗi bản ghi nên mã lên 2253. Ngân sách được nới lên 2350 (không có giới hạn kỹ thuật nào ở 2250).
+
+## 7. Save
+
+- Bản 43 (`NEW_SERVICES_SAVE_VERSION`, chưa lên master nên các lô dùng chung): thêm `alcohol`, `lashKit`, `balm`, `gel` trong kho, `cupping`, `lashes`, `acupressure`, `acne` trong bậc thợ và số đếm, `bought`, `chaKit`, `cuonKit`, `tamKit`, `cafeKit` của nhà hàng, bậc `bunCha`, `goiCuon`, `comTam`, `caPhe` của đầu bếp. Save cũ đọc được, thiếu thì lấy mặc định.

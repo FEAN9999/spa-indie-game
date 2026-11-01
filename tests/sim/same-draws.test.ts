@@ -94,6 +94,15 @@ describe('the restaurant draws', () => {
     expect(restaurantLog(r => { r.buyDish('bunCha'); r.buyDish('goiCuon'); r.buyDish('comTam') })).toEqual(restaurantComTamFixture)
   })
 
+  it('draws differently once Cà phê sữa đá is on the menu too, with diners ordering it', () => {
+    const log = restaurantLog(r => {
+      for (const dish of ['bunCha', 'goiCuon', 'comTam'] as const) r.buyDish(dish)
+      expect(r.buyDish('caPhe')).toBeNull()
+    })
+    expect(log).not.toEqual(restaurantComTamFixture)
+    expect(log.diners.some(d => d.includes(':caPhe:'))).toBe(true)
+  })
+
   it('draws differently once Cơm tấm is on the menu too, with diners ordering it', () => {
     const log = restaurantLog(r => {
       r.buyDish('bunCha')

@@ -668,13 +668,13 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000, comTam: 40_000 } as const
+export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000, comTam: 40_000, caPhe: 20_000 } as const
 /** What putting a new dish on the menu costs, once; its stock starts at STOCK_START. */
-export const DISH_BUY_PRICE = { bunCha: 1_200_000, goiCuon: 1_000_000, comTam: 1_500_000 } as const
+export const DISH_BUY_PRICE = { bunCha: 1_200_000, goiCuon: 1_000_000, comTam: 1_500_000, caPhe: 800_000 } as const
 export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
 
 /** What 20 portions of each restaurant stock item cost to restock (herbs are shared by every dish). */
-export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, cuonKit: 160_000, tamKit: 260_000, herbs: 40_000 } as const
+export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, cuonKit: 160_000, tamKit: 260_000, cafeKit: 140_000, herbs: 40_000 } as const
 
 /** How many cooks the restaurant can hold: base, plus per extra floor, plus per house, never above max. */
 export const CHEF_CAP = { base: 2, perFloor: 2, perHouse: 1, max: 10 } as const
@@ -787,6 +787,21 @@ export const CT_OIL_AT = [
 ] as const
 /** Spots caught that earn a star. */
 export const CT_OIL_GOOD = 4
+
+/** Cà phê sữa đá, in shares of the glass: holding the can fills a whole glass of condensed milk in this long, never past the most; the milk is right within the tolerance of the ticket's mark (tighter for a hard diner) and "near" a little farther. */
+export const CF_LIMIT_MS = 30_000
+export const CF_MILK_POUR_MS = 4_000
+export const CF_MILK_MOST = 0.5
+export const CF_MILK = { it: 0.15, vua: 0.25 } as const
+export const CF_MILK_TOL = 0.04
+export const CF_MILK_TOL_HARD = 0.03
+export const CF_MILK_NEAR = 0.08
+/** The phin drips this much of the glass a second on top of the milk; lifting it with the coffee in the ticket's band is right, a little outside is "near", and a glass dripped full runs over. */
+export const CF_DRIP_RATE = 0.1
+export const CF_DRIP_BAND = { vua: [0.55, 0.68], dam: [0.64, 0.76] } as const
+export const CF_DRIP_NEAR = 0.06
+/** The ice cubes each ticket asks for. */
+export const CF_ICE = { it: 2, nhieu: 4 } as const
 
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50

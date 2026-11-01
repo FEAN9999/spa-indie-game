@@ -2670,7 +2670,7 @@ describe('the restaurant in a saved chain', () => {
     const che = r.diners.find(d => d.dish === 'che')!
     expect([che.state, che.chefId]).toEqual(['ordering', null])
     expect(che.ticket).toHaveProperty('ice')
-    expect(r.stock).toEqual({ ...v38.restaurant.stock, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START })
+    expect(r.stock).toEqual({ ...v38.restaurant.stock, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, cafeKit: STOCK_START })
     expect(r.bought).toEqual([])
     expect(r.stock.batter).toBeLessThan(STOCK_START)
     expect(r.learned).toEqual(['pho'])
@@ -2712,12 +2712,12 @@ describe('the restaurant in a saved chain', () => {
     rs.chefs.push({ id: 'x' }, 'y' as unknown as Record<string, unknown>)
     rs.candidates = [{ ...(rs.candidates as object[])[0], stats: { skill: 2.5, speed: 3 } }, null]
     const r = parseSave(raw).restaurant!
-    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, herbs: STOCK_START })
+    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, cafeKit: STOCK_START, herbs: STOCK_START })
     expect(r.learned).toEqual(['che'])
     expect(r.away).toEqual({ profits: [1000], ok: true, tipSeen: false })
     expect(r.diners.map(x => x.id)).toEqual([])
     expect(r.chefs).toHaveLength(1)
-    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0, comTam: 0 }, null])
+    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0, comTam: 0, caPhe: 0 }, null])
     expect(r.candidates).toHaveLength(1)
     expect(r.candidates[0].stats).toEqual({ skill: 1, speed: 3 })
   })
@@ -3023,6 +3023,38 @@ describe('save version 43: the new services and dishes', () => {
     expect(saved.restaurant!.diners[0].ticket).toHaveProperty('combo')
     expect(Chain.fromSave(saved, 7).restaurant!.menu()).toEqual(['pho', 'banhXeo', 'che', 'comTam'])
     raw.restaurant.diners[0].ticket = { combo: 'lap', extraPickle: false }
+    expect(parseSave(raw).restaurant!.diners).toEqual([])
+  })
+
+  it('reads the v43 fixture, saved before Lấy nhân mụn and Cà phê sữa đá, with neither and a full stock of both', () => {
+    const data = parseSave(structuredClone(v43))
+    expect(data.services).not.toContain('acne')
+    expect(data.stock.gel).toBe(20)
+    expect(data.staff[0].tiers.acne).toBe(0)
+    expect(data.restaurant!.stock.cafeKit).toBe(20)
+  })
+
+  it('round-trips Lấy nhân mụn learned and Cà phê sữa đá bought, with a coffee diner, and drops a damaged coffee ticket', () => {
+    const chain = new Chain(starShop(5, 40_000_000), 7)
+    chain.main.payLesson('acne')
+    chain.main.passLesson('acne')
+    chain.main.stock.gel = 4
+    expect(chain.buyRestaurant()).toBeNull()
+    const r = chain.restaurant!
+    expect(r.buyDish('caPhe')).toBeNull()
+    r.stock.cafeKit = 13
+    r.spawnDiner({ kind: 'office', dish: 'caPhe' })
+    r.advance(3000)
+    const raw = JSON.parse(JSON.stringify(chain.toSave()))
+    const saved = parseSave(structuredClone(raw))
+    expect(saved.services).toContain('acne')
+    expect(saved.stock.gel).toBe(4)
+    expect(saved.restaurant!.bought).toEqual(['caPhe'])
+    expect(saved.restaurant!.stock.cafeKit).toBe(13)
+    expect(saved.restaurant!.diners.map(d => d.dish)).toEqual(['caPhe'])
+    expect(saved.restaurant!.diners[0].ticket).toHaveProperty('strong')
+    expect(Chain.fromSave(saved, 7).restaurant!.menu()).toEqual(['pho', 'banhXeo', 'che', 'caPhe'])
+    raw.restaurant.diners[0].ticket = { sweet: 'it', ice: 'khong', strong: false }
     expect(parseSave(raw).restaurant!.diners).toEqual([])
   })
 
