@@ -4,7 +4,7 @@ import { ITEMS, ITEM_KINDS, type ItemGroup, type ItemKind } from '../../src/sim/
 import type { ServiceId } from '../../src/sim/services'
 import { buildTabs, catalogPage, DECOR_FILTERS, petPage, type DecorFilter } from '../../src/view/catalog'
 
-const ALL_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails', 'cupping', 'lashes']
+const ALL_SERVICES: ServiceId[] = ['shampoo', 'mask', 'massage', 'steam', 'stone', 'mud', 'scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure']
 const kinds = (p: ReturnType<typeof catalogPage>) => p.entries.map(e => e.kind)
 
 describe('build mode catalogue', () => {
@@ -107,6 +107,8 @@ describe('build mode catalogue', () => {
     expect(beds([...six, 'nails'])).not.toContain('cuppingBed')
     expect(beds([...six, 'lashes'])).toContain('lashBed')
     expect(beds([...six, 'cupping'])).not.toContain('lashBed')
+    expect(beds([...six, 'acupressure'])).toContain('acuBed')
+    expect(beds([...six, 'lashes'])).not.toContain('acuBed')
   })
 
   it('offers every kind but the gifts exactly once, shared decor once in each shop', () => {

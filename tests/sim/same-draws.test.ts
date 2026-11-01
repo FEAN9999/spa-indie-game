@@ -7,7 +7,9 @@ import nineFixture from '../fixtures/draws-nine-services.json'
 import restaurantFixture from '../fixtures/draws-restaurant.json'
 import restaurantBunChaFixture from '../fixtures/draws-restaurant-bun-cha.json'
 import tenFixture from '../fixtures/draws-ten-services.json'
-import { learnCupping, learnFoot, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
+import elevenFixture from '../fixtures/draws-eleven-services.json'
+import restaurantGoiCuonFixture from '../fixtures/draws-restaurant-goi-cuon.json'
+import { learnCupping, learnFoot, learnLashes, learnNails, learnScrub, restaurantLog, runLog, sixServiceLog } from './helpers'
 
 describe('the shop draws', () => {
   it('brings the same customers and candidates as before quests, day after day', () => {
@@ -55,6 +57,14 @@ describe('the shop draws', () => {
   it('draws the same when the Nối mi tuition is paid and the lesson not passed', () => {
     expect(sixServiceLog(4, c => { learnCupping(c); expect(c.main.payLesson('lashes')).toBeNull() })).toEqual(tenFixture)
   })
+
+  it('draws the same in a 5-star chain with every lesson up to Nối mi learned while Bấm huyệt is not', () => {
+    expect(sixServiceLog(4, learnLashes)).toEqual(elevenFixture)
+  })
+
+  it('draws the same when the Bấm huyệt tuition is paid and the lesson not passed', () => {
+    expect(sixServiceLog(4, c => { learnLashes(c); expect(c.main.payLesson('acupressure')).toBeNull() })).toEqual(elevenFixture)
+  })
 })
 
 describe('the restaurant draws', () => {
@@ -64,6 +74,10 @@ describe('the restaurant draws', () => {
 
   it('draws the same with Bún chả bought while Gỏi cuốn is not', () => {
     expect(restaurantLog(r => { r.buyDish('bunCha') })).toEqual(restaurantBunChaFixture)
+  })
+
+  it('draws the same with Bún chả and Gỏi cuốn bought while Cơm tấm is not', () => {
+    expect(restaurantLog(r => { r.buyDish('bunCha'); r.buyDish('goiCuon') })).toEqual(restaurantGoiCuonFixture)
   })
 
   it('draws differently once Gỏi cuốn is on the menu too, with diners ordering it', () => {

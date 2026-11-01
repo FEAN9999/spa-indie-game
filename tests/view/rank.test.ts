@@ -103,7 +103,8 @@ describe('learnLine', () => {
     expect(learnLine(m(4, 5), ['massage'])).toBe('Món mới để học: Sơn móng.')
     expect(learnLine(m(4, 5), ['massage', 'nails'])).toBe('Món mới để học: Giác hơi.')
     expect(learnLine(m(4, 5), ['massage', 'nails', 'cupping'])).toBe('Món mới để học: Nối mi.')
-    expect(learnLine(m(4, 5), ['massage', 'nails', 'cupping', 'lashes'])).toBeNull()
+    expect(learnLine(m(4, 5), ['massage', 'nails', 'cupping', 'lashes'])).toBe('Món mới để học: Bấm huyệt.')
+    expect(learnLine(m(4, 5), ['massage', 'nails', 'cupping', 'lashes', 'acupressure'])).toBeNull()
   })
   it('is null for other rises and for keeping', () => {
     expect(learnLine(m(1, 2), [])).toBeNull()

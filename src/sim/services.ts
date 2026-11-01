@@ -8,7 +8,7 @@ export type BasicService = 'shampoo' | 'mask' | 'massage'
 /** A service opened by solving its recipe at the bench. */
 export type RecipeService = RecipeId
 /** A service learned in a lesson with a teacher. */
-export type LessonService = 'scrub' | 'foot' | 'nails' | 'cupping' | 'lashes'
+export type LessonService = 'scrub' | 'foot' | 'nails' | 'cupping' | 'lashes' | 'acupressure'
 export type ServiceId = BasicService | RecipeService | LessonService
 
 /** The basic services in the order they open. */
@@ -17,7 +17,7 @@ export const BASIC_SERVICES: readonly BasicService[] = ['shampoo', 'mask', 'mass
 export const RECIPE_SERVICES: readonly RecipeService[] = ['steam', 'stone', 'mud']
 
 /** The lesson services, learned from a teacher once the shop has the stars. */
-export const LESSON_SERVICES: readonly LessonService[] = ['scrub', 'foot', 'nails', 'cupping', 'lashes']
+export const LESSON_SERVICES: readonly LessonService[] = ['scrub', 'foot', 'nails', 'cupping', 'lashes', 'acupressure']
 
 /** Every service: the basic ones, then the recipe ones, then the lesson ones. */
 export const SERVICE_IDS: ServiceId[] = [...BASIC_SERVICES, ...RECIPE_SERVICES, ...LESSON_SERVICES]
@@ -49,6 +49,7 @@ export const SERVICES: Record<ServiceId, ServiceSpec> = {
   nails: { price: SERVICE_PRICE.nails, openCost: SERVICE_OPEN_COST.nails, bed: 'nailDesk', name: 'serviceNails', busy: 'busyNails' },
   cupping: { price: SERVICE_PRICE.cupping, openCost: SERVICE_OPEN_COST.cupping, bed: 'cuppingBed', name: 'serviceCupping', busy: 'busyCupping' },
   lashes: { price: SERVICE_PRICE.lashes, openCost: SERVICE_OPEN_COST.lashes, bed: 'lashBed', name: 'serviceLashes', busy: 'busyLashes' },
+  acupressure: { price: SERVICE_PRICE.acupressure, openCost: SERVICE_OPEN_COST.acupressure, bed: 'acuBed', name: 'serviceAcupressure', busy: 'busyAcupressure' },
 }
 
 /** The service a kind of bed gives, or null for other furniture. */

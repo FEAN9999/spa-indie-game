@@ -27,6 +27,9 @@ describe('lesson texts', () => {
     expect(lessonTitle('lashes')).toBe('Học Nối mi')
     expect(lessonHowTo('lashes')).toEqual(['Xem thẻ mẫu: chỗ nào mi ngắn, vừa hay dài.', 'Kéo sợi mi đúng độ dài lên từng chấm trên mí.'])
     expect(lessonPassLine('lashes')).toBe('Tiệm đã có Nối mi. Quà: một Giường nối mi trong hộp quà.')
+    expect(lessonTitle('acupressure')).toBe('Học Bấm huyệt')
+    expect(lessonHowTo('acupressure')).toEqual(['Huyệt nào sáng thì đặt ngón tay lên và giữ.', 'Thả tay khi vòng lực vào vạch xanh, giữ lâu quá là đau.'])
+    expect(lessonPassLine('acupressure')).toBe('Tiệm đã có Bấm huyệt. Quà: một Giường bấm huyệt trong hộp quà.')
   })
   it('passes at 2 stars', () => {
     expect(LESSON_PASS_STARS).toBe(2)

@@ -53,7 +53,7 @@ describe('kinds of customer', () => {
   })
 
   it('has office workers, celebrities and ladies like Sơn móng', () => {
-    expect([...KINDS.office.prefers]).toEqual(['shampoo', 'mask', 'stone', 'nails'])
+    expect([...KINDS.office.prefers].slice(0, 4)).toEqual(['shampoo', 'mask', 'stone', 'nails'])
     expect([...KINDS.celeb.prefers]).toEqual(['massage', 'mask', 'mud', 'nails'])
     expect([...KINDS.lady.prefers].slice(0, 4)).toEqual(['mask', 'mud', 'stone', 'nails'])
   })
@@ -68,13 +68,18 @@ describe('kinds of customer', () => {
     expect([...KINDS.backpacker.prefers]).toEqual(['massage', 'steam', 'shampoo', 'foot'])
   })
 
+  it('has office workers and elders like Bấm huyệt too', () => {
+    expect([...KINDS.office.prefers]).toEqual(['shampoo', 'mask', 'stone', 'nails', 'acupressure'])
+    expect([...KINDS.elder.prefers]).toEqual(['massage', 'steam', 'foot', 'cupping', 'acupressure'])
+  })
+
   it('has students and ladies like Nối mi too', () => {
     expect([...KINDS.student.prefers]).toEqual(['shampoo', 'scrub', 'lashes'])
     expect([...KINDS.lady.prefers]).toEqual(['mask', 'mud', 'stone', 'nails', 'lashes'])
   })
 
   it('has elders and tourists like Giác hơi too', () => {
-    expect([...KINDS.elder.prefers]).toEqual(['massage', 'steam', 'foot', 'cupping'])
+    expect([...KINDS.elder.prefers].slice(0, 4)).toEqual(['massage', 'steam', 'foot', 'cupping'])
     expect([...KINDS.tourist.prefers]).toEqual(['mud', 'stone', 'massage', 'scrub', 'cupping'])
   })
 

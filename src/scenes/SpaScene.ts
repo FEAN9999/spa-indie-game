@@ -145,9 +145,9 @@ const STONES_TILES = 0.78
 const SHUTTER = { ms: 300, depth: HUD_DEPTH + 200, slat: 72, sign: { w: 640, h: 160, r: 40 } }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The close-up each service is played in. */
-const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene', cupping: 'CuppingScene', lashes: 'LashesScene' }
+const MINI_GAME_SCENE: Record<ServiceId, string> = { shampoo: 'ShampooScene', mask: 'MaskScene', massage: 'MassageScene', steam: 'SteamScene', stone: 'StoneScene', mud: 'MudScene', scrub: 'ScrubScene', foot: 'FootScene', nails: 'NailsScene', cupping: 'CuppingScene', lashes: 'LashesScene', acupressure: 'AcupressureScene' }
 /** The hint marking each mini-game as played once, so its demo hand shows only the first time. */
-const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails', cupping: 'demoCupping', lashes: 'demoLashes' }
+const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'demoMask', massage: 'demoMassage', steam: 'demoSteam', stone: 'demoStone', mud: 'demoMud', scrub: 'demoScrub', foot: 'demoFoot', nails: 'demoNails', cupping: 'demoCupping', lashes: 'demoLashes', acupressure: 'demoAcupressure' }
 /** Services whose customer sits on the station's tile toward its head instead of lying. */
 const SEATED: readonly ServiceId[] = ['foot', 'nails']
 /** The way the head of a piece standing up the floor lies from its bed tile: a bed's head, a foot chair's or nail desk's seat. */

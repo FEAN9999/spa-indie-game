@@ -88,7 +88,7 @@ describe('furniture art', () => {
 
   it('draws every bed lying across the floor, as wide as its turned footprint', () => {
     const beds = ITEM_KINDS.filter(k => ITEMS[k].group === 'bed')
-    expect(beds).toHaveLength(11)
+    expect(beds).toHaveLength(12)
     for (const kind of beds) {
       const across = FURNITURE[`${itemTexture(kind)}-turned`]
       expect(across, kind).toBeDefined()

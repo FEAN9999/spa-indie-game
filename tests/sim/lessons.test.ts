@@ -451,3 +451,66 @@ describe('Nối mi', () => {
     expect(main.stock.towel).toBe(towel - 1)
   })
 })
+
+describe('Bấm huyệt', () => {
+  it('needs 5 stars, massage open and 2.400.000 đ', () => {
+    expect(starShop(4).lessonProblem('acupressure')).toBe('stars')
+    expect(starShop(5).lessonProblem('acupressure')).toBeNull()
+    expect(starShop(5, 2_399_999).lessonProblem('acupressure')).toBe('money')
+  })
+
+  it('takes the tuition once, gives a Giường bấm huyệt and starts the balm at 20', () => {
+    const sim = starShop(5)
+    const money = sim.money
+    expect(sim.payLesson('acupressure')).toBeNull()
+    expect(sim.payLesson('acupressure')).toBeNull()
+    expect(money - sim.money).toBe(2_400_000)
+    sim.passLesson('acupressure')
+    expect(sim.book.gifts.filter(g => g === 'acuBed')).toHaveLength(1)
+    expect(sim.stock.balm).toBe(20)
+  })
+
+  it('is the last lesson offered once every other is learned', () => {
+    const sim = starShop(5)
+    for (const id of ['scrub', 'foot', 'nails', 'cupping', 'lashes'] as const) {
+      sim.payLesson(id)
+      sim.passLesson(id)
+    }
+    expect(sim.learnable()).toBe('acupressure')
+    sim.payLesson('acupressure')
+    sim.passLesson('acupressure')
+    expect(sim.learnable()).toBeNull()
+  })
+
+  it('opens at a branch only with its bed there, and never brings more customers', () => {
+    const chain = new Chain(starShop(5, 25_000_000), 11)
+    chain.open('beach')
+    const beach = chain.shop('beach')!
+    chain.main.payLesson('acupressure')
+    chain.main.passLesson('acupressure')
+    chain.sync()
+    const before = serviceArrivalFactor(beach.availableServices())
+    expect(beach.availableServices()).not.toContain('acupressure')
+    placeFirst(beach, 'acuBed')
+    expect(beach.availableServices()).toContain('acupressure')
+    expect(serviceArrivalFactor(beach.availableServices())).toBe(before)
+  })
+
+  it('is served by staff for the ranked price, using balm and a towel', () => {
+    const main = starShop(5)
+    main.payLesson('acupressure')
+    main.passLesson('acupressure')
+    placeFirst(main, 'acuBed')
+    hireStaff(main, 'technician', undefined, {})
+    const balm = main.stock.balm
+    const towel = main.stock.towel
+    main.drainEvents()
+    main.spawnCustomer({ kind: 'elder', service: 'acupressure' })
+    const events: SimEvent[] = []
+    advanceUntil(main, () => events.some(e => e.type === 'paid'), 120_000, events)
+    const paid = events.find(e => e.type === 'paid')
+    expect(paid?.type === 'paid' && paid.amount).toBe(rankPrice(130_000, 5))
+    expect(main.stock.balm).toBe(balm - 1)
+    expect(main.stock.towel).toBe(towel - 1)
+  })
+})

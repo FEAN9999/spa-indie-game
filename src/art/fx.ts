@@ -319,6 +319,15 @@ export function fxTextures(): Record<string, string> {
         [[14, 30, 9, 40], [20, 34, 16, 45], [28, 35, 27, 47], [36, 34, 39, 45], [42, 30, 48, 39]].map(([x1, y1, x2, y2]) => `<path d="M${x1},${y1} L${x2},${y2}" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>`).join('') +
         `<path d="M44,10 L46,15 L51,17 L46,19 L44,24 L42,19 L37,17 L42,15Z" fill="${C.gold}" ${INNER}/>`,
     ),
+    // a thumb pressing a red point on the skin, two rings spreading from it
+    'svc-acupressure': badge(
+      C.tealPale,
+      `<path d="M8.4,40 A23,23 0 0 0 47.6,40 Q28,30 8.4,40Z" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<ellipse cx="28" cy="39" rx="15" ry="4.5" fill="none" stroke="${C.lotus}" stroke-width="2.5"/>` +
+        `<ellipse cx="28" cy="39" rx="8" ry="2.6" fill="none" stroke="${C.lantern}" stroke-width="2.5"/>` +
+        `<path d="M22,37 V16 Q22,9 28,9 Q34,9 34,16 V37Z" fill="${SKIN_TONE}" ${INNER}/>` +
+        `<path d="M24.5,16 Q24.5,12 28,12 Q31.5,12 31.5,16" fill="${C.cream}" ${INNER}/>`,
+    ),
     // the four things a service uses up: a shampoo bottle, a rolled towel, a mask sachet and an oil dropper bottle
     'stock-shampoo': badge(
       C.water,
@@ -395,6 +404,14 @@ export function fxTextures(): Record<string, string> {
         `<rect x="36" y="24" width="12" height="7" rx="2" fill="${C.ink}" ${INNER}/>` +
         `<rect x="33" y="30" width="18" height="18" rx="5" fill="${C.cream}" ${INNER}/>` +
         `<path d="M37,38 H47" stroke="${C.lotus}" stroke-width="3" stroke-linecap="round"/>`,
+    ),
+    // a round red tin of balm with its gold lid, seen from a little above
+    'stock-balm': badge(
+      C.tealPale,
+      `<path d="M12,26 V38 Q12,46 28,46 Q44,46 44,38 V26Z" fill="${C.lanternDark}" ${INNER}/>` +
+        `<ellipse cx="28" cy="26" rx="16" ry="7" fill="${C.gold}" ${INNER}/>` +
+        `<ellipse cx="28" cy="26" rx="8" ry="3.4" fill="${C.lantern}"/>` +
+        `<path d="M16,36 Q28,40 40,36" stroke="${C.gold}" stroke-width="2.5" fill="none"/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
     'fx-steam': svgDoc(

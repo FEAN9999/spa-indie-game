@@ -170,6 +170,17 @@ const lashBedTurned =
   rect(0.1, 0.97, 0.12, 0.14, C.woodDark, ink(0.025)) +
   rect(2.88, 0.97, 0.12, 0.14, C.woodDark, ink(0.025))
 
+// acupressure bed: the massage bed with six red points marked in pairs down the sheet, each in a pale ring, and a round tin of balm at the foot
+const ACU_YS = [1.15, 1.5, 1.85]
+const acuPoint = (x: number, y: number) =>
+  `<circle cx="${x}" cy="${y}" r="0.09" fill="none" stroke="${C.lotus}" stroke-width="0.03"/>` + `<circle cx="${x}" cy="${y}" r="0.04" fill="${C.lantern}"/>`
+const balmTin = (x: number, y: number) =>
+  `<circle cx="${x}" cy="${y}" r="0.13" fill="${C.lantern}" ${ink(FINE)}/>` + `<circle cx="${x}" cy="${y}" r="0.07" fill="${C.gold}"/>`
+const acuBed = massageBed + ACU_YS.flatMap(y => [0.38, 0.72].map(x => acuPoint(x, y))).join('') + balmTin(0.75, 2.62)
+
+// acupressure bed lying across: the massage bed lying across with the six points in pairs along the sheet and the balm at the foot
+const acuBedTurned = massageBedTurned + ACU_YS.flatMap(x => [0.32, 0.62].map(y => acuPoint(x, y))).join('') + balmTin(2.55, 0.66)
+
 // mud tub: a round wooden tub at three-quarters, its staves showing below the rim, full of mud, with a towel to rest the head on
 const tubStave = (x: number, bottom: number) => `<path d="M${x},2.84 V${bottom}" stroke="${C.woodDark}" stroke-width="0.035"/>`
 const mudTub =
@@ -1353,6 +1364,8 @@ export const FURNITURE: Record<string, { w: number; h: number; body: string }> =
   'cuppingBed-turned': { w: 3.1, h: 1.15, body: cuppingBedTurned },
   lashBed: { w: 1.1, h: 3.15, body: lashBed },
   'lashBed-turned': { w: 3.1, h: 1.15, body: lashBedTurned },
+  acuBed: { w: 1.1, h: 3.15, body: acuBed },
+  'acuBed-turned': { w: 3.1, h: 1.15, body: acuBedTurned },
   // Parts the room bakes today, cut on whole and half tiles so they land on the same pixels:
   // a lantern's top-left is (work tile x, 0); a bed slot's is half a tile left of and one tile above its head tile;
   // a bench mat's is half a tile left of and above the bench's top-left tile, framed on the default bench so the weave matches.

@@ -45,12 +45,12 @@ export const DAY_MINUTES = DAY_END_MIN - DAY_START_MIN
 
 // Money and reviews
 /** The stars a lesson service opens to learn at. */
-export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5, lashes: 5 } as const
+export const LESSON_STARS = { scrub: 3, foot: 4, nails: 5, cupping: 5, lashes: 5, acupressure: 5 } as const
 /** A lesson game is passed at this many stars. */
 export const LESSON_PASS_STARS = 2
 /** What a customer pays for each service, and what opening it costs; shampoo is built in. */
-export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000, lashes: 120000 } as const
-export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000, lashes: 2100000 } as const
+export const SERVICE_PRICE = { shampoo: 20000, mask: 30000, massage: 40000, steam: 50000, stone: 60000, mud: 75000, scrub: 85000, foot: 90000, nails: 100000, cupping: 110000, lashes: 120000, acupressure: 130000 } as const
+export const SERVICE_OPEN_COST = { shampoo: 0, mask: 300000, massage: 600000, steam: 750000, stone: 975000, mud: 1200000, scrub: 1050000, foot: 1275000, nails: 1500000, cupping: 1800000, lashes: 2100000, acupressure: 2400000 } as const
 /** Each basic service open beyond the first shortens the arrival gap by this share. */
 export const SERVICE_ARRIVAL_STEP = 0.1
 /** Each open recipe service shortens it by this share. */
@@ -289,8 +289,25 @@ export const LASHES_REACH_HARD = 52
 /** Lashes dropped on a dot that already has one ("stuck") allowed for 3 and 2 stars, and dots left not right allowed for 2 stars. */
 export const LASHES_STARS = { stuck3: 1, stuck2: 3, miss2: 2 }
 
+// Bấm huyệt game: the points on the back light one at a time in a shuffled order; a finger held on the lit point fills its
+// pressure ring, and letting go in the green band is right, before it light and after it painful. Times are in ms.
+export const ACU_LIMIT_MS = 30000
+/** How many points there are, each pressed once; a picky customer has more. */
+export const ACU_POINTS = 6
+export const ACU_POINTS_HARD = 8
+/** The pause before each point lights, and how long a lit point waits for a press before it is missed. */
+export const ACU_GAP_MS = 450
+export const ACU_LIT_MS = 2600
+/** A hold fills the ring in this long, and the band that is right; a picky customer's fills faster and its band is narrower. */
+export const ACU_FILL_MS = 1600
+export const ACU_FILL_MS_HARD = 1250
+export const ACU_GOOD = { min: 0.55, max: 0.8 }
+export const ACU_GOOD_HARD = { min: 0.55, max: 0.78 }
+/** Score (good presses minus painful ones) short of the point count still giving 3 and 2 stars. */
+export const ACU_STARS = { short3: 1, short2: 3 }
+
 // Stock: what a restock of 20 costs, how much a shop starts with, and the count at which it is running low.
-export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000, lashKit: 640000 } as const
+export const RESTOCK_PRICE = { shampoo: 80000, towel: 60000, mask: 240000, oil: 360000, herbs: 440000, mud: 640000, salt: 400000, polish: 560000, alcohol: 600000, lashKit: 640000, balm: 680000 } as const
 export const RESTOCK_AMOUNT = 20
 export const STOCK_START = 20
 
