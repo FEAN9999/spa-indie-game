@@ -38,3 +38,13 @@ Tiệm trông giống nhau từ 8:00 đến 20:00. Anh muốn trời sáng tối
 3. Tô màu (tint) từng hình: nhiều công, dễ sót các hình vẽ bằng Graphics.
 
 Phần tính màu/độ đậm/độ sáng đèn theo phút là một hàm thuần trong `src/view/daylight.ts`, có test. `RoomView` vẽ lớp phủ và quầng sáng; vị trí đèn của từng món đồ ghi theo toạ độ trong hình của món đó.
+
+## Cập nhật 2026-11-01: đêm thật hơn
+
+Chồng yêu duyệt hướng A và mấy chi tiết phụ, vì đêm cũ là một lớp màu phủ đều lên cả trong tiệm lẫn ngoài phố, trông như sương mù (gạch trắng 246 xuống 138, vỉa hè 116, gần bằng nhau).
+
+- Lớp đêm nhân màu (MULTIPLY) thay vì phủ màu: tối đi mà không bạc màu. `daylight(minutes)` trả về ba màu nhân: `sky` cho ngoài trời, `indoor` cho phòng đã bật đèn (trắng ấm), `rooftop` cho sân thượng (nửa đường giữa hai màu kia, nhờ dây đèn), cùng `lamps` như cũ.
+- Trong tiệm và nhà hàng đã bật đèn thì gần như sáng như ban ngày; ngoài phố, nhà hàng xóm, nhà rao bán xanh đêm. Tầng chưa mở và lúc cúp điện thì tối như ngoài phố.
+- Ánh đèn từ mặt tiền hắt xuống vỉa hè, nhạt dần tới mép đường; trước cửa tầng 1 có vệt sáng hình thang (`fx-doorLight`).
+- Nhà hàng xóm (mặt tiền đóng cửa `lot-front`) sáng khoảng hai trong ba ô cửa sổ, vàng ấm, có quầng; tắt khi cúp điện. Nhà rao bán và nhà cũ "SANG NHƯỢNG" để tối vì không có người ở.
+- Không đổi: mốc giờ, giờ đèn bật 18:30–19:00, ban ngày (y hệt từng điểm ảnh). Đèn đường, đèn lồng chợ đêm, đèn công viên thuộc lô B của spec nâng cấp phố.

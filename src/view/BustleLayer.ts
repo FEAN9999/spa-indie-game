@@ -78,7 +78,7 @@ export class BustleLayer {
   constructor(scene: Phaser.Scene) {
     this.scene = scene
     const h = BUSTLE_ROWS * TILE
-    this.night = scene.add.rectangle(0, rowY(STRIP_ROW), 1, h, 0, 0).setOrigin(0, 0).setDepth(NIGHT_DEPTH).setVisible(false)
+    this.night = scene.add.rectangle(0, rowY(STRIP_ROW), 1, h, 0xffffff).setOrigin(0, 0).setDepth(NIGHT_DEPTH).setBlendMode(Phaser.BlendModes.MULTIPLY).setVisible(false)
     this.dark = scene.add.rectangle(0, rowY(STRIP_ROW), 1, h, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
   }
 
@@ -90,7 +90,7 @@ export class BustleLayer {
     }
     // the day's light and the power cut's dark over the rows the street adds, as RoomView lays them over the rest
     const d = daylight(v.minutes)
-    this.night.setFillStyle(d.color, d.alpha).setVisible(v.open && d.alpha > 0)
+    this.night.setFillStyle(d.sky, 1).setVisible(v.open && d.sky !== 0xffffff)
     this.dark.setVisible(v.open && v.powerOut)
     // the street's lights come on with the shop's lamps, and go out with them in a power cut
     const lit = v.powerOut ? 0 : d.lamps

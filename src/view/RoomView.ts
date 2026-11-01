@@ -19,7 +19,7 @@ import { forSale, houseImageX, houseRect, housesBetween, houseTextureKey, innerF
 import { LAMPS } from './lamps'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
-import { daylight } from './daylight'
+import { daylight, litBands, type Daylight, type Span } from './daylight'
 
 /** Rugs lie on the floor and the bought houses, under the mats, the bed slots and the stairs. */
 const RUG_DEPTH = 0.8
@@ -76,21 +76,28 @@ const CANDLES = [
   { x: 13.5, y: 5.6 },
   { x: 23.2, y: 11.1 },
 ]
-/** The day's light lies over the room and everyone in it, under the power cut's dark; the lamps' glows and the shop's warm light over it. */
+/** The day's light lies over the room and everyone in it, under the power cut's dark; the lamps' glows over it. */
 export const NIGHT_DEPTH = DARK_DEPTH - 3
 export const LAMP_DEPTH = DARK_DEPTH - 2
-/** At night the lit shop's rows are lifted by this much warm light over the street's. */
-export const WASH_ALPHA = 0.07
 /** Floor 2's lantern on the back wall, in tiles. */
 const WALL_LANTERN = { x: SHOP_X0 + 6.5, y: 0.74, s: 0.7 }
-/** The door's light spilling onto floor 1's sidewalk: its row in tiles, and the glow's scale. */
-export const DOOR_LIGHT = { y: FLOOR_ROWS + 0.4, s: 1.2 }
+/** The door's light on floor 1's sidewalk starts at this row, in the doorway. */
+export const DOOR_LIGHT = { y: FLOOR_ROWS - 0.05 }
+/** A lit front's light falls on the sidewalk before it down to the curb, this many rows, and fades over this many tiles at its ends. */
+const SPILL = { rows: 1.2, fade: 1 }
+/** The colour that leaves what it multiplies as it is. */
+const WHITE = 0xffffff
 
 /** How far over a machine's footprint its off mark sits, in tiles. */
 const OFF_MARK_LIFT = 0.3
 
 /** The stairs' top-left tile, where the 1 × 3 'stairs' texture goes; the rope hangs on its bottom tile. */
 const STAIRS_TILE = { x: 23, y: 7 }
+
+/** A lit door's light on the ground before it, from the doorway's middle at (x, y) in world pixels, hidden until it is lit. */
+export function addDoorLight(scene: Phaser.Scene, x: number, y: number): Phaser.GameObjects.Image {
+  return scene.add.image(x, y, 'fx-doorLight').setOrigin(0.5, 10 / 170).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+}
 
 /** A warm glow at (x, y) in world pixels, hidden until it is lit. */
 export function addGlow(scene: Phaser.Scene, x: number, y: number, scale: number): Phaser.GameObjects.Image {
@@ -157,9 +164,13 @@ export class RoomView {
   private readonly dark: Phaser.GameObjects.Rectangle
   private readonly candles: Phaser.GameObjects.Image[] = []
   private offMarks: Phaser.GameObjects.Image[] = []
-  /** The day's light over the map, the lit shop's warm light, and one glow per lamp shown, on the floor in view. */
-  private readonly night: Phaser.GameObjects.Rectangle
-  private readonly wash: Phaser.GameObjects.Rectangle
+  /** The day's light multiplied over the map, the lit shops warmer than the street, and one glow per lamp shown, on the floor in view. */
+  private readonly night: Phaser.GameObjects.Graphics
+  /** The columns the day's light lies over, and the shop's own with its bought houses, in world pixels. */
+  private lightSpan: Span
+  private shopSpan: Span
+  /** What the night was last drawn from, so a frame without a change draws nothing. */
+  private nightKey = ''
   private readonly wallLantern: Phaser.GameObjects.Image
   private readonly doorLight: Phaser.GameObjects.Image
   private lampGlows: Phaser.GameObjects.Image[] = []
@@ -185,10 +196,10 @@ export class RoomView {
     this.plaqueStars = scene.add.graphics()
     this.plaque = this.plaqueBoard()
     this.dark = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, this.room.height, DARK.color, DARK.alpha).setOrigin(0, 0).setDepth(DARK_DEPTH).setVisible(false)
-    this.night = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, this.room.height, 0, 0).setOrigin(0, 0).setDepth(NIGHT_DEPTH).setVisible(false)
-    this.wash = scene.add.rectangle(MAP_X + SHOP_X0 * TILE, MAP_Y, this.room.width, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
+    this.night = scene.add.graphics().setDepth(NIGHT_DEPTH).setBlendMode(Phaser.BlendModes.MULTIPLY).setVisible(false)
+    this.lightSpan = this.shopSpan = [this.room.x, this.room.x + this.room.width]
     this.wallLantern = this.glow(MAP_X + WALL_LANTERN.x * TILE, MAP_Y + WALL_LANTERN.y * TILE, WALL_LANTERN.s)
-    this.doorLight = this.glow(0, MAP_Y + DOOR_LIGHT.y * TILE, DOOR_LIGHT.s)
+    this.doorLight = addDoorLight(scene, 0, MAP_Y + DOOR_LIGHT.y * TILE)
     for (const c of CANDLES) {
       const at = { x: MAP_X + c.x * TILE, y: MAP_Y + c.y * TILE }
       this.candles.push(scene.add.image(at.x, at.y, 'fx-glow').setDepth(DARK_DEPTH + 1).setVisible(false))
@@ -210,8 +221,9 @@ export class RoomView {
     this.houses = bought
     const b = mapBounds(bought)
     this.dark.setPosition(light.x, light.y).setSize(light.w, this.room.height)
-    this.night.setPosition(light.x, light.y).setSize(light.w, this.room.height)
-    this.wash.setPosition(b.x, b.y).setSize(b.w, FLOOR_ROWS * TILE)
+    this.lightSpan = [light.x, light.x + light.w]
+    this.shopSpan = [b.x, b.x + b.w]
+    this.nightKey = ''
     const just = justBought && houseKey(justBought)
     for (const h of housesBetween(NO_HOUSES, bought)) {
       const key = houseKey(h)
@@ -308,17 +320,52 @@ export class RoomView {
 
   /**
    * Lays the light of `minutes` over the map: a pale morning, a warm late afternoon, night from 19:30. From 18:30 the lamps on the floor
-   * in view glow, the shop's rows are lit warmer than the street and the door's light falls on the sidewalk; not in a power cut.
+   * in view glow, the shop's rooms and `others` (the restaurant's, when lit) light up warm against the darkening street, their light falls
+   * on the sidewalk before them and the door's on floor 1; not in a power cut.
    */
-  setDaylight(minutes: number, powerOut: boolean, door: Tile): void {
+  setDaylight(minutes: number, powerOut: boolean, door: Tile, others: readonly Span[] = []): void {
     const d = daylight(minutes)
     const lit = powerOut ? 0 : d.lamps
-    this.night.setFillStyle(d.color, d.alpha).setVisible(d.alpha > 0)
     // a closed upper front stays shuttered and dark
-    this.wash.setAlpha(WASH_ALPHA * lit).setVisible(lit > 0 && !this.closed)
+    const own = this.closed ? [] : [this.shopSpan]
+    this.drawNight(d, lit > 0 ? [...own, ...others] : [])
     this.wallLantern.setAlpha(lit).setVisible(lit > 0 && this.floor === 2 && !this.closed)
     this.doorLight.setX(MAP_X + (door.x + 0.5) * TILE).setAlpha(lit).setVisible(lit > 0 && this.floor === 1)
     for (const g of this.lampGlows) g.setAlpha(lit).setVisible(lit > 0)
+  }
+
+  /**
+   * Multiplies the day's light over the map: the rooms in the `lit` spans by the lamps' warm light (the rooftop, out in the open, by its
+   * strings of lights), their light down the sidewalk before them to the curb, and everything else by the sky's.
+   */
+  private drawNight(d: Daylight, lit: readonly Span[]): void {
+    const roof = this.floor === 3
+    const room = roof ? d.rooftop : d.indoor
+    const key = [d.sky, room, roof, this.lightSpan, lit.flat(), this.room.height].join()
+    if (key === this.nightKey) return
+    this.nightKey = key
+    const g = this.night.clear()
+    const shown = d.sky !== WHITE || (lit.length > 0 && room !== WHITE)
+    g.setVisible(shown)
+    if (!shown) return
+    const front = MAP_Y + FLOOR_ROWS * TILE
+    const curb = front + SPILL.rows * TILE
+    const fade = SPILL.fade * TILE
+    for (const b of litBands(this.lightSpan, lit)) {
+      const w = b.to - b.from
+      g.fillStyle(b.lit ? room : d.sky, 1).fillRect(b.from, MAP_Y, w, front - MAP_Y)
+      // a rooftop has no front for its light to fall from
+      if (!b.lit || roof) {
+        g.fillStyle(d.sky, 1).fillRect(b.from, front, w, curb - front)
+        continue
+      }
+      // the lit front's light on the sidewalk, fading towards the curb and at both ends
+      g.fillGradientStyle(room, room, d.sky, d.sky, 1).fillRect(b.from + fade, front, w - 2 * fade, curb - front)
+      g.fillGradientStyle(d.sky, room, d.sky, d.sky, 1).fillRect(b.from, front, fade, curb - front)
+      g.fillGradientStyle(room, d.sky, d.sky, d.sky, 1).fillRect(b.to - fade, front, fade, curb - front)
+    }
+    const [x0, x1] = this.lightSpan
+    g.fillStyle(d.sky, 1).fillRect(x0, curb, x1 - x0, MAP_Y + this.room.height - curb)
   }
 
   /** A warm glow at (x, y) in world pixels, hidden until setDaylight lights it. */

@@ -1682,8 +1682,10 @@ export class SpaScene extends Phaser.Scene {
     this.room.setFestival(this.sim.place === null ? festivalOf(this.sim.day) : null)
     this.room.setRival(rivalToday(this.sim.eventBook, this.sim.day))
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
-    this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.restaurant?.sync(this.chain, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
+    // after the restaurant's sync, so its rooms light up with the spa's from this frame
+    const restaurantLit = this.restaurant?.litSpan()
+    this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door, restaurantLit ? [restaurantLit] : [])
     this.syncBustle(this.playing() ? 0 : dt)
     // the wait for a newer version draws nothing over the shop, so the day's line stays up through it
     this.hud.update(this.attention.covered('panel', 'shutter', 'away'))

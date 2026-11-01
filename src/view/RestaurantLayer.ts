@@ -3,7 +3,7 @@ import { itemTexture } from '../art/furniture'
 import { SCOOTER_BOX } from '../art/fx'
 import { houseKey, type HouseKey } from '../art/houses'
 import { C, customerColors, ownerColors, staffColors } from '../art/palette'
-import { RESTAURANT_LAMP, ROOF_LANTERNS } from '../art/restaurant'
+import { LOT_PANES, RESTAURANT_LAMP, ROOF_LANTERNS } from '../art/restaurant'
 import { ARRIVE_MS, FLOOR_ROWS, HOUSES_PER_SIDE, MAP_Y, SHOP_X0, TILE } from '../config'
 import type { Chain } from '../sim/chain'
 import type { Chef } from '../sim/chefs'
@@ -14,11 +14,11 @@ import type { Diner, RestaurantSim } from '../sim/restaurant'
 import { floorOf } from '../sim/floors'
 import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
-import { daylight } from './daylight'
+import { daylight, type Span } from './daylight'
 import { climbPose, stairsParts } from './floors'
 import { forSale, houseRect, housesBetween } from './houses'
 import { LAMPS } from './lamps'
-import { addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, ITEM_DEPTH_BIAS, LAMP_DEPTH, PART_DEPTH, placeItemBody, WASH_ALPHA } from './RoomView'
+import { addDoorLight, addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, ITEM_DEPTH_BIAS, LAMP_DEPTH, PART_DEPTH, placeItemBody } from './RoomView'
 import { DOOR_X, doorWalk, restaurantHouseImageX, restaurantHouseRect, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -56,6 +56,10 @@ const FLAME: Record<string, { x: number; y: number; rx: number; ry: number }> = 
 const STOVE_GLOW_SCALE = 0.7
 /** The glow over each of the rooftop's lanterns. */
 const ROOF_GLOW_SCALE = 0.5
+/** A neighbour's lit window at night: the warm light over its glass, and the glow round it on the wall. */
+const WINDOW = { color: 0xffcf6b, alpha: 0.9, glow: 0.55, glowAlpha: 0.5 }
+/** Whether a neighbour has the light on behind pane `pane` of lot `lot`: about two in three, a different two down each lot. */
+const litPane = (lot: number, pane: number): boolean => (lot + pane) % 3 !== 2
 
 interface DinerSprite {
   view: CharacterView
@@ -98,7 +102,10 @@ export class RestaurantLayer {
   private owner: CharacterView | null = null
   private ownerKey = ''
   private readonly bike: Phaser.GameObjects.Image
-  private readonly wash: Phaser.GameObjects.Rectangle
+  /** The restaurant's block and its bought houses, in world pixels, which its lamps light at night. */
+  private span: Span = [BLOCK.x, BLOCK.x + BLOCK.w]
+  /** The light in each lot's lit windows at night and the glow round each, shown while the lot is. */
+  private readonly lotLights: { lot: Phaser.GameObjects.Image; panes: Phaser.GameObjects.Rectangle[]; glows: Phaser.GameObjects.Image[] }[] = []
   private readonly doorLight: Phaser.GameObjects.Image
   /** One glow per lantern strung over the rooftop, lit at night while it is on view. */
   private readonly roofGlows: Phaser.GameObjects.Image[]
@@ -121,8 +128,14 @@ export class RestaurantLayer {
     for (const h of housesBetween(NO_HOUSES, { left: HOUSES_PER_SIDE, right: HOUSES_PER_SIDE })) this.restLots.set(houseKey(h), add.image(restaurantHouseRect(h).x, MAP_Y, 'lot-front').setOrigin(0, 0).setDepth(FRONT_DEPTH))
     const [bx, by, bw, bh] = SCOOTER_BOX
     this.bike = add.image(0, WALK_Y, 'fx-bike').setOrigin(-bx / bw, -by / bh).setScale(BIKE.scale).setDepth(WALK_Y).setVisible(false)
-    this.wash = add.rectangle(BLOCK.x, MAP_Y, BLOCK.w, FLOOR_ROWS * TILE, hex(C.glow)).setOrigin(0, 0).setDepth(LAMP_DEPTH).setBlendMode(Phaser.BlendModes.ADD).setVisible(false)
-    this.doorLight = addGlow(scene, DOOR.x, MAP_Y + DOOR_LIGHT.y * TILE, DOOR_LIGHT.s)
+    const lots = [...this.spaLots, ...this.restLots.values()]
+    lots.forEach((lot, i) => {
+      const lit = LOT_PANES.filter((_, j) => litPane(i, j))
+      const panes = lit.map(p => add.rectangle(lot.x + p.x * TILE, MAP_Y + p.y * TILE, p.w * TILE, p.h * TILE, WINDOW.color).setOrigin(0, 0).setDepth(LAMP_DEPTH).setVisible(false))
+      const glows = lit.map(p => addGlow(scene, lot.x + (p.x + p.w / 2) * TILE, MAP_Y + (p.y + p.h / 2) * TILE, WINDOW.glow))
+      this.lotLights.push({ lot, panes, glows })
+    })
+    this.doorLight = addDoorLight(scene, DOOR.x, MAP_Y + DOOR_LIGHT.y * TILE)
     this.roofGlows = ROOF_LANTERNS.map(l => addGlow(scene, BLOCK.x + l.x * TILE, MAP_Y + l.y * TILE, ROOF_GLOW_SCALE).setTint(hex(RESTAURANT_LAMP)))
     for (const dish of Object.keys(TICKET_HEADER) as DishId[]) {
       const key = ticketKey(dish)
@@ -146,7 +159,7 @@ export class RestaurantLayer {
     this.syncItems(this.restaurant?.items ?? [])
   }
 
-  /** Lays each bought house beside the restaurant's block and each house for sale's roof with its sign, and the night's warm wash over the bought houses too. */
+  /** Lays each bought house beside the restaurant's block and each house for sale's roof with its sign; its lamps light the bought houses too. */
   setHouses(bought: Houses, shown: Houses): void {
     this.bought = bought
     this.shown = shown
@@ -170,7 +183,7 @@ export class RestaurantLayer {
     }
     const left = bought.left > 0 ? restaurantHouseRect({ side: 'left', n: bought.left as 1 | 2 }).x : BLOCK.x
     const right = bought.right > 0 ? restaurantHouseRect({ side: 'right', n: bought.right as 1 | 2 }) : null
-    this.wash.setPosition(left, MAP_Y).setSize((right ? right.x + right.w : BLOCK.x + BLOCK.w) - left, FLOOR_ROWS * TILE)
+    this.span = [left, right ? right.x + right.w : BLOCK.x + BLOCK.w]
     this.syncHouses()
   }
 
@@ -186,6 +199,12 @@ export class RestaurantLayer {
     this.syncChefs(r?.chefs ?? [], dt)
     this.syncOwner(chain, dt)
     this.syncLight(r, minutes, powerOut)
+  }
+
+  /** The restaurant's columns with its bought houses while the floor in view is one it has bought and opened, which its lamps light at night; else null. */
+  litSpan(): Span | null {
+    const r = this.restaurant
+    return r !== null && this.floor <= r.floors ? this.span : null
   }
 
   /** The old house is still for sale and the point is on it. */
@@ -242,7 +261,7 @@ export class RestaurantLayer {
   }
 
   destroy(): void {
-    for (const img of [this.front, this.upper, this.stairs, this.rope, ...this.spaLots, ...this.restLots.values(), ...this.houseImages.values(), this.bike, this.wash, this.doorLight, ...this.roofGlows]) img.destroy()
+    for (const img of [this.front, this.upper, this.stairs, this.rope, ...this.spaLots, ...this.restLots.values(), ...this.houseImages.values(), this.bike, ...this.lotLights.flatMap(l => [...l.panes, ...l.glows]), this.doorLight, ...this.roofGlows]) img.destroy()
     for (const parts of this.sales.values()) for (const p of parts) p.destroy()
     this.houseImages.clear()
     this.sales.clear()
@@ -445,13 +464,18 @@ export class RestaurantLayer {
   }
 
   /**
-   * At night the bought restaurant's warm wash and the door's light on floor 1, a glow over each stove and lamp on the floor in view,
-   * and one over each of the rooftop's lanterns while it is open and on view, unless the power is out; in a power cut every stove's flame is out.
+   * At night the bought restaurant's door light on floor 1, a glow over each stove and lamp on the floor in view, one over each of the
+   * rooftop's lanterns while it is open and on view, and the neighbours' lit windows, unless the power is out; in a power cut every
+   * stove's flame is out. RoomView lights the restaurant's rooms from litSpan.
    */
   private syncLight(r: RestaurantSim | null, minutes: number, powerOut: boolean): void {
     const lamps = daylight(minutes).lamps
     const lit = r !== null && lamps > 0 && !powerOut
-    this.wash.setAlpha(WASH_ALPHA * lamps).setVisible(lit && this.floor === 1)
+    const home = lamps > 0 && !powerOut
+    for (const { lot, panes, glows } of this.lotLights) {
+      for (const p of panes) p.setAlpha(WINDOW.alpha * lamps).setVisible(home && lot.visible)
+      for (const g of glows) g.setAlpha(WINDOW.glowAlpha * lamps).setVisible(home && lot.visible)
+    }
     this.doorLight.setAlpha(lamps).setVisible(lit && this.floor === 1)
     const roof = lit && this.floor === 3 && r.floors >= 3
     for (const g of this.roofGlows) g.setAlpha(lamps).setVisible(roof)

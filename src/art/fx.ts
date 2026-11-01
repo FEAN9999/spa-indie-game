@@ -147,6 +147,14 @@ export function fxTextures(): Record<string, string> {
       1,
       `<defs><radialGradient id="glow"><stop offset="0" stop-color="${C.glow}" stop-opacity="0.75"/><stop offset="1" stop-color="${C.glow}" stop-opacity="0"/></radialGradient></defs><circle r="110" fill="url(#glow)"/>`,
     ),
+    // a lit door's light on the ground before it: widening and fading as it goes, soft at the sides; its origin is the doorway's middle
+    'fx-doorLight': svgDoc(
+      [-130, -10, 260, 170],
+      1,
+      `<defs><linearGradient id="spill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.glow}" stop-opacity="0.6"/><stop offset="1" stop-color="${C.glow}" stop-opacity="0"/></linearGradient>` +
+        `<filter id="soft" x="-0.2" y="-0.2" width="1.4" height="1.4"><feGaussianBlur stdDeviation="7"/></filter></defs>` +
+        `<path d="M-42,0 H42 L105,145 H-105Z" fill="url(#spill)" filter="url(#soft)"/>`,
+    ),
     'power-off': svgDoc(
       [-38, -38, 76, 76],
       1,

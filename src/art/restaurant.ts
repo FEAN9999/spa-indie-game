@@ -53,6 +53,11 @@ function rollShutter(x0: number, x1: number, y0: number, y1: number): string {
   )
 }
 
+/** The rows of a closed wall's windows, from its top. */
+const WALL_WINDOW_ROWS = [2.4, 7.4, 12.4]
+/** The glass of each window down an empty lot's front, in its own tiles from its top-left (in the middle of its 6 columns), for the light behind it at night. */
+export const LOT_PANES = WALL_WINDOW_ROWS.map(y => ({ x: 3 - 0.45, y: y + 0.3, w: 0.9, h: 1.05 }))
+
 /** A closed front wall `cols` wide and `rows` tall: faded paint, a dark band, damp stains and shuttered windows down it. */
 function closedWall(cols: number, rows: number, windows: number[], paint: string, band: string): string {
   const out = [rect(0.3, 0, cols - 0.6, rows, paint, outline()), rect(0.3, 0, cols - 0.6, 0.35, band, outline(0.04))]
@@ -60,7 +65,7 @@ function closedWall(cols: number, rows: number, windows: number[], paint: string
   for (const [x, y, w, h] of [[1.2, 2.4, 1.1, 0.6], [cols - 3, 7.5, 0.9, 1.1], [cols / 2, 11, 1.3, 0.5]]) {
     out.push(`<ellipse cx="${x}" cy="${y}" rx="${w / 2}" ry="${h / 2}" fill="${band}" opacity="0.45"/>`)
   }
-  for (const cx of windows) for (const y of [2.4, 7.4, 12.4]) out.push(`<g transform="translate(0 ${y})">${shutterWindow(cx)}</g>`)
+  for (const cx of windows) for (const y of WALL_WINDOW_ROWS) out.push(`<g transform="translate(0 ${y})">${shutterWindow(cx)}</g>`)
   out.push(rect(0.3, 0, 0.2, rows, band, outline(0.04)), rect(cols - 0.5, 0, 0.2, rows, band, outline(0.04)))
   return out.join('')
 }
