@@ -54,6 +54,15 @@ const GOI_CUON =
   `<path d="M60,66 H86 Q84,84 73,84 Q62,84 60,66Z" fill="${C.clay}" ${ink(3.5)}/>` +
   `<ellipse cx="73" cy="66" rx="13" ry="4" fill="${C.woodDark}" ${ink(2.5)}/>`
 
+// cơm tấm: a plate of broken rice with a grilled chop and a fried egg
+const COM_TAM =
+  `<ellipse cx="45" cy="56" rx="40" ry="26" fill="${C.cream}" ${ink(4)}/>` +
+  `<ellipse cx="38" cy="54" rx="24" ry="15" fill="${C.paper}" ${ink(3)}/>` +
+  `<path d="M44,46 Q46,34 66,34 Q82,36 80,48 Q74,58 56,56 Q44,54 44,46Z" fill="${C.woodLight}" ${ink(3)}/>` +
+  wave('M54,38 L58,52 M64,36 L68,52', C.woodDark, 3) +
+  `<path d="M14,58 Q14,48 24,48 Q32,46 34,54 Q34,62 24,64 Q14,64 14,58Z" fill="${C.cloud}" ${ink(3)}/>` +
+  `<circle cx="24" cy="56" r="5" fill="${C.mustard}"/>`
+
 // stock: a bundle of rice noodles tied with a band
 const PHO_KIT =
   wave('M14,14 Q10,30 14,46 M24,10 Q20,30 24,50 M34,8 Q30,30 34,52 M44,10 Q40,30 44,50 M52,14 Q50,30 52,46', C.sand, 8) +
@@ -87,6 +96,13 @@ const CUON_KIT =
   `<path d="M38,22 A9,9 0 1 0 39,34" stroke="${C.ink}" stroke-width="9" fill="none" stroke-linecap="round"/>` +
   `<path d="M38,22 A9,9 0 1 0 39,34" stroke="${C.lotus}" stroke-width="5" fill="none" stroke-linecap="round"/>`
 
+// stock: a sack of broken rice beside a raw chop
+const TAM_KIT =
+  `<path d="M8,20 H34 L38,52 H4Z" fill="${C.sand}" ${ink(3)}/>` +
+  `<path d="M8,20 Q20,12 34,20" stroke="${C.ink}" stroke-width="3" fill="none"/>` +
+  wave('M12,36 H30', C.clayLight, 3) +
+  `<path d="M32,44 Q30,30 44,28 Q58,28 58,40 Q56,52 44,52 Q34,52 32,44Z" fill="${C.houseRose}" ${ink(3)}/>`
+
 // stock: a basil sprig with three leaves on its stem
 const HERBS =
   wave('M30,54 V16', C.leaf, 4) +
@@ -103,11 +119,13 @@ export function menuTextures(): Record<string, string> {
     'dish-che': svgDoc([0, 0, 90, 90], 1, CHE),
     'dish-bunCha': svgDoc([0, 0, 90, 90], 1, BUN_CHA),
     'dish-goiCuon': svgDoc([0, 0, 90, 90], 1, GOI_CUON),
+    'dish-comTam': svgDoc([0, 0, 90, 90], 1, COM_TAM),
     'rstock-phoKit': svgDoc([0, 0, 60, 60], 1, PHO_KIT),
     'rstock-batter': svgDoc([0, 0, 60, 60], 1, BATTER),
     'rstock-cheKit': svgDoc([0, 0, 60, 60], 1, CHE_KIT),
     'rstock-chaKit': svgDoc([0, 0, 60, 60], 1, CHA_KIT),
     'rstock-cuonKit': svgDoc([0, 0, 60, 60], 1, CUON_KIT),
+    'rstock-tamKit': svgDoc([0, 0, 60, 60], 1, TAM_KIT),
     'rstock-herbs': svgDoc([0, 0, 60, 60], 1, HERBS),
   }
 }

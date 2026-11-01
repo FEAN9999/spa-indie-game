@@ -2666,7 +2666,7 @@ describe('the restaurant in a saved chain', () => {
     const che = r.diners.find(d => d.dish === 'che')!
     expect([che.state, che.chefId]).toEqual(['ordering', null])
     expect(che.ticket).toHaveProperty('ice')
-    expect(r.stock).toEqual({ ...v38.restaurant.stock, chaKit: STOCK_START, cuonKit: STOCK_START })
+    expect(r.stock).toEqual({ ...v38.restaurant.stock, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START })
     expect(r.bought).toEqual([])
     expect(r.stock.batter).toBeLessThan(STOCK_START)
     expect(r.learned).toEqual(['pho'])
@@ -2708,12 +2708,12 @@ describe('the restaurant in a saved chain', () => {
     rs.chefs.push({ id: 'x' }, 'y' as unknown as Record<string, unknown>)
     rs.candidates = [{ ...(rs.candidates as object[])[0], stats: { skill: 2.5, speed: 3 } }, null]
     const r = parseSave(raw).restaurant!
-    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, herbs: STOCK_START })
+    expect(r.stock).toEqual({ phoKit: 3, batter: STOCK_START, cheKit: STOCK_START, chaKit: STOCK_START, cuonKit: STOCK_START, tamKit: STOCK_START, herbs: STOCK_START })
     expect(r.learned).toEqual(['che'])
     expect(r.away).toEqual({ profits: [1000], ok: true, tipSeen: false })
     expect(r.diners.map(x => x.id)).toEqual([])
     expect(r.chefs).toHaveLength(1)
-    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0 }, null])
+    expect([r.chefs[0].stats, r.chefs[0].tiers, r.chefs[0].task]).toEqual([{ skill: 5, speed: 1 }, { pho: 3, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0, comTam: 0 }, null])
     expect(r.candidates).toHaveLength(1)
     expect(r.candidates[0].stats).toEqual({ skill: 1, speed: 3 })
   })
@@ -2922,7 +2922,7 @@ describe("the street's pieces", () => {
   })
 })
 
-describe('save version 43: Giác hơi, Nối mi, Bún chả and Gỏi cuốn', () => {
+describe('save version 43: the new services and dishes', () => {
   it('reads the v43 fixture with Giác hơi learned, its alcohol and tiers, and Bún chả on the menu with its stock and a diner', () => {
     const data = parseSave(structuredClone(v43))
     expect(data.v).toBe(NEW_SERVICES_SAVE_VERSION)
@@ -2988,6 +2988,38 @@ describe('save version 43: Giác hơi, Nối mi, Bún chả and Gỏi cuốn', (
     expect(saved.restaurant!.diners[0].ticket).toHaveProperty('extraVeg')
     const back = Chain.fromSave(saved, 7)
     expect(back.restaurant!.menu()).toEqual(['pho', 'banhXeo', 'che', 'goiCuon'])
+  })
+
+  it('reads the v43 fixture, saved before Bấm huyệt and Cơm tấm, with neither and a full stock of both', () => {
+    const data = parseSave(structuredClone(v43))
+    expect(data.services).not.toContain('acupressure')
+    expect(data.stock.balm).toBe(20)
+    expect(data.staff[0].tiers.acupressure).toBe(0)
+    expect(data.restaurant!.stock.tamKit).toBe(20)
+  })
+
+  it('round-trips Bấm huyệt learned and Cơm tấm bought, with a Cơm tấm diner, and drops a damaged Cơm tấm ticket', () => {
+    const chain = new Chain(starShop(5, 40_000_000), 7)
+    chain.main.payLesson('acupressure')
+    chain.main.passLesson('acupressure')
+    chain.main.stock.balm = 6
+    expect(chain.buyRestaurant()).toBeNull()
+    const r = chain.restaurant!
+    expect(r.buyDish('comTam')).toBeNull()
+    r.stock.tamKit = 12
+    r.spawnDiner({ kind: 'office', dish: 'comTam' })
+    r.advance(3000)
+    const raw = JSON.parse(JSON.stringify(chain.toSave()))
+    const saved = parseSave(structuredClone(raw))
+    expect(saved.services).toContain('acupressure')
+    expect(saved.stock.balm).toBe(6)
+    expect(saved.restaurant!.bought).toEqual(['comTam'])
+    expect(saved.restaurant!.stock.tamKit).toBe(12)
+    expect(saved.restaurant!.diners.map(d => d.dish)).toEqual(['comTam'])
+    expect(saved.restaurant!.diners[0].ticket).toHaveProperty('combo')
+    expect(Chain.fromSave(saved, 7).restaurant!.menu()).toEqual(['pho', 'banhXeo', 'che', 'comTam'])
+    raw.restaurant.diners[0].ticket = { combo: 'lap', extraPickle: false }
+    expect(parseSave(raw).restaurant!.diners).toEqual([])
   })
 
   it('drops a diner whose Gỏi cuốn ticket is damaged', () => {

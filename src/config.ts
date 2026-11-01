@@ -648,13 +648,13 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000 } as const
+export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000, comTam: 40_000 } as const
 /** What putting a new dish on the menu costs, once; its stock starts at STOCK_START. */
-export const DISH_BUY_PRICE = { bunCha: 1_200_000, goiCuon: 1_000_000 } as const
+export const DISH_BUY_PRICE = { bunCha: 1_200_000, goiCuon: 1_000_000, comTam: 1_500_000 } as const
 export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
 
 /** What 20 portions of each restaurant stock item cost to restock (herbs are shared by every dish). */
-export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, cuonKit: 160_000, herbs: 40_000 } as const
+export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, cuonKit: 160_000, tamKit: 260_000, herbs: 40_000 } as const
 
 /** How many cooks the restaurant can hold: base, plus per extra floor, plus per house, never above max. */
 export const CHEF_CAP = { base: 2, perFloor: 2, perHouse: 1, max: 10 } as const
@@ -745,6 +745,28 @@ export const GC_DIP_MS_HARD = { min: 450, max: 950 }
 /** A roll is an upward swipe: this many make the roll; one at least the long length (longer for a hard diner) is tight, one shorter is loose, and under the short length or slanting more than the slant it is no roll at all. */
 export const GC_ROLLS = 3
 export const GC_ROLL = { long: 200, longHard: 240, short: 60, slant: 0.6 }
+
+/** Cơm tấm: the game's time limit. The coals' heat starts low, falls by the decay a second and rises by a fan for every stretch of fanning; the chop grills only while the heat is in the band, needing this long there, and burns while it is over the burn mark. A hard diner's coals cool faster and the band is narrower. */
+export const CT_LIMIT_MS = 30_000
+export const CT_HEAT = { start: 0.3, decay: 0.22, fan: 0.1, band: [0.5, 0.8], burn: 0.9 } as const
+export const CT_HEAT_HARD = { start: 0.3, decay: 0.3, fan: 0.1, band: [0.54, 0.78], burn: 0.9 } as const
+export const CT_GRILL_MS = 2_500
+/** How far a finger must travel across the coals for one fan, in game pixels. */
+export const CT_FAN_PX = 120
+/** Time over the burn mark that still grills right, and that is only a little burnt. */
+export const CT_BURN_MS = { in: 300, near: 1_000 }
+/** The scallion oil: this many spots light one after another on the plate, each for this long (shorter for a hard diner) after a short pause, at one of these places; a tap this close catches it. */
+export const CT_OIL_SPOTS = 5
+export const CT_SPOT_MS = 1_100
+export const CT_SPOT_MS_HARD = 800
+export const CT_SPOT_GAP_MS = 250
+export const CT_SPOT_R = 75
+export const CT_OIL_AT = [
+  { x: 320, y: 1040 }, { x: 450, y: 980 }, { x: 590, y: 1000 }, { x: 700, y: 1080 },
+  { x: 330, y: 1190 }, { x: 470, y: 1230 }, { x: 610, y: 1210 }, { x: 720, y: 1180 },
+] as const
+/** Spots caught that earn a star. */
+export const CT_OIL_GOOD = 4
 
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50

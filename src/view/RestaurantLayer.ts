@@ -45,7 +45,7 @@ const TICKET_BOTTOM = PATIENCE_BAR_TOP - 4
 const TICKET = { w: 40, h: 50 }
 /** Each dish's ticket texture and the colour of its header. */
 const ticketKey = (dish: DishId): string => `rest-ticket-${dish}`
-const TICKET_HEADER: Record<DishId, string> = { pho: C.terracotta, banhXeo: C.mustard, che: C.leaf, bunCha: C.woodLight, goiCuon: C.lotus }
+const TICKET_HEADER: Record<DishId, string> = { pho: C.terracotta, banhXeo: C.mustard, che: C.leaf, bunCha: C.woodLight, goiCuon: C.lotus, comTam: C.terracotta }
 /** The bike beside the owner as on the choice card, where she is drawn 2.4 times bigger; she sits this far behind its middle and over the ground. */
 const BIKE = { scale: 1 / 2.4, seatX: 7, seatY: -27 }
 /** Each stove picture's lit burner, in its own tiles from its top-left, and how far the cover over it reaches. */

@@ -21,7 +21,9 @@ const TITLE_Y = 290
 const INTRO_Y = 385
 const INTRO_WRAP = 680
 const ROW_TOP = 520
+/** Rows are this tall at most, and shrink so every dish and the herbs fit above the bottom. */
 const ROW_H = 200
+const ROWS_BOTTOM = 1800
 const ROW_LEFT = 90
 const ROW_RIGHT = 990
 const ICON_X = 160
@@ -35,7 +37,7 @@ const HERBS_WRAP = 330
 const DONE_Y = 1895
 /** A dish not on the menu yet is drawn faded behind its buy button; a problem is told in a toast over the done button. */
 const FADED_ALPHA = 0.45
-const TOAST_Y = 1760
+const TOAST_Y = DONE_Y
 const TOAST_DEPTH = 10
 
 /**
@@ -77,27 +79,29 @@ export class MenuScene extends Phaser.Scene {
     this.keep(this.add.text(MID, TITLE_Y, t('menuTitle'), textStyle(60)).setOrigin(0.5))
     this.keep(this.add.text(MID, INTRO_Y, t('menuIntro'), { ...textStyle(32, '600'), align: 'center', wordWrap: { width: INTRO_WRAP } }).setOrigin(0.5))
     const lines = this.keep(this.add.graphics()).lineStyle(3, hex(C.tileSeam), 1)
+    const rowH = Math.min(ROW_H, Math.floor((ROWS_BOTTOM - ROW_TOP) / (DISH_IDS.length + 1)))
+    // the pictures shrink with the rows, never past the size they have in a full-height row
+    const iconScale = (size: number, most: number) => Math.min(most, (rowH * 0.75) / size)
     DISH_IDS.forEach((dish, i) => {
-      const y0 = ROW_TOP + i * ROW_H
+      const y0 = ROW_TOP + i * rowH
       if (i > 0) lines.lineBetween(ROW_LEFT, y0, ROW_RIGHT, y0)
-      this.dishRow(dish, y0)
+      this.dishRow(dish, y0 + rowH / 2, iconScale(90, 1.5))
     })
-    const herbsY = ROW_TOP + DISH_IDS.length * ROW_H
+    const herbsY = ROW_TOP + DISH_IDS.length * rowH
     lines.lineBetween(ROW_LEFT, herbsY, ROW_RIGHT, herbsY)
-    this.herbsRow(herbsY)
+    this.herbsRow(herbsY + rowH / 2, iconScale(60, 2))
     this.keep(addButton(this, MID, DONE_Y, 560, 130, t('done'), 'primary', () => this.close()))
   }
 
   /** One dish: its icon, name and price, the portions left (or paused), and the restock button for its stock item. */
-  private dishRow(dish: DishId, y0: number): void {
+  private dishRow(dish: DishId, cy: number, icon: number): void {
     const { restaurant } = this.params
-    const cy = y0 + ROW_H / 2
     if (isExtraDish(dish) && !restaurant.bought.includes(dish)) {
-      this.buyRow(dish, cy)
+      this.buyRow(dish, cy, icon)
       return
     }
     const left = restaurant.portionsLeft(dish)
-    this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(1.5))
+    this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(icon))
     const name = this.keep(this.add.text(TEXT_X, cy - 30, t('menuDish', { name: t(DISH_NAME[dish]), money: formatMoney(DISH_PRICE[dish]) }), textStyle(40)).setOrigin(0, 0.5))
     name.setScale(Math.min(1, NAME_W / name.width))
     const text = left === 0 ? t('menuPaused') : t('menuLeft', { n: left })
@@ -106,9 +110,9 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** A dish not on the menu yet: faded, with the button that buys it, itself faded while the purse cannot. */
-  private buyRow(dish: ExtraDish, cy: number): void {
+  private buyRow(dish: ExtraDish, cy: number, icon: number): void {
     const first = this.shown.length
-    this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(1.5))
+    this.keep(this.add.image(ICON_X, cy, `dish-${dish}`).setScale(icon))
     const name = this.keep(this.add.text(TEXT_X, cy - 30, t('menuDish', { name: t(DISH_NAME[dish]), money: formatMoney(DISH_PRICE[dish]) }), textStyle(40)).setOrigin(0, 0.5))
     name.setScale(Math.min(1, NAME_W / name.width))
     const note = this.keep(this.add.text(TEXT_X, cy + 26, t('menuNotYet'), textStyle(30, '800', C.soft)).setOrigin(0, 0.5))
@@ -134,11 +138,10 @@ export class MenuScene extends Phaser.Scene {
   }
 
   /** The herbs every dish uses: what is left, who uses them, and the restock button. */
-  private herbsRow(y0: number): void {
+  private herbsRow(cy: number, icon: number): void {
     const { restaurant } = this.params
-    const cy = y0 + ROW_H / 2
     const left = restaurant.herbsLeft()
-    this.keep(this.add.image(ICON_X, cy, 'rstock-herbs').setScale(2))
+    this.keep(this.add.image(ICON_X, cy, 'rstock-herbs').setScale(icon))
     this.keep(this.add.text(TEXT_X, cy - 58, t(RSTOCK_NAME.herbs), textStyle(40)).setOrigin(0, 0.5))
     this.keep(this.add.text(TEXT_X, cy - 14, t('menuLeft', { n: left }), textStyle(30, '800', left <= LOW_STOCK ? C.lantern : C.ink)).setOrigin(0, 0.5))
     this.keep(this.add.text(TEXT_X, cy + 16, t('menuHerbsUse'), { ...textStyle(26, '600'), wordWrap: { width: HERBS_WRAP } }).setOrigin(0, 0))

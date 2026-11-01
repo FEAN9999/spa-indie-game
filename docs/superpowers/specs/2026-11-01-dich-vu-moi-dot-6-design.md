@@ -1,7 +1,7 @@
 # Đợt 6: thêm dịch vụ spa và món nhà hàng
 
 - Ngày: 2026-11-01
-- Trạng thái: Chồng yêu đã chọn cách làm và danh sách (2026-11-01); lô 1 và lô 2 đã làm, lô 3 và 4 chưa làm.
+- Trạng thái: Chồng yêu đã chọn cách làm và danh sách (2026-11-01); lô 1, 2 và 3 đã làm, lô 4 chưa làm.
 
 Cách đọc giống các spec trước:
 - **(anh chọn)** là điều Chồng yêu đã quyết.
@@ -19,7 +19,7 @@ Cách đọc giống các spec trước:
 |---|---|---|
 | 1 (đã làm) | Giác hơi | Bún chả |
 | 2 (đã làm) | Nối mi | Gỏi cuốn |
-| 3 | Bấm huyệt | Cơm tấm |
+| 3 (đã làm) | Bấm huyệt | Cơm tấm |
 | 4 | Lấy nhân mụn | Cà phê sữa đá |
 
 ## 2. Luật chung **(em đề xuất)**
@@ -104,7 +104,47 @@ Mini-game (25 giây), 3 bước:
 
 - Tìm trên GitHub ("eyelash game", "lash salon", "spring roll game", "rice paper roll", "sushi roll game"): không có dự án nào có mini-game nối mi hay cuốn bánh để so; luật lô 2 là của mình, theo kiểu kéo-thả của game làm đẹp và vuốt-cuốn của game nấu ăn.
 
-## 5. Save
+## 5. Lô 3
 
-- Bản 43 (`NEW_SERVICES_SAVE_VERSION`, chưa lên master nên lô 1 và lô 2 dùng chung): thêm `alcohol`, `lashKit` trong kho, `cupping`, `lashes` trong bậc thợ và số đếm, `bought`, `chaKit`, `cuonKit` của nhà hàng, bậc `bunCha`, `goiCuon` của đầu bếp. Save cũ đọc được, thiếu thì lấy mặc định.
-- Màn Thực đơn hiện còn chỗ cho 5 món + rau thơm; lô 3 (Cơm tấm) cần chia trang hoặc thu nhỏ hàng.
+### 5.1 Bấm huyệt
+
+| Mục | Số |
+|---|---|
+| Mở học | 5★, đã mở Massage (học sau Nối mi trong danh sách gợi ý) |
+| Học phí | 2.400.000 đ |
+| Khách trả | 130.000 đ |
+| Giường bấm huyệt | 1.500.000 đ (1×3), tặng một cái khi học xong |
+| Kho | Dầu cù là, 680.000 đ / 20, mỗi khách 1 dầu + 1 khăn |
+| Khách thích | dân văn phòng, người lớn tuổi |
+
+Mini-game (tối đa 30 giây):
+- Trên lưng khách có 6 huyệt (khách khó tính 8), sáng lần lượt theo thứ tự xáo trộn; mỗi huyệt sáng sau 0,45 giây nghỉ và chờ bấm 2,6 giây.
+- Giữ ngón trên huyệt đang sáng: vòng lực đầy dần (1,6 giây; khách khó tính 1,25 giây). Thả trong vạch xanh (55–80%; khách khó tính 55–78%) là "dễ chịu", thả sớm là "nhẹ quá", giữ quá là "đau" (giữ đầy vòng thì tự tính đau). Không bấm kịp là bỏ lỡ.
+- Điểm = số lần đúng trừ số lần đau; 3★ khi thiếu tối đa 1 so với số huyệt, 2★ khi thiếu tối đa 3.
+- Khác Ngâm chân (nhớ thứ tự) và Đá nóng (chạm khi viên đá vừa nóng): ở đây là giữ và thả theo lực.
+
+### 5.2 Cơm tấm
+
+| Mục | Số |
+|---|---|
+| Giá thêm vào thực đơn | 1.500.000 đ (một lần) |
+| Khách trả | 40.000 đ |
+| Kho | Sườn & gạo tấm, 260.000 đ / 20, cộng 1 rau thơm như mọi món |
+
+Mini-game (30 giây), 3 bước:
+1. **Nướng sườn:** vuốt qua lại trên bếp để quạt than (mỗi 120 px vuốt là một lần quạt). Lửa tự nguội dần; sườn chỉ chín khi kim nằm trong vạch vàng (cần 2,5 giây), và cháy khi kim lên vạch đỏ. Chấm theo thời gian cháy: ≤ 0,3 giây là vừa, ≤ 1 giây là hơi cháy cạnh, hơn nữa là cháy.
+2. **Xếp món:** phiếu ghi sườn bì, sườn chả hoặc sườn trứng; chạm đúng món đó (không món kia) và đồ chua (khách khó tính 2 lần) rồi Xong.
+3. **Mỡ hành:** 5 chỗ trên dĩa cơm lần lượt sáng lên 1,1 giây (khách khó tính 0,8 giây); chạm kịp thì chan được mỡ hành.
+- Sao: 1 + (sườn vừa) + (chan được ≥ 4 chỗ) − (sườn cháy) − (sai món), trong khoảng 1–3.
+
+### 5.3 Thực đơn
+
+- Hàng trong màn Thực đơn tự co lại cho vừa mọi món và rau thơm (cao nhất 200 px, 6 món + rau thơm thì khoảng 182 px), hình thu nhỏ theo. Lô 4 thêm món thứ 7 vẫn vừa (khoảng 160 px).
+
+### 5.4 Tham khảo mã nguồn mở
+
+- Tìm trên GitHub ("acupressure game", "shiatsu game", "pressure point tap game", "broken rice game", "fan fire minigame"): chỉ có Drag-Drop Reflexology (Vasundhara-Boomi), một trò kéo-thả ghép huyệt với hình để học, kiểu chơi khác. Luật lô 3 là của mình.
+
+## 6. Save
+
+- Bản 43 (`NEW_SERVICES_SAVE_VERSION`, chưa lên master nên các lô dùng chung): thêm `alcohol`, `lashKit`, `balm` trong kho, `cupping`, `lashes`, `acupressure` trong bậc thợ và số đếm, `bought`, `chaKit`, `cuonKit`, `tamKit` của nhà hàng, bậc `bunCha`, `goiCuon`, `comTam` của đầu bếp. Save cũ đọc được, thiếu thì lấy mặc định.

@@ -45,9 +45,9 @@ export const FRIENDS_SAVE_VERSION = 40
 export const BRANCH_FLOORS_SAVE_VERSION = 41
 /** The save that first has the pieces bought for the street in front of the main shop: origin/master's SAVE_VERSION + 1 at merge time. */
 export const BUSTLE_SAVE_VERSION = 42
-/** The save that first has the new services and dishes: Giác hơi and Nối mi (their stock items, tiers and counts), and Bún chả and Gỏi cuốn (the dishes bought for the restaurant's menu, their stock and tiers): origin/master's SAVE_VERSION + 1 at merge time. */
+/** The save that first has the new services and dishes: Giác hơi, Nối mi and Bấm huyệt (their stock items, tiers and counts), and Bún chả, Gỏi cuốn and Cơm tấm (the dishes bought for the restaurant's menu, their stock and tiers): origin/master's SAVE_VERSION + 1 at merge time. */
 export const NEW_SERVICES_SAVE_VERSION = 43
-/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list, 41 the branches' floors, 42 the street's pieces, 43 Giác hơi, Nối mi, Bún chả and Gỏi cuốn. */
+/** Bump when SaveData changes shape; parseSave then upgrades older saves instead of rejecting them. Version 35 brought the wall pieces and rugs, 36 the Phây feed and an id beside each review, 37 the restaurant, 38 the restaurant's cooks, stock and lessons, 39 the restaurant's houses and floors, 40 the friends' code and list, 41 the branches' floors, 42 the street's pieces, 43 Giác hơi, Nối mi, Bấm huyệt, Bún chả, Gỏi cuốn and Cơm tấm. */
 export const SAVE_VERSION = NEW_SERVICES_SAVE_VERSION
 /** The version that brought the stairs: a save from before it has its stairs spot cleared on load. */
 export const STAIRS_SAVE_VERSION = 14
@@ -330,6 +330,7 @@ function repairTicket(dish: DishId, t: unknown): DishTicket | null {
     return (t.doneness === 'tai' || t.doneness === 'chin') && (t.onion === 'little' || t.onion === 'lots') && typeof t.chili === 'boolean' && typeof t.extraHerb === 'boolean'
       ? { doneness: t.doneness, onion: t.onion, chili: t.chili, extraHerb: t.extraHerb }
       : null
+  if (dish === 'comTam') return (t.combo === 'bi' || t.combo === 'cha' || t.combo === 'trung') && typeof t.extraPickle === 'boolean' ? { combo: t.combo, extraPickle: t.extraPickle } : null
   if (dish === 'goiCuon') return (t.filling === 'tomThit' || t.filling === 'tom') && typeof t.extraVeg === 'boolean' ? { filling: t.filling, extraVeg: t.extraVeg } : null
   if (dish === 'bunCha')
     return (t.grill === 'vua' || t.grill === 'chay') && typeof t.chili === 'boolean' && typeof t.extraHerb === 'boolean' ? { grill: t.grill, chili: t.chili, extraHerb: t.extraHerb } : null

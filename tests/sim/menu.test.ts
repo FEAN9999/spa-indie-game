@@ -5,8 +5,8 @@ import { BASE_DISHES, DISH_IDS, DISH_STOCK, drawTicket, EXTRA_DISHES, fullRestau
 
 describe('menu', () => {
   it('maps each dish to its own stock item', () => {
-    expect(DISH_STOCK).toEqual({ pho: 'phoKit', banhXeo: 'batter', che: 'cheKit', bunCha: 'chaKit', goiCuon: 'cuonKit' })
-    expect(DISH_IDS.map(d => DISH_STOCK[d])).toEqual(['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit'])
+    expect(DISH_STOCK).toEqual({ pho: 'phoKit', banhXeo: 'batter', che: 'cheKit', bunCha: 'chaKit', goiCuon: 'cuonKit', comTam: 'tamKit' })
+    expect(DISH_IDS.map(d => DISH_STOCK[d])).toEqual(['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit', 'tamKit'])
   })
 
   it('starts a bought restaurant with STOCK_START of everything', () => {
@@ -23,21 +23,22 @@ describe('menu', () => {
     expect(drawTicket('pho', rng, false)).toHaveProperty('doneness')
     expect(drawTicket('bunCha', rng, false)).toHaveProperty('grill')
     expect(drawTicket('goiCuon', rng, false)).toHaveProperty('filling')
+    expect(drawTicket('comTam', rng, false)).toHaveProperty('combo')
   })
 
   it('prices the dishes from §10', () => {
-    expect(DISH_PRICE).toEqual({ pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000 })
+    expect(DISH_PRICE).toEqual({ pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000, comTam: 40_000 })
   })
 
-  it('lists the first three dishes, then Bún chả and Gỏi cuốn, which are bought', () => {
+  it('lists the first three dishes, then Bún chả, Gỏi cuốn and Cơm tấm, which are bought', () => {
     expect(BASE_DISHES).toEqual(['pho', 'banhXeo', 'che'])
-    expect(EXTRA_DISHES).toEqual(['bunCha', 'goiCuon'])
-    expect(DISH_IDS).toEqual(['pho', 'banhXeo', 'che', 'bunCha', 'goiCuon'])
+    expect(EXTRA_DISHES).toEqual(['bunCha', 'goiCuon', 'comTam'])
+    expect(DISH_IDS).toEqual(['pho', 'banhXeo', 'che', 'bunCha', 'goiCuon', 'comTam'])
   })
 
   it('names the stock a menu uses, with the herbs, in the menu order', () => {
     expect(stockItemsForMenu(BASE_DISHES)).toEqual(['phoKit', 'batter', 'cheKit', 'herbs'])
     expect(stockItemsForMenu([...BASE_DISHES, 'bunCha'])).toEqual(['phoKit', 'batter', 'cheKit', 'chaKit', 'herbs'])
-    expect(stockItemsForMenu(DISH_IDS)).toEqual(['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit', 'herbs'])
+    expect(stockItemsForMenu(DISH_IDS)).toEqual(['phoKit', 'batter', 'cheKit', 'chaKit', 'cuonKit', 'tamKit', 'herbs'])
   })
 })
