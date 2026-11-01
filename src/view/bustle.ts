@@ -1,6 +1,6 @@
-import { BUSTLE_ART, type BustleArtKey } from '../art/bustle'
+import { BUSTLE_ART, LAMP_HEAD, MARKET_LANTERNS, PARK_LAMPS, type BustleArtKey } from '../art/bustle'
 import { BUSTLE_ROWS, FLOOR_ROWS, HOUSE_COLS, HOUSES_PER_SIDE, MAP_X, MAP_Y, NIGHT_MARKET_OPEN_MIN, RESTAURANT_X0, SHOP_COLS, SHOP_X0, STREET_TILES, TILE } from '../config'
-import { BUSTLE_IDS, bustlePercent, type BustleId } from '../sim/bustle'
+import { BUSTLE_IDS, bustlePercent, bustleScore, type BustleId } from '../sim/bustle'
 import type { Houses } from '../sim/layout'
 import type { Rect } from './camera'
 
@@ -178,3 +178,75 @@ export const bustlePercentText = (score: number): string => `${String(Math.round
 
 /** A price in whole millions as a lot's name shows it: 6, 12, 18. */
 export const millions = (price: number): string => String(Math.round(price / 100_000) / 10).replace('.', ',')
+
+/** One lane of passers-by: the row their feet walk, the columns they keep to, how many and how fast (tiles a second); `loop` walkers come back in at the other end, the rest turn round at the ends. `near` lanes are on the shop's own sidewalk, which upper floors hide. */
+export interface WalkLane {
+  row: number
+  from: number
+  to: number
+  count: number
+  speed: number
+  loop: boolean
+  near: boolean
+}
+
+/** The near sidewalk's walkers keep to the diners' line, just behind the pieces at the curb; the far ones to the far sidewalk; the park's to its path, the market's to the front of its stalls. */
+export const WALK_ROWS = { near: SIDEWALK_ROW + 0.85, far: STRIP_ROW + 1.5, park: STRIP_ROW + 2.42, market: STRIP_ROW + 4.25 }
+/** The most walkers on the near sidewalk. */
+const NEAR_MAX = 8
+
+/** Who walks the open street: two on the near sidewalk to start and more as it gets busier, a few on the far sidewalk once a lot is bought, strollers in the park, and shoppers at the night market from 17:00. */
+export function walkLanes(bought: readonly BustleId[], minutes: number, street: ColSpan): WalkLane[] {
+  const score = bustleScore(bought)
+  const [from, to] = street
+  const lanes: WalkLane[] = [{ row: WALK_ROWS.near, from, to, count: Math.min(NEAR_MAX, 2 + Math.floor(score / 5)), speed: 0.9, loop: true, near: true }]
+  if (bought.some(id => !onSidewalk(id))) lanes.push({ row: WALK_ROWS.far, from, to, count: 1 + Math.floor(score / 10), speed: 0.8, loop: true, near: false })
+  if (bought.includes('park')) lanes.push({ row: WALK_ROWS.park, from: LOTS.park[0] + 0.6, to: LOTS.park[1] - 0.6, count: 2, speed: 0.45, loop: false, near: false })
+  if (bought.includes('nightMarket') && minutes >= NIGHT_MARKET_OPEN_MIN)
+    lanes.push({ row: WALK_ROWS.market, from: LOTS.nightMarket[0] + 0.6, to: LOTS.nightMarket[1] - 0.6, count: 6, speed: 0.35, loop: false, near: false })
+  return lanes
+}
+
+/** The bus: its length, its speed in tiles a second, the column its left end stops at in the bay, how long it stops, and how long the lane is empty before the next. */
+export const BUS = { len: BUSTLE_ART['bustle-bus'].w, speed: 6, stopCol: 14.4, stopMs: 1800, gapMs: 2000 }
+
+/** The bus's left end `ms` into its round along the new lane, from off the street's left end to off its right, stopping at the bay; null while the lane is empty. */
+export function busAt(ms: number, street: ColSpan): number | null {
+  const start = street[0] - BUS.len - 1
+  const end = street[1] + 1
+  const toStop = ((BUS.stopCol - start) / BUS.speed) * 1000
+  const onward = ((end - BUS.stopCol) / BUS.speed) * 1000
+  const t = ms % (toStop + BUS.stopMs + onward + BUS.gapMs)
+  // clamped either side of the stop, so rounding never steps it back
+  if (t < toStop) return Math.min(BUS.stopCol, start + (BUS.speed * t) / 1000)
+  if (t < toStop + BUS.stopMs) return BUS.stopCol
+  if (t < toStop + BUS.stopMs + onward) return BUS.stopCol + Math.max(0, (BUS.speed * (t - toStop - BUS.stopMs)) / 1000)
+  return null
+}
+
+/** One light of the street at night: its middle in street tiles and the glow's scale. */
+export interface StreetLight {
+  col: number
+  row: number
+  scale: number
+}
+
+/** The lights of the pieces bought, lit from 18:30 like the shop's: lamps with a pool on the sidewalk, the carts, the bus shelter, the park's lamps, the market's lanterns and stalls; the sidewalk's only on floor 1. */
+export function streetLights(bought: readonly BustleId[], floor: number): StreetLight[] {
+  const out: StreetLight[] = []
+  for (const id of bought) {
+    if (onSidewalk(id) && floor !== 1) continue
+    const p = bustlePictures(id, NIGHT_MARKET_OPEN_MIN)
+    if (id === 'lamps')
+      for (const lamp of p) out.push({ col: lamp.col + LAMP_HEAD.x, row: lamp.row + LAMP_HEAD.y, scale: 0.8 }, { col: lamp.col + LAMP_HEAD.x - 0.2, row: WALK_ROWS.near + 0.1, scale: 1.1 })
+    if (id === 'banhMi') out.push({ col: p[0].col + 1.1, row: p[0].row + 0.45, scale: 0.7 })
+    if (id === 'sugarcane') out.push({ col: p[0].col + 1, row: p[0].row + 0.5, scale: 0.6 })
+    if (id === 'busStop') out.push({ col: p[0].col + 4.1, row: p[0].row + 1.35, scale: 1.2 })
+    if (id === 'park') for (const lamp of PARK_LAMPS) out.push({ col: p[0].col + lamp.x, row: p[0].row + lamp.y, scale: 0.8 })
+    if (id === 'nightMarket') {
+      for (const l of MARKET_LANTERNS) out.push({ col: p[0].col + l.x, row: p[0].row + l.y, scale: 0.3 })
+      for (let i = 0; i < 4; i++) out.push({ col: p[0].col + 0.5 + i * 4.4 + 1.9, row: p[0].row + 2.9, scale: 1 })
+    }
+  }
+  return out
+}

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BUSTLE_ROWS, MAP_X, MAP_Y, TILE } from '../../src/config'
-import { BUSTLE_IDS } from '../../src/sim/bustle'
-import { bustleAt, bustleHits, bustleMarks, bustlePercentText, bustlePictures, colX, LOTS, millions, onSidewalk, openStreetBounds, roadCovers, streetAt, STRIP_ROW, upperFronts, type StreetRect } from '../../src/view/bustle'
+import { BUSTLE_IDS, type BustleId } from '../../src/sim/bustle'
+import { BUS, busAt, bustleAt, bustleHits, bustleMarks, bustlePercentText, bustlePictures, colX, LOTS, millions, onSidewalk, openStreetBounds, roadCovers, streetAt, streetLights, STRIP_ROW, upperFronts, walkLanes, WALK_ROWS, type StreetRect } from '../../src/view/bustle'
 
 // the street's art loads through svg.ts, which imports Phaser
 vi.mock('phaser', () => ({}))
@@ -112,5 +112,71 @@ describe("the old road's dashed line", () => {
     expect(roadCovers(2, [6, 68], fronts)).toEqual([[6, 12], [25, 49], [62, 68]])
     expect(roadCovers(3, [12, 62], fronts)).toEqual([[25, 49]])
     expect(roadCovers(2, [6, 68], upperFronts({ left: 2, right: 2 }, { left: 2, right: 2 }))).toEqual([])
+  })
+})
+
+describe('who walks the street', () => {
+  const street: [number, number] = [6, 68]
+
+  it('is two on the near sidewalk with nothing bought, and more as the street gets busier, at most eight', () => {
+    expect(walkLanes([], 600, street)).toEqual([{ row: WALK_ROWS.near, from: 6, to: 68, count: 2, speed: 0.9, loop: true, near: true }])
+    expect(walkLanes(['trees', 'banhMi'], 600, street)[0].count).toBe(3)
+    expect(walkLanes([...BUSTLE_IDS], 600, street)[0].count).toBe(8)
+  })
+
+  it('crosses to the far sidewalk once a lot is bought, strolls the park and shops at the market only from 17:00', () => {
+    const rows = (bought: BustleId[], minutes: number) => walkLanes(bought, minutes, street).map(l => l.row)
+    expect(rows(['trees', 'lamps'], 600)).toEqual([WALK_ROWS.near])
+    expect(rows(['busStop'], 600)).toEqual([WALK_ROWS.near, WALK_ROWS.far])
+    expect(rows(['park'], 600)).toEqual([WALK_ROWS.near, WALK_ROWS.far, WALK_ROWS.park])
+    expect(rows(['nightMarket'], 1019)).toEqual([WALK_ROWS.near, WALK_ROWS.far])
+    expect(rows(['nightMarket'], 1020)).toEqual([WALK_ROWS.near, WALK_ROWS.far, WALK_ROWS.market])
+    const market = walkLanes(['nightMarket'], 1100, street).at(-1)!
+    expect([market.from, market.to, market.count, market.loop]).toEqual([LOTS.nightMarket[0] + 0.6, LOTS.nightMarket[1] - 0.6, 6, false])
+  })
+
+  it('walks the near sidewalk just behind the pieces at the curb, and the far lanes on the far side of the road', () => {
+    for (const id of BUSTLE_IDS.filter(onSidewalk)) for (const p of bustlePictures(id, 600)) expect(WALK_ROWS.near).toBeLessThan(p.foot)
+    expect(WALK_ROWS.far).toBeGreaterThan(STRIP_ROW + 1)
+    expect(WALK_ROWS.far).toBeLessThan(STRIP_ROW + 1.7)
+  })
+})
+
+describe('the bus', () => {
+  const street: [number, number] = [6, 68]
+  /** Every 50 ms of one long run, the bus's place or null. */
+  const run = (ms: number) => Array.from({ length: ms / 50 }, (_, i) => busAt(i * 50, street))
+
+  it('comes in off the left end, stops at the bay for 1.8 s, and goes off the right end', () => {
+    expect(busAt(0, street)).toBe(6 - BUS.len - 1)
+    const stopped = run(40_000).filter(x => x === BUS.stopCol)
+    expect(stopped.length * 50).toBeGreaterThanOrEqual(BUS.stopMs * 2 - 100)
+    const places = run(20_000).filter((x): x is number => x !== null)
+    expect(Math.max(...places)).toBeGreaterThan(68)
+  })
+
+  it('only ever moves right, and comes round about every 15 seconds', () => {
+    const places = run(14_000)
+    for (let i = 1; i < places.length; i++) if (places[i] !== null && places[i - 1] !== null) expect(places[i]!).toBeGreaterThanOrEqual(places[i - 1]!)
+    const empties = run(60_000).map(x => x === null)
+    const rounds = empties.filter((e, i) => e && !empties[i - 1]).length
+    expect(rounds).toBeGreaterThanOrEqual(3)
+    expect(rounds).toBeLessThanOrEqual(5)
+  })
+})
+
+describe("the street's lights", () => {
+  it('light the lamps with a pool under each, the carts, the shelter, the park and the market', () => {
+    const all = streetLights([...BUSTLE_IDS], 1)
+    expect(all).toHaveLength(4 * 2 + 1 + 1 + 1 + 2 + 12 + 4)
+    for (const l of all) {
+      expect(l.col).toBeGreaterThanOrEqual(12)
+      expect(l.col).toBeLessThanOrEqual(62)
+    }
+  })
+
+  it('leave out the sidewalk pieces upstairs, where the balcony hides them', () => {
+    expect(streetLights(['lamps', 'banhMi', 'sugarcane'], 2)).toEqual([])
+    expect(streetLights(['park'], 3)).toHaveLength(2)
   })
 })

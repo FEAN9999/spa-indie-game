@@ -32,6 +32,8 @@ export const BUSTLE_ART = {
   'bustle-park': { w: 18, h: 4 },
   'bustle-market-day': { w: 18, h: 4.4 },
   'bustle-market-night': { w: 18, h: 4.4 },
+  /** The green city bus, seen from the side on the new lane. */
+  'bustle-bus': { w: 4.4, h: 0.9 },
   'bustle-plus': { w: 0.9, h: 0.9 },
   'bustle-ghost': { w: 0.7, h: 0.7 },
   'bustle-frame-busStop': { w: 9.8, h: 3.9 },
@@ -240,6 +242,21 @@ function market(open: boolean): string {
   return out.join('')
 }
 
+/** The green city bus: body, cream stripe, windows, the door at its front (right) end, two wheels. */
+function bus(): string {
+  let windows = ''
+  for (let x = 0.95; x < 3.9; x += 0.6) windows += `M${f(x)},0.12 v0.3 `
+  return (
+    box(0, 0.04, 4.4, 0.72, C.leafLight, `rx="0.15" ${outline(0.06)}`) +
+    box(0.35, 0.12, 3.6, 0.3, C.glass, outline(0.03)) +
+    line(windows, C.ink, 0.03) +
+    box(0, 0.5, 4.4, 0.1, C.cream) +
+    box(3.65, 0.42, 0.5, 0.34, C.cream, outline(0.03)) +
+    circle(0.8, 0.74, 0.15, C.ink) +
+    circle(3.5, 0.74, 0.15, C.ink)
+  )
+}
+
 const plus = (w: number) => {
   const r = w / 2 - 0.03
   const c = w / 2
@@ -264,6 +281,7 @@ export function bustleTextures(): Record<BustleArtKey, string> {
     'bustle-park': doc('bustle-park', park()),
     'bustle-market-day': doc('bustle-market-day', market(false)),
     'bustle-market-night': doc('bustle-market-night', market(true)),
+    'bustle-bus': doc('bustle-bus', bus()),
     'bustle-plus': doc('bustle-plus', plus(BUSTLE_ART['bustle-plus'].w)),
     'bustle-ghost': doc('bustle-ghost', ghost(BUSTLE_ART['bustle-ghost'].w)),
     'bustle-frame-busStop': doc('bustle-frame-busStop', frame(BUSTLE_ART['bustle-frame-busStop'].w, BUSTLE_ART['bustle-frame-busStop'].h)),

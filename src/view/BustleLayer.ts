@@ -1,14 +1,16 @@
 import * as Phaser from 'phaser'
 import { BUSTLE_ART } from '../art/bustle'
-import { C } from '../art/palette'
+import { C, customerColors } from '../art/palette'
 import { BUSTLE_PIECES, BUSTLE_ROWS, NIGHT_MARKET_OPEN_MIN, TILE } from '../config'
 import { BUSTLE_IDS, type BustleId } from '../sim/bustle'
+import { createRng, randomLook } from '../sim/rng'
 import { BUSTLE_TEXT } from '../strings/bustle'
 import { t } from '../strings/vi'
-import { bustleMarks, bustlePictures, colX, lotLabelAt, millions, OLD_ROAD_ROW, onSidewalk, roadCovers, rowY, STRIP_ROW, type ColSpan } from './bustle'
+import { busAt, bustleMarks, bustlePictures, colX, lotLabelAt, millions, OLD_ROAD_ROW, onSidewalk, roadCovers, rowY, streetLights, STRIP_ROW, walkLanes, type ColSpan, type WalkLane } from './bustle'
 import type { Rect } from './camera'
 import { daylight } from './daylight'
-import { DARK, DARK_DEPTH, NIGHT_DEPTH } from './RoomView'
+import { CharacterView } from './CharacterView'
+import { addGlow, DARK, DARK_DEPTH, NIGHT_DEPTH } from './RoomView'
 import { textStyle } from './text'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -22,6 +24,18 @@ const STRIP_COLS = BUSTLE_ART['bustle-strip'].w
 const LABEL = { size: 26, padX: 18, h: 46 }
 /** A piece just bought grows out of the ground. */
 const POP = { from: 0.4, ms: 450 }
+/** Passers-by are drawn smaller than customers, and each walks at its lane's speed times a share in this range. */
+const WALKER = { scale: 0.8, slow: 0.7, spread: 0.6 }
+/** The bus's top on the new lane, and the row its wheels stand on, which sets its depth. */
+const BUS_ROW = { top: STRIP_ROW + 0.12, foot: STRIP_ROW + 0.95 }
+
+/** One passer-by: their figure, the lane they keep to, their column and their speed in tiles a second, signed by their way. */
+interface Walker {
+  view: CharacterView
+  lane: WalkLane
+  x: number
+  v: number
+}
 
 /** What the street shows this frame. */
 export interface BustleView {
@@ -35,6 +49,8 @@ export interface BustleView {
   marks: boolean
   /** The street's extent in world pixels, where its ground and its light lie. */
   light: Rect
+  /** The ms passed this frame, for the passers-by and the bus; 0 while the shop stands still. */
+  dt: number
   /** The columns whose upper floors lay a balcony over the sidewalk. */
   fronts: readonly ColSpan[]
 }
@@ -48,6 +64,16 @@ export class BustleLayer {
   private readonly dark: Phaser.GameObjects.Rectangle
   /** What is drawn now; the street is drawn again only when it changes. */
   private drawn = ''
+  /** The glows of the street's lights, lit like the shop's lamps. */
+  private glows: Phaser.GameObjects.Image[] = []
+  private bus: Phaser.GameObjects.Image | null = null
+  /** How far the bus is into its rounds. */
+  private busMs = 0
+  private walkers: Walker[] = []
+  /** The lanes the passers-by were made for; they are made again only when these change. */
+  private walked = ''
+  /** The view's own stream for the passers-by's looks and ways: the sim draws nothing for them. */
+  private readonly rng = createRng(Date.now())
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene
@@ -66,6 +92,57 @@ export class BustleLayer {
     const d = daylight(v.minutes)
     this.night.setFillStyle(d.color, d.alpha).setVisible(v.open && d.alpha > 0)
     this.dark.setVisible(v.open && v.powerOut)
+    // the street's lights come on with the shop's lamps, and go out with them in a power cut
+    const lit = v.powerOut ? 0 : d.lamps
+    for (const g of this.glows) g.setAlpha(lit).setVisible(lit > 0)
+    const street = this.street(v)
+    this.walk(v, street)
+    if (this.bus) {
+      this.busMs += v.dt
+      const col = busAt(this.busMs, street)
+      this.bus.setVisible(col !== null).setX(colX(col ?? 0))
+    }
+  }
+
+  /** The street's columns, from the light's left edge to its right. */
+  private street(v: BustleView): ColSpan {
+    const start = (v.light.x - colX(0)) / TILE
+    return [start, start + v.light.w / TILE]
+  }
+
+  /** Makes the passers-by again when who walks changes, then moves each along its lane; the near sidewalk's are hidden upstairs, as its pieces are. */
+  private walk(v: BustleView, street: ColSpan): void {
+    const lanes = v.open ? walkLanes(v.bought, v.minutes, street) : []
+    const key = JSON.stringify(lanes)
+    if (key !== this.walked) {
+      this.walked = key
+      for (const w of this.walkers) w.view.container.destroy()
+      this.walkers = lanes.flatMap(lane =>
+        Array.from({ length: lane.count }, () => {
+          const way = this.rng() < 0.5 ? -1 : 1
+          const view = new CharacterView(this.scene, customerColors(randomLook(this.rng), 'office'))
+          view.container.setScale(WALKER.scale)
+          view.setPose('walk')
+          view.setFacing(way > 0 ? 'right' : 'left')
+          return { view, lane, x: lane.from + this.rng() * (lane.to - lane.from), v: way * lane.speed * (WALKER.slow + this.rng() * WALKER.spread) }
+        }),
+      )
+    }
+    for (const w of this.walkers) {
+      const { lane } = w
+      w.x += (w.v * v.dt) / 1000
+      if (lane.loop) {
+        if (w.x > lane.to) w.x = lane.from
+        else if (w.x < lane.from) w.x = lane.to
+      } else if (w.x > lane.to || w.x < lane.from) {
+        w.x = Math.min(lane.to, Math.max(lane.from, w.x))
+        w.v = -w.v
+        w.view.setFacing(w.v > 0 ? 'right' : 'left')
+      }
+      const y = rowY(lane.row)
+      w.view.container.setPosition(colX(w.x), y).setDepth(y).setVisible(!lane.near || v.floor === 1)
+      w.view.update(v.dt)
+    }
   }
 
   /** The piece just bought grows out of the ground; sync first, so it is drawn. */
@@ -78,6 +155,8 @@ export class BustleLayer {
 
   destroy(): void {
     this.clear()
+    for (const w of this.walkers) w.view.container.destroy()
+    this.walkers = []
     this.night.destroy()
     this.dark.destroy()
   }
@@ -86,6 +165,8 @@ export class BustleLayer {
     for (const p of this.parts) p.destroy()
     this.parts = []
     this.pieces.clear()
+    this.glows = []
+    this.bus = null
   }
 
   private redraw(v: BustleView): void {
@@ -112,6 +193,13 @@ export class BustleLayer {
       })
       this.pieces.set(id, images)
       this.parts.push(...images)
+    }
+    // the lights, unlit until sync lights them, and the bus on the new lane once its stop is bought
+    this.glows = streetLights(v.bought, v.floor).map(l => addGlow(this.scene, colX(l.col), rowY(l.row), l.scale))
+    this.parts.push(...this.glows)
+    if (v.bought.includes('busStop')) {
+      this.bus = add.image(0, rowY(BUS_ROW.top), 'bustle-bus').setOrigin(0, 0).setDepth(rowY(BUS_ROW.foot)).setVisible(false)
+      this.parts.push(this.bus)
     }
     if (!v.marks) return
     for (const id of BUSTLE_IDS) {

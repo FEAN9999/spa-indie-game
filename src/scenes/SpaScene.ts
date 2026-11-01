@@ -1684,7 +1684,7 @@ export class SpaScene extends Phaser.Scene {
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.restaurant?.sync(this.chain, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
-    this.syncBustle()
+    this.syncBustle(this.playing() ? 0 : dt)
     // the wait for a newer version draws nothing over the shop, so the day's line stays up through it
     this.hud.update(this.attention.covered('panel', 'shutter', 'away'))
     this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
@@ -2355,8 +2355,8 @@ export class SpaScene extends Phaser.Scene {
     this.tweens.add({ targets: s.bubble, scale: 1.2, duration: 250, ease: 'Back.easeOut' })
   }
 
-  /** Draws the street in front of the main shop as it is this frame. */
-  private syncBustle(): void {
+  /** Draws the street in front of the main shop as it is this frame, its passers-by and bus moving `dt` ms on. */
+  private syncBustle(dt = 0): void {
     this.bustle?.sync({
       open: this.chain.bustleOpen(),
       floor: this.viewFloor,
@@ -2366,6 +2366,7 @@ export class SpaScene extends Phaser.Scene {
       marks: !this.visit && this.viewFloor === 1,
       light: this.lightRect() ?? this.mapRect(),
       fronts: upperFronts(this.chain.main.houses, this.chain.restaurant?.houses ?? null),
+      dt,
     })
   }
 
