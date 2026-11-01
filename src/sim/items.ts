@@ -18,6 +18,7 @@ export type ItemKind =
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
   | 'velvetSofa' | 'rattanArmchair' | 'vanity' | 'towelSteamer' | 'aromaDiffuser' | 'tileRug' | 'tearCalendar' | 'pool'
   | 'lockers' | 'towelCart' | 'saltLamp' | 'snakePlant' | 'lotusPainting' | 'windChime' | 'fullMirror' | 'oilShelf'
+  | 'woodTub' | 'towelRack' | 'yogaMat' | 'eggChair' | 'flowerArch' | 'outdoorShower' | 'whiteParasol' | 'lavender'
   | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
   | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
   | 'sunLounger' | 'charcoalGrill' | 'lightArch' | 'gardenSwing' | 'hammock' | 'bananaPlant'
@@ -146,6 +147,14 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   windChime: { w: 1, h: 1, price: 75_000, beauty: 1, group: 'decor', shop: 'spa', layer: 'wall', name: 'itemWindChime' },
   fullMirror: { w: 1, h: 1, price: 150_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemFullMirror' },
   oilShelf: { w: 2, h: 1, price: 210_000, beauty: 3, group: 'decor', shop: 'spa', name: 'itemOilShelf' },
+  woodTub: { w: 2, h: 2, price: 450_000, beauty: 5, group: 'decor', shop: 'spa', name: 'itemWoodTub' },
+  towelRack: { w: 2, h: 1, price: 120_000, beauty: 1, group: 'decor', shop: 'spa', name: 'itemTowelRack' },
+  yogaMat: { w: 1, h: 2, price: 90_000, beauty: 1, group: 'decor', shop: 'spa', layer: 'rug', name: 'itemYogaMat' },
+  eggChair: { w: 1, h: 1, price: 270_000, beauty: 3, group: 'decor', shop: 'spa', name: 'itemEggChair' },
+  flowerArch: { w: 2, h: 1, price: 300_000, beauty: 4, group: 'decor', shop: 'spa', name: 'itemFlowerArch' },
+  outdoorShower: { w: 1, h: 1, price: 180_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemOutdoorShower' },
+  whiteParasol: { w: 1, h: 1, price: 150_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemWhiteParasol' },
+  lavender: { w: 1, h: 1, price: 105_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemLavender' },
   stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
   diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
   diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },

@@ -160,6 +160,17 @@ describe('building the shop', () => {
     expect(sim.canPlace('saltLamp', 13, 20, false)).toBe('overlap')
   })
 
+  it("dresses the spa's rooftop with its own pieces: the wooden tub, a yoga mat and the flower arch", () => {
+    const sim = starShop(3, 50_000_000)
+    expect(sim.openFloor(2)).toBeNull()
+    expect(sim.openFloor(3)).toBeNull()
+    expect(sim.buy('woodTub', 13, 38, false)).toBeNull()
+    expect(sim.buy('yogaMat', 18, 40, false)).toBeNull()
+    expect(sim.buy('flowerArch', 16, 38, false)).toBeNull()
+    expect(sim.grid.cells[39][14]).toBe('decor')
+    expect(isWalkable(sim.grid, { x: 18, y: 41 })).toBe(true)
+  })
+
   it('lets a customer wait on the velvet sofa and the rattan armchair', () => {
     const sim = shop()
     expect(sim.buy('velvetSofa', 18, 9, false)).toBeNull()

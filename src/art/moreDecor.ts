@@ -830,6 +830,111 @@ const oilShelfTurned =
   rect(0.2, 1.7, 0.56, 0.16, C.mint, `rx="0.04" ${ink(0.02)}`) +
   rect(0.08, 2.14, 0.8, 0.12, C.wood, `rx="0.03" ${ink(0.03)}`)
 
+// ---------- Spa: đồ trang trí tầng thượng ----------
+
+// bồn gỗ ngâm: bồn gỗ tròn ghép thanh có hai đai sắt, nước nóng bốc hơi, cánh hoa hồng nổi, bậc gỗ nhỏ phía trước
+const woodTub =
+  line('M0.6,0.5 q-0.08,-0.12 0,-0.24 t0,-0.22 M1.0,0.42 q-0.08,-0.12 0,-0.24 t0,-0.18 M1.4,0.5 q-0.08,-0.12 0,-0.24 t0,-0.22', C.steamBlue, 0.04) +
+  `<path d="M0.12,0.86 V1.86 Q1.0,2.22 1.88,1.86 V0.86Z" fill="${C.woodLight}" ${ink()}/>` +
+  [0.4, 0.7, 1.0, 1.3, 1.6].map(x => line(`M${x},${f(0.96 + Math.abs(x - 1) * -0.02)} V${f(2.02 - Math.abs(x - 1) * 0.16)}`, C.wood, 0.025)).join('') +
+  `<path d="M0.12,1.12 Q1.0,1.42 1.88,1.12 M0.12,1.66 Q1.0,1.98 1.88,1.66" stroke="${C.ink}" stroke-width="0.08" fill="none"/>` +
+  `<path d="M0.12,1.12 Q1.0,1.42 1.88,1.12 M0.12,1.66 Q1.0,1.98 1.88,1.66" stroke="${C.tankRib}" stroke-width="0.045" fill="none"/>` +
+  `<ellipse cx="1.0" cy="0.86" rx="0.88" ry="0.3" fill="${C.wood}" ${ink(0.04)}/>` +
+  `<ellipse cx="1.0" cy="0.88" rx="0.76" ry="0.23" fill="${C.waterDeep}" ${ink(0.025)}/>` +
+  line('M0.6,0.86 q0.12,-0.04 0.24,0 M1.16,0.94 q0.12,-0.04 0.24,0', C.water, 0.03) +
+  [[0.7, 0.8], [1.2, 0.82], [1.36, 0.96], [0.86, 0.98]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="0.05" ry="0.03" fill="${C.lotus}" ${ink(0.01)}/>`).join('') +
+  rect(0.62, 2.04, 0.76, 0.14, C.wood, `rx="0.03" ${ink(0.03)}`)
+
+// giá phơi khăn: giá tre chữ A hai đầu, hai thanh ngang vắt khăn trắng, xanh bạc hà và hồng
+const hangTowel = (x: number, w: number, top: number, len: number, fill: string) =>
+  rect(x, top, w, len, fill, `rx="0.03" ${ink(0.02)}`) + line(`M${f(x + 0.04)},${f(top + len - 0.08)} H${f(x + w - 0.04)}`, C.tileSeam, 0.02)
+const towelRack =
+  pole(0.08, 0.3, 0.09, 1.1) + pole(1.83, 0.3, 0.09, 1.1) +
+  pole(0.06, 0.32, 1.88, 0.07) + pole(0.06, 0.8, 1.88, 0.06) +
+  hangTowel(0.26, 0.42, 0.34, 0.56, C.cream) + hangTowel(0.76, 0.42, 0.34, 0.5, C.mint) + hangTowel(1.26, 0.42, 0.34, 0.58, C.pinkPale) +
+  hangTowel(0.5, 0.36, 0.82, 0.4, C.mint) + hangTowel(1.06, 0.36, 0.82, 0.36, C.cream)
+
+// giá phơi khăn dựng đứng: nhìn từ một đầu, khung chữ A ở gần, hai thanh ngang chạy lùi xa, khăn vắt nhìn nghiêng
+const towelRackTurned =
+  `<path d="M0.12,2.4 L0.55,0.3 L0.98,2.4" stroke="${C.ink}" stroke-width="0.09" fill="none"/><path d="M0.12,2.4 L0.55,0.3 L0.98,2.4" stroke="${C.bamboo}" stroke-width="0.055" fill="none"/>` +
+  line('M0.55,0.3 V1.3', C.bambooDark, 0.04) +
+  rect(0.4, 0.34, 0.3, 0.9, C.cream, `rx="0.03" ${ink(0.02)}`) +
+  rect(0.46, 0.5, 0.18, 0.8, C.mint, `rx="0.03" ${ink(0.02)}`) +
+  line('M0.3,1.5 H0.8', C.bambooDark, 0.05)
+
+// thảm yoga: thảm xanh bạc hà nhìn từ trên xuống, đầu xa cuộn tròn, hai sọc mảnh dọc theo thảm; xoay thì nằm ngang
+const yogaMat = (w: number, h: number) => {
+  const long = h >= w
+  const roll = long ? `<ellipse cx="${w / 2}" cy="0.22" rx="${f(w / 2 - 0.12)}" ry="0.12" fill="${C.mintTeal}" ${ink(0.03)}/>` : `<ellipse cx="0.22" cy="${h / 2}" rx="0.12" ry="${f(h / 2 - 0.12)}" fill="${C.mintTeal}" ${ink(0.03)}/>`
+  const stripes = long ? line(`M0.3,0.36 V${f(h - 0.18)} M${f(w - 0.3)},0.36 V${f(h - 0.18)}`, C.cream, 0.025) : line(`M0.36,0.3 H${f(w - 0.18)} M0.36,${f(h - 0.3)} H${f(w - 0.18)}`, C.cream, 0.025)
+  const body = long ? rect(0.14, 0.2, f(w - 0.28), f(h - 0.32), C.mint, `rx="0.06" ${ink(0.035)}`) : rect(0.2, 0.14, f(w - 0.32), f(h - 0.28), C.mint, `rx="0.06" ${ink(0.035)}`)
+  return body + stripes + roll
+}
+
+// ghế trứng treo: chân đế tròn, cần cong hình chữ C, xích treo chiếc ghế mây hình quả trứng có nệm kem
+const eggChair =
+  `<defs><pattern id="eggWeave" width="0.12" height="0.12" patternUnits="userSpaceOnUse"><rect width="0.12" height="0.12" fill="${C.weave}"/><path d="M0,0 L0.12,0.12 M0.12,0 L0,0.12" stroke="${C.weaveLine}" stroke-width="0.018"/></pattern></defs>` +
+  `<ellipse cx="0.3" cy="2.12" rx="0.24" ry="0.06" fill="${C.stone}" ${ink(0.03)}/>` +
+  `<path d="M0.3,2.1 V0.4 Q0.3,0.12 0.5,0.14 Q0.62,0.16 0.62,0.36" stroke="${C.ink}" stroke-width="0.09" fill="none"/>` +
+  `<path d="M0.3,2.1 V0.4 Q0.3,0.12 0.5,0.14 Q0.62,0.16 0.62,0.36" stroke="${C.stone}" stroke-width="0.05" fill="none"/>` +
+  line('M0.62,0.36 V0.58', C.tankRib, 0.025) +
+  `<path d="M0.62,0.56 Q0.98,0.62 0.96,1.24 Q0.9,1.78 0.62,1.8 Q0.34,1.78 0.3,1.24 Q0.28,0.64 0.62,0.56Z" fill="url(#eggWeave)" ${ink(0.04)}/>` +
+  `<path d="M0.62,0.78 Q0.86,0.84 0.84,1.26 Q0.8,1.6 0.62,1.62 Q0.42,1.6 0.4,1.26 Q0.4,0.84 0.62,0.78Z" fill="${C.cream}" ${ink(0.03)}/>` +
+  rect(0.44, 1.28, 0.36, 0.2, C.paper, `rx="0.08" ${ink(0.02)}`) +
+  dot(0.68, 1.06, 0.08, C.lotus, 0.015)
+
+// cổng hoa giấy: vòm tre hai cột, hoa giấy hồng tím phủ kín đỉnh vòm và rủ xuống hai bên
+const blossoms = (pts: [number, number][]) =>
+  pts.map(([x, y], i) => dot(x, y, i % 3 === 2 ? 0.07 : 0.09, i % 2 ? C.magenta : C.lotus, 0.012)).join('')
+const flowerArch =
+  pole(0.12, 0.5, 0.1, 1.46) + pole(1.78, 0.5, 0.1, 1.46) +
+  `<path d="M0.17,0.6 Q1.0,-0.1 1.83,0.6" stroke="${C.ink}" stroke-width="0.12" fill="none"/><path d="M0.17,0.6 Q1.0,-0.1 1.83,0.6" stroke="${C.bamboo}" stroke-width="0.08" fill="none"/>` +
+  `<path d="M0.1,0.66 Q0.4,0.2 1.0,0.16 Q1.6,0.2 1.9,0.66 Q1.6,0.46 1.0,0.42 Q0.4,0.46 0.1,0.66Z" fill="${C.leaf}" ${ink(0.025)}/>` +
+  blossoms([[0.3, 0.46], [0.5, 0.32], [0.72, 0.24], [0.96, 0.2], [1.2, 0.22], [1.44, 0.3], [1.66, 0.42], [0.62, 0.36], [1.32, 0.36], [1.04, 0.3]]) +
+  `<path d="M0.12,0.7 Q0.06,1.0 0.16,1.3 M1.88,0.7 Q1.94,1.0 1.84,1.3" stroke="${C.leaf}" stroke-width="0.07" fill="none" stroke-linecap="round"/>` +
+  blossoms([[0.14, 0.82], [0.1, 1.04], [0.18, 1.22], [1.86, 0.82], [1.9, 1.04], [1.82, 1.22]]) +
+  rect(0.04, 1.86, 0.26, 0.12, C.terracotta, `rx="0.03" ${ink(0.025)}`) + rect(1.7, 1.86, 0.26, 0.12, C.terracotta, `rx="0.03" ${ink(0.025)}`)
+
+// cổng hoa giấy dựng đứng: nhìn dọc qua vòm, hai cột chồng nhau, vòm hoa nhìn thẳng thành khối hoa trên đỉnh
+const flowerArchTurned =
+  pole(0.5, 0.6, 0.1, 1.7) +
+  `<path d="M0.2,0.8 Q0.1,0.3 0.55,0.2 Q1.0,0.3 0.9,0.8Z" fill="${C.leaf}" ${ink(0.025)}/>` +
+  blossoms([[0.3, 0.6], [0.45, 0.38], [0.66, 0.36], [0.8, 0.58], [0.55, 0.54], [0.36, 0.78], [0.76, 0.78]]) +
+  line('M0.5,0.9 Q0.44,1.3 0.52,1.6', C.leaf, 0.06) +
+  blossoms([[0.46, 1.1], [0.52, 1.4]]) +
+  rect(0.38, 2.24, 0.34, 0.14, C.terracotta, `rx="0.03" ${ink(0.025)}`)
+
+// vòi sen ngoài trời: cột inox cao, bát sen tròn to phía trên toả giọt nước, vòi gạt giữa cột, bệ đá cuội xám
+const outdoorShower =
+  [[0.42, 0.6], [0.52, 0.72], [0.62, 0.62], [0.47, 0.86], [0.58, 0.94], [0.68, 0.8]].map(([x, y]) => `<path d="M${x},${y} q-0.02,0.04 0,0.06 q0.02,-0.02 0,-0.06Z" fill="${C.waterDeep}"/>`).join('') +
+  `<path d="M0.24,0.3 V2.0" stroke="${C.ink}" stroke-width="0.09" fill="none"/><path d="M0.24,0.3 V2.0" stroke="${C.silver}" stroke-width="0.05" fill="none"/>` +
+  `<path d="M0.24,0.3 Q0.24,0.18 0.4,0.18 H0.55 V0.32" stroke="${C.ink}" stroke-width="0.07" fill="none"/><path d="M0.24,0.3 Q0.24,0.18 0.4,0.18 H0.55 V0.32" stroke="${C.silver}" stroke-width="0.035" fill="none"/>` +
+  `<ellipse cx="0.55" cy="0.4" rx="0.22" ry="0.07" fill="${C.silver}" ${ink(0.03)}/>` +
+  rect(0.2, 1.2, 0.24, 0.07, C.tankRib, `rx="0.03" ${ink(0.02)}`) +
+  `<ellipse cx="0.5" cy="2.06" rx="0.44" ry="0.12" fill="${C.stoneLight}" ${ink(0.035)}/>` +
+  [[0.3, 2.04], [0.5, 2.1], [0.7, 2.02], [0.42, 1.98], [0.62, 2.1]].map(([x, y]) => `<ellipse cx="${x}" cy="${y}" rx="0.06" ry="0.035" fill="${C.cream}" ${ink(0.01)}/>`).join('')
+
+// dù vải trắng: cột gỗ có chân đế đá, tán dù vải trắng xếp múi có viền tua rua xanh ngọc
+const whiteParasol =
+  `<ellipse cx="0.5" cy="2.32" rx="0.3" ry="0.08" fill="${C.stone}" ${ink(0.03)}/>` +
+  rect(0.47, 0.3, 0.06, 2.0, C.woodDark, ink(0.02)) +
+  `<path d="M0.02,0.8 Q0.5,0.1 0.98,0.8 Q0.86,0.74 0.74,0.8 Q0.62,0.74 0.5,0.8 Q0.38,0.74 0.26,0.8 Q0.14,0.74 0.02,0.8Z" fill="${C.paper}" ${ink(0.03)}/>` +
+  line('M0.5,0.18 L0.26,0.78 M0.5,0.18 L0.74,0.78 M0.5,0.18 V0.8', C.tileSeam, 0.02) +
+  line('M0.04,0.82 Q0.15,0.78 0.26,0.82 Q0.38,0.78 0.5,0.82 Q0.62,0.78 0.74,0.82 Q0.86,0.78 0.96,0.82', C.tealLight, 0.03) +
+  dot(0.5, 0.18, 0.04, C.woodDark, 0.012)
+
+// chậu oải hương: chậu đất nung trắng, bụi lá xanh xám, nhiều cành hoa tím mảnh vươn lên
+const lavenderSpike = (x: number, lean: number, top: number) =>
+  line(`M${x},1.2 Q${f(x + lean / 2)},${f((1.2 + top) / 2)} ${f(x + lean)},${top}`, C.leaf, 0.02) +
+  [0, 1, 2, 3].map(i => `<ellipse cx="${f(x + lean - lean * 0.06 * i)}" cy="${f(top + 0.05 + i * 0.07)}" rx="0.035" ry="0.045" fill="${i % 2 ? C.houseLilacDark : C.cobalt}" opacity="0.85"/>`).join('')
+const lavender =
+  [[0.3, -0.12, 0.34], [0.38, -0.06, 0.24], [0.46, 0.0, 0.16], [0.54, 0.04, 0.2], [0.62, 0.1, 0.28], [0.7, 0.14, 0.38], [0.42, -0.02, 0.44], [0.58, 0.06, 0.42]]
+    .map(([x, lean, top]) => lavenderSpike(x, lean, top)).join('') +
+  `<path d="M0.2,1.24 Q0.3,0.94 0.5,1.0 Q0.7,0.94 0.8,1.24Z" fill="${C.mintTeal}" ${ink(0.02)}/>` +
+  `<path d="M0.2,1.22 H0.8 L0.72,1.56 H0.28Z" fill="${C.paper}" ${ink(0.035)}/>` +
+  rect(0.16, 1.18, 0.68, 0.08, C.paper, `rx="0.03" ${ink(0.03)}`) +
+  line('M0.26,1.36 H0.74', C.terracotta, 0.025)
+
 /** Hình của từng món, đặt khoá theo kiểu `decor-` của furniture.ts; món xoay được có thêm hình `-turned`. */
 export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> = {
   'decor-velvetSofa': { w: 3, h: 1.35, body: velvetSofa },
@@ -888,4 +993,15 @@ export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> 
   'decor-fullMirror': { w: 1, h: 2.06, body: fullMirror },
   'decor-oilShelf': { w: 2, h: 1.52, body: oilShelf },
   'decor-oilShelf-turned': { w: 1.1, h: 2.3, body: oilShelfTurned },
+  'decor-woodTub': { w: 2, h: 2.22, body: woodTub },
+  'decor-towelRack': { w: 2, h: 1.45, body: towelRack },
+  'decor-towelRack-turned': { w: 1.1, h: 2.45, body: towelRackTurned },
+  'decor-yogaMat': { w: 1, h: 2, body: yogaMat(1, 2) },
+  'decor-yogaMat-turned': { w: 2, h: 1, body: yogaMat(2, 1) },
+  'decor-eggChair': { w: 1, h: 2.2, body: eggChair },
+  'decor-flowerArch': { w: 2, h: 2.0, body: flowerArch },
+  'decor-flowerArch-turned': { w: 1.1, h: 2.4, body: flowerArchTurned },
+  'decor-outdoorShower': { w: 1, h: 2.2, body: outdoorShower },
+  'decor-whiteParasol': { w: 1, h: 2.42, body: whiteParasol },
+  'decor-lavender': { w: 1, h: 1.6, body: lavender },
 }
