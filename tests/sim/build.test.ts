@@ -150,6 +150,13 @@ describe('building the shop', () => {
     expect(sim.seats.map(s => s.tile)).toEqual([{ x: 18, y: 9 }, { x: 19, y: 9 }, { x: 20, y: 9 }])
   })
 
+  it('lets a customer wait on the velvet sofa and the rattan armchair', () => {
+    const sim = shop()
+    expect(sim.buy('velvetSofa', 18, 9, false)).toBeNull()
+    expect(sim.buy('rattanArmchair', 22, 9, false)).toBeNull()
+    expect(sim.seats.map(s => s.tile)).toEqual(expect.arrayContaining([{ x: 18, y: 9 }, { x: 19, y: 9 }, { x: 20, y: 9 }, { x: 22, y: 9 }]))
+  })
+
   it('refunds half and never spends money it does not have', () => {
     const sim = shop()
     sim.money = 100_000
@@ -362,6 +369,8 @@ describe('placeProblem on the tall grid', () => {
 
   it('keeps seats on floor 1 and off floors that are locked', () => {
     expect(problem('bench', 14, 25, 2)).toBe('seatFloor')
+    expect(problem('velvetSofa', 14, 25, 2)).toBe('seatFloor')
+    expect(problem('rattanArmchair', 14, 25, 2)).toBe('seatFloor')
     expect(problem('plant', 17, 25, 1)).toBe('overlap')
   })
 

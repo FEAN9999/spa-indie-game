@@ -39,4 +39,28 @@ describe('the restaurant furniture', () => {
   it('counts a chair beside an umbrella table as a seat', () => {
     expect(diningSeats([at(1, 'umbrellaTable', 15, 44), at(2, 'diningChair', 15, 43)])).toEqual([{ tile: { x: 15, y: 43 }, facing: 'down' }])
   })
+
+  it('seats a diner on any kind of chair beside any kind of table', () => {
+    const items = [
+      at(1, 'streetTable', 15, 8), at(2, 'plasticStool', 15, 7), at(3, 'bambooChair', 16, 8),
+      at(4, 'roundTable', 19, 8), at(5, 'plasticStool', 19, 7), at(6, 'bambooChair', 21, 9), at(7, 'diningChair', 20, 10),
+      at(8, 'bambooChair', 24, 12),
+    ]
+    expect(diningSeats(items)).toEqual([
+      { tile: { x: 15, y: 7 }, facing: 'down' },
+      { tile: { x: 16, y: 8 }, facing: 'left' },
+      { tile: { x: 19, y: 7 }, facing: 'down' },
+      { tile: { x: 21, y: 9 }, facing: 'left' },
+      { tile: { x: 20, y: 10 }, facing: 'up' },
+    ])
+    const grid = buildGrid(widen(DINING_SHELL), items)
+    for (const t of [{ x: 15, y: 7 }, { x: 16, y: 8 }, { x: 24, y: 12 }]) expect(grid.cells[t.y][t.x], JSON.stringify(t)).toBe('seat')
+    expect([grid.cells[8][19], grid.cells[9][20]]).toEqual(['decor', 'decor'])
+  })
+
+  it("keeps the spa's own decor out of the restaurant and the restaurant's out of the spa", () => {
+    for (const kind of ['velvetSofa', 'rattanArmchair', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(placeableIn(kind, 'restaurant'), kind).toBe(false)
+    for (const kind of ['streetTable', 'roundTable', 'plasticStool', 'bambooChair', 'menuBoard', 'drinkFridge', 'icedTeaStand'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
+    for (const kind of ['tileRug', 'tearCalendar'] as const) expect([placeableIn(kind, 'spa'), placeableIn(kind, 'restaurant')], kind).toEqual([true, true])
+  })
 })

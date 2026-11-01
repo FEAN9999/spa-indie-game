@@ -16,7 +16,9 @@ export type ItemKind =
   | 'gramophone' | 'standFan' | 'sewingMachine' | 'pendulumClock' | 'birdCage' | 'redRug'
   | 'fishTank' | 'bougainvillea' | 'sunflowerVase' | 'fernBasket' | 'succulentShelf' | 'grassRug'
   | 'lacquerPainting' | 'rattanMirror' | 'wallLantern' | 'conicalHat' | 'runnerRug' | 'roundRug' | 'brocadeRug'
+  | 'velvetSofa' | 'rattanArmchair' | 'vanity' | 'towelSteamer' | 'aromaDiffuser' | 'tileRug' | 'tearCalendar'
   | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
+  | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
@@ -36,8 +38,8 @@ export interface ItemSpec {
   name: StringKey
   /** Given by a regular, never sold in the catalogue. */
   giftOnly?: true
-  /** Stands only in the restaurant; see placeableIn for the spa's own and the shared pieces. */
-  shop?: 'restaurant'
+  /** Stands only in this shop; see placeableIn for the rest of the spa's own and the shared pieces. */
+  shop?: 'spa' | 'restaurant'
 }
 
 export const ITEMS: Record<ItemKind, ItemSpec> = {
@@ -124,17 +126,37 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   runnerRug: { w: 1, h: 3, price: 135_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRunnerRug' },
   roundRug: { w: 2, h: 2, price: 165_000, beauty: 2, group: 'decor', layer: 'rug', name: 'itemRoundRug' },
   brocadeRug: { w: 2, h: 3, price: 270_000, beauty: 4, group: 'decor', layer: 'rug', name: 'itemBrocadeRug' },
+  velvetSofa: { w: 3, h: 1, price: 330_000, beauty: 3, group: 'seat', name: 'itemVelvetSofa' },
+  rattanArmchair: { w: 1, h: 1, price: 150_000, beauty: 2, group: 'seat', name: 'itemRattanArmchair' },
+  vanity: { w: 2, h: 1, price: 240_000, beauty: 3, group: 'decor', shop: 'spa', name: 'itemVanity' },
+  towelSteamer: { w: 1, h: 1, price: 210_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemTowelSteamer' },
+  aromaDiffuser: { w: 1, h: 1, price: 105_000, beauty: 2, group: 'decor', shop: 'spa', name: 'itemAromaDiffuser' },
+  tileRug: { w: 2, h: 2, price: 195_000, beauty: 3, group: 'decor', layer: 'rug', name: 'itemTileRug' },
+  tearCalendar: { w: 1, h: 1, price: 60_000, beauty: 1, group: 'decor', layer: 'wall', name: 'itemTearCalendar' },
   stove: { w: 2, h: 1, price: RESTAURANT_FURNITURE.stove, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStove' },
   diningTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.diningTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningTable' },
   diningChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.diningChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemDiningChair' },
   umbrellaTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.umbrellaTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemUmbrellaTable' },
+  streetTable: { w: 1, h: 1, price: RESTAURANT_FURNITURE.streetTable, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemStreetTable' },
+  roundTable: { w: 2, h: 2, price: RESTAURANT_FURNITURE.roundTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemRoundTable' },
+  plasticStool: { w: 1, h: 1, price: RESTAURANT_FURNITURE.plasticStool, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemPlasticStool' },
+  bambooChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.bambooChair, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemBambooChair' },
   servingCounter: { w: 5, h: 1, price: 375_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemServingCounter' },
   ingredientShelf: { w: 1, h: 1, price: 180_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIngredientShelf' },
   sink: { w: 2, h: 1, price: 225_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemSink' },
   cashierCounter: { w: 3, h: 1, price: 300_000, beauty: 2, group: 'decor', shop: 'restaurant', name: 'itemCashierCounter' },
+  menuBoard: { w: 2, h: 1, price: 150_000, beauty: 2, group: 'decor', shop: 'restaurant', layer: 'wall', name: 'itemMenuBoard' },
+  drinkFridge: { w: 1, h: 1, price: 270_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemDrinkFridge' },
+  icedTeaStand: { w: 1, h: 1, price: 90_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIcedTeaStand' },
 }
 
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]
+
+/** The restaurant's tables and chairs: a diner sits on any chair right beside any table. */
+const DINING_TABLES: ItemKind[] = ['diningTable', 'umbrellaTable', 'streetTable', 'roundTable']
+const DINING_CHAIRS: ItemKind[] = ['diningChair', 'plasticStool', 'bambooChair']
+export const isDiningTable = (kind: ItemKind): boolean => DINING_TABLES.includes(kind)
+export const isDiningChair = (kind: ItemKind): boolean => DINING_CHAIRS.includes(kind)
 
 export function layerOf(kind: ItemKind): Layer {
   return ITEMS[kind].layer ?? 'floor'

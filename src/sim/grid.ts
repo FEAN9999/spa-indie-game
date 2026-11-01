@@ -1,5 +1,5 @@
 import { FLOOR_ROWS } from '../config'
-import { BED_SLOTS, bedTile, footprint, ITEMS, layerOf, seatTiles, workTile } from './items'
+import { BED_SLOTS, bedTile, footprint, isDiningChair, ITEMS, layerOf, seatTiles, workTile } from './items'
 import type { Item } from './items'
 import type { Tile, Vec } from './types'
 
@@ -125,7 +125,7 @@ export function buildGrid(shell: string[] | Grid, items: Item[], floors = 1): Gr
       const work = workTile(item)!
       grid.cells[work.y][work.x] = 'work'
       grid.works.push(work)
-    } else if (item.kind === 'diningChair') {
+    } else if (isDiningChair(item.kind)) {
       set('seat')
       grid.seats.push(...tiles)
     } else if (ITEMS[item.kind].group === 'seat') {

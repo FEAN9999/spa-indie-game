@@ -16,7 +16,7 @@ describe('build mode catalogue', () => {
       pages: 1,
     })
     expect(catalogPage('seat', 0, ['shampoo'], [])).toEqual({
-      entries: [{ kind: 'bench', gift: false }, { kind: 'bambooBench', gift: false }],
+      entries: [{ kind: 'bench', gift: false }, { kind: 'bambooBench', gift: false }, { kind: 'velvetSofa', gift: false }, { kind: 'rattanArmchair', gift: false }],
       page: 0,
       pages: 1,
     })
@@ -33,10 +33,11 @@ describe('build mode catalogue', () => {
   })
 
   it('shows the decor four at a time, the lotus to the jar on the third page, the new pieces after the areca', () => {
-    expect(catalogPage('decor', 0, ['shampoo'], []).pages).toBe(11)
+    expect(catalogPage('decor', 0, ['shampoo'], []).pages).toBe(12)
     expect(kinds(catalogPage('decor', 2, ['shampoo'], []))).toEqual(['lotus', 'vase', 'teaChest', 'jar'])
     expect(kinds(catalogPage('decor', 4, ['shampoo'], []))).toEqual(['areca', 'waterfall', 'bonsai', 'stoneLamp'])
-    expect(kinds(catalogPage('decor', 10, ['shampoo'], []))).toEqual(['roundRug', 'brocadeRug'])
+    expect(kinds(catalogPage('decor', 10, ['shampoo'], []))).toEqual(['roundRug', 'brocadeRug', 'vanity', 'towelSteamer'])
+    expect(kinds(catalogPage('decor', 11, ['shampoo'], []))).toEqual(['aromaDiffuser', 'tileRug', 'tearCalendar'])
   })
 
   it('filters the decor by set, wall pieces or rugs, a set taking its pieces from any tab', () => {
@@ -47,15 +48,15 @@ describe('build mode catalogue', () => {
     expect(DECOR_FILTERS).toEqual(['all', 'saigon', 'bamboo', 'zen', 'retro', 'garden', 'wall', 'rug'])
     expect(all('bamboo')).toEqual(['bambooBench', 'bambooTea', 'bambooShelf', 'bambooLamp', 'clayJar', 'areca'])
     expect(all('zen')).toEqual(['waterfall', 'bonsai', 'stoneLamp', 'inkBamboo', 'candleShelf', 'sedgeRug'])
-    expect(all('wall')).toEqual(['inkBamboo', 'candleShelf', 'pendulumClock', 'birdCage', 'fernBasket', 'succulentShelf', 'lacquerPainting', 'rattanMirror', 'wallLantern', 'conicalHat'])
-    expect(all('rug')).toEqual(['sedgeRug', 'redRug', 'grassRug', 'runnerRug', 'roundRug', 'brocadeRug'])
+    expect(all('wall')).toEqual(['inkBamboo', 'candleShelf', 'pendulumClock', 'birdCage', 'fernBasket', 'succulentShelf', 'lacquerPainting', 'rattanMirror', 'wallLantern', 'conicalHat', 'tearCalendar'])
+    expect(all('rug')).toEqual(['sedgeRug', 'redRug', 'grassRug', 'runnerRug', 'roundRug', 'brocadeRug', 'tileRug'])
     expect(kinds(catalogPage('decor', 0, ['shampoo'], ['silkScreen'], 'rug'))[0]).toBe('sedgeRug')
     expect(catalogPage('seat', 0, ['shampoo'], [], 'rug')).toEqual(catalogPage('seat', 0, ['shampoo'], []))
   })
 
   it('turns past either end to the other', () => {
-    expect(catalogPage('decor', -1, ['shampoo'], [])).toEqual(catalogPage('decor', 10, ['shampoo'], []))
-    expect(catalogPage('decor', 11, ['shampoo'], [])).toEqual(catalogPage('decor', 0, ['shampoo'], []))
+    expect(catalogPage('decor', -1, ['shampoo'], [])).toEqual(catalogPage('decor', 11, ['shampoo'], []))
+    expect(catalogPage('decor', 12, ['shampoo'], [])).toEqual(catalogPage('decor', 0, ['shampoo'], []))
   })
 
   it('lists the stone bed only once Đá nóng is open, and the mud tub only once Tắm bùn is', () => {
@@ -124,11 +125,12 @@ describe('build mode catalogue', () => {
 
   it('offers the dining pieces and the shared decor at the restaurant', () => {
     expect(kinds(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['stove', 'diningTable', 'diningChair', 'umbrellaTable'])
-    expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(1)
+    expect(kinds(catalogPage('dining', 1, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['streetTable', 'roundTable', 'plasticStool', 'bambooChair'])
+    expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(2)
     const { pages } = catalogPage('decor', 0, ALL_SERVICES, [], 'all', 'restaurant')
     const decor = Array.from({ length: pages }, (_, p) => kinds(catalogPage('decor', p, ALL_SERVICES, [], 'all', 'restaurant'))).flat()
-    expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant']))
-    for (const k of ['bed', 'bench', 'desk'] as const) expect(decor).not.toContain(k)
+    expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant', 'menuBoard', 'drinkFridge', 'icedTeaStand', 'tileRug', 'tearCalendar']))
+    for (const k of ['bed', 'bench', 'desk', 'velvetSofa', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(decor).not.toContain(k)
   })
 
   it('gives build mode the spa tabs at the spa and the dining and decor tabs at the restaurant', () => {
@@ -150,7 +152,7 @@ describe('build mode catalogue', () => {
       { kind: 'plant', gift: false },
       { kind: 'tea', gift: false },
     ])
-    expect(first.pages).toBe(11)
+    expect(first.pages).toBe(13)
     expect(kinds(catalogPage('decor', 4, ['shampoo'], gifts))).toEqual(['bambooLamp', 'clayJar', 'areca', 'waterfall'])
 
     const all = ['shampoo', 'mask', 'massage'] as const

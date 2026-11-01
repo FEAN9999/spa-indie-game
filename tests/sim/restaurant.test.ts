@@ -92,6 +92,19 @@ describe('the restaurant room', () => {
     expect(r.items.find(i => i.id === stove.id)).toMatchObject({ x: 21, y: 3 })
   })
 
+  it('counts every kind of table as one and every kind of chair as one for the last of them', () => {
+    const { r } = setup()
+    expect(r.buy('streetTable', 15, 12, false)).toBeNull()
+    expect(r.buy('plasticStool', 15, 11, false)).toBeNull()
+    const ids = (kind: ItemKind) => r.items.filter(i => i.kind === kind).map(i => i.id)
+    for (const id of ids('diningTable')) expect(r.sell(id)).toBeNull()
+    for (const id of ids('diningChair')) expect(r.sell(id)).toBeNull()
+    expect(r.sell(ids('streetTable')[0])).toBe('lastDining')
+    expect(r.sell(ids('plasticStool')[0])).toBe('lastDining')
+    expect(diningSeats(r.items)).toEqual([{ tile: { x: 15, y: 11 }, facing: 'down' }])
+    expect(r.spawnDiner()).not.toBeNull()
+  })
+
   it('tells the view the room changed, and counts beauty from its pieces', () => {
     const { r } = setup()
     expect(r.drainEvents()).toEqual([])

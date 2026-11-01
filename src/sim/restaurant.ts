@@ -1,5 +1,5 @@
 import { ARRIVE_MS, AWAY_MAX_HOURS, CANDIDATES_PER_DAY, DINER_GAP_MIN, DINER_PEAK_FACTOR, DINER_PEAKS, DINER_TIP, DISH_PRICE, EAT_MS, EXIT_MS, FIRST_ARRIVAL_MS, FLOOR_PRICE, HOUSE_PRICE, HOUSES_PER_SIDE, LOW_STOCK, OWNER_SPEED, PATIENCE_MS, REAL_MS_PER_GAME_MIN, RESTAURANT_RESTOCK_PRICE, RESTOCK_AMOUNT, STEP_MS, WALK_OVER_CHANCE, WALK_OVER_TILES } from '../config'
-import { beautyOf, footprint, ITEMS, workTile, type Item, type ItemKind } from './items'
+import { beautyOf, footprint, isDiningChair, isDiningTable, ITEMS, workTile, type Item, type ItemKind } from './items'
 import { doorReach, placementProblem, sellRefund, type BuildProblem } from './build'
 import { chefCap, chefSkill, cookMs, makeChefCandidate, type Chef, type ChefCandidate } from './chefs'
 import { drawKind, KINDS, type CustomerKind } from './customers'
@@ -349,18 +349,18 @@ export class RestaurantSim {
     return null
   }
 
-  /** Whether `kind` is the restaurant's last stove, last chair or last table; a dining table and an umbrella table count as one kind. */
+  /** Whether `kind` is the restaurant's last stove, last chair or last table; every kind of table counts as one kind, and so does every kind of chair. */
   private lastDining(kind: ItemKind): boolean {
-    const same = kind === 'diningTable' || kind === 'umbrellaTable' ? (i: Item) => i.kind === 'diningTable' || i.kind === 'umbrellaTable' : (i: Item) => i.kind === kind
-    return (kind === 'stove' || kind === 'diningChair' || kind === 'diningTable' || kind === 'umbrellaTable') && this.items.filter(same).length === 1
+    const same = isDiningTable(kind) ? (i: Item) => isDiningTable(i.kind) : isDiningChair(kind) ? (i: Item) => isDiningChair(i.kind) : (i: Item) => i.kind === kind
+    return (kind === 'stove' || isDiningTable(kind) || isDiningChair(kind)) && this.items.filter(same).length === 1
   }
 
   /** A stove with a diner's dish on it, a chair a diner holds, or a table with a diner at any of its chairs. */
   isBusy(id: number): boolean {
     const item = this.itemById(id)
     if (item.kind === 'stove') return this.stoves.some(s => s.id === id && s.dinerId !== null)
-    if (item.kind === 'diningChair') return this.diners.some(d => d.chair && tileEq(d.chair, item))
-    if (item.kind === 'diningTable' || item.kind === 'umbrellaTable') return this.diners.some(d => d.chair && footprint(item).some(t => manhattan(t, d.chair!) === 1))
+    if (isDiningChair(item.kind)) return this.diners.some(d => d.chair && tileEq(d.chair, item))
+    if (isDiningTable(item.kind)) return this.diners.some(d => d.chair && footprint(item).some(t => manhattan(t, d.chair!) === 1))
     return false
   }
 

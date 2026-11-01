@@ -608,7 +608,10 @@ export const EAT_MS = 8_000
 export const RIDE_MS = 3_000
 
 /** What the restaurant's working pieces cost; its decor pieces carry their prices in ITEMS. */
-export const RESTAURANT_FURNITURE = { stove: 600_000, diningTable: 225_000, diningChair: 90_000, umbrellaTable: 300_000 } as const
+export const RESTAURANT_FURNITURE = {
+  stove: 600_000, diningTable: 225_000, diningChair: 90_000, umbrellaTable: 300_000,
+  streetTable: 120_000, roundTable: 375_000, plasticStool: 45_000, bambooChair: 120_000,
+} as const
 
 /** Phở: the cooking game's time limit, the four dotted cut lines (x, in game pixels), how close a swipe must land and how long it must be. */
 export const PHO_LIMIT_MS = 25_000

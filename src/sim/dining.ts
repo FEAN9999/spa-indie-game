@@ -1,6 +1,6 @@
 import { towerOf } from './floors'
 import { parseLayout, type Grid } from './grid'
-import { footprint, ITEMS, type Item, type ItemKind } from './items'
+import { footprint, isDiningChair, isDiningTable, ITEMS, type Item, type ItemKind } from './items'
 import { NO_HOUSES, widen, withHouses, type Houses } from './layout'
 import type { Facing, Tile } from './types'
 
@@ -19,10 +19,10 @@ export const diningShellGrid = (houses: Houses = NO_HOUSES): Grid => parseLayout
 
 export type ShopSide = 'spa' | 'restaurant'
 
-/** Whether a piece may stand in `shop`: beds, waiting seats and the reception desk are the spa's, the dining pieces and the restaurant's decor its own; the rest is shared. */
+/** Whether a piece may stand in `shop`: beds, waiting seats, the reception desk and the spa's own decor are the spa's, the dining pieces and the restaurant's decor its own; the rest is shared. */
 export function placeableIn(kind: ItemKind, shop: ShopSide): boolean {
   const { group, shop: only } = ITEMS[kind]
-  if (shop === 'restaurant') return group !== 'bed' && group !== 'seat' && kind !== 'desk'
+  if (shop === 'restaurant') return only !== 'spa' && group !== 'bed' && group !== 'seat' && kind !== 'desk'
   return only !== 'restaurant'
 }
 
@@ -49,11 +49,11 @@ export interface DiningSeat {
   facing: Facing
 }
 
-/** Where a diner may sit: every dining chair with a table tile (a dining table's or an umbrella table's) right beside it, facing that tile; a chair touching no table is none. */
+/** Where a diner may sit: every chair (any kind) with a table tile (any kind) right beside it, facing that tile; a chair touching no table is none. */
 export function diningSeats(items: Item[]): DiningSeat[] {
-  const tables = items.filter(i => i.kind === 'diningTable' || i.kind === 'umbrellaTable').flatMap(footprint)
+  const tables = items.filter(i => isDiningTable(i.kind)).flatMap(footprint)
   const beside: [Facing, number, number][] = [['up', 0, -1], ['down', 0, 1], ['left', -1, 0], ['right', 1, 0]]
-  return items.filter(i => i.kind === 'diningChair').flatMap(chair => {
+  return items.filter(i => isDiningChair(i.kind)).flatMap(chair => {
     const side = beside.find(([, dx, dy]) => tables.some(t => t.x === chair.x + dx && t.y === chair.y + dy))
     return side ? [{ tile: { x: chair.x, y: chair.y }, facing: side[0] }] : []
   })
