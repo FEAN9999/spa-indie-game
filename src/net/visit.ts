@@ -44,14 +44,18 @@ export interface Hello {
   code: string | null
 }
 
-/** A room as a visit uses it: who joins, the host's shop and a visitor's hello. Trystero's in the game, a fake in the tests. */
+/** A room as a visit uses it: who joins, a visitor's hello and the host's shop sent back, and a knock the host answers to say its door is open. Trystero's in the game, a fake in the tests. */
 export interface VisitRoom {
   onJoin: ((peer: string) => void) | null
   /** The host's shop, as a save code. */
   onShop: ((code: string, peer: string) => void) | null
   onHello: ((hello: Hello, peer: string) => void) | null
+  onKnock: ((peer: string) => void) | null
+  onAnswer: ((peer: string) => void) | null
   sendShop(code: string, peer: string): void
   sendHello(hello: Hello, peer: string): void
+  sendKnock(peer: string): void
+  sendAnswer(peer: string): void
   leave(): void
 }
 
@@ -64,14 +68,20 @@ const joinTrystero: JoinVisitRoom = async (code, onError) => {
   const room = joinRoom({ appId: APP_ID }, code, { onJoinError: () => onError() })
   const shop = room.makeAction<string>('shop')
   const hello = room.makeAction<{ name: string; code: string | null }>('hello')
+  const knock = room.makeAction<string>('knock')
+  const answer = room.makeAction<string>('answer')
   // a peer that left before the line went out needs nothing
   const quiet = () => {}
   const visit: VisitRoom = {
     onJoin: null,
     onShop: null,
     onHello: null,
+    onKnock: null,
+    onAnswer: null,
     sendShop: (text, peer) => void shop.send(text, { target: peer }).catch(quiet),
     sendHello: (h, peer) => void hello.send({ name: h.name, code: h.code }, { target: peer }).catch(quiet),
+    sendKnock: peer => void knock.send('', { target: peer }).catch(quiet),
+    sendAnswer: peer => void answer.send('', { target: peer }).catch(quiet),
     leave: () => void room.leave().catch(quiet),
   }
   room.onPeerJoin = peer => visit.onJoin?.(peer)
@@ -82,6 +92,8 @@ const joinTrystero: JoinVisitRoom = async (code, onError) => {
     const h = data as Partial<Hello> | null
     if (typeof h?.name === 'string' && (typeof h.code === 'string' || h.code === null)) visit.onHello?.({ name: h.name, code: h.code }, peerId)
   }
+  knock.onMessage = (_, { peerId }) => visit.onKnock?.(peerId)
+  answer.onMessage = (_, { peerId }) => visit.onAnswer?.(peerId)
   return visit
 }
 
@@ -97,8 +109,8 @@ let house: (House & { save: () => SaveData; onGuest: (hello: Hello) => void }) |
 export const currentHouse = (): House | null => house
 
 /**
- * Opens the shop to friends with its code until the page closes or it is closed: whoever joins is sent the shop as it is at that moment,
- * without its own list of friends, and `onGuest` hears their hello. Opening it again with the same code takes the new `save` and `onGuest`.
+ * Opens the shop to friends with its code until the page closes or it is closed: a visitor's hello is answered with the shop as it is at that moment,
+ * without its own list of friends, and `onGuest` hears it; a knock is answered, and goes unheard. Opening it again with the same code takes the new `save` and `onGuest`.
  */
 export function openHouse(code: string, save: () => SaveData, onGuest: (hello: Hello) => void, join: JoinVisitRoom = joinTrystero): House {
   if (house?.code === code) {
@@ -124,8 +136,11 @@ export function openHouse(code: string, save: () => SaveData, onGuest: (hello: H
     r => {
       if (closed) return r.leave()
       room = r
-      r.onJoin = peer => void encodeSaveCode({ ...open.save(), friends: emptyFriends() }).then(text => r.sendShop(text, peer))
-      r.onHello = h => open.onGuest({ name: h.name.slice(0, NAME_MAX), code: h.code === null ? null : parseFriendCode(h.code) })
+      r.onHello = (h, peer) => {
+        void encodeSaveCode({ ...open.save(), friends: emptyFriends() }).then(text => r.sendShop(text, peer))
+        open.onGuest({ name: h.name.slice(0, NAME_MAX), code: h.code === null ? null : parseFriendCode(h.code) })
+      }
+      r.onKnock = peer => r.sendAnswer(peer)
     },
     () => open.close(),
   )
@@ -171,4 +186,35 @@ export function visitHouse(code: string, hello: Hello, waitMs: number, join: Joi
       () => fail('noLink'),
     )
   })
+}
+
+/**
+ * Knocks at each friend's shop to learn whether its door is open now, without fetching it: `onDoor` hears each code once,
+ * true as soon as its host answers, false when none has within `waitMs`. The returned function stops every knock still waiting, unheard.
+ */
+export function knockAll(codes: readonly string[], waitMs: number, onDoor: (code: string, open: boolean) => void, join: JoinVisitRoom = joinTrystero): () => void {
+  const stops = codes.map(code => {
+    let done = false
+    let room: VisitRoom | null = null
+    const finish = (open: boolean | null) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      room?.leave()
+      if (open !== null) onDoor(code, open)
+    }
+    const timer = setTimeout(() => finish(false), waitMs)
+    Promise.resolve(join(code, () => {})).then(
+      r => {
+        if (done) return r.leave()
+        room = r
+        // anyone in the room is knocked at, and only the host answers: other visitors never do
+        r.onJoin = peer => r.sendKnock(peer)
+        r.onAnswer = () => finish(true)
+      },
+      () => finish(false),
+    )
+    return () => finish(null)
+  })
+  return () => stops.forEach(stop => stop())
 }

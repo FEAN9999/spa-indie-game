@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   currentHouse,
   homeLink,
+  knockAll,
   newVisitCode,
   openHouse,
   parseVisitCode,
@@ -33,8 +34,12 @@ function fakeNet(onJoin?: (code: string, onError: () => void) => void) {
       onJoin: null,
       onShop: null,
       onHello: null,
+      onKnock: null,
+      onAnswer: null,
       sendShop: (text, peer) => void setTimeout(() => peers.get(peer)?.onShop?.(text, id)),
       sendHello: (hello, peer) => void setTimeout(() => peers.get(peer)?.onHello?.(hello, id)),
+      sendKnock: peer => void setTimeout(() => peers.get(peer)?.onKnock?.(id)),
+      sendAnswer: peer => void setTimeout(() => peers.get(peer)?.onAnswer?.(id)),
       leave: () => void peers.delete(id),
     }
     const before = [...peers.keys()]
@@ -188,5 +193,54 @@ describe('visiting a friend', () => {
     expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 1000, net.join))).toBe('tooNew')
     host.onJoin = peer => host.sendShop('SPA1.notashop', peer)
     expect(await problemOf(visitHouse('K7P2QX', { name: 'A', code: null }, 1000, net.join))).toBe('bad')
+  })
+})
+
+describe("knocking at friends' doors", () => {
+  const knocks = (codes: string[], waitMs: number, join: JoinVisitRoom) =>
+    new Promise<Record<string, boolean>>(resolve => {
+      const heard: Record<string, boolean> = {}
+      knockAll(codes, waitMs, (code, open) => {
+        expect(code in heard).toBe(false)
+        heard[code] = open
+        if (Object.keys(heard).length === codes.length) resolve(heard)
+      }, join)
+    })
+
+  it('hears an open door at once and a closed one after the wait, without fetching the shop or greeting the host', async () => {
+    const net = fakeNet()
+    const guests: Hello[] = []
+    let sent = 0
+    const sim = busyShop()
+    openHouse('K7P2QX', () => (sent++, sim.toSave()), h => guests.push(h), net.join)
+    const started = Date.now()
+    expect(await knocks(['K7P2QX', 'B2KCG2'], 60, net.join)).toEqual({ K7P2QX: true, B2KCG2: false })
+    expect(Date.now() - started).toBeGreaterThanOrEqual(55)
+    expect([sent, guests]).toEqual([0, []])
+    // every knock leaves its room; the host stays
+    expect([net.size('K7P2QX'), net.size('B2KCG2')]).toEqual([1, 0])
+  })
+
+  it('takes nobody but the host for an open door: another visitor in the room never answers', async () => {
+    const net = fakeNet()
+    const visitor = net.join('K7P2QX', () => {}) as VisitRoom
+    visitor.onJoin = peer => visitor.sendHello({ name: 'A', code: null }, peer)
+    expect(await knocks(['K7P2QX'], 40, net.join)).toEqual({ K7P2QX: false })
+  })
+
+  it('answers no more once stopped, and leaves every room', async () => {
+    const net = fakeNet()
+    openHouse('K7P2QX', () => busyShop().toSave(), () => {}, net.join)
+    const heard: string[] = []
+    const stop = knockAll(['K7P2QX', 'B2KCG2'], 40, code => heard.push(code), net.join)
+    stop()
+    await new Promise(r => setTimeout(r, 80))
+    expect(heard).toEqual([])
+    expect([net.size('K7P2QX'), net.size('B2KCG2')]).toEqual([1, 0])
+  })
+
+  it('takes a door it cannot reach for closed', async () => {
+    const join: JoinVisitRoom = () => Promise.reject(new Error('offline'))
+    expect(await knocks(['K7P2QX'], 1000, join)).toEqual({ K7P2QX: false })
   })
 })

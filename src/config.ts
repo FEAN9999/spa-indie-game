@@ -310,6 +310,8 @@ export const UPDATE_WAIT_MS = 3_000 // how long the game waits for version.json 
 export const VISIT_WAIT_MS = 20_000
 /** The most friends' shops a shop keeps in its list, the latest first. */
 export const FRIENDS_MAX = 8
+/** How long the friends' list waits for a friend's shop to answer its knock before showing its door closed. */
+export const FRIEND_KNOCK_MS = 15_000
 
 /** The day each feature button opens. */
 export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6, quests: 8, houses: 10 } as const

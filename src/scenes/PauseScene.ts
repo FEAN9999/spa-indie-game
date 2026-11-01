@@ -2,8 +2,8 @@ import * as Phaser from 'phaser'
 import { canPromptInstall, currentInstallEnv, inSafari, installPlatform, promptInstall } from '../app/install'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
-import { GAME_H, GAME_W } from '../config'
-import { parseVisitCode, showVisitCode, visitLink } from '../net/visit'
+import { FRIEND_KNOCK_MS, GAME_H, GAME_W } from '../config'
+import { knockAll, parseVisitCode, showVisitCode, visitLink } from '../net/visit'
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
 import type { SaveSession } from '../save/session'
 import { SLOTS, type SaveStore, type SlotId } from '../save/store'
@@ -52,6 +52,8 @@ export class PauseScene extends Phaser.Scene {
   private params!: PauseData
   /** Everything drawn for the panel on screen, destroyed when the panel changes. */
   private shown: Phaser.GameObjects.GameObject[] = []
+  /** Stops the knocks at friends' doors the list on screen is waiting on. */
+  private stopKnocks: (() => void) | null = null
 
   constructor() {
     super('PauseScene')
@@ -60,11 +62,14 @@ export class PauseScene extends Phaser.Scene {
   init(data: PauseData) {
     this.params = data
     this.shown = []
+    this.stopKnocks = null
   }
 
   create() {
     // below the card, which each panel draws at depth -1 once it knows its height
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive().setDepth(-2)
+    // closing the card stops the knocks of a friends' list still on it
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.stopKnocks?.())
     if (this.params.panel === 'install') this.showInstall()
     else this.showMenu()
   }
@@ -77,6 +82,9 @@ export class PauseScene extends Phaser.Scene {
   private clear(): void {
     for (const obj of this.shown) obj.destroy()
     this.shown = []
+    // the friends' list knocks only while it is on screen
+    this.stopKnocks?.()
+    this.stopKnocks = null
   }
 
   /** A card from CARD_TOP down to `bottom`, drawn under the panel's content. */
@@ -267,7 +275,7 @@ export class PauseScene extends Phaser.Scene {
     this.card(CARD_TOP + 1540)
   }
 
-  /** The friends' shops, the latest met first: each one visited with a tap, or taken off the list. */
+  /** The friends' shops, the latest met first, each with whether its door is open now: visited with a tap, or taken off the list. */
   private showFriendList(): void {
     this.clear()
     const { friends, session } = this.params
@@ -277,20 +285,23 @@ export class PauseScene extends Phaser.Scene {
       const empty = this.note(y - 40, t('friendsEmpty'))
       y += empty.height
     }
+    const doors = new Map<string, (open: boolean) => void>()
     for (const f of friends.list) {
-      this.friendRow(f, y, () => {
+      const door = this.friendRow(f, y, () => {
         removeFriend(friends, f.code)
         session.saveNow()
         this.showFriendList()
       })
+      doors.set(f.code, door)
       y += ROW_STEP
     }
     this.button(y + 20, t('back'), 'plain', () => this.showFriends())
     this.card(y + 20 + ROW_H / 2 + 70)
+    this.stopKnocks = knockAll(friends.list.map(f => f.code), FRIEND_KNOCK_MS, (code, open) => doors.get(code)?.(open))
   }
 
-  /** A friend's shop in the list: its name and code, Ghé to visit and a cross to take it off. */
-  private friendRow(f: Friend, y: number, onRemove: () => void): void {
+  /** A friend's shop in the list: its name, its code with a dot for its door, Ghé to visit and a cross to take it off. Returns what shows the door once it is known. */
+  private friendRow(f: Friend, y: number, onRemove: () => void): (open: boolean) => void {
     const left = MID - ROW_W / 2
     this.keep(this.add.graphics())
       .fillStyle(hex(C.cream), 1)
@@ -298,9 +309,20 @@ export class PauseScene extends Phaser.Scene {
       .lineStyle(4, hex(C.ink))
       .strokeRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
     fitWidth(this.keep(this.add.text(left + 50, y - 22, f.name, textStyle(40, '800')).setOrigin(0, 0.5)), 400)
-    this.keep(this.add.text(left + 50, y + 28, showVisitCode(f.code), textStyle(32, '600')).setOrigin(0, 0.5))
+    const dot = this.keep(this.add.circle(left + 62, y + 28, 11, hex(C.mustard)).setStrokeStyle(3, hex(C.ink)))
+    const line = (status: string) => `${showVisitCode(f.code)} · ${status}`
+    const label = this.keep(this.add.text(left + 84, y + 28, line(t('friendChecking')), textStyle(32, '600', C.soft)).setOrigin(0, 0.5))
+    fitWidth(label, 380)
     this.keep(addButton(this, left + ROW_W - 175, y, 140, 80, t('friendVisit'), 'primary', () => this.goVisit(f.code), 34))
     this.keep(addButton(this, left + ROW_W - 55, y, 80, 80, '×', 'plain', onRemove, 44))
+    return open => {
+      // the list may have changed panels since the knock went out
+      if (!dot.active) return
+      dot.setFillStyle(hex(open ? C.leaf : C.silver))
+      label.setText(line(t(open ? 'friendOpen' : 'friendClosed'))).setColor(open ? C.leaf : C.soft)
+      label.setScale(1)
+      fitWidth(label, 380)
+    }
   }
 
   /** This shop is saved as it is, then the page opens on the friend's, which is never saved. */
