@@ -58,6 +58,13 @@ export const C = {
   sidewalk: '#E9DCC8',
   sidewalkLine: '#D8C8B0',
   road: '#D4C5B1',
+  // the street across the road: bare lots, the park's grass, the stone benches, the sugarcane
+  lotDirt: '#E6D5BA',
+  parkGrass: '#CFE5BF',
+  benchStone: '#CFC6BA',
+  benchStoneDark: '#BDB3A6',
+  cane: '#9DB65A',
+  caneLight: '#B9C46A',
   green: '#6DB36A',
   mint: '#BFE8D2',
   mintTeal: '#7CC4AE',

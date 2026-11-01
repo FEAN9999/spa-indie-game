@@ -4,6 +4,7 @@ import { banhXeoTextures } from '../art/banhXeoArt'
 import { beachRoomTexture } from '../art/beach'
 import { branchFloorTextures } from '../art/branchFloors'
 import { branchHouseTextures } from '../art/branchHouses'
+import { bustleTextures } from '../art/bustle'
 import { cheTextures } from '../art/cheArt'
 import { chibiTextures } from '../art/chibi'
 import { fxTextures } from '../art/fx'
@@ -71,6 +72,7 @@ export class BootScene extends Phaser.Scene {
       ...mudTextures(),
       ...petTextures(),
       ...restaurantTextures(),
+      ...bustleTextures(),
       ...phoTextures(),
       ...banhXeoTextures(),
       ...cheTextures(),

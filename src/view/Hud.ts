@@ -37,6 +37,8 @@ const plateR = (n: number) => (n === 5 ? 56 : PLATE_R)
 const RIBBON = { y: 198, h: 64, font: 31, pad: 90, textX: 27, textW: 860 }
 /** The shop label: its top-right corner at the map's top, just left of the Phây button, its height, and the padding beside its words. */
 const SHOP_LABEL = { right: PHAY_BUTTON.x - PHAY_BUTTON.r - 16, top: MAP_Y + 24, h: 56, font: 30, pad: 24 }
+/** The Phố sầm uất chip: its left edge at the map's top-left, level with the shop label; its words over a thin bar. */
+const BUSTLE_CHIP = { left: 30, h: 80, font: 28, pad: 22, barH: 10, barGap: 10 }
 
 /** The guest-book button, in the top bar's second row. */
 export const BOOK_BUTTON = { x: 870, y: 152 }
@@ -88,6 +90,11 @@ export class Hud {
   /** The Spa or Nhà hàng pill, and the shop it was drawn for. */
   private shopLabel: Phaser.GameObjects.Container | null = null
   private shopLabelSide: ShopSide | null = null
+  /** The Phố sầm uất chip at the map's top-left, across from the shop label, and the score it was drawn with. */
+  private bustleChip: Phaser.GameObjects.Container | null = null
+  private bustleShown: number | null = null
+  /** What a tap on the chip does: the shop opens the street's list. */
+  onBustle: () => void = () => {}
   private toastBox: Phaser.GameObjects.Container | null = null
   /** When the last toast went up, in scene time. */
   lastToastAt = -Infinity
@@ -325,6 +332,35 @@ export class Hud {
     label.setX(-pad)
     const bg = add.graphics().fillStyle(hex(C.cream), 1).fillRoundedRect(-w, 0, w, h, h / 2).lineStyle(4, hex(C.ink)).strokeRoundedRect(-w, 0, w, h, h / 2)
     this.shopLabel = add.container(SHOP_LABEL.right, SHOP_LABEL.top, [bg, label]).setDepth(DEPTH)
+  }
+
+  /** The Phố sầm uất chip with `score` of `max` and a bar under it, or none for null; a tap calls onBustle. */
+  setBustle(score: number | null, max: number): void {
+    if (score === this.bustleShown) return
+    this.bustleShown = score
+    this.bustleChip?.destroy()
+    this.bustleChip = null
+    if (score === null) return
+    const add = this.scene.add
+    const { h, font, pad, barH, barGap } = BUSTLE_CHIP
+    const label = add.text(0, -barGap, t('bustleChip', { score, max }), textStyle(font, '800')).setOrigin(0.5)
+    const w = label.width + 2 * pad
+    const barW = w - 2 * pad
+    const barY = h / 2 - pad / 2 - barH
+    const bg = add
+      .graphics()
+      .fillStyle(hex(C.cream), 1)
+      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+      .lineStyle(4, hex(C.ink))
+      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+      .fillStyle(hex(C.tileSeam), 1)
+      .fillRoundedRect(-barW / 2, barY, barW, barH, barH / 2)
+    if (score > 0) bg.fillStyle(hex(C.teal), 1).fillRoundedRect(-barW / 2, barY, Math.max(barH, (barW * score) / max), barH, barH / 2)
+    const chip = add.container(BUSTLE_CHIP.left + w / 2, SHOP_LABEL.top + h / 2, [bg, label]).setDepth(DEPTH).setSize(w, h).setInteractive()
+    this.bustleChip = whenTapped(chip, () => {
+      sound.play('tap')
+      this.onBustle()
+    })
   }
 
   /** Whether a button takes a tap: the quest button from the first day of a shop on the starter chain. */

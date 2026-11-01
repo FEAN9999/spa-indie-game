@@ -67,8 +67,8 @@ const PLAQUE = { x: 16.3, y: 17.5, bottom: 28 }
  */
 const RIVAL_SIGN = { right: GAME_W - 16, y: 19.1, w: 230, h: 100, top: -60 }
 /** The dark of a power cut lies over the room and everyone in it, under the floating money and the HUD; the candles and off marks over it. */
-const DARK_DEPTH = 5000
-const DARK = { color: 0x1e2440, alpha: 0.48 }
+export const DARK_DEPTH = 5000
+export const DARK = { color: 0x1e2440, alpha: 0.48 }
 /** The candles' places in tiles, the same on every floor: on the desk (where the oldest desk stands today, moved in sync), on the tea table under the waiting bench, in the corner by the first bed's foot, by the stairs. */
 const CANDLES = [
   { x: 21.5, y: 13.9 },
@@ -77,7 +77,7 @@ const CANDLES = [
   { x: 23.2, y: 11.1 },
 ]
 /** The day's light lies over the room and everyone in it, under the power cut's dark; the lamps' glows and the shop's warm light over it. */
-const NIGHT_DEPTH = DARK_DEPTH - 3
+export const NIGHT_DEPTH = DARK_DEPTH - 3
 export const LAMP_DEPTH = DARK_DEPTH - 2
 /** At night the lit shop's rows are lifted by this much warm light over the street's. */
 export const WASH_ALPHA = 0.07

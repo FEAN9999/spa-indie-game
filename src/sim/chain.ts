@@ -1,4 +1,5 @@
-import { CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, RESTAURANT_DAY, RESTAURANT_PRICE, STEP_MS } from '../config'
+import { BUSTLE_PIECES, CHAIN_FINISH_MS, CHAIN_FROM_STARS, MAX_FRAME_MS, PLACES, RESTAURANT_DAY, RESTAURANT_PRICE, STEP_MS } from '../config'
+import type { BustleId } from './bustle'
 import type { AwayResult } from './away'
 import { staffCap } from './crew'
 import { housesBought } from './layout'
@@ -22,6 +23,8 @@ export type GoProblem = 'here' | 'notOpen' | 'closed'
 export type MoveProblem = 'staff' | 'place' | 'full'
 /** `owned`: the restaurant is bought already; `day`: before RESTAURANT_DAY; `money`: the purse is short. */
 export type RestaurantProblem = 'owned' | 'day' | 'money'
+/** `owned`: the street has the piece already; `locked`: the street opens with the restaurant; `money`: the purse is short. */
+export type BustleProblem = 'owned' | 'locked' | 'money'
 /** Added to the chain's seed for the restaurant's own stream, clear of the branches' seed + 1 to seed + 3. */
 export const RESTAURANT_RNG_SALT = 101
 /** The shop a booked move goes to: null for the main shop. */
@@ -82,6 +85,27 @@ export class Chain {
     if (problem) return problem
     this.main.money -= RESTAURANT_PRICE
     this.wire(new RestaurantSim({ host: this.main, rng: createRng(this.seed + RESTAURANT_RNG_SALT), autoSpawn: this.main.autoSpawn }))
+    return null
+  }
+
+  /** The street in front of the main shop takes pieces once the restaurant is bought. */
+  bustleOpen(): boolean {
+    return this.street !== null
+  }
+
+  bustleProblem(id: BustleId): BustleProblem | null {
+    if (this.main.bustle.includes(id)) return 'owned'
+    if (!this.bustleOpen()) return 'locked'
+    if (this.main.money < BUSTLE_PIECES[id].price) return 'money'
+    return null
+  }
+
+  /** Takes the piece's price from the purse and puts it on the street; it draws nothing from any stream. */
+  buyBustle(id: BustleId): BustleProblem | null {
+    const problem = this.bustleProblem(id)
+    if (problem) return problem
+    this.main.money -= BUSTLE_PIECES[id].price
+    this.main.bustle.push(id)
     return null
   }
 

@@ -90,6 +90,7 @@ import { OUTFIT_IDS, unlockedOutfits, type OutfitId } from './outfits'
 import { emptyRankBook, isJudgeDay, isYearEnd, judgeMonth, judgeYear, monthInput, rankParts, rankPrice, type RankBook, type RankInput } from './rank'
 import { addPost, boostedToday, boostPrice, dayRoom, emptyFeed, growFollowers, MAX_BOOSTS, openFeed, REPLY_KINDS, type BoostTier, type ComplaintReason, type FeedBook, type PostDraft, type ReplyKind } from './feed'
 import { emptyFriends, type FriendBook } from './friends'
+import { bustleArrivalFactor, bustleScore, type BustleId } from './bustle'
 import { answerText, commentsFor, complaintText, dramaComment, idolText, kolText, managerText, praiseText, replyText, rivalText, shopText, strangerName, vipText, wardText, type ShopNews } from './feedText'
 import { branchPetBook, BREEDS, cleanPetName, emptyPetBook, FREE_BREEDS, type BreedId, type Pet, type PetBook, type PetProblem } from './pets'
 import { SAVE_VERSION, SaveError, type SaveData } from './save'
@@ -237,6 +238,8 @@ export class SpaSim {
   feed: FeedBook = emptyFeed()
   /** The shop's code for friends, whether they may visit, and their shops: the main shop's; a branch keeps an empty one. */
   friends: FriendBook = emptyFriends()
+  /** The pieces bought for the street in front of the main shop, in the order bought; a branch has none. */
+  bustle: BustleId[] = []
 
   private readonly rng: Rng
   private readonly crew: CrewHost
@@ -562,6 +565,11 @@ export class SpaSim {
   /** What the gap between two customers is multiplied by: a branch's place sets its own, the main shop has the events'. */
   arrivalFactor(): number {
     return this.place === null ? this.eventArrivalFactor() : 1 / PLACES[this.place].arrival
+  }
+
+  /** What the street's pieces multiply the gap between two customers by: exactly 1 at a branch or with nothing bought. */
+  bustleArrivalFactor(): number {
+    return bustleArrivalFactor(bustleScore(this.bustle))
   }
 
   /** What a new customer's patience (not a VIP's) is multiplied by today: longer in a festival or a hot day, to go with the crowd. */
@@ -960,6 +968,7 @@ export class SpaSim {
       // a branch shares the main shop's feed and saves none
       feed: this.place === null ? this.feed : emptyFeed(),
       friends: this.place === null ? this.friends : emptyFriends(),
+      bustle: this.place === null ? this.bustle : [],
       savedAt: null,
     })
   }
@@ -1007,6 +1016,7 @@ export class SpaSim {
     sim.pets = d.place === null ? d.pets : branchPetBook()
     sim.feed = d.feed
     sim.friends = d.friends
+    sim.bustle = d.place === null ? d.bustle : []
     sim.rebuildRoom()
     sim.day = d.day
     sim.clock.minutes = d.minutes
@@ -1667,7 +1677,7 @@ export class SpaSim {
         const opening = starterRunning(this.starter) && !this.book.regulars.sau.met
         this.spawnCustomer(opening ? { regular: 'sau' } : due && seatLeft ? { regular: due } : {})
         this.untilArrivalMs = arrivalGapMs(
-          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.arrivalFactor(),
+          arrivalIntervalMs(this.rating()) * dayEase(this.day).arrival * beautyArrivalFactor(this.beauty()) * serviceArrivalFactor(this.availableServices()) * this.arrivalFactor() * this.bustleArrivalFactor(),
           this.rng(),
         )
       }

@@ -17,8 +17,8 @@ import { moveAlong, type SpaSim } from './spa'
 import { staffStars, walkSpeed } from './staff'
 import type { Customer, Look, Mover, Tile } from './types'
 
-/** What the restaurant takes from the spa: the purse, the clock, the day, the power cut and the staff, whose names a cook may not take. */
-export type RestaurantHost = Pick<SpaSim, 'purse' | 'clock' | 'day' | 'powerOut' | 'staff'>
+/** What the restaurant takes from the spa: the purse, the clock, the day, the power cut, the staff, whose names a cook may not take, and the street's pull on walk-ins. */
+export type RestaurantHost = Pick<SpaSim, 'purse' | 'clock' | 'day' | 'powerOut' | 'staff' | 'bustleArrivalFactor'>
 
 /** What the view hears from the restaurant; it grows with the diners and the cooking. */
 export type RestaurantEvent =
@@ -655,7 +655,7 @@ export class RestaurantSim {
     if (this.autoSpawn && (!this.ownerAway || this.hasChefs()) && !this.host.clock.isClosed) {
       this.untilDinerMs -= dt
       if (this.untilDinerMs <= 0) {
-        this.untilDinerMs = arrivalGapMs(dinerGapMs(this.host.clock.minutes), this.rng())
+        this.untilDinerMs = arrivalGapMs(dinerGapMs(this.host.clock.minutes) * this.host.bustleArrivalFactor(), this.rng())
         if (this.sellableDishes().length === 0) return
         if (this.freeSeats()[0]) this.spawnDiner()
         else this.events.push({ type: 'dinerPassed' })

@@ -313,6 +313,25 @@ export const FRIENDS_MAX = 8
 /** How long the friends' list waits for a friend's shop to answer its knock before showing its door closed. */
 export const FRIEND_KNOCK_MS = 15_000
 
+// The street in front of the main shop, open once the restaurant is bought
+/** What each piece of the street costs, once, and what it adds to Phố sầm uất. */
+export const BUSTLE_PIECES = {
+  trees: { price: 1_200_000, score: 2 },
+  lamps: { price: 1_800_000, score: 2 },
+  benches: { price: 900_000, score: 1 },
+  banhMi: { price: 2_500_000, score: 3 },
+  sugarcane: { price: 2_500_000, score: 3 },
+  busStop: { price: 6_000_000, score: 5 },
+  park: { price: 12_000_000, score: 6 },
+  nightMarket: { price: 18_000_000, score: 8 },
+} as const
+/** With every piece bought, the gap between two customers at the main spa and between two walk-ins at the restaurant is this much shorter. */
+export const BUSTLE_MAX_SPEEDUP = 0.15
+/** The rows the open street adds under the old road: a second lane, the far sidewalk and three lots. */
+export const BUSTLE_ROWS = 5
+/** The night market sets its stalls out from this minute of the day (17:00). */
+export const NIGHT_MARKET_OPEN_MIN = 1020
+
 /** The day each feature button opens. */
 export const UNLOCK_DAY = { build: 2, staff: 3, services: 4, stock: 5, floors: 6, quests: 8, houses: 10 } as const
 

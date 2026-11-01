@@ -1106,6 +1106,18 @@ export const vi = {
   phayBoostLarge: 'Lớn',
   phayBoostGain: 'Mai +{n}% khách, boa ×{tip}',
   phayBoostPriceNote: 'Giá theo lãi trung bình 3 ngày gần nhất của tiệm',
+  // the street in front of the main shop
+  bustleKicker: 'Con phố',
+  bustleEffect: 'Phố sầm uất +{score} · khách tới nhanh hơn {percent}',
+  bustleOwned: 'Tiệm đã có món này.',
+  bustleClose: 'Đóng',
+  bustleBought: 'Đã mua {name} · Phố sầm uất {score}/{max}',
+  bustleHint: 'Con phố trước tiệm đã mở · chạm dấu + để mua đồ cho phố',
+  bustleChip: 'Phố sầm uất {score}/{max}',
+  bustleListLine: 'Khách tới nhanh hơn {percent}',
+  bustleListOwned: 'Đã có',
+  bustleRowSub: '{where} · +{score} sầm uất',
+  bustleLotLabel: '{name} · {money} tr',
 } as const
 
 export type StringKey = keyof typeof vi

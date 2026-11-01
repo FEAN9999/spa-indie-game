@@ -4,7 +4,7 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
+import { AUTOSAVE_MS, BUBBLE_MS, BUSTLE_PIECES, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
 import { currentHouse, homeLink, newVisitCode, openHouse, showVisitCode, visitCodeIn, VisitError, visitHouse, type Hello, type VisitProblem } from '../net/visit'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
@@ -12,6 +12,7 @@ import type { BadgeId } from '../sim/badges'
 import { memoryStore, openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { Chain } from '../sim/chain'
+import { BUSTLE_SCORE_MAX, bustleScore, type BustleId } from '../sim/bustle'
 import { KINDS } from '../sim/customers'
 import { dayEase } from '../sim/economy'
 import { markRead, takeCheer, unreadCount, type Post } from '../sim/feed'
@@ -38,6 +39,7 @@ import type { Customer, Facing, HintId, SimEvent, Tile, Vec } from '../sim/types
 import { isUnlocked } from '../sim/unlocks'
 import { formatMoney } from '../strings/format'
 import { GREETINGS, REGULAR_TEXT } from '../strings/regulars'
+import { BUSTLE_TEXT } from '../strings/bustle'
 import { GENEROUS_LINES, RECIPE_HINT_TEXT, t, type StringKey } from '../strings/vi'
 import { IDOL_TEXT } from '../strings/idols'
 import { VIP_TEXT } from '../strings/vips'
@@ -51,6 +53,9 @@ import { FloorBar } from '../view/FloorBar'
 import { climbPose, floorCardLines, followFloor, pills, restaurantPills, showPills, stairsToasts } from '../view/floors'
 import { MAP_VIEW, mapBounds, type Rect } from '../view/camera'
 import { RestaurantLayer } from '../view/RestaurantLayer'
+import { BustleLayer } from '../view/BustleLayer'
+import { bustleAt, bustleFocus, bustlePercentText, onSidewalk, openStreetBounds, SIDEWALK_ROW, streetAt, STRIP_ROW, upperFronts } from '../view/bustle'
+import type { BustleListData } from './BustleScene'
 import { DOOR_X, doorWalk, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
 import { HandPointer } from '../view/HandPointer'
 import { MapCamera } from '../view/MapCamera'
@@ -228,6 +233,8 @@ export class SpaScene extends Phaser.Scene {
   private pendingCook: Extract<RestaurantEvent, { type: 'cookReady' }> | null = null
   /** The restaurant on the street, at the main shop only. */
   private restaurant: RestaurantLayer | null = null
+  /** The street in front of the main shop once the restaurant is bought; null at a branch. */
+  private bustle: BustleLayer | null = null
   /** The owner was on her bike last frame, so the view comes down to floor 1 only as a ride starts. */
   private riding = false
   /**
@@ -327,6 +334,7 @@ export class SpaScene extends Phaser.Scene {
     this.room.setHouses(this.sim.houses, this.sim.shownHouses(), null, this.lightRect())
     // the main shop's street runs on to the restaurant beside it, or the old house for sale there
     this.restaurant = this.chain.at === null ? new RestaurantLayer(this) : null
+    this.bustle = this.chain.at === null ? new BustleLayer(this) : null
     this.syncRestaurantHouses()
     this.lastOwnerFloor = floorOf(this.sim.owner.pos.y)
     const inRestaurant = this.chain.at === null && this.chain.restaurant?.ownerIn ? this.chain.restaurant : null
@@ -336,7 +344,8 @@ export class SpaScene extends Phaser.Scene {
     // at normal size on the owner, in the restaurant if she is there; the view is never saved
     this.cam = new MapCamera(this, MAP_VIEW, this.mapRect())
     const next = inRestaurant?.owner.pos ?? null
-    this.cam.jump({ zoom: 1, cx: next ? restaurantX(next.x + 0.5) : this.room.tileToWorld(this.sim.owner.pos).x })
+    // the map's top at the area's top, as at the start of a day, though the open street runs it further down
+    this.cam.jump({ zoom: 1, cx: next ? restaurantX(next.x + 0.5) : this.room.tileToWorld(this.sim.owner.pos).x, cy: MAP_VIEW.y + MAP_VIEW.h / 2 })
     this.owner = this.buildOwner()
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
@@ -344,6 +353,7 @@ export class SpaScene extends Phaser.Scene {
     this.hud = new Hud(this.ui, this.sim, () => (this.visit ? this.askHome() : this.pause()), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => this.openPhay(null), () => (this.visit ? [] : navIds(this.chain)))
     // a friend's shop has no buttons of its own in the bottom bar: whose it is, and the way home
     if (this.visit) addVisitBar(this.ui, this.chain.main.shopName, this.chain.branches.length > 0 ? () => this.openChainMap() : null, () => this.goHome())
+    this.hud.onBustle = () => this.openBustleList()
     this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this.ui)
     this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
@@ -394,6 +404,7 @@ export class SpaScene extends Phaser.Scene {
       window.removeEventListener('pagehide', saveOnLeave)
       stopWatching()
       this.restaurant?.destroy()
+      this.bustle?.destroy()
       // the layer over the map outlives the scene: the next shop draws its own
       this.ui.clear()
       this.gestures.destroy()
@@ -738,7 +749,10 @@ export class SpaScene extends Phaser.Scene {
 
   /** The world the camera may show: at the main shop the street out to the restaurant, at a branch its own houses. */
   private mapRect(): Rect {
-    return this.chain.at === null ? streetBounds(this.sim.shownHouses(), this.restaurantShown()) : mapBounds(this.sim.shownHouses())
+    if (this.chain.at !== null) return mapBounds(this.sim.shownHouses())
+    const street = streetBounds(this.sim.shownHouses(), this.restaurantShown())
+    // the open street runs the map further down, across the road
+    return this.chain.bustleOpen() ? openStreetBounds(street) : street
   }
 
   /** The day's light and the power cut's dark lie over the whole street at the main shop; at a branch over its bought houses, as RoomView has it. */
@@ -1613,6 +1627,12 @@ export class SpaScene extends Phaser.Scene {
         this.session.saveNow()
       }
       if (this.sim.place !== null) this.callOwner(this.sim.place)
+      // once, when the street first opens: how to buy for it
+      const main = this.chain.main
+      if (this.bustle && this.chain.bustleOpen() && main.profileDone && !main.hintDone('bustle') && this.attention.shopFree()) {
+        main.markHint('bustle')
+        this.queueToast(t('bustleHint'))
+      }
     }
 
     // never under build mode or a card, where the player may be looking at another floor on purpose
@@ -1664,9 +1684,13 @@ export class SpaScene extends Phaser.Scene {
     this.room.setPowerOut(this.sim.powerOut(), this.sim.powerOut() ? this.machineBeds() : [])
     this.room.setDaylight(this.sim.clock.minutes, this.sim.powerOut(), this.sim.grid.door)
     this.restaurant?.sync(this.chain, this.sim.clock.minutes, this.sim.powerOut(), this.playing() ? 0 : dt)
+    this.syncBustle()
     // the wait for a newer version draws nothing over the shop, so the day's line stays up through it
     this.hud.update(this.attention.covered('panel', 'shutter', 'away'))
     this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
+    // the street's chip on the player's own main shop once the street is open, never under a card
+    const chip = this.bustle && !this.visit && this.chain.bustleOpen() && !this.attention.covered()
+    this.hud.setBustle(chip ? bustleScore(this.chain.main.bustle) : null, BUSTLE_SCORE_MAX)
     // Phây is the main shop's, shared by its branches; the button gives way to the gold card and the morning banner, which use its spot
     const feed = this.chain.main.feed
     this.hud.setPhay(!this.visit && phayButtonShown(feed.open, this.time.now < this.badgeUntil, this.time.now < this.hud.lastBannerAt + BANNER_MS), unreadCount(feed), this.sim.place !== null)
@@ -2331,6 +2355,79 @@ export class SpaScene extends Phaser.Scene {
     this.tweens.add({ targets: s.bubble, scale: 1.2, duration: 250, ease: 'Back.easeOut' })
   }
 
+  /** Draws the street in front of the main shop as it is this frame. */
+  private syncBustle(): void {
+    this.bustle?.sync({
+      open: this.chain.bustleOpen(),
+      floor: this.viewFloor,
+      bought: this.chain.main.bustle,
+      minutes: this.sim.clock.minutes,
+      powerOut: this.sim.powerOut(),
+      marks: !this.visit && this.viewFloor === 1,
+      light: this.lightRect() ?? this.mapRect(),
+      fronts: upperFronts(this.chain.main.houses, this.chain.restaurant?.houses ?? null),
+    })
+  }
+
+  /** A tap on the open street: a piece's card, or nothing at all across the road; false leaves the tap to the shops. */
+  private bustleTap(w: Vec): boolean {
+    if (!this.bustle || !this.chain.bustleOpen()) return false
+    const { col, row } = streetAt(w.x, w.y)
+    if (row < SIDEWALK_ROW) return false
+    const id = bustleAt(col, row, this.viewFloor)
+    // on an upper floor no + shows, so only a lot bought already answers
+    if (id && (this.viewFloor === 1 || this.chain.main.bustle.includes(id))) {
+      this.offerBustle(id)
+      return true
+    }
+    return row >= STRIP_ROW
+  }
+
+  /** A card over the frozen shop for a piece of the street: what it is and does and its price, or that the street has it already. */
+  private offerBustle(id: BustleId): void {
+    const chain = this.chain
+    const problem = chain.bustleProblem(id)
+    if (problem === 'locked') return
+    const { price, score } = BUSTLE_PIECES[id]
+    const focus = bustleFocus(id)
+    if (onSidewalk(id)) this.cam.slideTo(focus.x)
+    else this.cam.slideTo(focus.x, focus.y)
+    const owned = problem === 'owned'
+    const short = () => t('floorShort', { money: formatMoney(price - chain.main.money) })
+    const card: ChoiceText = {
+      kicker: t('bustleKicker'),
+      title: BUSTLE_TEXT[id].name,
+      lines: [BUSTLE_TEXT[id].line, owned ? t('bustleOwned') : t('bustleEffect', { score, percent: bustlePercentText(score) }), ...(problem === 'money' ? [short()] : [])],
+      buttons: owned ? [t('bustleClose')] : [t('houseBuy', { money: formatMoney(price) }), t('floorLater')],
+    }
+    this.choose(card, i => {
+      if (owned || i !== 0) return
+      const why = chain.buyBustle(id)
+      if (why === 'money') this.hud.toast(short())
+      if (why) return
+      sound.play('thud')
+      this.syncBustle()
+      this.bustle?.pop(id)
+      this.hud.toast(t('bustleBought', { name: BUSTLE_TEXT[id].name, score: bustleScore(chain.main.bustle), max: BUSTLE_SCORE_MAX }))
+      this.session.saveNow()
+    })
+  }
+
+  /** The street's list over the frozen shop; a row closes it and opens that piece's card. */
+  private openBustleList(): void {
+    if (!this.chain.bustleOpen() || this.attention.covered()) return
+    const release = this.attention.cover('panel')
+    const data: BustleListData = {
+      bought: [...this.chain.main.bustle],
+      onClose: id => {
+        release()
+        this.session.saveNow()
+        if (id) this.offerBustle(id)
+      },
+    }
+    this.scene.launch('BustleScene', data)
+  }
+
   /** A tap on the map that no HUD object took, from the map's gestures: tested against what is under it on the map, at its world point. */
   private onMapTap(p: Phaser.Input.Pointer): void {
     // a card, a pause or a mini-game may have come up between the press and the lift
@@ -2348,6 +2445,8 @@ export class SpaScene extends Phaser.Scene {
     }
     // at a friend's shop a tap sends nobody anywhere and offers nothing for sale
     if (this.visit) return
+    // the open street first: a sale roof takes any tap under it by its column alone
+    if (this.bustleTap(w)) return
     // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on the floor in view
     const r = this.chain.restaurant
     // on floor 1, a roof for sale beside the restaurant offers its house
