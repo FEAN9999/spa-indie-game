@@ -66,6 +66,15 @@ describe('the restaurant draws', () => {
     expect(restaurantLog(r => { r.buyDish('bunCha') })).toEqual(restaurantBunChaFixture)
   })
 
+  it('draws differently once Gỏi cuốn is on the menu too, with diners ordering it', () => {
+    const log = restaurantLog(r => {
+      r.buyDish('bunCha')
+      expect(r.buyDish('goiCuon')).toBeNull()
+    })
+    expect(log).not.toEqual(restaurantBunChaFixture)
+    expect(log.diners.some(d => d.includes(':goiCuon:'))).toBe(true)
+  })
+
   it('draws differently once Bún chả is on the menu, with diners ordering it', () => {
     const log = restaurantLog(r => {
       expect(r.buyDish('bunCha')).toBeNull()

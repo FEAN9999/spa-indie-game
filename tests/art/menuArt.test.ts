@@ -7,7 +7,7 @@ vi.mock('phaser', () => ({}))
 describe('menu art', () => {
   it('draws every dish and stock icon', () => {
     const textures = menuTextures()
-    expect(Object.keys(textures).sort()).toEqual(['dish-banhXeo', 'dish-bunCha', 'dish-che', 'dish-pho', 'rstock-batter', 'rstock-chaKit', 'rstock-cheKit', 'rstock-herbs', 'rstock-phoKit'])
+    expect(Object.keys(textures).sort()).toEqual(['dish-banhXeo', 'dish-bunCha', 'dish-che', 'dish-goiCuon', 'dish-pho', 'rstock-batter', 'rstock-chaKit', 'rstock-cheKit', 'rstock-cuonKit', 'rstock-herbs', 'rstock-phoKit'])
     for (const svg of Object.values(textures)) {
       expect(svg.startsWith('<svg')).toBe(true)
       expect(svg.endsWith('</svg>')).toBe(true)

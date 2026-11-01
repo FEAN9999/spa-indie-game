@@ -11,7 +11,7 @@ const cook = (skill: number, speed: number, pho = 0): ChefCandidate => ({
   stats: { skill, speed },
   wage: chefWage({ skill, speed }),
   rare: false,
-  tiers: { pho, banhXeo: 0, che: 0, bunCha: 0 },
+  tiers: { pho, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0 },
 })
 
 describe('chefs', () => {
@@ -50,8 +50,8 @@ describe('chefs', () => {
   })
 
   it('adds the specialty to the skill for the star roll', () => {
-    expect(chefSkill({ ...cook(3, 1), tiers: { pho: 2, banhXeo: 0, che: 0, bunCha: 0 } }, 'pho')).toBe(5)
-    expect(chefSkill({ ...cook(4, 1), tiers: { pho: 3, banhXeo: 0, che: 0, bunCha: 0 } }, 'pho')).toBe(5)
-    expect(chefSkill({ ...cook(3, 1), tiers: { pho: 2, banhXeo: 0, che: 0, bunCha: 0 } }, 'che')).toBe(3)
+    expect(chefSkill({ ...cook(3, 1), tiers: { pho: 2, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0 } }, 'pho')).toBe(5)
+    expect(chefSkill({ ...cook(4, 1), tiers: { pho: 3, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0 } }, 'pho')).toBe(5)
+    expect(chefSkill({ ...cook(3, 1), tiers: { pho: 2, banhXeo: 0, che: 0, bunCha: 0, goiCuon: 0 } }, 'che')).toBe(3)
   })
 })

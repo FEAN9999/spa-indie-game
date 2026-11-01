@@ -631,13 +631,13 @@ export const RESTAURANT_PRICE = 7_500_000
 export const RESTAURANT_X0 = SHOP_COLS
 
 /** What a dish costs, and the tip by stars (0 for a walk-out). */
-export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000 } as const
+export const DISH_PRICE = { pho: 30_000, banhXeo: 28_000, che: 18_000, bunCha: 35_000, goiCuon: 25_000 } as const
 /** What putting a new dish on the menu costs, once; its stock starts at STOCK_START. */
-export const DISH_BUY_PRICE = { bunCha: 1_200_000 } as const
+export const DISH_BUY_PRICE = { bunCha: 1_200_000, goiCuon: 1_000_000 } as const
 export const DINER_TIP = [0, 2_500, 5_000, 10_000] as const
 
 /** What 20 portions of each restaurant stock item cost to restock (herbs are shared by every dish). */
-export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, herbs: 40_000 } as const
+export const RESTAURANT_RESTOCK_PRICE = { phoKit: 200_000, batter: 180_000, cheKit: 120_000, chaKit: 240_000, cuonKit: 160_000, herbs: 40_000 } as const
 
 /** How many cooks the restaurant can hold: base, plus per extra floor, plus per house, never above max. */
 export const CHEF_CAP = { base: 2, perFloor: 2, perHouse: 1, max: 10 } as const
@@ -719,6 +719,15 @@ export const BC_SAUCE_LINE = 0.7
 export const BC_SAUCE_TOL = 0.07
 export const BC_SAUCE_TOL_HARD = 0.05
 export const BC_SAUCE_NEAR = 0.1
+
+/** Gỏi cuốn: the game's time limit; a dip is one stroke across the water at least this long, right when it takes between min and max ms (a hard diner's band is narrower). */
+export const GC_LIMIT_MS = 25_000
+export const GC_DIP_SPAN = 300
+export const GC_DIP_MS = { min: 350, max: 1_100 }
+export const GC_DIP_MS_HARD = { min: 450, max: 950 }
+/** A roll is an upward swipe: this many make the roll; one at least the long length (longer for a hard diner) is tight, one shorter is loose, and under the short length or slanting more than the slant it is no roll at all. */
+export const GC_ROLLS = 3
+export const GC_ROLL = { long: 200, longHard: 240, short: 60, slant: 0.6 }
 
 /** Phây, the shop's feed: the followers a new feed starts with, and how many posts it keeps. */
 export const FEED_START_FOLLOWERS = 50

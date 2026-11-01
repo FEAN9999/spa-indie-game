@@ -19,6 +19,7 @@ import { footTextures } from '../art/footArt'
 import { nailsTextures } from '../art/nailsArt'
 import { cuppingTextures } from '../art/cuppingArt'
 import { bunChaTextures } from '../art/bunChaArt'
+import { goiCuonTextures } from '../art/goiCuonArt'
 import { scrubTextures } from '../art/scrubArt'
 import { mudTextures } from '../art/mudArt'
 import { oldTownRoomTexture } from '../art/oldTown'
@@ -80,6 +81,7 @@ export class BootScene extends Phaser.Scene {
       ...banhXeoTextures(),
       ...cheTextures(),
       ...bunChaTextures(),
+      ...goiCuonTextures(),
       ...menuTextures(),
     })
     // the layer over the map runs first, so the shop draws into it from its first frame
