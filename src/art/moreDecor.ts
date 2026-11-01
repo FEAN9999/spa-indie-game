@@ -427,6 +427,116 @@ const bananaPlant =
   rect(0.12, 1.4, 0.76, 0.12, C.terracotta, `rx="0.04" ${ink(0.035)}`) +
   line('M0.22,1.7 H0.78', C.lanternDark, 0.025)
 
+// ---------- Nhà hàng: bàn ghế ăn tầng thượng ----------
+
+/** Bếp than tổ ong nhỏ: thân đất nung, vỉ nướng có thịt, than hồng, khói bốc lên; tâm đáy ở (cx, base). */
+const grillPot = (cx: number, base: number, r: number) =>
+  line(`M${f(cx - r * 0.3)},${f(base - r * 1.2)} q-0.06,-0.1 0,-0.18 t0,-0.18 M${f(cx + r * 0.3)},${f(base - r * 1.2)} q-0.06,-0.1 0,-0.18 t0,-0.18`, C.steamBlue, 0.035) +
+  rect(f(cx - r), f(base - r * 0.9), f(r * 2), f(r * 0.9), C.clayLight, `rx="0.04" ${ink(0.03)}`) +
+  `<ellipse cx="${cx}" cy="${f(base - r * 0.9)}" rx="${r}" ry="${f(r * 0.3)}" fill="${C.deepBrown}" ${ink(0.025)}/>` +
+  [-0.5, 0, 0.5].map((d, i) => dot(cx + d * r, base - r * 0.9, 0.035, i % 2 ? C.stoneHot : C.lantern, 0.01)).join('') +
+  line(`M${f(cx - r * 0.9)},${f(base - r * 0.95)} H${f(cx + r * 0.9)}`, C.tankRib, 0.02) +
+  `<ellipse cx="${f(cx - r * 0.35)}" cy="${f(base - r * 1.0)}" rx="0.07" ry="0.035" fill="${C.terracotta}" ${ink(0.012)}/>` +
+  `<ellipse cx="${f(cx + r * 0.35)}" cy="${f(base - r * 1.0)}" rx="0.07" ry="0.035" fill="${C.clay}" ${ink(0.012)}/>`
+/** Đĩa rau xà lách nhìn ngang, tâm ở (cx, cy). */
+const greens = (cx: number, cy: number) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="0.18" ry="0.05" fill="${C.cream}" ${ink(0.02)}/>` +
+  `<path d="M${f(cx - 0.12)},${f(cy - 0.02)} q0.06,-0.14 0.12,-0.04 q0.06,-0.12 0.12,0.04Z" fill="${C.leafLight}" ${ink(0.012)}/>`
+
+// bàn nướng than: bàn gỗ như bàn ăn, giữa đặt bếp than có vỉ thịt đang nướng, hai bên là đĩa rau
+const grillTable =
+  rect(0.12, 0.94, 0.12, 0.6, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  rect(1.76, 0.94, 0.12, 0.6, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  rect(0.05, 0.6, 1.9, 0.4, C.wood, `rx="0.1" ${ink()}`) +
+  line('M0.17,0.72 H1.83', C.woodLight, 0.045) +
+  rect(0.05, 0.92, 1.9, 0.12, C.woodDark, `rx="0.05" ${ink(0.035)}`) +
+  grillPot(1.0, 0.76, 0.26) +
+  greens(0.4, 0.72) +
+  greens(1.6, 0.72)
+
+// bàn nướng than dựng đứng: mặt bàn chạy dọc lên, bếp than ở giữa, đĩa rau hai đầu, chân ở đầu gần
+const grillTableTurned =
+  rect(0.13, 2.04, 0.13, 0.42, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  rect(0.76, 2.04, 0.13, 0.42, C.woodDark, `rx="0.03" ${ink(0.035)}`) +
+  rect(0.12, 0.5, 0.78, 1.7, C.wood, `rx="0.1" ${ink()}`) +
+  line('M0.24,0.62 V2.08', C.woodLight, 0.045) +
+  rect(0.05, 2.06, 0.92, 0.2, C.woodDark, `rx="0.06" ${ink(0.04)}`) +
+  greens(0.5, 0.78) +
+  grillPot(0.51, 1.5, 0.24) +
+  greens(0.5, 1.86)
+
+// bàn bar cao: mặt tròn nhỏ trên một trụ inox cao, đế tròn, trên bàn có ly trà tắc có ống hút
+const barTable =
+  `<ellipse cx="0.5" cy="1.52" rx="0.3" ry="0.07" fill="${C.tankRib}" ${ink(0.03)}/>` +
+  rect(0.46, 0.5, 0.08, 1.02, C.silver, ink(0.025)) +
+  line('M0.3,1.18 H0.7', C.tankRib, 0.035) +
+  `<ellipse cx="0.5" cy="0.52" rx="0.44" ry="0.12" fill="${C.woodDark}" ${ink(0.035)}/>` +
+  `<ellipse cx="0.5" cy="0.48" rx="0.44" ry="0.12" fill="${C.woodLight}" ${ink(0.035)}/>` +
+  `<path d="M0.58,0.2 H0.74 L0.72,0.46 H0.6Z" fill="${C.glass}" ${ink(0.018)}/>` +
+  rect(0.61, 0.3, 0.1, 0.14, C.mustard, `opacity="0.85"`) +
+  line('M0.68,0.2 L0.72,0.08', C.lantern, 0.025) +
+  dot(0.62, 0.26, 0.03, C.leafLight, 0.008)
+
+// bàn thấp ngồi bệt: tấm gỗ dày chân ngắn, trên có ấm trà, hai chén và đĩa hạt hướng dương
+const seeds = (cx: number, cy: number) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="0.16" ry="0.045" fill="${C.cream}" ${ink(0.02)}/>` +
+  [-0.08, -0.02, 0.04, 0.1].map((d, i) => `<ellipse cx="${f(cx + d)}" cy="${f(cy - 0.03 - (i % 2) * 0.02)}" rx="0.03" ry="0.018" fill="${C.ink}"/>`).join('')
+const smallPot = (cx: number, base: number) =>
+  `<path d="M${f(cx - 0.12)},${base} Q${f(cx - 0.16)},${f(base - 0.16)} ${cx},${f(base - 0.18)} Q${f(cx + 0.16)},${f(base - 0.16)} ${f(cx + 0.12)},${base}Z" fill="${C.cobalt}" ${ink(0.02)}/>` +
+  line(`M${f(cx + 0.13)},${f(base - 0.1)} l0.08,-0.06`, C.cobalt, 0.03) +
+  dot(cx, base - 0.2, 0.025, C.cobalt, 0.01)
+const teaCup = (cx: number, base: number) => rect(f(cx - 0.05), f(base - 0.08), 0.1, 0.08, C.cream, `rx="0.02" ${ink(0.015)}`)
+const lowTable =
+  rect(0.16, 1.02, 0.12, 0.26, C.woodDark, ink(0.03)) +
+  rect(1.72, 1.02, 0.12, 0.26, C.woodDark, ink(0.03)) +
+  rect(0.04, 0.74, 1.92, 0.3, C.woodLight, `rx="0.08" ${ink()}`) +
+  rect(0.06, 0.96, 1.88, 0.1, C.wood, `rx="0.04" ${ink(0.03)}`) +
+  line('M0.2,0.84 H1.8', C.plank, 0.03) +
+  smallPot(0.55, 0.82) +
+  teaCup(0.86, 0.82) +
+  teaCup(1.04, 0.82) +
+  seeds(1.5, 0.8)
+
+// bàn thấp ngồi bệt dựng đứng: tấm gỗ chạy dọc lên, ấm trà ở đầu xa, chén và đĩa hạt dọc mặt bàn
+const lowTableTurned =
+  rect(0.14, 2.0, 0.12, 0.26, C.woodDark, ink(0.03)) +
+  rect(0.76, 2.0, 0.12, 0.26, C.woodDark, ink(0.03)) +
+  rect(0.08, 0.4, 0.86, 1.66, C.woodLight, `rx="0.08" ${ink()}`) +
+  line('M0.22,0.52 V1.9', C.plank, 0.03) +
+  rect(0.08, 1.94, 0.86, 0.14, C.wood, `rx="0.04" ${ink(0.03)}`) +
+  smallPot(0.5, 0.82) +
+  teaCup(0.4, 1.12) +
+  teaCup(0.62, 1.12) +
+  seeds(0.5, 1.6)
+
+// ghế bar cao: mặt ngồi tròn bọc nệm đỏ, ba chân inox cao có vòng gác chân
+const barStool =
+  line('M0.3,0.72 L0.18,1.5 M0.7,0.72 L0.82,1.5 M0.5,0.74 V1.52', C.ink, 0.07) +
+  line('M0.3,0.72 L0.18,1.5 M0.7,0.72 L0.82,1.5 M0.5,0.74 V1.52', C.silver, 0.035) +
+  `<ellipse cx="0.5" cy="1.14" rx="0.26" ry="0.06" fill="none" stroke="${C.ink}" stroke-width="0.06"/>` +
+  `<ellipse cx="0.5" cy="1.14" rx="0.26" ry="0.06" fill="none" stroke="${C.silver}" stroke-width="0.03"/>` +
+  rect(0.16, 0.6, 0.68, 0.14, C.lantern, `rx="0.07" ${ink(0.035)}`) +
+  `<ellipse cx="0.5" cy="0.6" rx="0.34" ry="0.08" fill="${C.lantern}" ${ink(0.035)}/>` +
+  line('M0.3,0.58 Q0.5,0.54 0.7,0.58', C.lanternDark, 0.02)
+
+// ghế xếp inox: khung inox, lưng và mặt ngồi bọc nệm đỏ, hai chân bắt chéo phía dưới
+const foldingChair =
+  line('M0.26,0.12 V0.74 M0.74,0.12 V0.74', C.ink, 0.07) +
+  line('M0.26,0.12 V0.74 M0.74,0.12 V0.74', C.silver, 0.035) +
+  rect(0.22, 0.14, 0.56, 0.3, C.lantern, `rx="0.06" ${ink(0.035)}`) +
+  line('M0.22,0.84 L0.78,1.36 M0.78,0.84 L0.22,1.36', C.ink, 0.07) +
+  line('M0.22,0.84 L0.78,1.36 M0.78,0.84 L0.22,1.36', C.silver, 0.035) +
+  rect(0.14, 0.66, 0.72, 0.2, C.lantern, `rx="0.06" ${ink(0.04)}`) +
+  line('M0.2,0.7 H0.8', C.lanternDark, 0.02)
+
+// đệm ngồi bệt: đệm vuông dày màu vàng nghệ có viền đỏ và nút bấm giữa, đặt thấp sát sàn
+const floorCushion =
+  rect(0.08, 0.62, 0.84, 0.38, C.mustard, `rx="0.12" ${ink(0.04)}`) +
+  rect(0.14, 0.66, 0.72, 0.18, C.gold, `rx="0.08"`) +
+  line('M0.14,0.92 H0.86', C.lantern, 0.04) +
+  dot(0.5, 0.76, 0.04, C.lanternDark, 0.012) +
+  line('M0.3,0.72 L0.46,0.76 M0.7,0.72 L0.54,0.76', C.mustardDark, 0.015)
+
 /** Hình của từng món, đặt khoá theo kiểu `decor-` của furniture.ts; món xoay được có thêm hình `-turned`. */
 export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> = {
   'decor-velvetSofa': { w: 3, h: 1.35, body: velvetSofa },
@@ -456,4 +566,12 @@ export const MORE_DECOR: Record<string, { w: number; h: number; body: string }> 
   'decor-hammock': { w: 3, h: 1.6, body: hammock },
   'decor-hammock-turned': { w: 1.1, h: 3, body: hammockTurned },
   'decor-bananaPlant': { w: 1, h: 2.2, body: bananaPlant },
+  'decor-grillTable': { w: 2, h: 1.6, body: grillTable },
+  'decor-grillTable-turned': { w: 1.1, h: 2.5, body: grillTableTurned },
+  'decor-barTable': { w: 1, h: 1.6, body: barTable },
+  'decor-lowTable': { w: 2, h: 1.35, body: lowTable },
+  'decor-lowTable-turned': { w: 1.1, h: 2.3, body: lowTableTurned },
+  'decor-barStool': { w: 1, h: 1.6, body: barStool },
+  'decor-foldingChair': { w: 1, h: 1.45, body: foldingChair },
+  'decor-floorCushion': { w: 1, h: 1.05, body: floorCushion },
 }

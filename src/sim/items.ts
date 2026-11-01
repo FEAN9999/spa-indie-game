@@ -20,6 +20,7 @@ export type ItemKind =
   | 'stove' | 'diningTable' | 'diningChair' | 'servingCounter' | 'ingredientShelf' | 'sink' | 'cashierCounter' | 'umbrellaTable'
   | 'streetTable' | 'roundTable' | 'plasticStool' | 'bambooChair' | 'menuBoard' | 'drinkFridge' | 'icedTeaStand'
   | 'sunLounger' | 'charcoalGrill' | 'lightArch' | 'gardenSwing' | 'hammock' | 'bananaPlant'
+  | 'grillTable' | 'barTable' | 'lowTable' | 'barStool' | 'foldingChair' | 'floorCushion'
 
 export type ItemGroup = 'bed' | 'seat' | 'decor' | 'dining'
 export type SetId = 'saigon' | 'bamboo' | 'zen' | 'retro' | 'garden'
@@ -143,6 +144,12 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
   roundTable: { w: 2, h: 2, price: RESTAURANT_FURNITURE.roundTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemRoundTable' },
   plasticStool: { w: 1, h: 1, price: RESTAURANT_FURNITURE.plasticStool, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemPlasticStool' },
   bambooChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.bambooChair, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemBambooChair' },
+  grillTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.grillTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemGrillTable' },
+  barTable: { w: 1, h: 1, price: RESTAURANT_FURNITURE.barTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemBarTable' },
+  lowTable: { w: 2, h: 1, price: RESTAURANT_FURNITURE.lowTable, beauty: 1, group: 'dining', shop: 'restaurant', name: 'itemLowTable' },
+  barStool: { w: 1, h: 1, price: RESTAURANT_FURNITURE.barStool, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemBarStool' },
+  foldingChair: { w: 1, h: 1, price: RESTAURANT_FURNITURE.foldingChair, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemFoldingChair' },
+  floorCushion: { w: 1, h: 1, price: RESTAURANT_FURNITURE.floorCushion, beauty: 0, group: 'dining', shop: 'restaurant', name: 'itemFloorCushion' },
   servingCounter: { w: 5, h: 1, price: 375_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemServingCounter' },
   ingredientShelf: { w: 1, h: 1, price: 180_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemIngredientShelf' },
   sink: { w: 2, h: 1, price: 225_000, beauty: 1, group: 'decor', shop: 'restaurant', name: 'itemSink' },
@@ -161,8 +168,8 @@ export const ITEMS: Record<ItemKind, ItemSpec> = {
 export const ITEM_KINDS = Object.keys(ITEMS) as ItemKind[]
 
 /** The restaurant's tables and chairs: a diner sits on any chair right beside any table. */
-const DINING_TABLES: ItemKind[] = ['diningTable', 'umbrellaTable', 'streetTable', 'roundTable']
-const DINING_CHAIRS: ItemKind[] = ['diningChair', 'plasticStool', 'bambooChair']
+const DINING_TABLES: ItemKind[] = ['diningTable', 'umbrellaTable', 'streetTable', 'roundTable', 'grillTable', 'barTable', 'lowTable']
+const DINING_CHAIRS: ItemKind[] = ['diningChair', 'plasticStool', 'bambooChair', 'barStool', 'foldingChair', 'floorCushion']
 export const isDiningTable = (kind: ItemKind): boolean => DINING_TABLES.includes(kind)
 export const isDiningChair = (kind: ItemKind): boolean => DINING_CHAIRS.includes(kind)
 

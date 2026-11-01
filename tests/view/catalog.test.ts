@@ -126,7 +126,9 @@ describe('build mode catalogue', () => {
   it('offers the dining pieces and the shared decor at the restaurant', () => {
     expect(kinds(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['stove', 'diningTable', 'diningChair', 'umbrellaTable'])
     expect(kinds(catalogPage('dining', 1, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['streetTable', 'roundTable', 'plasticStool', 'bambooChair'])
-    expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(2)
+    expect(kinds(catalogPage('dining', 2, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['grillTable', 'barTable', 'lowTable', 'barStool'])
+    expect(kinds(catalogPage('dining', 3, ALL_SERVICES, [], 'all', 'restaurant'))).toEqual(['foldingChair', 'floorCushion'])
+    expect(catalogPage('dining', 0, ALL_SERVICES, [], 'all', 'restaurant').pages).toBe(4)
     const { pages } = catalogPage('decor', 0, ALL_SERVICES, [], 'all', 'restaurant')
     const decor = Array.from({ length: pages }, (_, p) => kinds(catalogPage('decor', p, ALL_SERVICES, [], 'all', 'restaurant'))).flat()
     expect(decor).toEqual(expect.arrayContaining(['servingCounter', 'ingredientShelf', 'sink', 'cashierCounter', 'plant', 'menuBoard', 'drinkFridge', 'icedTeaStand', 'tileRug', 'tearCalendar', 'pool', 'sunLounger', 'charcoalGrill', 'lightArch', 'gardenSwing', 'hammock', 'bananaPlant']))

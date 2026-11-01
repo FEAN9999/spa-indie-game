@@ -58,6 +58,22 @@ describe('the restaurant furniture', () => {
     expect([grid.cells[8][19], grid.cells[9][20]]).toEqual(['decor', 'decor'])
   })
 
+  it('seats a diner at the grill table, the bar table and the low table on any of the new chairs', () => {
+    const items = [
+      at(1, 'grillTable', 15, 40), at(2, 'foldingChair', 15, 39), at(3, 'barStool', 16, 41),
+      at(4, 'barTable', 20, 40), at(5, 'barStool', 21, 40),
+      at(6, 'lowTable', 15, 46), at(7, 'floorCushion', 17, 46), at(8, 'floorCushion', 15, 47),
+    ]
+    expect(diningSeats(items)).toEqual([
+      { tile: { x: 15, y: 39 }, facing: 'down' },
+      { tile: { x: 16, y: 41 }, facing: 'up' },
+      { tile: { x: 21, y: 40 }, facing: 'left' },
+      { tile: { x: 17, y: 46 }, facing: 'left' },
+      { tile: { x: 15, y: 47 }, facing: 'up' },
+    ])
+    for (const kind of ['grillTable', 'barTable', 'lowTable', 'barStool', 'foldingChair', 'floorCushion'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
+  })
+
   it("keeps the spa's own decor out of the restaurant and the restaurant's out of the spa", () => {
     for (const kind of ['velvetSofa', 'rattanArmchair', 'vanity', 'towelSteamer', 'aromaDiffuser'] as const) expect(placeableIn(kind, 'restaurant'), kind).toBe(false)
     for (const kind of ['streetTable', 'roundTable', 'plasticStool', 'bambooChair', 'menuBoard', 'drinkFridge', 'icedTeaStand'] as const) expect(placeableIn(kind, 'spa'), kind).toBe(false)
