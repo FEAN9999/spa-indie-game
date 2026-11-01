@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { BUSTLE_ROWS, MAP_X, MAP_Y, TILE } from '../../src/config'
 import { BUSTLE_IDS, type BustleId } from '../../src/sim/bustle'
-import { BUS, busAt, bustleAt, bustleHits, bustleMarks, bustlePercentText, bustlePictures, colX, LOTS, millions, onSidewalk, openStreetBounds, roadCovers, streetAt, streetLights, STRIP_ROW, upperFronts, walkLanes, WALK_ROWS, type StreetRect } from '../../src/view/bustle'
+import { BUS, busAt, bustleAt, laneRow, bustleHits, bustleMarks, bustlePercentText, bustlePictures, colX, LOTS, millions, onSidewalk, openStreetBounds, roadCovers, streetAt, streetLights, STRIP_ROW, upperFronts, walkLanes, WALK_ROWS, type StreetRect } from '../../src/view/bustle'
 
 // the street's art loads through svg.ts, which imports Phaser
 vi.mock('phaser', () => ({}))
@@ -119,7 +119,7 @@ describe('who walks the street', () => {
   const street: [number, number] = [6, 68]
 
   it('is two on the near sidewalk with nothing bought, and more as the street gets busier, at most eight', () => {
-    expect(walkLanes([], 600, street)).toEqual([{ row: WALK_ROWS.near, from: 6, to: 68, count: 2, speed: 0.9, loop: true, near: true }])
+    expect(walkLanes([], 600, street)).toEqual([{ row: WALK_ROWS.near, from: 6, to: 68, count: 2, speed: 0.9, loop: true, near: true, detour: null }])
     expect(walkLanes(['trees', 'banhMi'], 600, street)[0].count).toBe(3)
     expect(walkLanes([...BUSTLE_IDS], 600, street)[0].count).toBe(8)
   })
@@ -178,5 +178,43 @@ describe("the street's lights", () => {
   it('leave out the sidewalk pieces upstairs, where the balcony hides them', () => {
     expect(streetLights(['lamps', 'banhMi', 'sugarcane'], 2)).toEqual([])
     expect(streetLights(['park'], 3)).toHaveLength(2)
+  })
+})
+
+describe('the far sidewalk round the bus shelter', () => {
+  const street: [number, number] = [6, 68]
+  const far = (bought: BustleId[]) => walkLanes(bought, 600, street).find(l => l.row === WALK_ROWS.far)!
+  /** The shelter's roof and its sign's disc, in street columns, and the rows of its bench and the person waiting on it, its flower bed and its planter. */
+  const ROOF = [14.6, 19.6]
+  const SIGN = [19.71, 20.39]
+  const BENCH_FOOT = 22.45
+  const FLOWER_BED = 23.85
+  const PLANTER = { col: 21.2, top: 22.17 }
+
+  it('bends only with the bus stop bought', () => {
+    expect(far(['park']).detour).toBeNull()
+    expect(far(['busStop']).detour).not.toBeNull()
+  })
+
+  it('keeps to the far sidewalk away from the shelter, and goes round behind it, in front of its bench and clear of its flower bed', () => {
+    const lane = far(['busStop'])
+    expect(laneRow(lane, 8)).toBe(WALK_ROWS.far)
+    expect(laneRow(lane, 30)).toBe(WALK_ROWS.far)
+    for (let col = ROOF[0]; col <= SIGN[1]; col += 0.1) {
+      expect(laneRow(lane, col)).toBeGreaterThan(BENCH_FOOT)
+      expect(laneRow(lane, col)).toBeLessThan(FLOWER_BED)
+    }
+  })
+
+  it('eases there and back with no jump, and is back on the sidewalk before the planter', () => {
+    const lane = far(['busStop'])
+    let last = laneRow(lane, 10)
+    for (let col = 10; col <= 25; col += 0.05) {
+      const row = laneRow(lane, col)
+      expect(Math.abs(row - last)).toBeLessThan(0.1)
+      last = row
+    }
+    // a walker stands about a tile tall: at the planter's edge their feet are above its leaves
+    expect(laneRow(lane, PLANTER.col)).toBeLessThan(PLANTER.top)
   })
 })

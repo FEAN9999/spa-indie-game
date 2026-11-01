@@ -46,6 +46,10 @@ export type BustleArtKey = keyof typeof BUSTLE_ART
 export const LAMP_HEAD = { x: 0.92, y: 0.32 }
 export const PARK_LAMPS = [{ x: 2.42, y: 0.45 }, { x: 15.82, y: 0.45 }]
 export const MARKET_LANTERNS = Array.from({ length: 12 }, (_, i) => ({ x: 1 + i * 1.4, y: 0.36 }))
+/** The bus stop's shelter and its sign stand on the far sidewalk between these columns of its texture; passers-by go round behind them. */
+export const BUS_SHELTER = { from: 1.6, to: 7.45 }
+/** The middle of the bus sign's pole, just right of the shelter's roof. */
+const BUS_SIGN_X = 7.05
 
 const doc = (key: BustleArtKey, body: string) => svgDoc([0, 0, BUSTLE_ART[key].w, BUSTLE_ART[key].h], TILE, body)
 
@@ -166,9 +170,9 @@ function busStop(): string {
     chibi(3.2, 2.05, C.cobalt, C.deepBrown) +
     box(1.6, 0.95, 5, 0.55, C.teal, `rx="0.06" ${outline(0.05)}`) +
     box(1.6, 0.95, 5, 0.16, C.tealLight) +
-    box(7.45, 0.85, 0.1, 1.15, C.stone, outline(0.02)) +
-    circle(7.5, 0.85, 0.34, C.cobalt, outline(0.04)) +
-    text(7.5, 0.93, 0.2, C.cream, 'BUS')
+    box(BUS_SIGN_X - 0.05, 0.85, 0.1, 1.15, C.stone, outline(0.02)) +
+    circle(BUS_SIGN_X, 0.85, 0.34, C.cobalt, outline(0.04)) +
+    text(BUS_SIGN_X, 0.93, 0.2, C.cream, 'BUS')
   )
 }
 

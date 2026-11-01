@@ -6,7 +6,7 @@ import { BUSTLE_IDS, type BustleId } from '../sim/bustle'
 import { createRng, randomLook } from '../sim/rng'
 import { BUSTLE_TEXT } from '../strings/bustle'
 import { t } from '../strings/vi'
-import { busAt, bustleMarks, bustlePictures, colX, lotLabelAt, millions, OLD_ROAD_ROW, onSidewalk, roadCovers, rowY, streetLights, STRIP_ROW, walkLanes, type ColSpan, type WalkLane } from './bustle'
+import { busAt, bustleMarks, bustlePictures, colX, laneRow, lotLabelAt, millions, OLD_ROAD_ROW, onSidewalk, roadCovers, rowY, streetLights, STRIP_ROW, walkLanes, type ColSpan, type WalkLane } from './bustle'
 import type { Rect } from './camera'
 import { daylight } from './daylight'
 import { CharacterView } from './CharacterView'
@@ -139,7 +139,7 @@ export class BustleLayer {
         w.v = -w.v
         w.view.setFacing(w.v > 0 ? 'right' : 'left')
       }
-      const y = rowY(lane.row)
+      const y = rowY(laneRow(lane, w.x))
       w.view.container.setPosition(colX(w.x), y).setDepth(y).setVisible(!lane.near || v.floor === 1)
       w.view.update(v.dt)
     }
