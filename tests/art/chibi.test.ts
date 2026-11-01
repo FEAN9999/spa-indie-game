@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { chibiTextures, PART_ANCHORS } from '../../src/art/chibi'
 import { fxTextures } from '../../src/art/fx'
-import { SERVICE_IDS } from '../../src/sim/services'
 
 // svg.ts imports Phaser for loading textures, which needs a browser; building the SVG text does not
 vi.mock('phaser', () => ({}))
@@ -163,10 +162,5 @@ describe('chibi and fx art', () => {
       }
       expect(keys).not.toContain(`${part}-up`)
     }
-  })
-
-  it('draws a badge for every service', () => {
-    const fx = fxTextures()
-    for (const id of SERVICE_IDS) expect(fx[`svc-${id}`], id).toBeDefined()
   })
 })

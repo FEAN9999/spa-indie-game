@@ -131,6 +131,17 @@ const withNewKeys = <T extends object>(raw: T): T => {
   return out
 }
 
+describe('every older save', () => {
+  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28, v29, v30, v31, v32, v35, v37, v38, v39 }
+
+  it('opens every older save and saves it as the current version', () => {
+    for (const [name, raw] of Object.entries(fixtures)) {
+      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
+      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
+    }
+  })
+})
+
 describe('the wide grid in an older shop', () => {
   it("is version 39, the restaurant's houses and floors", () => {
     expect(SAVE_VERSION).toBe(RESTAURANT_C_SAVE_VERSION)
@@ -1314,8 +1325,7 @@ describe('save version 15', () => {
     expect(sim.toSave().v).toBe(SAVE_VERSION)
   })
 
-  it('still opens every older save, and still clears the stairs spot of a v13 one', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14]) expect(() => open(raw)).not.toThrow()
+  it('still clears the stairs spot of a v13 one', () => {
     expect(parseSave(structuredClone(v13)).clearStairs).toBe(true)
   })
 
@@ -1368,10 +1378,6 @@ describe('save version 16', () => {
     expect(open(v15).toSave().v).toBe(SAVE_VERSION)
   })
 
-  it('still opens every older save', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15]) expect(() => open(raw)).not.toThrow()
-  })
-
   it('keeps only known badges with a whole day from zero up', () => {
     expect(repairBadges({ served100: 9, nope: 3, million: -1, floor2: 2.5, vipPhoto: 0 })).toEqual({ served100: 9, vipPhoto: 0 })
     expect(repairBadges(undefined)).toBeNull()
@@ -1419,10 +1425,6 @@ describe('save version 17', () => {
     expect(viaJson(sim).festival).toEqual({ keepsakes: ['noel', 'tet'] })
   })
 
-  it('still opens every older save', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16]) expect(() => open(raw)).not.toThrow()
-  })
-
   it('keeps a festival quest through a round trip', () => {
     const sim = new SpaSim(opts())
     sim.day = 36
@@ -1440,10 +1442,6 @@ describe('save version 18', () => {
     expect(sim.customers).toHaveLength(1)
     expect(sim.customers.every(c => c.kol === false)).toBe(true)
     expect(sim.toSave().v).toBe(SAVE_VERSION)
-  })
-
-  it('still opens every older save', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17]) expect(() => open(raw)).not.toThrow()
   })
 
   it('lets an early old shop wait for day 10', () => {
@@ -1532,10 +1530,6 @@ describe('save version 19', () => {
     closeDay(sim)
     expect(sim.rank.lastYear?.day).toBe(36)
     expect(sim.rank.lastYear?.score).toBe(sim.rank.last?.total)
-  })
-
-  it('still opens every older save', () => {
-    for (const raw of [v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21]) expect(() => open(raw)).not.toThrow()
   })
 
   it('repairs a damaged rank book field by field', () => {
@@ -1904,8 +1898,6 @@ describe('save version 23', () => {
 })
 
 describe('save version 24', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23 }
-
   it('opens the v23 shop with its beach as it was', () => {
     const expected = withNewKeys(v23) as unknown as { chain: { branches: { staff: object[] }[] } }
     expected.chain.branches = expected.chain.branches.map(b => ({ ...b, staff: b.staff.map(s => ({ ...s, moveTo: null })) }))
@@ -1931,17 +1923,9 @@ describe('save version 24', () => {
     }
     expect([kindsBack('lady'), kindsBack('backpacker'), kindsBack('moon')]).toEqual(['lady', 'backpacker', 'office'])
   })
-
-  it('opens every older save and saves it as the current version', () => {
-    for (const [name, raw] of Object.entries(fixtures)) {
-      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
-      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
-    }
-  })
 })
 
 describe('save version 25', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24 }
   type Raw = { staff: Record<string, unknown>[]; chain: { branches: { staff: Record<string, unknown>[] }[] } }
 
   it('opens the v24 chain as it was, every staff member moving nowhere', () => {
@@ -1953,13 +1937,6 @@ describe('save version 25', () => {
     expect(chain.at).toBe('beach')
     expect(chain.shop('beach')!.staff.length).toBe(1)
     expect(chain.toSave().v).toBe(SAVE_VERSION)
-  })
-
-  it('opens every older save and saves it as the current version', () => {
-    for (const [name, raw] of Object.entries(fixtures)) {
-      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
-      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
-    }
   })
 
   it('keeps a moveTo of main or a place and reads anything else as null', () => {
@@ -1986,7 +1963,6 @@ describe('save version 25', () => {
 })
 
 describe('save version 26', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25 }
   const paid = (lessonsPaid: unknown, services?: string[]) => {
     const raw = structuredClone(v25) as unknown as { lessonsPaid: unknown; services: string[] }
     raw.lessonsPaid = lessonsPaid
@@ -2007,13 +1983,6 @@ describe('save version 26', () => {
     expect(tech.study?.course).toBe('mask')
     expect(chain.main.money).toBe(v25.money)
     expect(chain.toSave().v).toBe(SAVE_VERSION)
-  })
-
-  it('opens every older save and saves it as the current version', () => {
-    for (const [name, raw] of Object.entries(fixtures)) {
-      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
-      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
-    }
   })
 
   it('opens 25 and the current version and refuses a newer one', () => {
@@ -2201,7 +2170,6 @@ describe('save version 27', () => {
 })
 
 describe('save version 28', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27 }
   const paid = (lessonsPaid: unknown, services?: string[]) => {
     const raw = structuredClone(v27) as unknown as { lessonsPaid: unknown; services: string[] }
     raw.lessonsPaid = lessonsPaid
@@ -2225,13 +2193,6 @@ describe('save version 28', () => {
     expect(chain.toSave().v).toBe(SAVE_VERSION)
   })
 
-  it('opens every older save and saves it as the current version', () => {
-    for (const [name, raw] of Object.entries(fixtures)) {
-      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
-      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
-    }
-  })
-
   it('opens 27 and the current version and refuses a newer one', () => {
     expect(parseSave({ ...structuredClone(v27), v: 27 }).v).toBe(SAVE_VERSION)
     expect(parseSave({ ...structuredClone(v27), v: SAVE_VERSION }).v).toBe(SAVE_VERSION)
@@ -2244,7 +2205,6 @@ describe('save version 28', () => {
 })
 
 describe('save version 29', () => {
-  const fixtures = { v1, v2, v3, v4, v5, v6, v7, v8, v9, v10, v11, v12, v13, v14, v15, v16, v17, v18, v19, v20, v21, v22, v23, v24, v25, v26, v27, v28 }
   const paid = (lessonsPaid: unknown, services?: string[]) => {
     const raw = structuredClone(v28) as unknown as { lessonsPaid: unknown; services: string[] }
     raw.lessonsPaid = lessonsPaid
@@ -2274,13 +2234,6 @@ describe('save version 29', () => {
     expect(town.stock.polish).toBe(20)
     expect(chain.main.stock.polish).toBe(20)
     expect(chain.toSave().v).toBe(SAVE_VERSION)
-  })
-
-  it('opens every older save and saves it as the current version', () => {
-    for (const [name, raw] of Object.entries(fixtures)) {
-      const saved = Chain.fromSave(parseSave(structuredClone(raw)), 8).toSave()
-      expect([name, saved.v]).toEqual([name, SAVE_VERSION])
-    }
   })
 
   it('opens 28 and the current version and refuses a newer one', () => {
