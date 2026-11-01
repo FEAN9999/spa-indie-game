@@ -116,11 +116,16 @@ export function openStore(getStorage: () => KeyValueStorage = () => localStorage
   try {
     return new SaveStore(getStorage())
   } catch {
-    const mem = new Map<string, string>()
-    return new SaveStore({
-      getItem: k => mem.get(k) ?? null,
-      setItem: (k, v) => void mem.set(k, v),
-      removeItem: k => void mem.delete(k),
-    })
+    return memoryStore()
   }
+}
+
+/** Slots that live only as long as the page: for a friend's shop, which is looked round and never saved. */
+export function memoryStore(): SaveStore {
+  const mem = new Map<string, string>()
+  return new SaveStore({
+    getItem: k => mem.get(k) ?? null,
+    setItem: (k, v) => void mem.set(k, v),
+    removeItem: k => void mem.delete(k),
+  })
 }

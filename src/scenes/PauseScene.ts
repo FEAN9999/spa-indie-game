@@ -3,6 +3,7 @@ import { canPromptInstall, currentInstallEnv, inSafari, installPlatform, promptI
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W } from '../config'
+import { currentHouse, openHouse, parseVisitCode, showVisitCode, visitLink } from '../net/visit'
 import { decodeSaveCode, encodeSaveCode } from '../save/code'
 import type { SaveSession } from '../save/session'
 import { SLOTS, type SaveStore, type SlotId } from '../save/store'
@@ -10,7 +11,7 @@ import type { SaveData } from '../sim/save'
 import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
-import { codeBox, copyText, domButton, type CodeBox } from '../view/dom'
+import { codeBox, copyText, domButton, nameInput, type CodeBox } from '../view/dom'
 import { textStyle } from '../view/text'
 import { addButton, addCard } from '../view/ui'
 
@@ -23,8 +24,10 @@ export interface PauseData {
   panel: PausePanel
   onResume: () => void
   onEditProfile: () => void
-  /** The whole chain's save, which the main shop's own save lacks: for save codes. */
+  /** The whole chain's save, which the main shop's own save lacks: for save codes and for friends who visit. */
   save: () => SaveData
+  /** A friend has come to look round, with their shop's name. */
+  onGuest: (name: string) => void
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -111,9 +114,11 @@ export class PauseScene extends Phaser.Scene {
       y += ROW_STEP
     }
     y += 20
-    this.button(y, t('exportSave'), 'plain', () => this.showExport())
+    // the two save-code buttons share a row, to leave one for friends
+    this.keep(addButton(this, MID - 185, y, 350, ROW_H, t('exportSave'), 'plain', () => this.showExport(), 40))
+    this.keep(addButton(this, MID + 185, y, 350, ROW_H, t('importSave'), 'plain', () => this.showImport(), 40))
     y += ROW_STEP
-    this.button(y, t('importSave'), 'plain', () => this.showImport())
+    this.button(y, t('friendsMenu'), 'plain', () => this.showFriends())
     y += ROW_STEP
     this.button(y, t('profileTitle'), 'plain', () => {
       this.scene.stop()
@@ -214,6 +219,50 @@ export class PauseScene extends Phaser.Scene {
     parts.push(addButton(this, MID - 190, 1230, 340, ROW_H, t('cancel'), 'plain', close).setDepth(10))
     parts.push(addButton(this, MID + 190, 1230, 340, ROW_H, t('replace'), 'primary', () => session.replaceWith(data)).setDepth(10))
     this.shown.push(...parts)
+  }
+
+  /** Friends: open this shop to them with a code until the game closes, or go and look round theirs by its code. */
+  private showFriends(): void {
+    this.clear()
+    const { sim, session } = this.params
+    this.title(t('friendsTitle'))
+    this.keep(this.add.text(MID, CARD_TOP + 240, t('inviteHeading'), textStyle(44, '800')).setOrigin(0.5))
+    const house = currentHouse()
+    if (house) {
+      const code = showVisitCode(house.code)
+      this.keep(this.add.text(MID, CARD_TOP + 345, code, textStyle(88, '800', C.teal)).setOrigin(0.5))
+      this.note(CARD_TOP + 410, t('inviteHint'))
+      const text = t('inviteText', { shop: sim.shopName, link: visitLink(location.href, house.code), code })
+      this.keep(
+        domButton(this, MID, CARD_TOP + 590, t('inviteCopy'), async b => {
+          // no clipboard here: the code on the card is read out instead
+          b.textContent = (await copyText(text, null)) ? t('copied') : code
+        }),
+      )
+    } else {
+      this.button(CARD_TOP + 360, t('inviteOpen'), 'primary', () => {
+        openHouse(this.params.save, this.params.onGuest)
+        this.showFriends()
+      })
+      this.note(CARD_TOP + 450, t('inviteHint'))
+    }
+    this.keep(this.add.text(MID, CARD_TOP + 750, t('visitHeading'), textStyle(44, '800')).setOrigin(0.5))
+    const box = nameInput(this, MID, CARD_TOP + 870, { value: '', placeholder: t('visitPlaceholder'), maxLength: 8 })
+    box.input.setAttribute('autocapitalize', 'characters')
+    this.keep(box.dom)
+    const error = this.note(CARD_TOP + 1080, '', C.lantern)
+    this.button(CARD_TOP + 1010, t('visitGo'), 'primary', () => {
+      const code = parseVisitCode(box.input.value)
+      if (!code) {
+        error.setText(t('visitBadCode'))
+        return
+      }
+      // this shop is saved as it is, then the page opens on the friend's, which is never saved
+      session.saveNow()
+      location.assign(visitLink(location.href, code))
+    })
+    this.button(CARD_TOP + 1210, t('back'), 'plain', () => this.showMenu())
+    this.card(CARD_TOP + 1340)
   }
 
   /** How to put the game on the home screen. On iOS the app gets its own storage, so a shop past day 1 is carried over by save code. */

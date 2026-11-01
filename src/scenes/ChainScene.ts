@@ -19,6 +19,8 @@ export interface ChainData {
   /** Goes to the shop at the place, null for the main one; the map is left to the caller to stop. */
   onGo: (place: PlaceId | null) => void
   onClose: () => void
+  /** A friend's chain, looked round: its shops can be gone to, but no branch is opened. */
+  visit?: boolean
 }
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
@@ -237,6 +239,7 @@ export class ChainScene extends Phaser.Scene {
 
   /** The sheet's button: gold to open a branch, teal to go to a shop, dashed sand when off; only one that is on takes a tap. */
   private button(place: PlaceId | null, state: PinState, button: { text: string; on: boolean }): void {
+    if (this.params.visit && state === 'can') return
     const w = state === 'can' ? BUTTON.wide : BUTTON.w
     const { h } = BUTTON
     const bg = this.add.graphics()

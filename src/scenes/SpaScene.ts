@@ -4,11 +4,12 @@ import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
-import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS } from '../config'
+import { AUTOSAVE_MS, BUBBLE_MS, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
+import { homeLink, showVisitCode, visitCodeIn, VisitError, visitHouse, type VisitProblem } from '../net/visit'
 import { SaveSession } from '../save/session'
 import type { AwayResult } from '../sim/away'
 import type { BadgeId } from '../sim/badges'
-import { openStore, type SaveStore } from '../save/store'
+import { memoryStore, openStore, type SaveStore } from '../save/store'
 import { PROBLEM_TEXT } from '../sim/build'
 import { Chain } from '../sim/chain'
 import { KINDS } from '../sim/customers'
@@ -78,6 +79,7 @@ import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
 import { addButton, addCard, whenTapped } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
+import { addVisitBar } from '../view/visitBar'
 import { ZoomButtons } from '../view/ZoomButtons'
 import type { AwayData } from './AwayScene'
 import type { BuildData } from './BuildScene'
@@ -144,6 +146,12 @@ const DEMO_HINT: Record<ServiceId, HintId> = { shampoo: 'demoShampoo', mask: 'de
 const SEATED: readonly ServiceId[] = ['foot', 'nails']
 /** The way the head of a piece standing up the floor lies from its bed tile: a bed's head, a foot chair's or nail desk's seat. */
 const UP: Vec = { x: 0, y: -1 }
+/** What a friend's shop shows while it is looked round: its people, their words and its coins, never its owner's cards or toasts. */
+const VISIT_EVENTS: ReadonlySet<SimEvent['type']> = new Set<SimEvent['type']>(['customerArrived', 'customerLeft', 'paid', 'generous', 'review', 'regularArrived', 'vipArrived', 'vipServed', 'idolArrived', 'idolServed', 'heart', 'recipeHint', 'greeted', 'levelUp', 'sloppy', 'roomChanged'])
+/** A service or a bowl the friend left half done finishes by itself in the copy, with these stars. */
+const VISIT_STARS = 3
+/** Why a friend's shop could not be found, for its card. */
+const VISIT_PROBLEM: Record<VisitProblem, StringKey> = { notFound: 'visitNotFound', noLink: 'visitNoLink', tooNew: 'visitTooNew', bad: 'visitBad' }
 
 interface CustomerSprite {
   view: CharacterView
@@ -178,6 +186,8 @@ export interface SpaSceneData {
   chain: Chain
   held: readonly Held[]
   arrived: boolean
+  /** The chain is a friend's, looked round and never saved. */
+  visit?: boolean
 }
 
 export class SpaScene extends Phaser.Scene {
@@ -228,6 +238,10 @@ export class SpaScene extends Phaser.Scene {
   private bannerOnResume = false
   /** The slot was saved by a newer version: only the card shows, and the shop never runs. */
   private tooNew = false
+  /** The page is finding a friend's shop: only its card shows, and no shop runs yet. */
+  private finding = false
+  /** Looking round a friend's shop: a copy that runs here and is never saved; nothing in it is bought, served or answered. */
+  private visit = false
   private pointer!: HandPointer
   /** After the first payment: the money pointer, then the star pointer, each with the time it has left on screen. */
   private tour: { hint: 'money' | 'star'; ms: number }[] = []
@@ -265,6 +279,8 @@ export class SpaScene extends Phaser.Scene {
     this.pendingCook = null
     this.riding = false
     this.tooNew = false
+    this.finding = false
+    this.visit = switched?.visit ?? false
     this.bannerOnResume = false
     this.toastQueueAt = 0
     this.badgeUntil = 0
@@ -277,9 +293,15 @@ export class SpaScene extends Phaser.Scene {
     this.queuedLines = new Map()
     this.humMs = new Map()
     this.pointedId = null
-    this.store = openStore()
+    // an address with a friend's code opens their shop instead; neither it nor this page's own shop is written while it is looked round
+    const findCode = switched ? null : visitCodeIn(location.href)
+    this.store = this.visit || findCode ? memoryStore() : openStore()
     // the chain's save: the main shop's own leaves its branches out
     this.session = new SaveSession(this.store, () => this.chain.toSave(), () => location.reload())
+    if (findCode) {
+      this.findShop(findCode)
+      return
+    }
     let saved: SaveData | null = null
     if (!switched) {
       try {
@@ -317,7 +339,9 @@ export class SpaScene extends Phaser.Scene {
     for (const c of this.sim.customers) this.addCustomerSprite(c)
     this.staffLayer = new StaffLayer(this, this.room)
     this.pets = new PetLayer(this, this.room)
-    this.hud = new Hud(this.ui, this.sim, () => this.pause(), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => this.openPhay(null), () => navIds(this.chain))
+    this.hud = new Hud(this.ui, this.sim, () => (this.visit ? this.askHome() : this.pause()), () => this.openBuild(), () => this.openStaff(), () => this.openServices(), () => this.openBook(), () => this.openQuests(), () => this.openChainMap(), () => this.openPhay(null), () => (this.visit ? [] : navIds(this.chain)))
+    // a friend's shop has no buttons of its own in the bottom bar: whose it is, and the way home
+    if (this.visit) addVisitBar(this.ui, this.chain.main.shopName, this.chain.branches.length > 0 ? () => this.openChainMap() : null, () => this.goHome())
     this.floorBar = new FloorBar(this.ui, HUD_DEPTH, floor => this.tapFloor(floor))
     this.pointer = new HandPointer(this.ui)
     this.zoomButtons = new ZoomButtons(this.ui, HUD_DEPTH, dir => this.cam.zoomStep(dir))
@@ -345,6 +369,8 @@ export class SpaScene extends Phaser.Scene {
     window.addEventListener('pagehide', saveOnLeave)
     // back in the game: first the shop another page may have saved meanwhile, then a newer version
     const stopWatching = onReturn(() => {
+      // a friend's copy pays no time away, and the page never reloads under it
+      if (this.visit) return
       this.session.reloadIfChangedElsewhere()
       let paid = false
       if (this.session.open && this.chain.main.profileDone && hiddenAt !== null) {
@@ -430,7 +456,7 @@ export class SpaScene extends Phaser.Scene {
       const place = this.sim.place
       if (place === null) this.hud.toast(t('backMainToast'))
       else if (this.sim.hasTechnician()) this.hud.toast(t('arrivedToast', { place: placeName(place) }))
-      else this.attention.hold({ kind: 'gold', card: noTechCard(place) })
+      else if (!this.visit) this.attention.hold({ kind: 'gold', card: noTechCard(place) })
     })
   }
 
@@ -446,7 +472,7 @@ export class SpaScene extends Phaser.Scene {
       this.session.saveNow()
       // another page saved first: the session has closed and the page is reloading, so no new scene may open a session on that save
       if (!this.session.open) return
-      const data: SpaSceneData = { chain: this.chain, held: this.attention.carry(), arrived: true }
+      const data: SpaSceneData = { chain: this.chain, held: this.attention.carry(), arrived: true, visit: this.visit }
       this.scene.restart(data)
     })
   }
@@ -536,6 +562,52 @@ export class SpaScene extends Phaser.Scene {
     addButton(this.ui, GAME_W / 2, 1190, 720, 120, t('reload'), 'primary', () => location.reload())
   }
 
+  /** Looks for the friend's shop with the code over the empty page; once it comes, the scene starts again on a copy of it. */
+  private findShop(code: string): void {
+    this.finding = true
+    const own = openStore()
+    const name = own.info(own.currentSlot())?.name ?? t('guestSomeone')
+    this.ui.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
+    addCard(this.ui, 90, 760, 900, 640)
+    const text = this.ui.add
+      .text(GAME_W / 2, 860, t('visitFinding', { code: showVisitCode(code) }), { ...textStyle(42, '600'), align: 'center', wordWrap: { width: 780 } })
+      .setOrigin(0.5, 0)
+    const home = addButton(this.ui, GAME_W / 2, 1280, 720, 120, t('visitHome'), 'plain', () => this.goHome())
+    const failed = (problem: VisitProblem) => {
+      text.setText(t(VISIT_PROBLEM[problem], { code: showVisitCode(code) }))
+      home.destroy()
+      addButton(this.ui, GAME_W / 2 - 190, 1280, 340, 120, t('visitHome'), 'plain', () => this.goHome(), 40)
+      addButton(this.ui, GAME_W / 2 + 190, 1280, 340, 120, t('visitRetry'), 'primary', () => location.reload(), 40)
+    }
+    visitHouse(code, name, VISIT_WAIT_MS).then(
+      data => {
+        let chain: Chain
+        try {
+          chain = Chain.fromSave(data, Date.now())
+        } catch {
+          failed('bad')
+          return
+        }
+        this.ui.clear()
+        const next: SpaSceneData = { chain, held: [], arrived: false, visit: true }
+        this.scene.restart(next)
+      },
+      e => failed(e instanceof VisitError ? e.problem : 'noLink'),
+    )
+  }
+
+  /** Back to the player's own shop: the page opens again without the friend's code. */
+  private goHome(): void {
+    location.replace(homeLink(location.href))
+  }
+
+  /** The pause button at a friend's shop asks whether to go home. */
+  private askHome(): void {
+    this.choose({ kicker: this.chain.main.shopName, title: t('visitLeaveTitle'), lines: [], buttons: [t('visitHome'), t('visitStay')] }, i => {
+      if (i === 0) this.goHome()
+    })
+  }
+
   private openChain(saved: SaveData | null): Chain {
     const seed = Date.now()
     if (saved) {
@@ -570,6 +642,7 @@ export class SpaScene extends Phaser.Scene {
       onResume: () => this.resume(),
       onEditProfile: () => this.openOwnerCard('edit', () => this.pause()),
       save: () => this.chain.toSave(),
+      onGuest: name => this.hud.toast(t('guestArrivedToast', { name })),
     }
     this.scene.launch('PauseScene', data)
   }
@@ -832,6 +905,7 @@ export class SpaScene extends Phaser.Scene {
     this.chain.main.markHint('openChain')
     const data: ChainData = {
       chain: this.chain,
+      visit: this.visit,
       onOpen: place => {
         if (this.chain.open(place)) return
         sound.play('levelUp')
@@ -1259,6 +1333,8 @@ export class SpaScene extends Phaser.Scene {
     if (this.attention.covered()) return
     const r = this.centreShop() === 'restaurant' ? this.chain.restaurant : null
     if (floor <= (r ?? this.sim).floors) this.showFloor(floor)
+    // a friend's floors are looked at, never bought
+    else if (this.visit) return
     else if (r) this.offerRestaurantFloor(floor)
     else this.offerFloor(floor)
   }
@@ -1469,7 +1545,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   }
 
   update(time: number, delta: number) {
-    if (this.tooNew) return
+    if (this.tooNew || this.finding) return
     if (!this.attention.covered()) {
       this.chain.update(delta)
       // at the main shop, the cards it kept while the owner was away come first
@@ -1487,16 +1563,19 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     }
     // the welcome-back card over a panel too; a card opened by this frame's events (a bed slot's) goes before the rest, which wait for it rather than play under it
     this.showHeld()
-    if (this.attention.shopFree()) this.pumpPhay()
-    if (this.attention.shopFree()) this.showNewOutfits()
-    if (this.attention.shopFree() && this.sim.litterDue() && this.litterLaterDay !== this.sim.day) this.showLitter()
-    // once, when the main shop has the stars for a chain: the card that opens it, after whatever cards came first
-    if (this.sim.place === null && this.attention.shopFree() && this.chain.shouldTell()) {
-      this.attention.hold({ kind: 'gold', card: unlockCard() })
-      this.chain.told = true
-      this.session.saveNow()
+    // a friend's shop brings up none of its owner's cards
+    if (!this.visit) {
+      if (this.attention.shopFree()) this.pumpPhay()
+      if (this.attention.shopFree()) this.showNewOutfits()
+      if (this.attention.shopFree() && this.sim.litterDue() && this.litterLaterDay !== this.sim.day) this.showLitter()
+      // once, when the main shop has the stars for a chain: the card that opens it, after whatever cards came first
+      if (this.sim.place === null && this.attention.shopFree() && this.chain.shouldTell()) {
+        this.attention.hold({ kind: 'gold', card: unlockCard() })
+        this.chain.told = true
+        this.session.saveNow()
+      }
+      if (this.sim.place !== null) this.callOwner(this.sim.place)
     }
-    if (this.sim.place !== null) this.callOwner(this.sim.place)
 
     // never under build mode or a card, where the player may be looking at another floor on purpose
     if (!this.attention.covered()) {
@@ -1552,7 +1631,7 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
     this.hud.setShopLabel(this.restaurant && this.chain.street ? this.centreShop() : null)
     // Phây is the main shop's, shared by its branches; the button gives way to the gold card and the morning banner, which use its spot
     const feed = this.chain.main.feed
-    this.hud.setPhay(phayButtonShown(feed.open, this.time.now < this.badgeUntil, this.time.now < this.hud.lastBannerAt + BANNER_MS), unreadCount(feed), this.sim.place !== null)
+    this.hud.setPhay(!this.visit && phayButtonShown(feed.open, this.time.now < this.badgeUntil, this.time.now < this.hud.lastBannerAt + BANNER_MS), unreadCount(feed), this.sim.place !== null)
     this.updateFloorBar()
     if (this.attention.mapFree()) this.zoomButtons.show(1010, 1520, 1630)
     else this.zoomButtons.hide()
@@ -1566,7 +1645,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   /** One hint at a time: the money and star pointers after the first payment first, then the waiting customers, then the build or staff button. */
   private updatePointer(delta: number): void {
     const sim = this.sim
-    if (!this.attention.mapFree()) {
+    // a friend's shop is only looked at, so nothing is pointed out
+    if (!this.attention.mapFree() || this.visit) {
       this.pointer.hide()
       return
     }
@@ -1654,6 +1734,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   }
 
   private handle(e: SimEvent): void {
+    if (this.visit && e.type === 'serviceReady') {
+      this.sim.completeService(e.customerId, VISIT_STARS)
+      return
+    }
+    if (this.visit && !VISIT_EVENTS.has(e.type)) return
     const cue = cueFor(e)
     if (cue) sound.play(cue)
     switch (e.type) {
@@ -1911,6 +1996,11 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
   }
 
   private handleRestaurant(e: RestaurantEvent): void {
+    if (this.visit && e.type === 'cookReady') {
+      this.chain.restaurant?.completeCooking(e.dinerId, VISIT_STARS)
+      return
+    }
+    if (this.visit && e.type === 'toast') return
     switch (e.type) {
       case 'cookReady':
         if (this.sim.paused) this.pendingCook = e
@@ -2218,6 +2308,8 @@ ${t(`floorLine${floor}b` as StringKey)}`, { ...textStyle(44, '600'), align: 'cen
       if (pet !== null && !this.attention.covered() && !this.sim.paused && !this.playing()) this.pets.pat(pet)
       return
     }
+    // at a friend's shop a tap sends nobody anywhere and offers nothing for sale
+    if (this.visit) return
     // the restaurant beside the main shop: the old house offers itself, a bought one takes the tap on the floor in view
     const r = this.chain.restaurant
     // on floor 1, a roof for sale beside the restaurant offers its house
