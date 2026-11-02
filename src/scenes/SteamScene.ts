@@ -15,8 +15,11 @@ const ICON_PX = 130
 const LABEL = { dy: 88, size: 38, stroke: 10 }
 /** The tap box round an icon centre: wider than the icon, and down over the name. */
 const HIT = { halfW: 85, top: -85, bottom: 120 }
-/** The pot at the card's foot, its bottom just over the time bar; a caught thing drops into its leaves. */
-const POT = { x: GAME_W / 2, bottom: 1592, scale: 1, mouthY: 1462, bumpScale: 1.06, bumpMs: 90 }
+/**
+ * The pot at the card's foot, its bottom just over the time bar; a caught thing drops into its leaves, which sit 130 px
+ * above the bottom of the pot art at scale 1 (A+: the clay pot on its stove is drawn a little larger).
+ */
+const POT = { x: GAME_W / 2, bottom: 1592, scale: 1.3, mouthY: 1592 - 130 * 1.3, bumpScale: 1.06, bumpMs: 90 }
 /** Things drift side to side as they fall, and fade in and out over this share of the fall at each end. */
 const SWAY = { px: 14, perMs: 1 / 450 }
 const FADE = 0.08

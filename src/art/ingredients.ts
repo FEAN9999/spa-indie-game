@@ -1,25 +1,132 @@
 import { TILE } from '../config'
+import { ink, shade } from './aplus'
 import { C } from './palette'
 import { svgDoc } from './svg'
 
 const S = `stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"`
-const VEIN = (d: string, color: string) => `<path d="${d}" stroke="${color}" stroke-width="2" stroke-linecap="round" fill="none"/>`
 
 /** One icon on a 40-unit square, drawn two tiles wide (156 px) so it stays sharp when a scene shows it larger. */
 const icon = (body: string) => svgDoc([0, 0, 40, 40], 2 * TILE / 40, body)
 
+// Nét vẽ A+ cho các thứ rơi trong màn Xông lá, theo bản đã duyệt (docs/art/huong-net-ve/lo1/aplus-steam.svg).
+// Mỗi thứ vẽ ở toạ độ của bản đã duyệt rồi thu vào ô 40; độ dày nét ghi theo đơn vị của ô 40
+// (viền ngoài 2, nét trong 1,2, chi tiết 0,8) rồi chia cho tỉ lệ thu để còn đúng độ dày sau khi thu.
+const scaled = (k: number) => ({ o: ink(2 / k), i: ink(1.2 / k), d: 0.8 / k })
+const shine = (d: string, w: number) => `<path d="${d}" fill="none" stroke="#FFFFFF" stroke-width="${w}" stroke-linecap="round" opacity=".45"/>`
+const line = (d: string, color: string, w: number) => `<path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`
+
+/** Lá bưởi: xanh đậm bóng, nửa dưới tối, gân giữa sáng, cuống có cánh. */
+const POMELO = (() => {
+  const k = 0.25
+  const s = scaled(k)
+  const leaf = 'M0,0 C18,-30 82,-38 118,-28 C96,0 40,14 0,0 Z'
+  return (
+    `<g transform="translate(21 20) rotate(-40) scale(${k}) translate(-37 13)">` +
+    `<path d="${leaf}" fill="${C.leaf}"/>` +
+    `<path d="M0,0 C40,4 90,-10 118,-28 C96,0 40,14 0,0 Z" fill="${shade(C.leaf)}"/>` +
+    shine('M22,-16 C40,-26 62,-30 80,-30', 7) +
+    line('M0,0 C40,-10 80,-20 116,-28', C.leafLight, s.d * 1.2) +
+    `<path d="${leaf}" fill="none" ${s.o}/>` +
+    `<path d="M0,0 C-10,-14 -28,-12 -32,0 C-28,10 -12,12 0,0 Z" fill="${C.leaf}" ${s.i}/>` +
+    `<path d="M-32,0 L-44,2" fill="none" ${s.i}/>` +
+    `</g>`
+  )
+})()
+
+/** Lá ổi: xanh nhạt, nửa dưới tối, gân song song nổi rõ. */
+const GUAVA = (() => {
+  const k = 0.32
+  const s = scaled(k)
+  const leaf = 'M0,0 C8,-28 72,-32 104,-6 C78,20 16,24 0,0 Z'
+  return (
+    `<g transform="translate(21 21) rotate(-35) scale(${k}) translate(-45 5)">` +
+    `<path d="${leaf}" fill="${C.herb}"/>` +
+    `<path d="M0,0 C30,14 76,14 104,-6 C78,20 16,24 0,0 Z" fill="${shade(C.herb)}"/>` +
+    shine('M14,-12 C30,-20 50,-22 64,-20', 6) +
+    line('M0,0 L100,-6', C.cucumber, s.d * 1.2) +
+    line('M18,-1 L28,-18 M34,-2 L46,-20 M50,-3 L62,-20 M66,-4 L78,-18 M82,-5 L92,-14 M18,-1 L28,12 M34,-2 L46,14 M50,-3 L62,13 M66,-4 L78,10 M82,-5 L90,4', C.cucumber, s.d) +
+    `<path d="${leaf}" fill="none" ${s.o}/>` +
+    `<path d="M0,0 L-14,4" fill="none" ${s.i}/>` +
+    `</g>`
+  )
+})()
+
+/** Ớt: thân cong đỏ, bụng dưới tối, vệt sáng, đài và cuống xanh. */
+const CHILI = (() => {
+  const k = 0.32
+  const s = scaled(k)
+  const body = 'M0,6 C14,-6 54,-6 90,12 C60,16 30,22 2,18 Z'
+  return (
+    `<g transform="translate(20 20) rotate(35) scale(${k}) translate(-34 -9)">` +
+    `<path d="${body}" fill="${C.lantern}"/>` +
+    `<path d="M2,18 C30,22 60,16 90,12 C60,22 28,26 2,18 Z" fill="${C.lanternDark}"/>` +
+    shine('M12,4 C30,0 48,0 62,4', 5) +
+    `<path d="${body}" fill="none" ${s.o}/>` +
+    `<path d="M2,6 L-8,4 L-4,11 L-10,16 L2,18 Z" fill="${C.leaf}" ${s.i}/>` +
+    `<path d="M-8,10 C-18,8 -22,0 -20,-8" fill="none" stroke="${C.ink}" stroke-width="${2 / k}" stroke-linecap="round"/>` +
+    `<path d="M-8,10 C-18,8 -22,0 -20,-8" fill="none" stroke="${C.leafLight}" stroke-width="${1 / k}" stroke-linecap="round"/>` +
+    `</g>`
+  )
+})()
+
+/** Gừng: củ nhiều nhánh, vằn ngang, mảng bóng dưới, một mặt cắt vàng. */
+const GINGER = (() => {
+  const k = 0.4
+  const s = scaled(k)
+  const root = 'M440,198 C438,182 454,174 468,180 C472,164 490,160 498,174 C512,170 524,184 516,196 C526,206 514,220 500,214 C490,226 472,224 466,214 C452,220 440,212 440,198 Z'
+  return (
+    `<g transform="translate(20 21) scale(${k}) translate(-482 -193)">` +
+    `<path d="${root}" fill="${C.matLine}"/>` +
+    `<path d="M452,214 C470,222 492,224 516,206 C514,220 500,214 500,214 C490,226 472,224 466,214 C456,218 448,214 452,214 Z" fill="${C.weaveLine}" opacity=".6"/>` +
+    line('M452,192 q4,6 0,12 M476,184 q5,7 0,14 M494,178 q4,6 0,12 M506,196 q4,6 0,12', C.weaveLine, s.d) +
+    `<path d="${root}" fill="none" ${s.o}/>` +
+    `<ellipse cx="500" cy="170" rx="9" ry="6" fill="${C.bambooLight}" ${s.i}/>` +
+    `<ellipse cx="460" cy="188" rx="7" ry="3.5" fill="#FFFFFF" opacity=".45"/>` +
+    `</g>`
+  )
+})()
+
+/** Sả: ba cây bó lại, gốc trắng, lá mảnh xoè ra, có dây buộc. Cây mảnh nên nét mảnh hơn các thứ khác. */
+const LEMONGRASS = (() => {
+  const k = 0.19
+  const o = ink(1.4 / k)
+  const i = ink(1 / k)
+  const stalk = (y: number) => `<rect x="0" y="${y}" width="96" height="13" rx="6.5" fill="${C.bambooLight}" ${i}/>`
+  return (
+    `<g transform="translate(19 21) rotate(-45) scale(${k}) translate(-101 -17)">` +
+    `<path d="M90,1 Q140,-10 196,-24 Q146,4 90,12 Z" fill="${C.cane}" ${o}/>` +
+    `<path d="M90,15 Q150,12 204,18 Q150,26 90,26 Z" fill="${C.caneLight}" ${o}/>` +
+    `<path d="M90,29 Q144,36 196,58 Q140,44 90,40 Z" fill="${C.cane}" ${o}/>` +
+    line('M94,6 Q140,-2 186,-18 M94,20 Q150,18 196,19 M94,34 Q142,40 186,52', C.cucumber, 0.6 / k) +
+    stalk(0) + stalk(14) + stalk(28) +
+    line('M60,3 h34 M60,17 h34 M60,31 h34', C.caneLight, 5) +
+    line('M8,9 h40 M8,23 h40 M8,37 h40', C.bamboo, 0.6 / k) +
+    [6.5, 20.5, 34.5].map(y => `<ellipse cx="2" cy="${y}" rx="3" ry="5" fill="${C.cream}" ${ink(0.7 / k)}/>`).join('') +
+    line('M40,-3 C46,14 34,30 42,45', C.terracotta, 1 / k) +
+    `</g>`
+  )
+})()
+
+/** Lá chuối: một khúc lá xé, nửa dưới tối, gân giữa sáng, gân song song, mép rách. */
+const BANANA = (() => {
+  const body = 'M4,36 C9,20 21,8 36,4 C33,19 22,31 4,36Z'
+  return (
+    `<clipPath id="ing-banana"><path d="${body}"/></clipPath>` +
+    `<path d="${body}" fill="${C.green}"/>` +
+    `<g clip-path="url(#ing-banana)"><path d="M4,36 C14,26 24,16 36,4 L40,40 Z" fill="${shade(C.green)}"/>` +
+    line('M11,29 l-3,-6 M16,24 l-3,-7 M21,19 l-2,-7 M26,14 l-2,-6 M13,30 l6,2 M18,25 l7,2 M23,20 l7,1 M28,15 l6,0', C.leaf, 0.8) +
+    shine('M9,25 C13,18 18,13 23,10', 1.4) +
+    `</g>` +
+    line('M5,35 C14,25 24,14 35,5', C.caneLight, 1.4) +
+    `<path d="${body}" fill="none" ${ink(2)}/>` +
+    `<path d="M24,26 l2,2.5 l1.5,-2 l2,2" fill="none" ${ink(0.8)}/>`
+  )
+})()
+
 const THINGS: Record<string, string> = {
-  // a pointed pomelo leaf with a pale midrib
-  pomelo: `<path d="M7,33 C6,17 18,6 34,6 C34,22 24,33 7,33Z" fill="${C.leaf}" ${S}/>` + VEIN('M10,30 L29,11', C.tealDark),
-  // three tall stalks tied in a cucumber-green band
-  lemongrass:
-    `<g stroke-linecap="round" fill="none"><path d="M15,32 C15,22 12,13 7,4" stroke="${C.ink}" stroke-width="6.5"/><path d="M20,32 C20,20 21,11 23,3" stroke="${C.ink}" stroke-width="6.5"/><path d="M25,32 C26,23 29,14 34,6" stroke="${C.ink}" stroke-width="6.5"/>` +
-    `<path d="M15,32 C15,22 12,13 7,4" stroke="${C.leafLight}" stroke-width="4"/><path d="M20,32 C20,20 21,11 23,3" stroke="${C.leaf}" stroke-width="4"/><path d="M25,32 C26,23 29,14 34,6" stroke="${C.leafLight}" stroke-width="4"/></g>` +
-    `<rect x="11" y="27" width="18" height="9" rx="3" fill="${C.cucumber}" ${S}/>`,
-  // a knobby ginger root
-  ginger:
-    `<path d="M5,26 C5,19 12,17 16,20 C17,12 25,11 27,16 C33,14 37,21 33,27 C30,32 9,33 5,26Z" fill="${C.weave}" ${S}/>` +
-    VEIN('M13,25 h3 M22,22 h3 M27,27 h2', C.wood),
+  pomelo: POMELO,
+  lemongrass: LEMONGRASS,
+  ginger: GINGER,
   // a few salt crystals in a pale dish
   salt:
     `<ellipse cx="20" cy="31" rx="15" ry="5" fill="${C.water}" ${S}/>` +
@@ -45,16 +152,10 @@ const THINGS: Record<string, string> = {
     `<rect x="16" y="10" width="8" height="7" fill="${C.mint}" ${S}/>` +
     `<rect x="15" y="4" width="10" height="7" rx="2" fill="${C.ink}"/>` +
     `<rect x="15" y="22" width="10" height="7" rx="1.5" fill="${C.paper}"/>`,
-  // decoys: a round, pale guava leaf, a red curved chili and a long banana leaf
-  guava:
-    `<ellipse cx="20" cy="20" rx="10" ry="15" transform="rotate(35 20 20)" fill="${C.cucumber}" ${S}/>` +
-    VEIN('M12,29 L28,11', C.leaf),
-  chili:
-    `<path d="M11,11 C15,9 18,12 18,15 C20,24 26,30 34,34 C22,36 12,29 10,19Z" fill="${C.lantern}" ${S}/>` +
-    `<path d="M12,12 C10,8 12,5 15,4" stroke="${C.leaf}" stroke-width="3.5" fill="none" stroke-linecap="round"/>`,
-  banana:
-    `<path d="M4,36 C9,20 21,8 36,4 C33,19 22,31 4,36Z" fill="${C.green}" ${S}/>` +
-    VEIN('M6,34 L33,7 M13,27 l-2,-6 M19,21 l-2,-7 M25,15 l-1,-6 M14,28 l6,1 M20,22 l7,1 M26,16 l6,0', C.tealDark),
+  // decoys: a guava leaf, a red curved chili and a torn piece of banana leaf
+  guava: GUAVA,
+  chili: CHILI,
+  banana: BANANA,
 }
 
 /** The 8 ingredients and the 3 leaf-game decoys, one icon each, keyed `ing-<id>`. */

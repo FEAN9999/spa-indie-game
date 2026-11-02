@@ -30,6 +30,22 @@ const BUCKET = { x: 800, y: 1060, hitW: 110, hitH: 95, countY: 1170 }
 const CUBE = { size: 52, gap: 6 }
 /** The glass's tint, the condensed milk, the coffee over it, and the band to stop in. */
 const LAYER = { glass: C.glass, glassAlpha: 0.45, milk: C.bambooLight, coffee: C.woodDark, bandAlpha: 0.45, ink: 5 }
+/**
+ * Nét A+ của ly: vạch đậm ở mặt sữa và váng cà phê, mảng bóng mép cứng sát thành phải, các vệt sáng bên trái
+ * (từ chiều cao k0 tới k1, cách thành trái dx), vành miệng ly và đế dày dưới đáy.
+ */
+const GLASS = {
+  layerLineW: 5,
+  shadeAlpha: 0.12,
+  shadeW: 52,
+  shineW: 10,
+  shineAlpha: 0.55,
+  shines: [[0.92, 0.12, 24], [0.9, 0.55, 48]] as const,
+  rimRy: 14,
+  rimW: 6,
+  rimInnerW: 3,
+  foot: { out: 12, up: 6, h: 30, r: 12 },
+}
 /** A word rises from where it is said and fades; a long line is scaled down to fit the card. */
 const WORD = { size: 60, stroke: 12, risePx: 80, ms: 700, x: 540, y: 870, maxW: 880 }
 /** The last move of a step stays on screen this long before the next station. */
@@ -250,14 +266,45 @@ export class CaPheScene extends Phaser.Scene {
       g.fillStyle(hex(C.mustard), LAYER.bandAlpha).fillPoints(this.slab(glassY(lo), glassY(hi)), true)
       g.lineStyle(3, hex(C.ink), 0.6).strokePoints(this.slab(glassY(lo), glassY(hi)), true)
     }
+    // A+: lớp sữa đặc có viền đậm, váng bọt trên mặt cà phê, mảng bóng sát thành phải, vệt sáng bên trái
+    if (milk > 0) g.lineStyle(GLASS.layerLineW, hex(C.clayLight), 1).lineBetween(...this.across(glassY(milk)))
+    if (level > milk) g.lineStyle(GLASS.layerLineW, hex(C.clay), 1).lineBetween(...this.across(glassY(level)))
+    g.fillStyle(hex(C.ink), GLASS.shadeAlpha).fillPoints(this.wallShade(), true)
+    g.lineStyle(GLASS.shineW, hex(C.cloud), GLASS.shineAlpha)
+    for (const [k0, k1, dx] of GLASS.shines) g.lineBetween(...this.wallPoint(k0, dx), ...this.wallPoint(k1, dx))
     // the glass's walls and foot over the drink
     g.lineStyle(LAYER.ink, hex(C.ink), 1).strokePoints(
       [new Phaser.Math.Vector2(CF_GLASS.x - CF_GLASS.topHalf, CF_GLASS.top), new Phaser.Math.Vector2(CF_GLASS.x - CF_GLASS.bottomHalf, CF_GLASS.bottom), new Phaser.Math.Vector2(CF_GLASS.x + CF_GLASS.bottomHalf, CF_GLASS.bottom), new Phaser.Math.Vector2(CF_GLASS.x + CF_GLASS.topHalf, CF_GLASS.top)],
       false,
     )
+    // đế ly dày và vành miệng ly
+    const foot = GLASS.foot
+    g.fillStyle(hex(C.glass), 1).fillRoundedRect(CF_GLASS.x - CF_GLASS.bottomHalf - foot.out, CF_GLASS.bottom - foot.up, 2 * (CF_GLASS.bottomHalf + foot.out), foot.h, foot.r)
+    g.fillStyle(hex(C.ink), GLASS.shadeAlpha).fillRoundedRect(CF_GLASS.x + CF_GLASS.bottomHalf * 0.4, CF_GLASS.bottom - foot.up, CF_GLASS.bottomHalf * 0.6 + foot.out, foot.h, foot.r)
+    g.lineStyle(LAYER.ink, hex(C.ink), 1).strokeRoundedRect(CF_GLASS.x - CF_GLASS.bottomHalf - foot.out, CF_GLASS.bottom - foot.up, 2 * (CF_GLASS.bottomHalf + foot.out), foot.h, foot.r)
+    g.lineStyle(GLASS.rimW, hex(C.ink), 1).strokeEllipse(CF_GLASS.x, CF_GLASS.top, 2 * CF_GLASS.topHalf, 2 * GLASS.rimRy)
+    g.lineStyle(GLASS.rimInnerW, hex(C.caoGlassShine), 1).strokeEllipse(CF_GLASS.x, CF_GLASS.top, 2 * CF_GLASS.topHalf - GLASS.rimW, 2 * GLASS.rimRy - GLASS.rimW)
     if (this.stream && this.held && this.rules.pouring) {
       this.stream.clear().lineStyle(14, hex(LAYER.milk), 1).lineBetween(CAN.lip.x, CAN.lip.y, CF_GLASS.x + 30, glassY(this.rules.milk))
     }
+  }
+
+  /** The two ends of the glass's inside across at height y. */
+  private across(y: number): [number, number, number, number] {
+    return [CF_GLASS.x - glassHalf(y), y, CF_GLASS.x + glassHalf(y), y]
+  }
+
+  /** A point inside the glass at height k (0 the bottom, 1 the brim), dx in from the left wall (or out from the right one when negative). */
+  private wallPoint(k: number, dx: number): [number, number] {
+    const y = glassY(k)
+    return dx >= 0 ? [CF_GLASS.x - glassHalf(y) + dx, y] : [CF_GLASS.x + glassHalf(y) + dx, y]
+  }
+
+  /** The hard shade down the inside of the right wall. */
+  private wallShade(): Phaser.Math.Vector2[] {
+    const V = Phaser.Math.Vector2
+    const w = GLASS.shadeW
+    return [new V(...this.wallPoint(1, -w)), new V(...this.wallPoint(1, 0)), new V(...this.wallPoint(0, 0)), new V(...this.wallPoint(0, -w * 0.7))]
   }
 
   /** The glass's inside between two heights, as the four corners of its slice. */

@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { shade } from '../art/aplus'
 import { NAILS_BOX, NAILS_FINGERS, NAILS_LENS } from '../art/nailsArt'
 import { C, customerColors, teacherColors, type CharacterColors } from '../art/palette'
 import { NAILS_BOTTLE_X, NAILS_BOTTLE_Y, NAILS_COAT_MS, NAILS_COUNT, NAILS_LIMIT_MS, NAILS_NAIL, NAILS_SHAKE_MS, NAILS_SHAPE } from '../config'
@@ -26,13 +27,23 @@ const SPEECH_SEAM = { x: 292, top: 566, bottom: 610, w: 6 }
 const SMALL = { fromTip: 30, w: 0.64, h: 0.8, cornerOfW: 1 / 2.4, ink: 3.5, ringGap: 12, ringW: 8, patternW: 260 }
 /** A finished nail's mark above it: a disc with a check or a cross. */
 const MARK = { dy: 44, r: 18, ink: 3.5, icon: 8, iconW: 4 }
-/** A bottle round its centre: cap, neck, body and label as x, y, w, h, corner and ink; the shine down the body. */
+/**
+ * A bottle round its centre, in A+ (docs/art/huong-net-ve/lo1/aplus-nails.svg): cap with its ridges, neck, glass body
+ * with the empty glass at its shoulder, the hard shade down its right, the shine down its left, the label with two lines,
+ * and its shadow; parts as x, y, w, h, corner and ink.
+ */
 const BOTTLE = {
-  cap: [-22, -110, 44, 58, 10, 4],
-  neck: [-16, -56, 32, 20, 0, 3],
-  body: [-54, -40, 108, 140, 28, 4],
-  label: [-30, 46, 60, 34, 8, 3],
-  shine: { x: -32, top: -18, bottom: 40, w: 9, alpha: 0.7 },
+  cap: [-19, -110, 38, 68, 11, 5],
+  capRidges: { xs: [-8, 2, 12], top: -100, bottom: -52, w: 3 },
+  capShine: { x: -11, top: -98, bottom: -60, w: 4, alpha: 0.35 },
+  neck: [-17, -47, 34, 20, 5, 4],
+  body: [-48, -32, 96, 132, 26, 6],
+  glassH: 14,
+  shade: { from: 22, alpha: 0.18 },
+  shine: { x: -28, top: -10, bottom: 82, w: 9, alpha: 0.45 },
+  label: [-25, 26, 50, 36, 7, 3],
+  labelLines: [[-15, 39, 15, 39], [-10, 49, 10, 49]],
+  shadow: { y: 104, w: 112, h: 14, alpha: 0.18 },
   fadedAlpha: 0.35,
   shakePx: 10,
   shakePerMs: 0.05,
@@ -155,8 +166,9 @@ export class NailsScene extends Phaser.Scene {
     // each texture is drawn in the card's pixels, so it sits at its box's corner
     const at = (key: string, [x, y]: readonly number[]) => this.add.image(x, y, key).setOrigin(0)
     at('nails-cushion', NAILS_BOX.cushion)
-    at('nails-hand-line', NAILS_BOX.hand)
+    // the brown lines and the highlights sit over the skin-tinted hand
     at('nails-hand', NAILS_BOX.hand).setTint(colors.skin)
+    at('nails-hand-line', NAILS_BOX.hand)
     this.g = this.add.graphics()
     this.lensBack = this.add.graphics()
     this.tip = at('nails-tip', NAILS_BOX.tip).setTint(colors.skin)
@@ -270,17 +282,30 @@ export class NailsScene extends Phaser.Scene {
       const y = NAILS_BOTTLE_Y
       const alpha = faded.includes(i) ? BOTTLE.fadedAlpha : 1
       const colour = POLISH[order[i]]
-      const part = ([dx, dy, w, h, corner, ink]: readonly number[], fill: string) => {
-        this.g.fillStyle(hex(fill), alpha).lineStyle(ink, hex(C.ink), alpha)
-        if (corner) this.g.fillRoundedRect(x + dx, y + dy, w, h, corner).strokeRoundedRect(x + dx, y + dy, w, h, corner)
-        else this.g.fillRect(x + dx, y + dy, w, h).strokeRect(x + dx, y + dy, w, h)
-      }
-      part(BOTTLE.cap, C.deepBrown)
-      part(BOTTLE.neck, colour)
-      part(BOTTLE.body, colour)
-      const { shine } = BOTTLE
-      this.g.fillStyle(hex(C.cream), shine.alpha * alpha).fillRoundedRect(x + shine.x - shine.w / 2, y + shine.top - shine.w / 2, shine.w, shine.bottom - shine.top + shine.w, shine.w / 2)
-      part(BOTTLE.label, C.cream)
+      const g = this.g
+      const fill = ([dx, dy, w, h, corner]: readonly number[], c: string, a = 1) => g.fillStyle(hex(c), a * alpha).fillRoundedRect(x + dx, y + dy, w, h, corner)
+      const line = ([dx, dy, w, h, corner, ink]: readonly number[]) => g.lineStyle(ink, hex(C.ink), alpha).strokeRoundedRect(x + dx, y + dy, w, h, corner)
+      const { shadow, capRidges: r, capShine, shine, glassH } = BOTTLE
+      g.fillStyle(hex(C.ink), shadow.alpha * alpha).fillEllipse(x + 2, y + shadow.y, shadow.w, shadow.h)
+      fill(BOTTLE.cap, C.deepBrown)
+      g.lineStyle(r.w, hex(C.stone), alpha)
+      for (const rx of r.xs) g.lineBetween(x + rx, y + r.top, x + rx, y + r.bottom)
+      g.lineStyle(capShine.w, hex(C.cloud), capShine.alpha * alpha).lineBetween(x + capShine.x, y + capShine.top, x + capShine.x, y + capShine.bottom)
+      line(BOTTLE.cap)
+      fill(BOTTLE.neck, shade(colour))
+      line(BOTTLE.neck)
+      // the body: polish, the empty glass at its shoulder, the shade down its right and the shine down its left
+      const [bx0, by0, bw, bh, bc] = BOTTLE.body
+      fill(BOTTLE.body, colour)
+      g.fillStyle(hex(C.glass), alpha).fillRoundedRect(x + bx0, y + by0, bw, glassH + bc, { tl: bc, tr: bc, bl: 0, br: 0 })
+      g.fillStyle(hex(colour), alpha).fillRect(x + bx0, y + by0 + glassH, bw, bc)
+      g.fillStyle(hex(C.ink), BOTTLE.shade.alpha * alpha).fillRoundedRect(x + BOTTLE.shade.from, y + by0 + glassH, bx0 + bw - BOTTLE.shade.from, bh - glassH, { tl: 0, tr: 0, bl: 0, br: bc })
+      g.fillStyle(hex(C.cloud), shine.alpha * alpha).fillRoundedRect(x + shine.x - shine.w / 2, y + shine.top, shine.w, shine.bottom - shine.top, shine.w / 2)
+      line(BOTTLE.body)
+      fill(BOTTLE.label, C.cream)
+      line(BOTTLE.label)
+      g.lineStyle(3, hex(colour), alpha)
+      for (const [x0, y0, x1, y1] of BOTTLE.labelLines) g.lineBetween(x + x0, y + y0, x + x1, y + y1)
     })
   }
 
