@@ -8,7 +8,7 @@ vi.mock('phaser', () => ({}))
 describe('face-mask art', () => {
   it('has every picture the mask game draws', () => {
     const tex = maskTextures()
-    for (const key of ['mk-pillow', 'mk-face', 'mk-face-line', 'mk-hair', 'mk-hair-line', 'mk-cucumber', 'mk-frown']) expect(tex[key], key).toBeDefined()
+    for (const key of ['mk-pillow', 'mk-face', 'mk-face-line', 'mk-hair', 'mk-hair-line', 'mk-cucumber', 'mk-frown', 'mk-dab', 'mk-dab-shade']) expect(tex[key], key).toBeDefined()
   })
 
   it('draws the brown lines of the tinted face and hair untinted, in their own textures', () => {

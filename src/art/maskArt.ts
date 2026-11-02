@@ -1,4 +1,4 @@
-import { MASK_EYES } from '../config'
+import { MASK_BRUSH_R, MASK_EYES } from '../config'
 import { GROUND, HIGHLIGHT, TINT_SHADE, ink, shade } from './aplus'
 import { fillsOnly, linesOnly } from './outline'
 import { C } from './palette'
@@ -9,7 +9,7 @@ type Box = [number, number, number, number]
 /** The face's radius in canvas pixels; the face, hair, frown and pillow are drawn around the face centre at (0, 0). */
 export const MK_FACE_R = 300
 
-const FACE_BOX: Box = [-400, -340, 800, 680]
+const FACE_BOX: Box = [-420, -420, 840, 840]
 const HAIR_BOX: Box = [-440, -420, 880, 570]
 const FROWN_BOX: Box = [-180, -280, 460, 210]
 const PILLOW_BOX: Box = [-440, -420, 880, 790]
@@ -80,12 +80,36 @@ export function maskTextures(): Record<string, string> {
     `M-345,-60 Q-360,20 -330,90 M345,-60 Q360,20 330,90" stroke="${TINT_DEEP}" stroke-width="6" fill="none" stroke-linecap="round"/>` +
     `<path d="M-60,-372 Q-110,-340 -140,-300 M60,-372 Q110,-340 140,-300 M-372,-120 Q-386,-60 -366,-20 M372,-120 Q386,-60 366,-20" fill="none" ${ink(3.5)}/>`
   const hairShade = inside('hs', HAIR, `<path d="M300,-300 C380,-220 410,-100 390,-10 C380,60 350,110 320,140 L460,140 L460,-420 Z" fill="${TINT_SHADE}"/>`)
-  // băng đô kem vòng qua đỉnh đầu, nằm trên tóc và dưới mặt; không tô màu
+  // tóc xoã có vệt sáng; nằm dưới mặt
+  const hairShine = inside('hh', HAIR, `<path d="M-300,-250 C-260,-310 -190,-350 -120,-360" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity=".35"/>`)
+  // băng đô kem ôm sát mép trán, nằm ngoài vòng tô mặt nạ nên không che chỗ nào phải tô; mép trong trùng viền mặt
+  const BAND = 'M-281.9,-102.6 A300,300 0 0 1 281.9,-102.6 L330.8,-120.4 A352,352 0 0 0 -330.8,-120.4 Z'
+  const fold = (deg: number) => {
+    const a = (deg * Math.PI) / 180
+    return `M${Math.round(Math.cos(a) * 312)},${Math.round(Math.sin(a) * 312)} L${Math.round(Math.cos(a) * 342)},${Math.round(Math.sin(a) * 342)}`
+  }
   const band =
-    `<path d="M-268,-150 A306,306 0 0 1 268,-150 L300,-176 A348,348 0 0 0 -300,-176 Z" fill="${C.cream}" ${ink(5)}/>` +
-    `<path d="M-268,-150 A306,306 0 0 1 268,-150 L276,-158 A316,316 0 0 0 -276,-158 Z" fill="${shade(C.cream)}"/>` +
-    `<path d="M-150,-300 C-140,-280 -138,-266 -142,-252 M-50,-338 C-46,-318 -46,-302 -50,-290 M50,-338 C46,-318 46,-302 50,-290 M150,-300 C140,-280 138,-266 142,-252" fill="none" stroke="${C.tileSeam}" stroke-width="5" stroke-linecap="round"/>` +
-    inside('hh', HAIR, `<path d="M-300,-250 C-260,-310 -190,-350 -120,-360" fill="none" stroke="#FFFFFF" stroke-width="12" stroke-linecap="round" opacity=".35"/>`)
+    `<path d="${BAND}" fill="${C.cream}"/>` +
+    inside(
+      'bd',
+      BAND,
+      `<path d="M-281.9,-102.6 A300,300 0 0 1 281.9,-102.6 L293.2,-106.7 A312,312 0 0 0 -293.2,-106.7 Z" fill="${shade(C.cream)}"/>` +
+        `<path d="${[-128, -104, -76, -52].map(fold).join(' ')}" fill="none" stroke="${C.tileSeam}" stroke-width="5" stroke-linecap="round"/>` +
+        `<path d="M-294,-170 A340,340 0 0 1 -116,-320" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".45"/>`,
+    ) +
+    `<path d="${BAND}" fill="none" ${ink(6)}/>`
+  // một chấm cọ bùn đất sét: lông cọ để lại vệt sáng tối chạy theo hướng vuốt (cảnh xoay chấm theo hướng ngón tay)
+  const DAB_R = Math.round(MASK_BRUSH_R * MK_FACE_R)
+  const dab = (base: string, light: string, dark: string) => {
+    const circle = `M${-DAB_R},0 a${DAB_R},${DAB_R} 0 1,0 ${2 * DAB_R},0 a${DAB_R},${DAB_R} 0 1,0 ${-2 * DAB_R},0 Z`
+    const rows = (ys: number[]) => ys.map(y => `M${-DAB_R},${y} H${DAB_R}`).join(' ')
+    return svgDoc(
+      [-DAB_R - 2, -DAB_R - 2, 2 * DAB_R + 4, 2 * DAB_R + 4],
+      1,
+      `<path d="${circle}" fill="${base}"/>` +
+        inside('dc', circle, `<path d="${rows([-30, 12, 38])}" stroke="${light}" stroke-width="4" opacity=".7"/><path d="${rows([-12, 28])}" stroke="${dark}" stroke-width="2.5" opacity=".7"/>`),
+    )
+  }
 
   const anger = 'M228,-228 Q250,-240 272,-228 M228,-172 Q250,-160 272,-172 M222,-222 Q210,-200 222,-178 M278,-222 Q290,-200 278,-178'
   return {
@@ -113,9 +137,12 @@ export function maskTextures(): Record<string, string> {
     ),
     // tinted parts keep their brown lines in a `-line` texture, drawn untinted on top
     'mk-face': svgDoc(FACE_BOX, 1, fillsOnly(face) + faceShade),
-    'mk-face-line': svgDoc(FACE_BOX, 1, linesOnly(face) + faceShine),
+    'mk-face-line': svgDoc(FACE_BOX, 1, linesOnly(face) + faceShine + band),
     'mk-hair': svgDoc(HAIR_BOX, 1, fillsOnly(hair) + hairShade),
-    'mk-hair-line': svgDoc(HAIR_BOX, 1, linesOnly(hair) + band),
+    'mk-hair-line': svgDoc(HAIR_BOX, 1, linesOnly(hair) + hairShine),
+    // chấm cọ bùn đất sét, và chấm ở vùng bóng phía dưới phải của mặt
+    'mk-dab': dab(C.phoHouseMoss, C.houseLeaf, C.phoHouseMossDark),
+    'mk-dab-shade': dab(C.phoHouseMossDark, C.phoHouseMoss, shade(C.phoHouseMossDark)),
     // một lát dưa leo có độ dày: vỏ xanh, ruột nhạt, vòng hạt kem, điểm sáng
     'mk-cucumber': svgDoc(
       [0, 0, 132, 132],

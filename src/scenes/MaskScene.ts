@@ -17,6 +17,8 @@ const TRAY = { x: 540, y: 1390, w: 470, h: 170, sliceDx: 85 }
 const DAB_PX = MASK_BRUSH_R * R
 const RIM_PX = 4
 const DAB_STEP_PX = 12
+/** Chấm cọ ở vùng bóng (dưới phải mặt, ngoài vòng tròn lệch lên trên trái này) dùng màu bùn tối hơn. */
+const LIT = { dx: -0.16, dy: -0.16, r: 0.9 }
 /** The slice art's radius; a slice is drawn this much wider than the eye it covers. */
 const SLICE_ART_R = 60
 const SLICE_OVER_EYE_PX = 12
@@ -34,17 +36,20 @@ interface Slice {
   eye: 0 | 1 | null
 }
 
-/** Close-up face-mask mini-game over the frozen spa: paint the mint mask around the eyes, then lay a cucumber slice on each eye. */
+/** Close-up face-mask mini-game over the frozen spa: paint the clay mask around the eyes, then lay a cucumber slice on each eye. */
 export class MaskScene extends Phaser.Scene {
   private params!: MiniGameData
   private rules!: MaskGame
   private phase: MaskPhase = 'paint'
   private painting = false
   private last = { x: 0, y: 0 }
-  /** The mint paint, over an ink layer a rim wider that shows only round its edge. */
+  /** The clay paint, over an ink layer a rim wider that shows only round its edge. */
   private paint!: Phaser.GameObjects.RenderTexture
   private rim!: Phaser.GameObjects.RenderTexture
-  private dab!: Phaser.GameObjects.Graphics
+  /** Chấm cọ bùn và chấm ở vùng bóng, xoay theo hướng vuốt để vệt lông cọ chạy theo nét tô. */
+  private dab!: Phaser.GameObjects.Image
+  private dabShade!: Phaser.GameObjects.Image
+  private brushAngle = 0
   private rimDab!: Phaser.GameObjects.Graphics
   /** What each paint layer loses after every stroke: everything off the face, and the eyes. */
   private paintClip!: Phaser.GameObjects.Graphics
@@ -123,7 +128,8 @@ export class MaskScene extends Phaser.Scene {
     this.rim = this.add.renderTexture(FACE.x - R, FACE.y - R, 2 * R, 2 * R).setOrigin(0).setAlpha(0.3)
     this.paint = this.add.renderTexture(FACE.x - R, FACE.y - R, 2 * R, 2 * R).setOrigin(0)
     this.rimDab = this.make.graphics({}, false).fillStyle(hex(C.ink), 1).fillCircle(0, 0, DAB_PX + RIM_PX)
-    this.dab = this.make.graphics({}, false).fillStyle(hex(C.mint), 1).fillCircle(0, 0, DAB_PX)
+    this.dab = new Phaser.GameObjects.Image(this, 0, 0, 'mk-dab')
+    this.dabShade = new Phaser.GameObjects.Image(this, 0, 0, 'mk-dab-shade')
     // in the layers' own pixels, where the face centre is (R, R); a thick ring covers the corners outside the face
     const clip = (eyeShrink: number) => {
       const g = this.make.graphics({}, false).lineStyle(R, 0x000000, 1).strokeCircle(R, R, R * 1.5).fillStyle(0x000000, 1)
@@ -135,7 +141,7 @@ export class MaskScene extends Phaser.Scene {
     this.rimClip = clip(RIM_PX)
     // made off the display list, so the scene does not clean them up
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      for (const g of [this.rimDab, this.dab, this.paintClip, this.rimClip]) g.destroy()
+      for (const g of [this.rimDab, this.dab, this.dabShade, this.paintClip, this.rimClip]) g.destroy()
     })
   }
 
@@ -185,13 +191,16 @@ export class MaskScene extends Phaser.Scene {
    */
   private paintTo(x: number, y: number): void {
     const errors = this.rules.errors
-    const steps = Math.max(1, Math.ceil(Phaser.Math.Distance.Between(this.last.x, this.last.y, x, y) / DAB_STEP_PX))
+    const dist = Phaser.Math.Distance.Between(this.last.x, this.last.y, x, y)
+    if (dist > 2) this.brushAngle = Math.atan2(y - this.last.y, x - this.last.x)
+    const steps = Math.max(1, Math.ceil(dist / DAB_STEP_PX))
     for (let i = 1; i <= steps; i++) {
       const dx = Phaser.Math.Linear(this.last.x, x, i / steps)
       const dy = Phaser.Math.Linear(this.last.y, y, i / steps)
       this.rules.paint((dx - FACE.x) / R, (dy - FACE.y) / R)
       this.rim.draw(this.rimDab, dx - this.rim.x, dy - this.rim.y)
-      this.paint.draw(this.dab, dx - this.paint.x, dy - this.paint.y)
+      const lit = Math.hypot((dx - FACE.x) / R - LIT.dx, (dy - FACE.y) / R - LIT.dy) <= LIT.r
+      this.paint.draw((lit ? this.dab : this.dabShade).setRotation(this.brushAngle), dx - this.paint.x, dy - this.paint.y)
     }
     this.last = { x, y }
     this.rim.erase(this.rimClip).render()

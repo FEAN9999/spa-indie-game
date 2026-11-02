@@ -10,6 +10,8 @@ import { oneFinger } from '../view/oneFinger'
 
 /** Bounding ellipse of the hair the foam goes on; every picture of the basin, head and hair is drawn round its centre. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
+/** Giữa đáy kệ đồ gội trên thẻ. */
+const SHELF = { x: 540, y: 1565 }
 const FOAM_STEP_PX = 28
 const MAX_FOAM = 90
 const DROP_EVERY_MS = 45
@@ -31,6 +33,8 @@ export class ShampooScene extends Phaser.Scene {
   private instruction!: Phaser.GameObjects.Text
   private bars!: Phaser.GameObjects.Graphics
   private shower!: Phaser.GameObjects.Image
+  /** Vòi sen gác trên mép chậu, ẩn đi khi vòi đang theo ngón tay xả nước. */
+  private showerRest!: Phaser.GameObjects.Image
   private towel!: Phaser.GameObjects.Image
   private revealed = false
   /** The faint hand showing this phase's move, until the first touch of the phase. */
@@ -66,6 +70,9 @@ export class ShampooScene extends Phaser.Scene {
     this.add.image(HAIR.x, HAIR.y, 'sh-head-line').setOrigin(o.head.x, o.head.y)
     this.add.image(HAIR.x, HAIR.y, 'sh-fringe').setOrigin(o.fringe.x, o.fringe.y).setTint(colors.hair)
     this.add.image(HAIR.x, HAIR.y, 'sh-fringe-line').setOrigin(o.fringe.x, o.fringe.y)
+    this.showerRest = this.add.image(HAIR.x, HAIR.y, 'sh-shower-rest').setOrigin(o.shower.x, o.shower.y)
+    // kệ đồ gội dưới ghế lấp nửa dưới thẻ, xa chỗ vuốt
+    this.add.image(SHELF.x, SHELF.y, 'sh-shelf').setOrigin(0.5, 1)
     this.bars = this.add.graphics()
     this.shower = this.add.image(0, 0, 'sh-shower').setOrigin(0.5, 0.25).setVisible(false).setDepth(10)
     this.towel = this.add.image(0, 0, 'sh-towel').setVisible(false).setDepth(10)
@@ -98,6 +105,7 @@ export class ShampooScene extends Phaser.Scene {
 
     const progress = this.rules.progress()
     this.shower.setVisible(this.phase === 'rinse' && p !== null)
+    this.showerRest.setVisible(!this.shower.visible)
     this.towel.setVisible(this.phase === 'dry' && p !== null)
     if (p && this.phase === 'rinse') {
       this.shower.setPosition(p.x, p.y - 110)

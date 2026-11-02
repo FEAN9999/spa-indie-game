@@ -1,4 +1,4 @@
-import { HIGHLIGHT, TINT_SHADE, ink, shade } from './aplus'
+import { GROUND, HIGHLIGHT, TINT_SHADE, ink, shade } from './aplus'
 import { fillsOnly, linesOnly } from './outline'
 import { C } from './palette'
 import { svgDoc } from './svg'
@@ -17,12 +17,16 @@ const BASIN_BOX: Box = [50, 14, 500, 492]
 const HAIR_BOX: Box = [100, 50, 400, 245]
 const HEAD_BOX: Box = [130, 176, 340, 306]
 const FRINGE_BOX: Box = [200, 170, 200, 82]
+/** Vòi sen gác trên mép chậu, dây thép thả xuống cạnh ghế. */
+const SHOWER_BOX: Box = [428, 40, 190, 345]
+/** Kệ gỗ nhỏ có khăn, chai dầu gội, hũ kem, chậu cây, vẽ thẳng theo điểm ảnh thẻ; đặt giữa đáy kệ. */
+const SHELF_BOX: Box = [0, 0, 620, 360]
 
 /** Gốc ảnh đặt tâm vùng tóc của texture vẽ trong `box` vào vị trí của ảnh. */
 const at = ([x, y, w, h]: Box) => ({ x: (HAIR_AT.x - x) / w, y: (HAIR_AT.y - y) / h })
 
 /** Gốc của từng texture khi đặt ở tâm vùng tóc. */
-export const SH_ORIGIN = { basin: at(BASIN_BOX), hair: at(HAIR_BOX), head: at(HEAD_BOX), fringe: at(FRINGE_BOX) }
+export const SH_ORIGIN = { basin: at(BASIN_BOX), hair: at(HAIR_BOX), head: at(HEAD_BOX), fringe: at(FRINGE_BOX), shower: at(SHOWER_BOX) }
 
 /** Nét đậm hơn mảng bóng: sợi tóc, nếp da trong phần được tô màu. */
 const TINT_DEEP = shade('#FFFFFF', 0.3)
@@ -147,6 +151,69 @@ export function shampooTextures(): Record<string, string> {
         `<rect x="10" y="10" width="210" height="62" rx="22" fill="${C.terracotta}" ${ink(6)}/>` +
         `<path d="M34,26 C60,20 90,18 120,20" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".4"/>` +
         `<path d="M60,48 C70,56 74,64 74,72 M150,48 C142,56 138,64 138,72" fill="none" ${ink(2.5)} opacity=".6"/>`,
+    ),
+    // vòi sen đồng gác trên mép chậu lúc chưa xả nước, dây thép thả xuống
+    'sh-shower-rest': svgDoc(
+      SHOWER_BOX,
+      SCALE,
+      `<path d="M520,128 C560,150 580,210 566,270 C556,312 568,350 600,370" fill="none" stroke="${C.ink}" stroke-width="15" stroke-linecap="round"/>` +
+        `<path d="M520,128 C560,150 580,210 566,270 C556,312 568,350 600,370" fill="none" stroke="${C.silver}" stroke-width="9" stroke-linecap="round"/>` +
+        `<path d="M556,200 C562,220 562,240 558,258" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".8"/>` +
+        `<path d="M488,96 L526,132" stroke="${C.ink}" stroke-width="20" stroke-linecap="round"/>` +
+        `<path d="M488,96 L526,132" stroke="${C.mustard}" stroke-width="12" stroke-linecap="round"/>` +
+        `<ellipse cx="476" cy="82" rx="38" ry="34" fill="${C.mustard}" transform="rotate(-20 476 82)"/>` +
+        `<path d="M500,60 C518,80 516,104 500,116 C490,100 486,80 500,60 Z" fill="${C.mustardDark}"/>` +
+        `<ellipse cx="476" cy="82" rx="38" ry="34" fill="none" ${ink(6)} transform="rotate(-20 476 82)"/>` +
+        `<ellipse cx="472" cy="84" rx="25" ry="22" fill="${C.glow}" ${ink(3)} transform="rotate(-20 472 84)"/>` +
+        `<g fill="${C.ink}"><circle cx="464" cy="76" r="2.6"/><circle cx="476" cy="72" r="2.6"/><circle cx="460" cy="88" r="2.6"/><circle cx="472" cy="86" r="2.6"/><circle cx="484" cy="84" r="2.6"/><circle cx="468" cy="98" r="2.6"/><circle cx="480" cy="96" r="2.6"/></g>` +
+        `<ellipse cx="458" cy="64" rx="9" ry="4" ${HIGHLIGHT} transform="rotate(-30 458 64)"/>`,
+    ),
+    // kệ gỗ thấp dưới ghế gội: khăn gấp, chai dầu gội có vòi bơm, hũ kem, chậu cây nhỏ
+    'sh-shelf': svgDoc(
+      SHELF_BOX,
+      1,
+      `<ellipse cx="312" cy="344" rx="292" ry="14" ${GROUND}/>` +
+        `<rect x="50" y="330" width="30" height="16" rx="4" fill="${C.woodDark}" ${ink(4)}/><rect x="540" y="330" width="30" height="16" rx="4" fill="${C.woodDark}" ${ink(4)}/>` +
+        `<rect x="30" y="188" width="560" height="148" rx="14" fill="${C.wood}"/>` +
+        inside('cb', 'M44,188 H576 A14,14 0 0 1 590,202 V322 A14,14 0 0 1 576,336 H44 A14,14 0 0 1 30,322 V202 A14,14 0 0 1 44,188 Z', `<rect x="526" y="188" width="70" height="150" fill="${shade(C.wood)}"/>`) +
+        `<rect x="30" y="188" width="560" height="148" rx="14" fill="none" ${ink(7)}/>` +
+        `<rect x="56" y="214" width="234" height="98" rx="10" fill="${C.plank}" ${ink(3.5)}/><rect x="330" y="214" width="234" height="98" rx="10" fill="${C.plank}" ${ink(3.5)}/>` +
+        `<path d="M66,298 H280 M340,298 H554" stroke="${shade(C.plank)}" stroke-width="10" stroke-linecap="round"/>` +
+        `<circle cx="173" cy="256" r="10" fill="${C.mustard}" ${ink(3)}/><circle cx="447" cy="256" r="10" fill="${C.mustard}" ${ink(3)}/>` +
+        `<rect x="18" y="158" width="584" height="38" rx="12" fill="${C.woodLight}" ${ink(6)}/>` +
+        `<path d="M40,170 H300" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".45"/>` +
+        // khăn gấp: khăn đất nung dưới, khăn kem viền xanh ngọc trên
+        `<rect x="56" y="110" width="178" height="50" rx="12" fill="${C.terracotta}" ${ink(5)}/>` +
+        `<path d="M70,128 H220 M70,144 H220" stroke="${C.cream}" stroke-width="5" stroke-linecap="round"/>` +
+        `<path d="M200,112 H222 A12,12 0 0 1 234,124 V148 A12,12 0 0 1 222,160 H200 Z" fill="${shade(C.terracotta)}"/>` +
+        `<rect x="56" y="110" width="178" height="50" rx="12" fill="none" ${ink(5)}/>` +
+        `<rect x="72" y="68" width="148" height="46" rx="12" fill="${C.cream}" ${ink(5)}/>` +
+        `<path d="M86,92 H206" stroke="${C.tealLight}" stroke-width="6" stroke-linecap="round"/>` +
+        `<path d="M190,70 H208 A12,12 0 0 1 220,82 V102 A12,12 0 0 1 208,114 H190 Z" fill="${shade(C.cream)}"/>` +
+        `<rect x="72" y="68" width="148" height="46" rx="12" fill="none" ${ink(5)}/>` +
+        `<path d="M86,78 H150" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".6"/>` +
+        // chai dầu gội xanh ngọc có vòi bơm và nhãn kem
+        `<rect x="296" y="22" width="34" height="14" rx="5" fill="${C.cream}" ${ink(4)}/><rect x="326" y="24" width="28" height="9" rx="4" fill="${C.cream}" ${ink(4)}/>` +
+        `<rect x="302" y="34" width="22" height="20" rx="4" fill="${C.cream}" ${ink(4)}/>` +
+        `<rect x="276" y="50" width="74" height="110" rx="18" fill="${C.teal}"/>` +
+        `<path d="M330,52 A18,18 0 0 1 350,68 V142 A18,18 0 0 1 332,160 H322 Z" fill="${C.tealDark}"/>` +
+        `<rect x="276" y="50" width="74" height="110" rx="18" fill="none" ${ink(6)}/>` +
+        `<rect x="287" y="88" width="52" height="46" rx="7" fill="${C.cream}" ${ink(3)}/>` +
+        `<path d="M296,104 H330 M296,118 H322" stroke="${C.tealLight}" stroke-width="4" stroke-linecap="round"/>` +
+        `<path d="M286,64 V140" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".45"/>` +
+        // hũ kem sứ có đai xanh men, nắp vàng nghệ
+        `<rect x="384" y="98" width="92" height="62" rx="18" fill="${C.cream}" ${ink(6)}/>` +
+        `<rect x="386" y="118" width="88" height="14" fill="${C.cobalt}"/>` +
+        `<path d="M456,100 A18,18 0 0 1 474,118 V142 A18,18 0 0 1 456,158 Z" fill="${shade(C.cream)}" opacity=".8"/>` +
+        `<rect x="384" y="98" width="92" height="62" rx="18" fill="none" ${ink(6)}/>` +
+        `<rect x="378" y="80" width="104" height="24" rx="9" fill="${C.mustard}" ${ink(5)}/>` +
+        `<path d="M392,88 H440" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".55"/>` +
+        // chậu cây nhỏ
+        `<path d="M512,116 H578 L570,160 H520 Z" fill="${C.terracotta}" ${ink(5)}/>` +
+        `<path d="M556,116 H578 L570,160 H552 Z" fill="${shade(C.terracotta)}"/>` +
+        `<path d="M512,116 H578 L570,160 H520 Z" fill="none" ${ink(5)}/>` +
+        `<path d="M545,116 Q520,80 506,52 Q540,66 548,112 Z M547,116 Q560,70 588,44 Q584,84 552,114 Z M546,116 Q540,86 548,40 Q566,78 552,114 Z" fill="${C.leaf}" ${ink(3.5)}/>` +
+        `<path d="M545,112 L512,60 M551,112 L582,52 M549,112 L548,50" stroke="${C.leafLight}" stroke-width="2.5" stroke-linecap="round"/>`,
     ),
     // vòi sen đồng: mặt vòi có lỗ, cổ đồng, dây thép
     'sh-shower': svgDoc(

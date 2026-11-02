@@ -13,6 +13,11 @@ const SKIN = { x: 540, y: 990, rx: 420, ry: 250 }
 const BOX: Box = [80, 700, 920, 580]
 /** Góc trên trái của mọi texture nối mi trên thẻ: đặt ảnh ở đây với gốc (0, 0). */
 export const LS_TOPLEFT = { x: BOX[0], y: BOX[1] }
+/** Cỡ ô chọn độ dài mi và thẻ mẫu; texture của chúng có lề 10 điểm ảnh bên trái, 8 bên trên. */
+export const LS_PAD = { w: 230, h: 180 }
+export const LS_SAMPLE = { w: 500, h: 235 }
+/** Lề trên trái của thẻ trong texture ô chọn và thẻ mẫu. */
+export const LS_CARD_INSET = { x: 10, y: 8 }
 
 const BROWN = '#2B201C'
 /** Nét đậm hơn mảng bóng trong phần được tô màu: nếp mí, mí dưới, sợi lông mày. */
@@ -87,7 +92,22 @@ export function lashesTextures(): Record<string, string> {
       })
       .join('') +
     `</g>`
+  // thẻ kem viền nâu: mảng bóng mép cứng dọc đáy và cạnh phải, vệt sáng góc trên trái
+  const card = (w: number, h: number, r: number, fill: string) => {
+    const rect = `M${10 + r},8 H${10 + w - r} A${r},${r} 0 0 1 ${10 + w},${8 + r} V${8 + h - r} A${r},${r} 0 0 1 ${10 + w - r},${8 + h} H${10 + r} A${r},${r} 0 0 1 10,${8 + h - r} V${8 + r} A${r},${r} 0 0 1 ${10 + r},8 Z`
+    return svgDoc(
+      [0, 0, w + 20, h + 20],
+      1,
+      `<path d="${rect}" fill="${fill}"/>` +
+        inside('cd', rect, `<path d="M10,${8 + h - 22} H${10 + w - 20} V8 H${10 + w} V${8 + h} H10 Z" fill="${shade(fill)}"/>`) +
+        `<path d="M${10 + r * 0.8},${8 + 14} C${10 + w * 0.2},${8 + 12} ${10 + w * 0.35},${8 + 12} ${10 + w * 0.45},${8 + 12}" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity=".55"/>` +
+        `<path d="${rect}" fill="none" ${ink(5)}/>`,
+    )
+  }
   return {
+    // ba ô chọn độ dài mi và thẻ kiểu mi mẫu
+    'ls-pad': card(LS_PAD.w, LS_PAD.h, 26, C.cream),
+    'ls-sample': card(LS_SAMPLE.w, LS_SAMPLE.h, 24, C.paper),
     // phần tô màu giữ nét nâu ở `ls-face-line`, vẽ sau cùng không bị tô
     'ls-face': svgDoc(BOX, 1, fillsOnly(skin) + skinShade),
     'ls-brow': svgDoc(BOX, 1, fillsOnly(brow) + temple),

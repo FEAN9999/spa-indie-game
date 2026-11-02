@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser'
-import { LS_TOPLEFT } from '../art/lashesArt'
+import { LS_CARD_INSET, LS_PAD, LS_SAMPLE, LS_TOPLEFT } from '../art/lashesArt'
 import { C, customerColors } from '../art/palette'
 import { LASHES_LID, LASHES_LIMIT_MS } from '../config'
 import type { Stars } from '../sim/economy'
@@ -11,7 +11,7 @@ import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
 /** The sample card at the top: its box, its title's line, and the small lid drawn on it, at this share of the big one. */
-const SAMPLE = { x: 290, y: 465, w: 500, h: 235, titleY: 505, lidY: 585, scale: 0.55 }
+const SAMPLE = { x: 290, y: 465, w: LS_SAMPLE.w, h: LS_SAMPLE.h, titleY: 505, lidY: 585, scale: 0.55 }
 /** Each length's lash in game pixels; each hangs down from its dot, leaning outward toward the corners. */
 const LEN_PX: Record<LashLen, number> = { s: 45, m: 75, l: 105 }
 const LEAN_DEG = 28
@@ -19,7 +19,7 @@ const LASH_W = 7
 /** The bare dots, and the ring round the dot a held lash would land on. */
 const DOT = { r: 15, ring: 30 }
 /** The tray's three pads, short to long, with the lash drawn on each and its name under it. */
-const PADS = { xs: [270, 540, 810], y: 1420, w: 230, h: 180, lashY: 1370, labelY: 1478 }
+const PADS = { xs: [270, 540, 810], y: 1420, w: LS_PAD.w, h: LS_PAD.h, lashY: 1370, labelY: 1478 }
 /** A held lash floats this far above the finger, so the thumb never hides where it will land. */
 const LIFT = 90
 const NAME: Record<LashLen, StringKey> = { s: 'lashesShort', m: 'lashesMid', l: 'lashesLong' }
@@ -42,8 +42,20 @@ function strokeLash(g: Phaser.GameObjects.Graphics, x: number, y: number, len: n
   // a gentle curl: the middle bows outward
   const mid = { x: (x + tip.x) / 2 + Math.cos(a) * len * 0.12 * Math.sign(t - 0.5 || 1), y: (y + tip.y) / 2 }
   const curve = new Phaser.Curves.QuadraticBezier(new Phaser.Math.Vector2(x, y), new Phaser.Math.Vector2(mid.x, mid.y), new Phaser.Math.Vector2(tip.x, tip.y))
-  g.lineStyle(width, colour, 1)
-  curve.draw(g, 12)
+  // sợi mi thuôn: gốc dày `width`, ngọn còn 20%
+  const pts = curve.getPoints(12)
+  const left: Phaser.Math.Vector2[] = []
+  const right: Phaser.Math.Vector2[] = []
+  pts.forEach((p, i) => {
+    const q = pts[Math.min(i + 1, pts.length - 1)]
+    const r = pts[Math.max(i - 1, 0)]
+    const n = Math.hypot(q.x - r.x, q.y - r.y) || 1
+    const [nx, ny] = [-(q.y - r.y) / n, (q.x - r.x) / n]
+    const half = (width / 2) * (1 - (0.8 * i) / (pts.length - 1))
+    left.push(new Phaser.Math.Vector2(p.x + nx * half, p.y + ny * half))
+    right.push(new Phaser.Math.Vector2(p.x - nx * half, p.y - ny * half))
+  })
+  g.fillStyle(colour, 1).fillPoints([...left, ...right.reverse()], true).fillCircle(x, y, width / 2)
 }
 
 /** Close-up Nối mi mini-game over the frozen spa: the sample card names a style, and a lash of the right length is dragged from the tray onto each dot along the customer's closed lid. */
@@ -119,8 +131,8 @@ export class LashesScene extends Phaser.Scene {
 
   /** The sample card: the style's name, and a small lid with the style's lashes on it. */
   private drawSample(): void {
+    this.add.image(SAMPLE.x - LS_CARD_INSET.x, SAMPLE.y - LS_CARD_INSET.y, 'ls-sample').setOrigin(0)
     const g = this.add.graphics()
-    g.fillStyle(hex(C.paper), 1).fillRoundedRect(SAMPLE.x, SAMPLE.y, SAMPLE.w, SAMPLE.h, 24).lineStyle(4, hex(C.ink)).strokeRoundedRect(SAMPLE.x, SAMPLE.y, SAMPLE.w, SAMPLE.h, 24)
     this.add.text(SAMPLE.x + SAMPLE.w / 2, SAMPLE.titleY, `${t('lashesSample')} · ${t(STYLE[this.rules.style])}`, textStyle(38, '800', C.terracotta)).setOrigin(0.5)
     const slots = lashSlots(this.rules.pattern.length)
     const at = (p: { x: number; y: number }) => ({ x: SAMPLE.x + SAMPLE.w / 2 + (p.x - LASHES_LID.x) * SAMPLE.scale, y: SAMPLE.lidY + (p.y - LASHES_LID.y) * SAMPLE.scale })
@@ -141,11 +153,10 @@ export class LashesScene extends Phaser.Scene {
 
   /** The three pads, each with its lash and its name. */
   private drawPads(): void {
+    for (const x of PADS.xs) this.add.image(x - PADS.w / 2 - LS_CARD_INSET.x, PADS.y - PADS.h / 2 - LS_CARD_INSET.y, 'ls-pad').setOrigin(0)
     const g = this.add.graphics()
     LASH_LENS.forEach((len, i) => {
       const x = PADS.xs[i]
-      g.fillStyle(hex(C.cream), 1).fillRoundedRect(x - PADS.w / 2, PADS.y - PADS.h / 2, PADS.w, PADS.h, 26)
-      g.lineStyle(4, hex(C.ink)).strokeRoundedRect(x - PADS.w / 2, PADS.y - PADS.h / 2, PADS.w, PADS.h, 26)
       strokeLash(g, x, PADS.lashY - LEN_PX[len] / 2, LEN_PX[len], 0.5, hex(C.ink))
       this.add.text(x, PADS.labelY, t(NAME[len]), textStyle(36, '800')).setOrigin(0.5)
     })

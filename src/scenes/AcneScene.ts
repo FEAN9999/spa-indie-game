@@ -10,7 +10,7 @@ import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstructi
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
-/** The face close-up behind the lens: the skin's middle, which the face and its blemishes flinch round. */
+/** Tâm vùng da của mặt nằm trên gối: mặt, tóc và các nốt mụn giật quanh điểm này. */
 const FACE = { x: 540, y: 1010 }
 /** Each blemish's look: a whitehead, a red one, the pink round both, one pressed in anger, and the marks left once cleared, bruised or dabbed. */
 const SPOT = { white: 22, core: 10, red: 22, halo: 32, angry: 34, mark: 14, bruise: 18, gel: 30 }
@@ -66,13 +66,15 @@ export class AcneScene extends Phaser.Scene {
 
     const colors = customerColors(this.params.look, this.params.kind)
     this.instruction = addMiniGameCard(this, t('acneTap'))
-    // mặt và chân mày tô theo màu khách, nét và vành đèn lúp vẽ trên cùng; cả mặt giật theo khi làm đau
+    // gối nằm yên; tóc, mặt, chân mày tô theo màu khách, nét, băng đô và khăn vẽ trên cùng; cả đầu giật theo khi làm đau
+    this.add.image(AC_TOPLEFT.x, AC_TOPLEFT.y, 'ac-pillow').setOrigin(0)
     const [x, y] = [AC_TOPLEFT.x - FACE.x, AC_TOPLEFT.y - FACE.y]
+    const hair = this.add.image(x, y, 'ac-hair').setOrigin(0).setTint(colors.hair)
     const skin = this.add.image(x, y, 'ac-face').setOrigin(0).setTint(colors.skin)
     const brows = this.add.image(x, y, 'ac-brow').setOrigin(0).setTint(colors.hair)
     const lines = this.add.image(x, y, 'ac-face-line').setOrigin(0)
     this.spots = this.add.graphics()
-    this.face = this.add.container(FACE.x, FACE.y, [skin, brows, lines, this.spots])
+    this.face = this.add.container(FACE.x, FACE.y, [hair, skin, brows, lines, this.spots])
     this.bars = this.add.graphics()
     if (this.params.demo) this.showDemo()
 

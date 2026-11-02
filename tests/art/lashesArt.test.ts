@@ -9,7 +9,7 @@ vi.mock('phaser', () => ({}))
 describe('lashes art', () => {
   it('has every picture the lashes game draws', () => {
     const tex = lashesTextures()
-    for (const key of ['ls-face', 'ls-brow', 'ls-face-line']) expect(tex[key], key).toBeDefined()
+    for (const key of ['ls-face', 'ls-brow', 'ls-face-line', 'ls-pad', 'ls-sample']) expect(tex[key], key).toBeDefined()
   })
 
   it('keeps the brown lines out of the skin and brow, which are tinted, and in the line texture', () => {
