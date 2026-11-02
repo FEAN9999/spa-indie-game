@@ -7,7 +7,7 @@ vi.mock('phaser', () => ({}))
 describe('che art', () => {
   it('draws every Chè part', () => {
     const textures = cheTextures()
-    expect(Object.keys(textures).sort()).toEqual(['che-coconut', 'che-glass', 'che-ice'])
+    expect(Object.keys(textures).sort()).toEqual(['che-coconut', 'che-fill-jelly', 'che-fill-mungBean', 'che-fill-redBean', 'che-glass', 'che-ice'])
     for (const svg of Object.values(textures)) {
       expect(svg.startsWith('<svg')).toBe(true)
       expect(svg.endsWith('</svg>')).toBe(true)

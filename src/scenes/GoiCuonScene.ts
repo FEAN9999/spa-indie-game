@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser'
-import { GC_BOX, GC_PAPER, GC_WATER } from '../art/goiCuonArt'
+import { GC_BOX, GC_PAPER, GC_WATER, GC_WET_TOP } from '../art/goiCuonArt'
 import { C } from '../art/palette'
 import { sound } from '../audio/engine'
 import { GC_ROLLS } from '../config'
@@ -30,8 +30,8 @@ const PART_BTN = { y: 1500, w: 205, h: 110, iconDx: -62, textDx: 30, textW: 120,
 const DONE = { x: 880, y: 1330, w: 240, h: 120 }
 /** The fill lesson's box stops this far left of the Xong button. */
 const LESSON_GAP = 20
-/** The rice paper's look: dry it is stiff cream with a woven mark; dipped it is pale and see-through. */
-const PAPER = { dryR: 125, dryX: 300, ink: 4, wetAlpha: 0.75 }
+/** The dry rice paper's radius, and where it waits left in the basin before a dip. */
+const PAPER = { dryR: 125, dryX: 300 }
 /** Where a swipe counts: the dip starts on the water; a roll anywhere over the board. */
 const BOARD_AREA = { left: 110, right: 970, top: 820, bottom: 1380 }
 /** The roll as it grows: a log this tall and this much wider than half the paper, the paper shrinking above it. */
@@ -69,7 +69,10 @@ export class GoiCuonScene extends Phaser.Scene {
   /** Everything of the station on the card, and its buttons, which go at the reveal. */
   private station: Phaser.GameObjects.GameObject[] = []
   private buttons: Phaser.GameObjects.GameObject[] = []
-  private paper: Phaser.GameObjects.Graphics | null = null
+  /** Bánh tráng khô theo ngón tay qua nước; bánh mềm trên thớt co dần lên khi cuốn; và cuốn dưới nó. */
+  private dry: Phaser.GameObjects.Image | null = null
+  private wet: Phaser.GameObjects.Image | null = null
+  private log: Phaser.GameObjects.Image | null = null
   private trail: Phaser.GameObjects.Graphics | null = null
   /** The fillings laid on the paper, kept to lay them again on the next station, and their pictures there. */
   private bits: { texture: string; x: number; y: number; rotation: number }[] = []
@@ -146,7 +149,7 @@ export class GoiCuonScene extends Phaser.Scene {
     this.station = []
     this.buttons = []
     this.bitImages = []
-    this.paper = this.trail = null
+    this.dry = this.wet = this.log = this.trail = null
     this.shown = s
     setInstruction(this.instruction, t(INSTRUCTION[s]))
     this.drawPills(STATIONS.indexOf(s))
@@ -157,13 +160,13 @@ export class GoiCuonScene extends Phaser.Scene {
 
     if (s === 'dip') {
       keep(this.add.image(GC_BOX.basin[0], GC_BOX.basin[1], 'gc-basin').setOrigin(0))
-      this.paper = keep(this.add.graphics().setDepth(DEPTH.paper))
-      this.drawDryPaper(PAPER.dryX, GC_WATER.y)
+      this.dry = keep(this.add.image(PAPER.dryX, GC_WATER.y, 'gc-paper-dry').setDepth(DEPTH.paper))
       this.trail = keep(this.add.graphics().setDepth(DEPTH.paper + 1))
       return
     }
     keep(this.add.image(GC_BOX.board[0], GC_BOX.board[1], 'gc-board').setOrigin(0))
-    this.paper = keep(this.add.graphics())
+    this.wet = keep(this.add.image(GC_PAPER.x, GC_PAPER.y - GC_PAPER.r, 'gc-paper-wet').setOrigin(0.5, GC_WET_TOP))
+    this.log = keep(this.add.image(GC_PAPER.x, GC_PAPER.y, 'gc-roll').setVisible(false))
     this.drawWetPaper(0)
     for (const bit of this.bits) this.bitImages.push(keep(this.add.image(bit.x, bit.y, bit.texture).setRotation(bit.rotation)))
     if (s === 'fill') {
@@ -190,35 +193,17 @@ export class GoiCuonScene extends Phaser.Scene {
     })
   }
 
-  /** The dry rice paper at (x, y): stiff cream with its woven cross-hatch. */
+  /** The dry rice paper at (x, y). */
   private drawDryPaper(x: number, y: number): void {
-    const g = this.paper?.clear()
-    if (!g) return
-    g.fillStyle(hex(C.cream), 1).fillCircle(x, y, PAPER.dryR).lineStyle(PAPER.ink, hex(C.ink)).strokeCircle(x, y, PAPER.dryR)
-    g.lineStyle(2, hex(C.tileSeam), 1)
-    for (let d = -PAPER.dryR + 25; d < PAPER.dryR; d += 25) {
-      const half = Math.sqrt(PAPER.dryR * PAPER.dryR - d * d)
-      g.lineBetween(x - half, y + d, x + half, y + d)
-      g.lineBetween(x + d, y - half, x + d, y + half)
-    }
+    this.dry?.setPosition(x, y).setVisible(true)
   }
 
   /** The soft paper on the board after `rolls` rolls: it shrinks up from its bottom into the log under it. */
   private drawWetPaper(rolls: number): void {
-    const g = this.paper?.clear()
-    if (!g) return
     const k = (rolls / GC_ROLLS) * LOG.shrink
     const top = GC_PAPER.y - GC_PAPER.r
-    const ry = GC_PAPER.r * (1 - k)
-    g.fillStyle(hex(C.paper), PAPER.wetAlpha).fillEllipse(GC_PAPER.x, top + ry, GC_PAPER.r * 2, ry * 2)
-    g.lineStyle(PAPER.ink, hex(C.ink), 0.7).strokeEllipse(GC_PAPER.x, top + ry, GC_PAPER.r * 2, ry * 2)
-    if (rolls === 0) return
-    const logY = top + ry * 2 - LOG.h / 2
-    g.fillStyle(hex(C.cream), 1).fillRoundedRect(GC_PAPER.x - LOG.halfW, logY - LOG.h / 2, LOG.halfW * 2, LOG.h, LOG.h / 2)
-    g.fillStyle(hex(C.lotus), 0.8)
-    for (const dx of [-150, -50, 50, 150]) g.fillEllipse(GC_PAPER.x + dx, logY, 54, 36)
-    g.lineStyle(6, hex(C.leafLight), 0.9).lineBetween(GC_PAPER.x - LOG.halfW + 40, logY + 22, GC_PAPER.x + LOG.halfW - 40, logY + 22)
-    g.lineStyle(PAPER.ink, hex(C.ink)).strokeRoundedRect(GC_PAPER.x - LOG.halfW, logY - LOG.h / 2, LOG.halfW * 2, LOG.h, LOG.h / 2)
+    this.wet?.setScale(1, 1 - k)
+    this.log?.setVisible(rolls > 0).setY(top + GC_PAPER.r * (1 - k) * 2 - LOG.h / 2)
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
@@ -252,7 +237,7 @@ export class GoiCuonScene extends Phaser.Scene {
         this.floatWord(t('gcDipShort'), C.lantern)
       } else if (result) {
         sound.play('foam')
-        this.paper?.clear()
+        this.dry?.setVisible(false)
         this.floatWord(t(DIP_WORD[result].key), DIP_WORD[result].color)
       }
       return

@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser'
-import { BC_BASKET, BC_BOWL, BC_BOX, BC_PATTIES, BC_PLATE } from '../art/bunChaArt'
+import { BC_BASKET, BC_BOWL, BC_BOX, BC_PATTIES, BC_PATTY, BC_PLATE } from '../art/bunChaArt'
 import { C } from '../art/palette'
 import { PHO_BOX, PHO_DIAL } from '../art/phoArt'
 import { sound } from '../audio/engine'
@@ -37,8 +37,8 @@ const NEEDLE = { w: 120, h: 22, ink: 4 }
 const FRAME = { w: 16, wire: 5, ink: 4, turnMs: 140 }
 /** The patties run from raw pink through golden brown to charred. */
 const BROWN = [C.houseRose, C.mustardDark, C.deepBrown]
-/** The sauce's colour, the band it should stop in, and how see-through that band is. */
-const SAUCE = { color: C.mustard, bandAlpha: 0.45, ink: 4 }
+/** The sauce's colour, the band it should stop in, and how see-through that band is; and the light line on its surface. */
+const SAUCE = { color: C.mustard, bandAlpha: 0.45, ink: 4, shine: 5, shineAlpha: 0.55, shineInset: 24 }
 /** A word rises from where it is said and fades; a long line is scaled down to fit the card. */
 const WORD = { size: 60, stroke: 12, risePx: 80, ms: 700, y: 870, x: 440, maxW: 880 }
 /** The last move of a step stays on screen this long before the next station. */
@@ -77,7 +77,8 @@ export class BunChaScene extends Phaser.Scene {
   private station: Phaser.GameObjects.GameObject[] = []
   private buttons: Phaser.GameObjects.GameObject[] = []
   private basket: Phaser.GameObjects.Container | null = null
-  private patties: Phaser.GameObjects.Graphics | null = null
+  /** Chả trong vỉ: hình tô màu theo độ chín của từng miếng. */
+  private patties: Phaser.GameObjects.Image[] = []
   private needle: Phaser.GameObjects.Graphics | null = null
   private flipLabel: Phaser.GameObjects.Text | null = null
   private sauce: Phaser.GameObjects.Graphics | null = null
@@ -155,7 +156,8 @@ export class BunChaScene extends Phaser.Scene {
     for (const o of this.station) o.destroy()
     this.station = []
     this.buttons = []
-    this.basket = this.patties = this.needle = this.sauce = null
+    this.basket = this.needle = this.sauce = null
+    this.patties = []
     this.flipLabel = null
     this.holdButton = null
     this.shown = s
@@ -168,14 +170,15 @@ export class BunChaScene extends Phaser.Scene {
 
     if (s === 'grill') {
       keep(this.add.image(BC_BOX.stove[0], BC_BOX.stove[1], 'bc-stove').setOrigin(0))
-      this.patties = this.add.graphics()
+      this.patties = BC_PATTIES.map(p => this.add.image(p.x, p.y, 'bc-patty').setScale(p.rx / BC_PATTY.rx, p.ry / BC_PATTY.ry))
+      const pattyLines = BC_PATTIES.map(p => this.add.image(p.x, p.y, 'bc-patty-line').setScale(p.rx / BC_PATTY.rx, p.ry / BC_PATTY.ry))
       const frame = this.add.graphics()
       const { hw, hh } = BC_BASKET
       frame.lineStyle(FRAME.wire, hex(C.stoneLight), 1)
       for (let x = -hw + 50; x < hw; x += 50) frame.lineBetween(x, -hh, x, hh)
       frame.lineStyle(FRAME.w + FRAME.ink * 2, hex(C.ink)).strokeRoundedRect(-hw, -hh, hw * 2, hh * 2, 30)
       frame.lineStyle(FRAME.w, hex(C.bamboo)).strokeRoundedRect(-hw, -hh, hw * 2, hh * 2, 30)
-      this.basket = keep(this.add.container(BC_BASKET.x, BC_BASKET.y, [this.patties, frame]))
+      this.basket = keep(this.add.container(BC_BASKET.x, BC_BASKET.y, [...this.patties, ...pattyLines, frame]))
       keep(this.add.image(PHO_BOX.dial[0], PHO_BOX.dial[1], 'pho-dial').setOrigin(0))
       const [lo, hi] = grillBand(this.params.ticket, this.params.hard)
       keep(this.add.graphics())
@@ -296,11 +299,7 @@ export class BunChaScene extends Phaser.Scene {
   /** The patties take the colour of the side over the coals, and the needle climbs the dial. */
   private drawGrill(): void {
     const brown = this.rules.brown
-    const g = this.patties
-    if (g) {
-      g.clear().fillStyle(brownColour(brown), 1).lineStyle(FRAME.ink, hex(C.ink))
-      for (const p of BC_PATTIES) g.fillEllipse(p.x, p.y, p.rx * 2, p.ry * 2).strokeEllipse(p.x, p.y, p.rx * 2, p.ry * 2)
-    }
+    for (const patty of this.patties) patty.setTint(brownColour(brown))
     const y = this.dialY(brown)
     this.needle
       ?.clear()
@@ -314,7 +313,9 @@ export class BunChaScene extends Phaser.Scene {
   private drawSauce(): void {
     this.sauce?.clear()
     if (!this.sauce || this.rules.sauce <= 0) return
-    this.sauce.fillStyle(hex(SAUCE.color), 1).fillPoints(this.slab(BC_BOWL.bottom, bowlY(this.rules.sauce)), true)
+    const top = bowlY(this.rules.sauce)
+    this.sauce.fillStyle(hex(SAUCE.color), 1).fillPoints(this.slab(BC_BOWL.bottom, top), true)
+    this.sauce.lineStyle(SAUCE.shine, hex(C.cloud), SAUCE.shineAlpha).lineBetween(BC_BOWL.x - bowlHalf(top) + SAUCE.shineInset, top + SAUCE.shine, BC_BOWL.x + bowlHalf(top) - SAUCE.shineInset, top + SAUCE.shine)
   }
 
   /** The bowl's inside between two heights, as the four corners of its slice. */

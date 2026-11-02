@@ -19,7 +19,6 @@ const STEP: Record<Station, StringKey> = { layer: 'cheStepLayer', ice: 'cheStepI
 /** The first game's lesson line for each station. */
 const LESSON: Record<Station, StringKey> = { layer: 'cheLearnLayer', ice: 'cheLearnIce', pour: 'cheLearnPour' }
 const LAYER_NAME: Record<Layer, StringKey> = { redBean: 'cheRedBean', mungBean: 'cheMungBean', jelly: 'cheJelly' }
-const LAYER_COLOUR: Record<Layer, string> = { redBean: C.terracotta, mungBean: C.mustard, jelly: C.leaf }
 const [GLASS_L, GLASS_R] = [CHE_GLASS.x - CHE_GLASS.halfW, CHE_GLASS.x + CHE_GLASS.halfW]
 /** The hold button under the glass; its label names the layer being poured and is scaled down to fit. */
 const HOLD = { x: 540, y: 1530, w: 680, h: 120, size: 48, padX: 40 }
@@ -29,6 +28,10 @@ const LAYER_LESSON_Y = 785
 const MARK = { dash: 22, gap: 14, w: 6, overhang: 34 }
 /** A glint down the glass's left side, over the layers. */
 const GLINT = { x: GLASS_L + 26, w: 14, inset: 40, alpha: 0.35 }
+/** Ánh mảnh thứ hai trên thành ly bên phải, mờ hơn. */
+const GLINT_RIGHT = { x: GLASS_R - 36, w: 8, inset: 70, alpha: 0.22 }
+/** Đường mép giữa hai lớp chè. */
+const SEAM = { w: 3, alpha: 0.8 }
 /** The ice block's centre, and how much it shrinks by the last tap; each tap punches it and throws shards from the finger. */
 const ICE = { x: 540, y: 1120, shrink: 0.35, punch: 0.92, punchMs: 120 }
 const SHARD = { n: 6, size: [12, 24], flyPx: [80, 180], ms: 450 }
@@ -71,6 +74,8 @@ export class CheScene extends Phaser.Scene {
   private tops: number[] = []
   private seenGood = 0
   private layers: Phaser.GameObjects.Graphics | null = null
+  /** Mỗi lớp chè là một tấm hình vừa lòng ly, cắt lấy đoạn lớp đó đang chiếm. */
+  private fills: Phaser.GameObjects.Image[] = []
   private holdButton: Phaser.GameObjects.Container | null = null
   private holdLabel: Phaser.GameObjects.Text | null = null
   private held = false
@@ -154,6 +159,7 @@ export class CheScene extends Phaser.Scene {
     this.station = []
     this.buttons = []
     this.layers = this.drizzle = null
+    this.fills = []
     this.holdButton = this.holdLabel = null
     this.ice = this.jug = null
     this.count = null
@@ -173,6 +179,7 @@ export class CheScene extends Phaser.Scene {
     }
 
     keep(this.add.image(CHE_GLASS_BOX[0], CHE_GLASS_BOX[1], 'che-glass').setOrigin(0))
+    this.fills = CHE_LAYERS.map(layer => keep(this.add.image(GLASS_L, CHE_GLASS.top, `che-fill-${layer}`).setOrigin(0).setVisible(false)))
     this.layers = keep(this.add.graphics())
     this.drawLayers()
     if (s === 'layer') {
@@ -188,12 +195,15 @@ export class CheScene extends Phaser.Scene {
         const x = GLASS_L + ((i + 0.5) * (GLASS_R - GLASS_L)) / CUBE.n - CUBE.w / 2
         const y = top - CUBE.rise - (i % 2) * (CUBE.h / 3)
         cubes.fillStyle(hex(C.glass), 1).fillRoundedRect(x, y, CUBE.w, CUBE.h, 10).lineStyle(3, hex(C.ink)).strokeRoundedRect(x, y, CUBE.w, CUBE.h, 10)
+        cubes.fillStyle(hex(C.cloud), 0.75).fillRoundedRect(x + 8, y + 6, CUBE.w * 0.4, 6, 3)
       }
       this.drizzle = keep(this.add.graphics())
     }
     keep(this.add.graphics())
       .fillStyle(hex(C.cloud), GLINT.alpha)
       .fillRoundedRect(GLINT.x, CHE_GLASS.top + GLINT.inset, GLINT.w, CHE_GLASS.bottom - CHE_GLASS.top - GLINT.inset * 2, GLINT.w / 2)
+      .fillStyle(hex(C.cloud), GLINT_RIGHT.alpha)
+      .fillRoundedRect(GLINT_RIGHT.x, CHE_GLASS.top + GLINT_RIGHT.inset, GLINT_RIGHT.w, CHE_GLASS.bottom - CHE_GLASS.top - GLINT_RIGHT.inset * 2, GLINT_RIGHT.w / 2)
 
     if (s === 'layer') {
       const bg = this.add
@@ -247,15 +257,20 @@ export class CheScene extends Phaser.Scene {
     this.holdLabel?.setScale(Math.min(1, (HOLD.w - HOLD.padX * 2) / this.holdLabel.width))
   }
 
-  /** The poured layers in their colours, and while pouring, the layer under way up to the current fill. */
+  /** The poured layers, each its picture cut to its height with a seam on top, and while pouring, the layer under way up to the current fill. */
   private drawLayers(): void {
     if (!this.layers) return
-    this.layers.clear()
+    this.layers.clear().lineStyle(SEAM.w, hex(C.ink), SEAM.alpha)
     const fills = this.rules.phase === 'layer' ? [...this.tops, this.rules.level] : this.tops
     let from = 0
-    fills.forEach((top, i) => {
-      if (top <= from) return
-      this.layers!.fillStyle(hex(LAYER_COLOUR[CHE_LAYERS[i]]), 1).fillRect(GLASS_L, levelY(top), GLASS_R - GLASS_L, levelY(from) - levelY(top))
+    this.fills.forEach((image, i) => {
+      const top = fills[i]
+      if (top === undefined || top <= from) {
+        image.setVisible(false)
+        return
+      }
+      image.setVisible(true).setCrop(0, levelY(top) - CHE_GLASS.top, image.width, levelY(from) - levelY(top))
+      this.layers!.lineBetween(GLASS_L, levelY(top), GLASS_R, levelY(top))
       from = top
     })
   }

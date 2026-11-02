@@ -35,9 +35,11 @@ const DONE = { x: 880, y: 1330, w: 240, h: 120 }
 const LESSON_GAP = 20
 const FOLD = { x: 540, y: 1520, w: 440, h: 120 }
 const NEEDLE = { w: 120, h: 22, ink: 4 }
-/** The batter's colour runs from raw cream through golden to dark brown as it browns. */
-const BROWN = [C.cream, C.mustard, C.woodDark]
+/** The batter's colour runs from raw pale turmeric through golden to dark brown as it browns; it tints the batter picture. */
+const BROWN = [C.bambooLight, C.mustard, C.woodDark]
 const BATTER_INK = 4
+/** Mép giòn của từng miếng bột vừa tráng. */
+const CRISP = { w: 10, alpha: 0.8 }
 /** A word rises from where it is said and fades; a long line is scaled down to fit the card. */
 const WORD = { size: 60, stroke: 12, risePx: 80, ms: 700, y: 870, x: BX_PAN.x, maxW: 880 }
 /** The last move of a step stays on screen this long before the next station. */
@@ -72,6 +74,8 @@ export class BanhXeoScene extends Phaser.Scene {
   private swipe: { x: number; y: number }[] | null = null
   private trail: Phaser.GameObjects.Graphics | null = null
   private batter: Phaser.GameObjects.Graphics | null = null
+  /** Bánh trong chảo sau bước tráng: phần bột tô màu theo độ chín và lớp nét không tô. */
+  private crepe: Phaser.GameObjects.Image[] = []
   private needle: Phaser.GameObjects.Graphics | null = null
   /** The fillings dropped on the batter, kept to lay them again on the next station, and their pictures there. */
   private bits: { id: BxTopping; x: number; y: number; rotation: number }[] = []
@@ -149,6 +153,7 @@ export class BanhXeoScene extends Phaser.Scene {
     this.buttons = []
     this.bitImages = []
     this.trail = this.batter = this.needle = null
+    this.crepe = []
     this.shown = s
     setInstruction(this.instruction, t(INSTRUCTION[s]))
     this.drawPills(STATIONS.indexOf(s))
@@ -158,11 +163,12 @@ export class BanhXeoScene extends Phaser.Scene {
     }
 
     keep(this.add.image(BX_PAN_BOX[0], BX_PAN_BOX[1], 'bx-pan').setOrigin(0))
-    this.batter = keep(this.add.graphics())
     if (s === 'spread') {
+      this.batter = keep(this.add.graphics())
       this.trail = keep(this.add.graphics())
       return
     }
+    this.crepe = [keep(this.add.image(BX_PAN.x, BX_PAN.y, 'bx-batter')), keep(this.add.image(BX_PAN.x, BX_PAN.y, 'bx-batter-line'))]
     this.drawBatter(brownColour(this.rules.brown))
     for (const bit of this.bits) this.bitImages.push(keep(this.add.image(bit.x, bit.y, `bx-${bit.id}`).setRotation(bit.rotation)))
     if (s === 'fill') {
@@ -225,7 +231,12 @@ export class BanhXeoScene extends Phaser.Scene {
     const step = (Math.PI * 2) / BX_SECTORS
     for (const i of spreadSectors(pts)) {
       const from = -Math.PI + i * step
-      this.batter?.fillStyle(hex(C.cream), 1).beginPath().slice(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter, from, from + step).closePath().fillPath()
+      this.batter?.fillStyle(hex(BROWN[0]), 1).beginPath().slice(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter, from, from + step).closePath().fillPath()
+      this.batter
+        ?.lineStyle(CRISP.w, hex(C.mustardDark), CRISP.alpha)
+        .beginPath()
+        .arc(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter - CRISP.w / 2, from, from + step)
+        .strokePath()
     }
     this.floatWord(t(result === 'good' ? 'bxSpreadGood' : 'bxSpreadThin'), result === 'good' ? C.teal : C.lantern)
   }
@@ -257,9 +268,9 @@ export class BanhXeoScene extends Phaser.Scene {
       .strokeRoundedRect(PHO_DIAL.x - NEEDLE.w / 2, y - NEEDLE.h / 2, NEEDLE.w, NEEDLE.h, NEEDLE.h / 2)
   }
 
-  /** The whole batter disc in the pan. */
+  /** The whole batter disc in the pan, in the colour of its brown. */
   private drawBatter(colour: number): void {
-    this.batter?.clear().fillStyle(colour, 1).fillCircle(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter).lineStyle(BATTER_INK, hex(C.ink)).strokeCircle(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter)
+    this.crepe[0]?.setTint(colour)
   }
 
   /** The top half folds down over the fillings into a half-disc, which stays until the reveal, and the fold is named. */
@@ -267,16 +278,16 @@ export class BanhXeoScene extends Phaser.Scene {
     sound.play('thud')
     for (const image of this.bitImages) image.destroy()
     this.bitImages = []
-    const colour = brownColour(this.rules.brown)
-    this.batter
-      ?.clear()
-      .fillStyle(colour, 1)
-      .beginPath()
-      .slice(BX_PAN.x, BX_PAN.y, BX_PAN_R.batter, 0, Math.PI)
-      .closePath()
-      .fillPath()
-      .lineStyle(BATTER_INK, hex(C.ink))
-      .strokePath()
+    this.drawBatter(brownColour(this.rules.brown))
+    // nửa dưới của bánh ở lại, mép gấp là một đường thẳng qua tâm chảo
+    for (const image of this.crepe) image.setCrop(0, image.height / 2, image.width, image.height / 2)
+    const fold = this.add.graphics()
+    this.station.push(fold)
+    fold
+      .lineStyle(BATTER_INK * 2, hex(C.mustardDark), 1)
+      .lineBetween(BX_PAN.x - BX_PAN_R.batter, BX_PAN.y + BATTER_INK, BX_PAN.x + BX_PAN_R.batter, BX_PAN.y + BATTER_INK)
+      .lineStyle(BATTER_INK, hex(C.ink), 1)
+      .lineBetween(BX_PAN.x - BX_PAN_R.batter, BX_PAN.y, BX_PAN.x + BX_PAN_R.batter, BX_PAN.y)
     const [lo] = foldBand(this.params.ticket, this.params.hard)
     const key: StringKey = this.rules.fold === 'in' ? 'bxFoldIn' : this.rules.brown < lo ? 'bxFoldSoft' : 'bxFoldBurnt'
     this.floatWord(t(key), this.rules.fold === 'in' ? C.teal : C.lantern)

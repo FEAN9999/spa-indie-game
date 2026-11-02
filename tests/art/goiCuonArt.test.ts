@@ -11,7 +11,7 @@ const hexes = (svg: string) => (svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map(c => 
 
 describe('gỏi cuốn art', () => {
   it('draws the basin, the board and the noodles as svg', () => {
-    expect(Object.keys(textures).sort()).toEqual(['gc-basin', 'gc-board', 'gc-bun'])
+    expect(Object.keys(textures).sort()).toEqual(['gc-basin', 'gc-board', 'gc-bun', 'gc-paper-dry', 'gc-paper-wet', 'gc-roll'])
     for (const svg of Object.values(textures)) expect(svg).toContain('<svg')
   })
 
