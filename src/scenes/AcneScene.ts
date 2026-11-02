@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { AC_TOPLEFT } from '../art/acneArt'
 import { C, customerColors } from '../art/palette'
 import { ACNE_AT, ACNE_LIFT_MS, ACNE_LIFT_MS_HARD, ACNE_LIMIT_MS, ACNE_POP_MS } from '../config'
 import { AcneGame, type AcneSpot } from '../sim/acne'
@@ -9,12 +10,10 @@ import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstructi
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
 
-/** The cheek close-up: the skin's middle and size, a closed eye near its top left and the side of the nose at its right. */
-const FACE = { x: 540, y: 1010, rx: 410, ry: 300 }
-const EYE = { x0: 300, x1: 520, y: 790, sag: 30 }
-const NOSE = { x: 870, y0: 860, y1: 1060 }
-/** Each blemish's look: a whitehead, a red one, one pressed in anger, and the marks left once cleared, bruised or dabbed. */
-const SPOT = { white: 22, core: 9, red: 26, angry: 34, mark: 14, bruise: 18, gel: 30 }
+/** The face close-up behind the lens: the skin's middle, which the face and its blemishes flinch round. */
+const FACE = { x: 540, y: 1010 }
+/** Each blemish's look: a whitehead, a red one, the pink round both, one pressed in anger, and the marks left once cleared, bruised or dabbed. */
+const SPOT = { white: 22, core: 10, red: 22, halo: 32, angry: 34, mark: 14, bruise: 18, gel: 30 }
 /** The ring round a held whitehead: it fills to the pop, then empties through the grace. */
 const RING = { r: 50, w: 12 }
 /** The popped core jumps up and fades. */
@@ -67,24 +66,13 @@ export class AcneScene extends Phaser.Scene {
 
     const colors = customerColors(this.params.look, this.params.kind)
     this.instruction = addMiniGameCard(this, t('acneTap'))
-    const skin = this.add.graphics()
-    skin.fillStyle(colors.skin, 1).fillEllipse(0, 0, FACE.rx * 2, FACE.ry * 2).lineStyle(5, hex(C.ink)).strokeEllipse(0, 0, FACE.rx * 2, FACE.ry * 2)
-    const eye = new Phaser.Curves.QuadraticBezier(
-      new Phaser.Math.Vector2(EYE.x0 - FACE.x, EYE.y - FACE.y),
-      new Phaser.Math.Vector2((EYE.x0 + EYE.x1) / 2 - FACE.x, EYE.y + EYE.sag - FACE.y),
-      new Phaser.Math.Vector2(EYE.x1 - FACE.x, EYE.y - FACE.y),
-    )
-    skin.lineStyle(8, hex(C.ink))
-    eye.draw(skin, 12)
-    const nose = new Phaser.Curves.QuadraticBezier(
-      new Phaser.Math.Vector2(NOSE.x - FACE.x, NOSE.y0 - FACE.y),
-      new Phaser.Math.Vector2(NOSE.x - 60 - FACE.x, (NOSE.y0 + NOSE.y1) / 2 - FACE.y),
-      new Phaser.Math.Vector2(NOSE.x - 10 - FACE.x, NOSE.y1 - FACE.y),
-    )
-    skin.lineStyle(5, hex(C.ink), 0.5)
-    nose.draw(skin, 12)
+    // mặt và chân mày tô theo màu khách, nét và vành đèn lúp vẽ trên cùng; cả mặt giật theo khi làm đau
+    const [x, y] = [AC_TOPLEFT.x - FACE.x, AC_TOPLEFT.y - FACE.y]
+    const skin = this.add.image(x, y, 'ac-face').setOrigin(0).setTint(colors.skin)
+    const brows = this.add.image(x, y, 'ac-brow').setOrigin(0).setTint(colors.hair)
+    const lines = this.add.image(x, y, 'ac-face-line').setOrigin(0)
     this.spots = this.add.graphics()
-    this.face = this.add.container(FACE.x, FACE.y, [skin, this.spots])
+    this.face = this.add.container(FACE.x, FACE.y, [skin, brows, lines, this.spots])
     this.bars = this.add.graphics()
     if (this.params.demo) this.showDemo()
 
@@ -126,10 +114,16 @@ export class AcneScene extends Phaser.Scene {
     for (const s of this.rules.spots) {
       const p = local(s)
       if (s.state === 'whole' && s.kind === 'white') {
+        // mụn đầu trắng: chân hồng nổi, nhân trắng, chấm sáng
+        g.fillStyle(hex(C.lotus), 0.35).fillCircle(p.x, p.y, SPOT.halo)
         g.fillStyle(hex(C.lotus), 1).fillCircle(p.x, p.y, SPOT.white).lineStyle(3, hex(C.lotusDark)).strokeCircle(p.x, p.y, SPOT.white)
-        g.fillStyle(hex(C.cloud), 1).fillCircle(p.x, p.y - 2, SPOT.core)
+        g.fillStyle(hex(C.cream), 1).fillCircle(p.x, p.y - 2, SPOT.core).lineStyle(2, hex(C.tileSeam)).strokeCircle(p.x, p.y - 2, SPOT.core)
+        g.fillStyle(hex(C.cloud), 1).fillCircle(p.x - 4, p.y - 6, 3.5)
       } else if (s.state === 'whole') {
-        g.fillStyle(hex(C.lantern), 0.85).fillCircle(p.x, p.y, SPOT.red).lineStyle(3, hex(C.lanternDark)).strokeCircle(p.x, p.y, SPOT.red)
+        // mụn đỏ: không được nặn
+        g.fillStyle(hex(C.lotus), 0.4).fillCircle(p.x, p.y, SPOT.halo)
+        g.fillStyle(hex(C.lantern), 1).fillCircle(p.x, p.y, SPOT.red).lineStyle(3, hex(C.lanternDark)).strokeCircle(p.x, p.y, SPOT.red)
+        g.fillStyle(hex(C.cloud), 0.6).fillEllipse(p.x - 7, p.y - 8, 12, 7)
       } else if (s.state === 'angry') {
         g.fillStyle(hex(C.lotus), 0.6).fillCircle(p.x, p.y, SPOT.angry).fillStyle(hex(C.lanternDark), 1).fillCircle(p.x, p.y, SPOT.red)
       } else {

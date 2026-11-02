@@ -51,7 +51,7 @@ export class MaskScene extends Phaser.Scene {
   private rimClip!: Phaser.GameObjects.Graphics
   private frown!: Phaser.GameObjects.Image
   private frownTimer: Phaser.Time.TimerEvent | null = null
-  private tray!: Phaser.GameObjects.Graphics
+  private tray!: Phaser.GameObjects.Image
   private slices: Slice[] = []
   private sliceScale = 1
   private dragging: Slice | null = null
@@ -91,14 +91,7 @@ export class MaskScene extends Phaser.Scene {
     this.add.image(FACE.x, FACE.y, 'mk-face-line').setOrigin(o.face.x, o.face.y)
     this.frown = this.add.image(FACE.x, FACE.y, 'mk-frown').setOrigin(o.frown.x, o.frown.y).setVisible(false)
 
-    this.tray = this.add
-      .graphics()
-      .fillStyle(hex(C.cream), 1)
-      .fillEllipse(TRAY.x, TRAY.y, TRAY.w, TRAY.h)
-      .lineStyle(4, hex(C.ink))
-      .strokeEllipse(TRAY.x, TRAY.y, TRAY.w, TRAY.h)
-      .lineStyle(5, hex(C.cobalt))
-      .strokeEllipse(TRAY.x, TRAY.y, TRAY.w - 50, TRAY.h - 40)
+    this.tray = this.add.image(TRAY.x, TRAY.y, 'mk-plate').setOrigin(o.plate.x, o.plate.y)
     // the slices wait faded until the mask is on
     this.sliceScale = (this.rules.eyes()[0].r * R + SLICE_OVER_EYE_PX) / SLICE_ART_R
     for (const dx of [-TRAY.sliceDx, TRAY.sliceDx]) {

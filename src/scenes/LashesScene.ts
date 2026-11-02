@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { LS_TOPLEFT } from '../art/lashesArt'
 import { C, customerColors } from '../art/palette'
 import { LASHES_LID, LASHES_LIMIT_MS } from '../config'
 import type { Stars } from '../sim/economy'
@@ -11,8 +12,6 @@ import { textStyle } from '../view/text'
 
 /** The sample card at the top: its box, its title's line, and the small lid drawn on it, at this share of the big one. */
 const SAMPLE = { x: 290, y: 465, w: 500, h: 235, titleY: 505, lidY: 585, scale: 0.55 }
-/** The face round the closed eye: the skin's centre and size, the brow over it and the crease above the lid. */
-const FACE = { x: 540, y: 990, rx: 420, ry: 250, browY: 800, browHalf: 260, creaseUp: 55 }
 /** Each length's lash in game pixels; each hangs down from its dot, leaning outward toward the corners. */
 const LEN_PX: Record<LashLen, number> = { s: 45, m: 75, l: 105 }
 const LEAN_DEG = 28
@@ -132,22 +131,12 @@ export class LashesScene extends Phaser.Scene {
     })
   }
 
-  /** The skin round the closed eye, the brow over it, the crease above the lid and the lid's line through the dots. */
+  /** Da quanh mắt nhắm qua vành đèn lúp, chân mày và tóc mai, nếp mí và đường mí đi qua các chấm. */
   private drawFace(skin: number, hair: number): void {
-    const g = this.add.graphics()
-    g.fillStyle(skin, 1).fillEllipse(FACE.x, FACE.y, FACE.rx * 2, FACE.ry * 2).lineStyle(5, hex(C.ink)).strokeEllipse(FACE.x, FACE.y, FACE.rx * 2, FACE.ry * 2)
-    const brow = new Phaser.Curves.QuadraticBezier(
-      new Phaser.Math.Vector2(FACE.x - FACE.browHalf, FACE.browY + 30),
-      new Phaser.Math.Vector2(FACE.x, FACE.browY - 40),
-      new Phaser.Math.Vector2(FACE.x + FACE.browHalf, FACE.browY + 20),
-    )
-    g.lineStyle(26, hex(C.ink))
-    brow.draw(g, 16)
-    g.lineStyle(18, hair)
-    brow.draw(g, 16)
-    const slots = this.rules.slots
-    g.lineStyle(4, hex(C.ink), 0.45).strokePoints(slots.map(s => new Phaser.Math.Vector2(s.x, s.y - FACE.creaseUp - 40 * Math.sin((Math.PI * (s.x - slots[0].x)) / (slots[slots.length - 1].x - slots[0].x)))))
-    g.lineStyle(9, hex(C.ink)).strokePoints(slots.map(s => new Phaser.Math.Vector2(s.x, s.y)))
+    const { x, y } = LS_TOPLEFT
+    this.add.image(x, y, 'ls-face').setOrigin(0).setTint(skin)
+    this.add.image(x, y, 'ls-brow').setOrigin(0).setTint(hair)
+    this.add.image(x, y, 'ls-face-line').setOrigin(0)
   }
 
   /** The three pads, each with its lash and its name. */

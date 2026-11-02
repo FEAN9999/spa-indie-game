@@ -1,17 +1,15 @@
 import * as Phaser from 'phaser'
 import { customerColors } from '../art/palette'
+import { SH_ORIGIN } from '../art/shampooArt'
 import { sound } from '../audio/engine'
-import { GAME_W } from '../config'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
 import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 
-/** Bounding ellipse of the `sh-hair` image, which is drawn centred on it. */
+/** Bounding ellipse of the hair the foam goes on; every picture of the basin, head and hair is drawn round its centre. */
 const HAIR = { x: 540, y: 710, rx: 210, ry: 150 }
-/** The head's centre, where the `sh-hair` art expects it: the back of the head lies in the basin. */
-const HEAD_Y = HAIR.y + 130
 const FOAM_STEP_PX = 28
 const MAX_FOAM = 90
 const DROP_EVERY_MS = 45
@@ -59,11 +57,15 @@ export class ShampooScene extends Phaser.Scene {
 
     const colors = customerColors(this.params.look, this.params.kind, null, null, false, this.params.idol ?? null)
     this.instruction = addMiniGameCard(this, t('shampooFoam'))
-    this.add.image(GAME_W / 2, HAIR.y - 190, 'sh-basin').setOrigin(0.5, 0)
-    this.add.image(GAME_W / 2, HEAD_Y, 'sh-head').setTint(colors.skin)
-    this.add.image(GAME_W / 2, HEAD_Y, 'sh-head-line')
-    this.add.image(HAIR.x, HAIR.y, 'sh-hair').setTint(colors.hair)
-    this.add.image(HAIR.x, HAIR.y, 'sh-hair-line')
+    // tóc xoã vào chậu nằm dưới mặt; chân tóc và chân mày vẽ đè lên mặt
+    const o = SH_ORIGIN
+    this.add.image(HAIR.x, HAIR.y, 'sh-basin').setOrigin(o.basin.x, o.basin.y)
+    this.add.image(HAIR.x, HAIR.y, 'sh-hair').setOrigin(o.hair.x, o.hair.y).setTint(colors.hair)
+    this.add.image(HAIR.x, HAIR.y, 'sh-hair-line').setOrigin(o.hair.x, o.hair.y)
+    this.add.image(HAIR.x, HAIR.y, 'sh-head').setOrigin(o.head.x, o.head.y).setTint(colors.skin)
+    this.add.image(HAIR.x, HAIR.y, 'sh-head-line').setOrigin(o.head.x, o.head.y)
+    this.add.image(HAIR.x, HAIR.y, 'sh-fringe').setOrigin(o.fringe.x, o.fringe.y).setTint(colors.hair)
+    this.add.image(HAIR.x, HAIR.y, 'sh-fringe-line').setOrigin(o.fringe.x, o.fringe.y)
     this.bars = this.add.graphics()
     this.shower = this.add.image(0, 0, 'sh-shower').setOrigin(0.5, 0.25).setVisible(false).setDepth(10)
     this.towel = this.add.image(0, 0, 'sh-towel').setVisible(false).setDepth(10)

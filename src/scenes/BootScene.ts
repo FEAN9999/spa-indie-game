@@ -14,6 +14,8 @@ import { furnitureTextures } from '../art/furniture'
 import { ingredientTextures } from '../art/ingredients'
 import { mapTexture } from '../art/map'
 import { maskTextures } from '../art/maskArt'
+import { lashesTextures } from '../art/lashesArt'
+import { acneTextures } from '../art/acneArt'
 import { massageTextures } from '../art/massageArt'
 import { footTextures } from '../art/footArt'
 import { nailsTextures } from '../art/nailsArt'
@@ -67,6 +69,8 @@ export class BootScene extends Phaser.Scene {
       ...badgeTextures(),
       ...shampooTextures(),
       ...maskTextures(),
+      ...lashesTextures(),
+      ...acneTextures(),
       ...massageTextures(),
       ...scrubTextures(),
       ...footTextures(),
