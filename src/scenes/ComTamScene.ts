@@ -44,17 +44,12 @@ const NEEDLE = { w: 120, h: 22, ink: 4 }
 const PLATED = { x: 450, y: 1080 }
 /** An oil spot's glow while lit, and the drops it leaves when caught. */
 const SPOT = { r: 46, drop: 9 }
-/** The chop runs from raw pink through glazed brown, and goes dark as it burns. */
-const BROWN = [C.houseRose, C.woodLight]
 /** A word rises from where it is said and fades; a long line is scaled down to fit the card. */
 const WORD = { size: 60, stroke: 12, risePx: 80, ms: 700, x: 440, y: 870, maxW: 880 }
 /** The last move of a step stays on screen this long before the next station. */
 const STATION_DELAY_MS = 700
 const DEPTH = { word: 10 }
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
-/** Blends two 0xRRGGBB colours, `k` from 0 to 1. */
-const mix = (a: number, b: number, k: number) =>
-  [16, 8, 0].reduce((out, shift) => out | (Math.round(Phaser.Math.Linear((a >> shift) & 255, (b >> shift) & 255, Phaser.Math.Clamp(k, 0, 1))) << shift), 0)
 
 /** Cooking Cơm tấm over the frozen shops: fan the coals to keep the heat in the band while the chop grills, lay the ticket's sides, and catch the scallion oil spots as they light on the plate. */
 export class ComTamScene extends Phaser.Scene {
@@ -71,8 +66,8 @@ export class ComTamScene extends Phaser.Scene {
   /** Everything of the station on the card, and its buttons, which go at the reveal. */
   private station: Phaser.GameObjects.GameObject[] = []
   private buttons: Phaser.GameObjects.GameObject[] = []
-  /** The chop on the grill: its meat, tinted as it browns, and its grill marks, which show as it cooks. */
-  private chop: { meat: Phaser.GameObjects.Image; marks: Phaser.GameObjects.Image } | null = null
+  /** Miếng sườn trên vỉ: lớp sống ở dưới, lớp chín và lớp cháy chồng lên hiện dần, và vết vỉ hiện khi chín. */
+  private chop: { cooked: Phaser.GameObjects.Image; burnt: Phaser.GameObjects.Image; marks: Phaser.GameObjects.Image } | null = null
   private coals: Phaser.GameObjects.Graphics | null = null
   private needle: Phaser.GameObjects.Graphics | null = null
   private fan: Phaser.GameObjects.Image | null = null
@@ -169,7 +164,12 @@ export class ComTamScene extends Phaser.Scene {
     if (s === 'grill') {
       keep(this.add.image(BC_BOX.stove[0], BC_BOX.stove[1], 'bc-stove').setOrigin(0))
       this.coals = keep(this.add.graphics())
-      this.chop = { meat: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop')), marks: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-marks')) }
+      keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-raw'))
+      this.chop = {
+        cooked: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-cooked')),
+        burnt: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-burnt')),
+        marks: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-marks')),
+      }
       keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-line'))
       keep(this.add.image(PHO_BOX.dial[0], PHO_BOX.dial[1], 'pho-dial').setOrigin(0))
       const h = ctHeat(this.params.hard)
@@ -239,8 +239,9 @@ export class ComTamScene extends Phaser.Scene {
   private drawGrill(): void {
     const { heat, done, burnMs } = this.rules
     this.coals?.clear().fillStyle(hex(C.stoneHot), COALS.alpha * heat).fillRoundedRect(COALS.x, COALS.y, COALS.w, COALS.h, COALS.h / 2)
-    const colour = mix(mix(hex(BROWN[0]), hex(BROWN[1]), done), hex(C.deepBrown), burnMs / CT_BURN_MS.near)
-    this.chop?.meat.setTint(colour)
+    // sống → chín theo `done`, rồi cháy theo thời gian quá lửa: cùng tỉ lệ pha màu như trước, nay pha giữa ba lớp màu thật
+    this.chop?.cooked.setAlpha(Phaser.Math.Clamp(done, 0, 1))
+    this.chop?.burnt.setAlpha(Phaser.Math.Clamp(burnMs / CT_BURN_MS.near, 0, 1))
     this.chop?.marks.setAlpha(done)
     const y = this.dialY(heat)
     this.needle

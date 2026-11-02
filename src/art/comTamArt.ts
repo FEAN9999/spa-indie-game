@@ -139,13 +139,50 @@ const FAN =
   `<path d="${FACE}" fill="none" stroke="${C.ink}" stroke-width="10"/>` +
   `<path d="${FACE}" fill="none" stroke="${C.clay}" stroke-width="5"/>`
 
-// miếng sườn trên vỉ, chia ba lớp: phần thịt vẽ trắng để tô từ hồng sống sang cánh gián rồi cháy,
+// miếng sườn trên vỉ: ba lớp thịt màu thật (sống, chín, cháy) cùng hình, cảnh đổi độ mờ theo độ chín;
 // vết vỉ hiện dần khi chín, và lớp nét không tô (viền, xương, điểm sáng)
 const CHOP = 'M152,-30 C124,-75 3,-86 -80,-71 C-155,-58 -187,-15 -164,30 C-141,75 -52,89 31,82 C105,76 170,52 175,15 C178,-4 166,-19 152,-30 Z'
 const FAT = 'M170,-22 C124,-69 3,-79 -80,-64 C-145,-52 -177,-18 -169,12 C-155,-25 -117,-43 -80,-48 C3,-60 105,-52 161,-12 Z'
-const GRILL_CHOP =
-  `<path d="${CHOP}" fill="${C.cloud}"/>` +
-  inside('ct-grill-chop', CHOP, `<path d="${CHOP}" ${dim(0.07)}/><path d="${FAT}" fill="${C.cloud}"/><path d="M198,52 C78,89 -90,75 -201,7 L-201,127 L198,127 Z" ${dim(0.16)}/>`)
+/** Mép trong của dải mỡ, nơi mỡ giáp thịt. */
+const FAT_EDGE = 'M-169,12 C-155,-25 -117,-43 -80,-48 C3,-60 105,-52 161,-12'
+/** Nửa dưới miếng sườn, phía khuất sáng. */
+const CHOP_SHADE = 'M198,52 C78,89 -90,75 -201,7 L-201,127 L198,127 Z'
+
+/** Một lớp thịt: màu nền, mảng bóng dưới, dải mỡ, mép mỡ và các vân riêng của độ chín đó. */
+const chopLayer = (id: string, meat: string, shadeCol: string, fat: string, fatEdge: string, grain: string) =>
+  `<path d="${CHOP}" fill="${meat}"/>` +
+  inside(id, CHOP, `<path d="${CHOP_SHADE}" fill="${shadeCol}"/><path d="${FAT}" fill="${fat}"/>` + line(FAT_EDGE, fatEdge, 6) + grain)
+
+// sống: hồng thịt tươi, vân mỡ trắng hồng, dải mỡ trắng ngà
+const CHOP_RAW = chopLayer(
+  'ct-chop-raw',
+  C.beachHouseCoral,
+  C.beachHouseCoralDark,
+  C.burnPale,
+  C.houseRoseDark,
+  line('M-120,8 C-80,-6 -40,14 0,2 S70,-14 110,4 M-90,42 C-50,30 -10,52 40,40 C70,34 100,44 130,30', C.houseRose, 6) +
+    line('M-40,10 C-34,22 -38,32 -30,40 M60,-6 C68,6 76,10 80,22', C.houseRose, 3.5),
+)
+// chín vừa: cánh gián ấm, viền mỡ vàng cháy cạnh, nước ướp bóng
+const CHOP_COOKED = chopLayer(
+  'ct-chop-cooked',
+  C.phoTileSpeck,
+  C.phoTileSeam,
+  C.restHouseMango,
+  C.mustardDark,
+  line('M-120,8 C-80,-6 -40,14 0,2 S70,-14 110,4 M-90,42 C-50,30 -10,52 40,40 C70,34 100,44 130,30', C.phoTile, 6, ' opacity=".7"') +
+    `<circle cx="-60" cy="-50" r="5" fill="${C.woodDark}"/><circle cx="40" cy="-58" r="6" fill="${C.woodDark}"/><circle cx="120" cy="-30" r="5" fill="${C.woodDark}"/>`,
+)
+// quá lửa: nâu sẫm cháy, mỡ khét, đốm than
+const CHOP_BURNT = chopLayer(
+  'ct-chop-burnt',
+  C.coopStepHigh,
+  C.coopDoor,
+  C.clay,
+  C.coopStepHigh,
+  `<circle cx="-110" cy="10" r="6" fill="${C.coopDoor}"/><circle cx="-30" cy="40" r="8" fill="${C.coopDoor}"/><circle cx="60" cy="-10" r="7" fill="${C.coopDoor}"/>` +
+    `<circle cx="120" cy="36" r="6" fill="${C.coopDoor}"/><circle cx="-70" cy="-50" r="5" fill="${C.deepBrown}"/><circle cx="30" cy="-56" r="6" fill="${C.deepBrown}"/>`,
+)
 const GRILL_MARKS = inside('ct-grill-marks', CHOP, line('M143,97 L39,-89 M79,104 L-25,-82 M16,106 L-88,-81 M-47,101 L-151,-75 M-110,89 L-201,-60', C.deepBrown, 20, ' opacity=".7"'))
 const GRILL_LINE =
   `<path d="M167,1 C200,-7 228,-3 235,10 C241,24 224,34 206,28 C191,24 180,24 167,28 Z" fill="${C.sand}" ${ink(5)}/>` +
@@ -153,7 +190,7 @@ const GRILL_LINE =
   `<path d="${CHOP}" fill="none" ${ink(6)}/>` +
   line('M117,-3 C96,-13 72,-16 48,-15 M-8,-25 C-25,-28 -43,-27 -58,-22 M-93,-12 C-108,-7 -119,1 -125,12', C.cloud, 7, ' opacity=".45"')
 
-/** The Cơm tấm pictures: the plate, the cooked chop, the four sides, the fan, and the chop on the grill in its three layers. */
+/** The Cơm tấm pictures: the plate, the cooked chop, the four sides, the fan, and the chop on the grill: raw, cooked and burnt layers, its marks and its lines. */
 export function comTamTextures(): Record<string, string> {
   return {
     'ct-plate': svgDoc(CT_BOX.plate, 1, PLATE),
@@ -163,7 +200,9 @@ export function comTamTextures(): Record<string, string> {
     'ct-trung': svgDoc([0, 0, 60, 60], 1, TRUNG),
     'ct-chua': svgDoc([0, 0, 60, 60], 1, CHUA),
     'ct-fan': svgDoc([0, 0, 140, 140], 1, FAN),
-    'ct-grill-chop': svgDoc(GRILL_CHOP_BOX, 1, GRILL_CHOP),
+    'ct-grill-chop-raw': svgDoc(GRILL_CHOP_BOX, 1, CHOP_RAW),
+    'ct-grill-chop-cooked': svgDoc(GRILL_CHOP_BOX, 1, CHOP_COOKED),
+    'ct-grill-chop-burnt': svgDoc(GRILL_CHOP_BOX, 1, CHOP_BURNT),
     'ct-grill-chop-marks': svgDoc(GRILL_CHOP_BOX, 1, GRILL_MARKS),
     'ct-grill-chop-line': svgDoc(GRILL_CHOP_BOX, 1, GRILL_LINE),
   }

@@ -11,12 +11,15 @@ const hexes = (svg: string) => (svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []).map(c => 
 
 describe('cơm tấm art', () => {
   it('draws the plate, the chop, the four sides, the fan and the chop on the grill as svg', () => {
-    expect(Object.keys(textures).sort()).toEqual(['ct-bi', 'ct-cha', 'ct-chua', 'ct-fan', 'ct-grill-chop', 'ct-grill-chop-line', 'ct-grill-chop-marks', 'ct-plate', 'ct-suon', 'ct-trung'])
+    expect(Object.keys(textures).sort()).toEqual(['ct-bi', 'ct-cha', 'ct-chua', 'ct-fan', 'ct-grill-chop-burnt', 'ct-grill-chop-cooked', 'ct-grill-chop-line', 'ct-grill-chop-marks', 'ct-grill-chop-raw', 'ct-plate', 'ct-suon', 'ct-trung'])
     for (const svg of Object.values(textures)) expect(svg).toContain('<svg')
   })
 
-  it('draws the chop on the grill white to tint, its lines and bone apart, untinted', () => {
-    expect(textures['ct-grill-chop']).not.toContain(`stroke="${C.ink}"`)
+  it('draws the chop on the grill raw pink, glazed brown and burnt in their own colours, its lines and bone apart', () => {
+    expect(textures['ct-grill-chop-raw']).toContain(C.beachHouseCoral)
+    expect(textures['ct-grill-chop-cooked']).toContain(C.phoTileSpeck)
+    expect(textures['ct-grill-chop-burnt']).toContain(C.coopStepHigh)
+    for (const key of ['ct-grill-chop-raw', 'ct-grill-chop-cooked', 'ct-grill-chop-burnt']) expect(textures[key]).not.toContain(`stroke="${C.ink}"`)
     expect(textures['ct-grill-chop-line']).toContain(`stroke="${C.ink}"`)
     expect(textures['ct-grill-chop-line']).toContain(C.sand)
   })
