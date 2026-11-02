@@ -1,3 +1,4 @@
+import { HIGHLIGHT, TINT_SHADE, ink, shade } from './aplus'
 import { IDOL_PARTS } from './idols'
 import { OUTFIT_PARTS } from './outfits'
 import { fillsOnly, linesOnly } from './outline'
@@ -13,77 +14,142 @@ export const CHIBI_PX = 2.4 // canvas pixels per chibi unit (character ~122px, a
 export type Part = { viewBox: [number, number, number, number]; body: string }
 
 const W = '#ffffff'
-const SHADE = '#e6e6e6'
 const INK = '#4A2E22'
 const LINE = `stroke="${INK}" stroke-width="1.3" stroke-linejoin="round"`
-const FINE = `stroke="${INK}" stroke-width="0.9" stroke-linecap="round" fill="none"`
+const FINE = `stroke="${INK}" stroke-width="0.8" stroke-linecap="round" fill="none"`
+// A+: the outline, the inner line at about 60% and the detail at about 40%, all in the ink brown
+const EDGE = `fill="none" ${ink(1.3)}`
+const INNER = `fill="none" ${ink(0.8)}`
+const DETAIL = `fill="none" ${ink(0.55)}`
 
+const n = (v: number) => +v.toFixed(2)
+/** An ellipse as a path, so it can be shaded and clipped like any shape. */
+const ell = (cx: number, cy: number, rx: number, ry = rx) => `M${n(cx - rx)},${cy} a${rx},${ry} 0 1 0 ${n(2 * rx)},0 a${rx},${ry} 0 1 0 ${n(-2 * rx)},0Z`
+/** A rounded rectangle as a path. */
+const rr = (x: number, y: number, w: number, h: number, r: number) =>
+  `M${n(x + r)},${y} H${n(x + w - r)} Q${n(x + w)},${y} ${n(x + w)},${n(y + r)} V${n(y + h - r)} Q${n(x + w)},${n(y + h)} ${n(x + w - r)},${n(y + h)} H${n(x + r)} Q${x},${n(y + h)} ${x},${n(y + h - r)} V${n(y + r)} Q${x},${y} ${n(x + r)},${y}Z`
+
+/**
+ * A tinted shape: white, its hard-edged shade in TINT_SHADE (drawn by hand along its lower right edge, since a
+ * tinted part is split element by element and cannot clip), then what is drawn on it, then its outline.
+ */
+const tintShape = (d: string, shadeD: string, inner = '') => `<path d="${d}" fill="${W}"/><path d="${shadeD}" fill="${TINT_SHADE}"/>${inner}<path d="${d}" ${EDGE}/>`
+
+let clips = 0
+/** An untinted shape in `fill`, shaded at its lower right by itself less itself moved up and left, then `inner` clipped to it, then its outline. */
+const solid = (d: string, fill: string, inner = '', dx = 1, dy = 0.9) => {
+  const id = `c${clips++}`
+  return (
+    `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${shade(fill)}"/>` +
+    `<g clip-path="url(#${id})"><path d="${d}" transform="translate(${-dx} ${-dy})" fill="${fill}"/>${inner}</g><path d="${d}" ${EDGE}/>`
+  )
+}
+
+const TROUSER = 'M-2.6,-0.4 H2.6 L2.3,8.6 H-2.3Z'
+const SHOE = 'M-2.9,9.7 Q-3,8 -1.5,8 H1.5 Q3,8 2.9,9.7 Q2.8,11.4 0,11.4 Q-2.8,11.4 -2.9,9.7Z'
+const SHOE_GREY = '#8f8f8f'
+// a trouser leg with a crease, and a shoe with a shine; both take the trousers' tint, the shoe darker
 const leg: Part = {
   viewBox: [-3.6, -1.2, 7.2, 13.2],
-  body: `<rect x="-2.5" y="0" width="5" height="11" rx="2.3" fill="${W}" ${LINE}/><rect x="-2.7" y="8" width="5.4" height="3.2" rx="1.6" fill="#8f8f8f" ${LINE}/>`,
+  body:
+    tintShape(TROUSER, 'M1.1,-0.4 H2.6 L2.3,8.6 H1.1 Q1.5,4 1.1,-0.4Z', `<path d="M-0.8,2.4 Q-1.2,4.6 -0.8,6.6" ${DETAIL}/>`) +
+    `<path d="${SHOE}" fill="${SHOE_GREY}"/><path d="M1.5,8 Q3,8 2.9,9.7 Q2.8,11.4 0,11.4 Q2.2,10.6 1.5,8Z" fill="${shade(SHOE_GREY)}"/><path d="${SHOE}" ${EDGE}/>` +
+    `<ellipse cx="-1.3" cy="9.3" rx=".9" ry=".45" ${HIGHLIGHT}/>`,
 }
 
+// an arm that narrows to the wrist and a hand with the thumb drawn in
+const ARM = 'M-2,0.4 Q-2,-0.3 0,-0.3 Q2,-0.3 2,0.4 L1.6,7.2 Q2.6,7.9 2.5,9.3 Q2.3,11 0,11 Q-2.3,11 -2.5,9.3 Q-2.6,7.9 -1.6,7.2Z'
 const arm: Part = {
   viewBox: [-3.2, -1.2, 6.4, 12.4],
-  body: `<rect x="-2" y="0" width="4" height="10.5" rx="2" fill="${W}" ${LINE}/>`,
+  body: tintShape(
+    ARM,
+    'M0.8,-0.3 Q2,-0.2 2,0.4 L1.6,7.2 Q2.6,7.9 2.5,9.3 Q2.3,11 0,11 Q1.6,10.2 1.4,8.6 Q1.2,7.6 0.6,7.2 Q1.1,3.4 0.8,-0.3Z',
+    `<path d="M-1.5,7.3 Q0,7.9 1.5,7.3" ${INNER}/><path d="M-1.6,9 Q-1.1,9.9 -0.3,10" ${DETAIL}/>`,
+  ),
 }
 
-// áo bà ba: band collar and a centre seam
+// áo bà ba: sloped shoulders and a flared hem, a round neck, the front opening with three buttons and two pockets
+const SHIRT_D = 'M-6.4,1 Q-4,0.3 0,0.3 Q4,0.3 6.4,1 Q8.4,1.7 8.6,4 L9.2,15.6 Q9.3,17.8 7.4,17.8 H-7.4 Q-9.3,17.8 -9.2,15.6 L-8.6,4 Q-8.4,1.7 -6.4,1Z'
 const body: Part = {
   viewBox: [-10, -1, 20, 20],
-  body: `<rect x="-9" y="0" width="18" height="18" rx="7" fill="${W}" ${LINE}/><path d="M-3,0.4 V2.6 H3 V0.4 M0,2.6 V17" ${FINE}/>`,
+  body:
+    tintShape(
+      SHIRT_D,
+      'M5.4,0.7 Q8.4,1.7 8.6,4 L9.2,15.6 Q9.3,17.8 7.4,17.8 H-2.4 Q6.4,15.8 5.4,0.7Z',
+      `<path d="M-3.2,0.5 Q0,3.6 3.2,0.5 M0,3 V17.6" ${INNER}/><path d="M-6.4,11.6 H-2.8 V14.6 M2.8,11.6 H6.4 V14.6" ${DETAIL}/>`,
+    ) +
+    `<path d="M-7,4 Q-6.4,2.4 -4.6,2.2 L-5.2,9.6 Q-6.8,7.4 -7,4Z" ${HIGHLIGHT}/>` +
+    [6, 9.4, 12.8].map(y => `<circle cx="0.9" cy="${y}" r=".6" ${HIGHLIGHT}/>`).join(''),
 }
 
-// not tinted: the staff apron over the body, cream with a brown edge
-const APRON = `fill="#FBF7EE" stroke="#8A5634" stroke-width="1.4" stroke-linejoin="round"`
+// not tinted: the staff apron over the body, cream on brown straps, with a pocket
+const APRON_CREAM = '#FBF7EE'
 const apronDown: Part = {
   viewBox: body.viewBox,
   body:
-    `<path d="M-3,2 L-4.8,6.5 M3,2 L4.8,6.5" stroke="#8A5634" stroke-width="1.4" stroke-linecap="round" fill="none"/>` +
-    `<path d="M-4.8,6 H4.8 L5.4,11 L8,17.4 Q0,19 -8,17.4 L-5.4,11Z" ${APRON}/>` +
-    `<path d="M-5.2,11 H5.2" ${FINE}/>`,
+    `<path d="M-3,2 L-4.8,6.5 M3,2 L4.8,6.5" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" fill="none"/>` +
+    `<path d="M-3,2 L-4.8,6.5 M3,2 L4.8,6.5" stroke="#8A5634" stroke-width="1" stroke-linecap="round" fill="none"/>` +
+    solid('M-4.8,6 H4.8 L5.4,11 L8,17.4 Q0,19 -8,17.4 L-5.4,11Z', APRON_CREAM, `<path d="M-2.6,12.6 H2.6 V15.4 H-2.6Z" ${DETAIL}/>`, 1.4, 1) +
+    `<path d="M-5.2,11 H5.2" ${INNER}/>`,
 }
 const apronSide: Part = {
   viewBox: body.viewBox,
-  body: `<path d="M4,5 H8.2 Q9,5 9,6 V16.6 Q9,17.6 8,17.6 H4Z" ${APRON}/><path d="M4.4,11 H8.6" ${FINE}/>`,
+  body: solid('M4,5 H8.2 Q9,5 9,6 V16.6 Q9,17.6 8,17.6 H4Z', APRON_CREAM, '', 0.8, 0.8) + `<path d="M4.4,11 H8.6" ${INNER}/>`,
 }
 
+// the face: the head a little fuller at the cheeks, the ears, and a short neck that sits in the collar
+const HEAD_D = 'M-11,0 C-11,-7.9 -5.6,-11.9 0,-11.9 C5.6,-11.9 11,-7.9 11,0 C11,6.8 6.6,11 0,11 C-6.6,11 -11,6.8 -11,0Z'
 const head: Part = {
   viewBox: [-14.5, -14, 29, 28],
-  body: `<circle cx="-11" cy="1.5" r="2.6" fill="#f0f0f0" ${LINE}/><circle cx="11" cy="1.5" r="2.6" fill="#f0f0f0" ${LINE}/><circle cx="0" cy="0" r="11" fill="${W}" ${LINE}/>`,
+  body:
+    `<path d="${ell(-11, 1.6, 2.5, 2.9)}" fill="${W}"/><path d="M-11.6,0.2 Q-12.8,1.6 -11.4,3.2" ${DETAIL}/><path d="${ell(-11, 1.6, 2.5, 2.9)}" ${EDGE}/>` +
+    `<path d="${ell(11, 1.6, 2.5, 2.9)}" fill="${TINT_SHADE}"/><path d="M11.6,0.2 Q12.8,1.6 11.4,3.2" ${DETAIL}/><path d="${ell(11, 1.6, 2.5, 2.9)}" ${EDGE}/>` +
+    `<path d="M-1.9,8 V12.2 Q0,13 1.9,12.2 V8Z" fill="${TINT_SHADE}"/><path d="M-1.9,8 V12.2 Q0,13 1.9,12.2 V8" ${EDGE}/>` +
+    tintShape(HEAD_D, 'M8.4,-6 Q10.8,-3.6 11,0 C11,6.8 6.6,11 0,11 C5.6,9.4 9.2,5 8.4,-6Z') +
+    `<ellipse cx="-7.3" cy="2.8" rx="1.5" ry=".85" transform="rotate(-20 -7.3 2.8)" ${HIGHLIGHT}/>`,
 }
 
 const EYE = '#2B201C'
-const BLUSH = '<ellipse rx="2.2" ry="1.2" fill="#F09A86" opacity=".75"'
-const MOUTH = `stroke="${INK}" stroke-width=".8" fill="none" stroke-linecap="round"`
+const BLUSH = '<ellipse rx="2.2" ry="1.1" fill="#F28CA0" opacity=".55"'
+const MOUTH = `fill="none" ${ink(0.75)}`
+const BROW = `fill="none" ${ink(0.7)}`
+/** An eye with a large and a small catch light. */
+const eye = (cx: number, cy: number, rx = 1.25, ry = 1.7) =>
+  `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${EYE}"/><circle cx="${n(cx - 0.4)}" cy="${n(cy - 0.65)}" r=".52" fill="#fff"/><circle cx="${n(cx + 0.45)}" cy="${n(cy + 0.6)}" r=".26" fill="#fff"/>`
 const faceDown: Part = {
   viewBox: [-14.5, -14, 29, 28],
   body:
-    `<ellipse cx="-4" cy="2" rx="1.6" ry="2" fill="${EYE}"/><ellipse cx="4" cy="2" rx="1.6" ry="2" fill="${EYE}"/>` +
-    `<circle cx="-3.5" cy="1.2" r=".6" fill="#fff"/><circle cx="4.5" cy="1.2" r=".6" fill="#fff"/>` +
-    `${BLUSH} cx="-6.8" cy="5.2"/>${BLUSH} cx="6.8" cy="5.2"/>` +
-    `<path d="M-1.6,5.4 Q0,6.9 1.6,5.4" ${MOUTH}/>`,
+    `<path d="M-6.2,-1.4 Q-4.6,-2.4 -2.9,-1.8 M2.9,-1.8 Q4.6,-2.4 6.2,-1.4" ${BROW}/>` +
+    eye(-4.4, 2.2) +
+    eye(4.4, 2.2) +
+    `${BLUSH} cx="-6.9" cy="5.4"/>${BLUSH} cx="6.9" cy="5.4"/>` +
+    `<path d="M-0.1,4.2 Q-0.5,5 0.2,5.3" ${DETAIL}/><path d="M-1.7,6.4 Q0,7.9 1.7,6.4" ${MOUTH}/>`,
 }
 const faceSide: Part = {
   viewBox: [-14.5, -14, 29, 28],
   body:
-    `<ellipse cx="6" cy="2" rx="1.5" ry="2" fill="${EYE}"/><circle cx="6.4" cy="1.2" r=".55" fill="#fff"/>` +
-    `${BLUSH} cx="7.6" cy="5.4"/>` +
-    `<path d="M7.6,6.2 Q8.6,7 9.6,6" ${MOUTH}/>`,
+    `<path d="M4.4,-1.8 Q6,-2.7 7.7,-1.7" ${BROW}/>` +
+    eye(6.2, 2.2, 1.15, 1.7) +
+    `<ellipse cx="7.6" cy="5.5" rx="1.7" ry="1.1" fill="#F28CA0" opacity=".55"/>` +
+    `<path d="M7.8,6.6 Q8.8,7.5 9.9,6.5" ${MOUTH}/>`,
 }
 // eyes closed, relaxed on the shampoo bed
 const faceRest: Part = {
   viewBox: [-14.5, -14, 29, 28],
   body:
-    `<path d="M-5.6,2 Q-4,3.4 -2.4,2 M2.4,2 Q4,3.4 5.6,2" stroke="${EYE}" stroke-width=".9" fill="none" stroke-linecap="round"/>` +
-    `${BLUSH} cx="-6.8" cy="5.2"/>${BLUSH} cx="6.8" cy="5.2"/>` +
-    `<path d="M-1.6,5.4 Q0,6.9 1.6,5.4" ${MOUTH}/>`,
+    `<path d="M-6,-1.2 Q-4.6,-1.9 -3,-1.5 M3,-1.5 Q4.6,-1.9 6,-1.2" ${BROW}/>` +
+    `<path d="M-5.8,2.2 Q-4.4,3.5 -3,2.2 M3,2.2 Q4.4,3.5 5.8,2.2" stroke="${EYE}" stroke-width=".9" fill="none" stroke-linecap="round"/>` +
+    `<path d="M-5.8,2.2 L-6.5,1.7 M5.8,2.2 L6.5,1.7" ${DETAIL}/>` +
+    `${BLUSH} cx="-6.9" cy="5.4"/>${BLUSH} cx="6.9" cy="5.4"/>` +
+    `<path d="M-1.6,6.2 Q0,7.6 1.6,6.2" ${MOUTH}/>`,
 }
 
-// not tinted: the terracotta towel over a lying customer, origin at its top centre
+// not tinted: the terracotta towel over a lying customer, origin at its top centre, with its cream hem and a fold
 const blanket: Part = {
   viewBox: [-13, -1, 26, 62],
-  body: `<rect x="-12" y="0" width="24" height="60" rx="5" fill="#C65D3B" ${LINE}/><path d="M-12,6 H12" stroke="#FBF7EE" stroke-width="1.6"/>`,
+  body:
+    solid(rr(-12, 0, 24, 60, 5), '#C65D3B', `<path d="M-12,4.4 H12 V7.6 H-12Z" fill="#FBF7EE"/><path d="M-4,20 Q-3,36 -5,52" ${DETAIL}/>`, 2.4, 1.4) +
+    `<path d="M-12,7.6 H12" ${INNER}/>`,
 }
 
 // Not tinted: what each kind of customer wears. Body pieces share the body's origin, face and hat pieces the head's;
@@ -139,9 +205,10 @@ const glassesSide: Part = {
 const faceFrown: Part = {
   viewBox: [-14.5, -14, 29, 28],
   body:
-    `<ellipse cx="-4" cy="2.3" rx="1.6" ry="1.7" fill="${EYE}"/><ellipse cx="4" cy="2.3" rx="1.6" ry="1.7" fill="${EYE}"/>` +
-    `<path d="M-6.6,-2.4 L-2.2,-1.3 M6.6,-2.4 L2.2,-1.3" stroke="${EYE}" stroke-width="1.1" stroke-linecap="round"/>` +
-    `<path d="M-1.8,6.6 Q0,5.2 1.8,6.6" ${MOUTH}/>`,
+    eye(-4.4, 2.4, 1.25, 1.5) +
+    eye(4.4, 2.4, 1.25, 1.5) +
+    `<path d="M-6.6,-2.2 L-2.6,-1 M6.6,-2.2 L2.6,-1" stroke="${EYE}" stroke-width="1" stroke-linecap="round"/>` +
+    `<path d="M-0.1,4.2 Q-0.5,5 0.2,5.3" ${DETAIL}/><path d="M-1.8,7 Q0,5.6 1.8,7" ${MOUTH}/>`,
 }
 
 // celebrity: dark sunglasses and a wide-brimmed cream hat with a black band
@@ -380,27 +447,74 @@ const towelWrap: Part = {
     `<path d="M-2.6,-11.8 C-1.9,-14.2 1.9,-14.2 2.6,-11.8 C2.1,-10 -2.1,-10 -2.6,-11.8Z" ${TOWEL}/>`,
 }
 
-const STRAND = `stroke="${SHADE}" stroke-width="1.1" fill="none" stroke-linecap="round"`
-const hair = (shape: string, strands: string, top = -14): Part => ({ viewBox: [-14.5, top, 29, 18 - top], body: `${shape}${strands}` })
-const path = (d: string) => `<path d="${d}" fill="${W}" ${LINE}/>`
+/** A hair style seen from one side, white to take the hair's tint. */
+const hair = (body: string, top = -14): Part => ({ viewBox: [-14.5, top, 29, 18 - top], body })
+const HAIR_SHINE = `<path d="M-6.9,-8.4 C-4.7,-10.6 -1.3,-11.2 1.9,-11 C-0.6,-10.3 -3.8,-9 -6,-7.1Z" ${HIGHLIGHT}/>`
+/** The hair's shape, its shade, the strands drawn as detail lines, its outline and the shine on the crown. */
+const lock = ([d, shadeD, strands]: [string, string, string]) => tintShape(d, shadeD, `<path d="${strands}" ${DETAIL}/>`) + HAIR_SHINE
+/** A bun at (cx, cy), wound round once, drawn before the hair so the hair covers its foot. */
+const bun = (cx: number, cy: number) =>
+  tintShape(
+    ell(cx, cy, 4.6, 4.4),
+    `M${n(cx + 2.4)},${n(cy - 3.8)} Q${n(cx + 5)},${n(cy - 2)} ${n(cx + 4.6)},${n(cy + 0.6)} Q${n(cx + 4.2)},${n(cy + 3.6)} ${n(cx + 1.2)},${n(cy + 4.4)} Q${n(cx + 3.8)},${n(cy + 1.4)} ${n(cx + 2.4)},${n(cy - 3.8)}Z`,
+    `<path d="M${n(cx - 3)},${n(cy - 0.6)} Q${n(cx - 0.4)},${n(cy - 3.6)} ${n(cx + 2.6)},${n(cy - 1.6)} M${n(cx - 2.6)},${n(cy + 1.8)} Q${cx},${n(cy + 0.4)} ${n(cx + 2.8)},${n(cy + 1.4)}" ${DETAIL}/>`,
+  )
 
 // Style 0: short bob. Style 1: long hair. Style 2: short crop. Style 3: bob with a bun.
-const bobDown = 'M-12,0 A12,12 0 0 1 12,0 Q11,-5 6,-5.5 Q3,-2.5 0,-4.5 Q-3,-2.5 -6,-5.5 Q-11,-5 -12,0Z'
-const bobSideLocks = 'M-12,-1 Q-12.6,5 -10,6.5 L-9.4,-1Z M12,-1 Q12.6,5 10,6.5 L9.4,-1Z'
-const bobUp = 'M-12,0 A12,12 0 0 1 12,0 L12,3 Q11,9 5,10 Q0,11 -5,10 Q-11,9 -12,3Z'
-const bobSide = 'M-12,2 A12,12 0 0 1 12,-1 Q9,-5.5 5,-5 Q4,-2 2,-3 Q-1,-1 -2,3 Q-3,8 -8,9.5 Q-12,8 -12,2Z'
-const longLocks = 'M-12,-1 L-13,13 Q-11,15.6 -8.6,13 L-9,1Z M12,-1 L13,13 Q11,15.6 8.6,13 L9,1Z'
-const longUp = 'M-12,0 A12,12 0 0 1 12,0 L12.6,14 Q6,17 0,16.4 Q-6,17 -12.6,14Z'
-const longSide = 'M-12,2 A12,12 0 0 1 12,-1 Q9,-5.5 5,-5 Q4,-2 2,-3 Q-1,-1 -2,3 Q-2,10 -5,15 Q-10,16.5 -12.6,12Z'
+// From the front the fringe is parted off centre, as on the owner's board; from the side it falls over the brow.
+const CAP = 'C-12.6,-8.2 -6.4,-12.8 0,-12.8 C6.4,-12.8 12.6,-8.2 12.4,1.2'
+const FRINGE = 'C8.2,-3.4 6.4,-5.2 4.2,-5.9 C3.2,-3.8 1,-2.6 -1.6,-2.5 C-0.6,-3.8 -0.4,-5 -0.6,-6.3 C-3.2,-4 -6.4,-2.8 -9.6,-1.6'
+const CAP_SHADE = 'M8.7,-9.3 C11.2,-7.2 12.5,-3.6 12.4,1.2'
+const FRINGE_SHADE = 'M9.6,-1.4 C8.2,-3.4 6.4,-5.2 4.2,-5.9 L4.6,-7 C6.8,-6.4 8.8,-4.6 9.6,-1.4Z'
+const CROWN = 'M-2.4,-12.2 Q-5.6,-9.4 -7,-4.2 M3.2,-12.2 Q6.6,-9.4 7.6,-4.8'
+const SIDE_FRINGE = 'C6.6,-12.8 12,-8.8 11.8,-2.4 C10.4,-4.6 8,-6 5.6,-5.8 C5,-3.8 3.4,-2.6 1.4,-2.6'
+const SIDE_SHADE = 'M6.6,-11.4 C9.8,-9.6 11.9,-6.4 11.8,-2.4 C10.4,-4.6 8,-6 5.6,-5.8 Q9.4,-7.6 6.6,-11.4Z'
 
-const cropDown = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 Q10.5,-3 7,-4.5 Q2,-2.5 -4,-6.5 Q-9,-5 -11.5,0Z'
-const cropUp = 'M-11.5,0 A11.5,11.5 0 0 1 11.5,0 L10.4,5 Q0,10 -10.4,5Z'
-const cropSide = 'M-11.5,1 A11.5,11.5 0 0 1 11.5,-1 Q10,-4 6,-4.5 Q3,-2.5 0,-4 Q-2,-1.5 -4,0 Q-6.5,-1 -8,1.5 L-9.6,5.5 Q-11.5,4 -11.5,1Z'
-const bunDown = '<circle cx="0" cy="-12" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
-const bunSide = '<circle cx="-8.5" cy="-9" r="4.6" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
-
-const strandsFront = `<path d="M-6,-8.5 Q-2,-11 3,-9.8" ${STRAND}/>`
-const strandsBack = `<path d="M-5,-7 Q0,-9 5,-7 M-7,0 Q0,2 7,0" ${STRAND}/>`
+const bobDown: [string, string, string] = [
+  `M-10.2,7.2 Q-12.6,5.8 -12.4,1.2 ${CAP} Q12.6,5.8 10.2,7.2 Q10.6,3 9.6,-1.4 ${FRINGE} Q-10.6,3 -10.2,7.2Z`,
+  `${CAP_SHADE} Q12.6,5.8 10.2,7.2 Q11.2,3.2 10.9,-0.6 Q10.6,-5.6 8.7,-9.3Z ${FRINGE_SHADE}`,
+  `${CROWN} M-11.2,2 Q-11.4,4.6 -10.6,6.2`,
+]
+const longDown: [string, string, string] = [
+  `M-9.6,13.6 Q-13.4,11 -12.8,4 L-12.4,1.2 ${CAP} L12.8,4 Q13.4,11 9.6,13.6 Q10.4,8.8 9.8,4.4 Q10,1 9.6,-1.4 ${FRINGE} Q-10,1 -9.8,4.4 Q-10.4,8.8 -9.6,13.6Z`,
+  `${CAP_SHADE} L12.8,4 Q13.4,11 9.6,13.6 Q11.8,9.6 11.2,3.6 Q10.8,-4.4 8.7,-9.3Z ${FRINGE_SHADE}`,
+  `${CROWN} M-11.6,5 Q-11.8,9.4 -10.6,12.4`,
+]
+const bobUp: [string, string, string] = [
+  `M-12.4,1.2 ${CAP} L12.6,5.6 Q12,9.4 8.6,10.2 L7.4,9.2 L6,10.6 Q3,11 0,10.4 Q-3,11 -6,10.6 L-7.4,9.2 L-8.6,10.2 Q-12,9.4 -12.6,5.6Z`,
+  `${CAP_SHADE} L12.6,5.6 Q12,9.4 8.6,10.2 L7.4,9.2 L6,10.6 Q3,11 0,10.4 Q8.6,8.4 10.4,2.4 Q11.2,-4 8.7,-9.3Z`,
+  'M-2.4,-12.2 Q-6.4,-6 -7.2,8.6 M3,-12.2 Q6.8,-6 7.2,8.4 M0.4,-12.6 Q0.8,-2 0.4,9.6',
+]
+const longUp: [string, string, string] = [
+  `M-12.4,1.2 ${CAP} L13,13.4 Q11.6,16.6 8.4,16 L7,14.8 L5.6,16.6 Q2.8,17 0,16.4 Q-2.8,17 -5.6,16.6 L-7,14.8 L-8.4,16 Q-11.6,16.6 -13,13.4Z`,
+  `${CAP_SHADE} L13,13.4 Q11.6,16.6 8.4,16 L7,14.8 L5.6,16.6 Q2.8,17 0,16.4 Q8.8,14.4 10.6,6 Q11.4,-3 8.7,-9.3Z`,
+  'M-2.4,-12.2 Q-6.6,-4 -7.6,14.6 M3,-12.2 Q7,-4 7.8,14.4 M0.4,-12.6 Q0.8,0 0.2,16',
+]
+const bobSide: [string, string, string] = [
+  `M-12.4,2 C-12.6,-8.2 -6.4,-12.8 0,-12.8 ${SIDE_FRINGE} C0.8,-0.6 0,1.8 -0.6,4.4 Q-1.6,8.2 -4.6,9.6 L-6,8.6 L-7.4,10 Q-10.6,9.6 -12,7 Q-12.6,5 -12.4,2Z`,
+  `${SIDE_SHADE} M1.4,-2.6 C0.8,-0.6 0,1.8 -0.6,4.4 Q-1.6,8.2 -4.6,9.6 Q-2.2,6 1.4,-2.6Z`,
+  'M-3,-12 Q-7.6,-8 -8.8,-1 M2,-12.4 Q4.8,-10.4 5.4,-6.6 M-5,1 Q-6.4,5 -8.8,8.4',
+]
+const longSide: [string, string, string] = [
+  `M-12.4,2 C-12.6,-8.2 -6.4,-12.8 0,-12.8 ${SIDE_FRINGE} C0.8,-0.6 0,1.8 -0.2,4.8 Q-0.4,10.2 -2.8,15 L-4.6,13.8 L-6.4,15.6 Q-10.6,15.6 -12.6,12 Q-13,7 -12.4,2Z`,
+  `${SIDE_SHADE} M1.4,-2.6 C0.8,-0.6 0,1.8 -0.2,4.8 Q-0.4,10.2 -2.8,15 Q-1.4,9 1.4,-2.6Z`,
+  'M-3,-12 Q-7.6,-8 -8.8,-1 M2,-12.4 Q4.8,-10.4 5.4,-6.6 M-5,2 Q-6,9 -8.6,14',
+]
+const cropDown: [string, string, string] = [
+  'M-11.8,1.6 C-12.4,-8.4 -6.4,-12.6 0,-12.6 C6.4,-12.6 12.4,-8.4 11.8,1.6 Q11.2,-1.8 9.6,-3.6 L8.8,-2.4 L7.6,-5 Q5,-3.6 2.6,-6 L1.4,-4.2 Q-1.4,-6.6 -4.4,-5.8 L-5.4,-3.8 Q-7.8,-5.4 -9.6,-3.6 Q-11.2,-1.8 -11.8,1.6Z',
+  'M8.5,-9.2 C10.9,-7.2 12.1,-3.4 11.8,1.6 Q11.2,-1.8 9.6,-3.6 Q11,-6.4 8.5,-9.2Z',
+  'M-2.6,-12 Q-4.8,-9.6 -5.4,-6.6 M3,-12 Q5.4,-9.6 6.4,-6.8',
+]
+const cropUp: [string, string, string] = [
+  'M-11.8,0 C-12.4,-8.4 -6.4,-12.6 0,-12.6 C6.4,-12.6 12.4,-8.4 11.8,0 L11.2,4.4 Q9.6,6.6 6.4,7.4 L5.4,6.4 L4,8 Q0,8.8 -4,8 L-5.4,6.4 L-6.4,7.4 Q-9.6,6.6 -11.2,4.4Z',
+  'M8.5,-9.4 C10.9,-7.4 12.1,-3.8 11.8,0 L11.2,4.4 Q9.6,6.6 6.4,7.4 L5.4,6.4 L4,8 Q8.8,4.8 10,0 Q10.6,-5.2 8.5,-9.4Z',
+  'M-2.6,-12 Q-6,-5 -6.4,5.4 M3,-12 Q6.4,-5 6.6,5 M0.3,-12.4 V7.4',
+]
+const cropSide: [string, string, string] = [
+  'M-11.8,1.6 C-12.4,-8.4 -6.4,-12.6 0,-12.6 C6.2,-12.6 11.8,-8.8 11.6,-3 L10,-4.2 L9.4,-2.6 L7.8,-5.2 Q5,-4 3,-5.8 Q2,-3.4 0.2,-2.6 Q-0.6,0.6 -1.6,2.2 Q-3,1 -4.8,2 Q-5.8,5 -8.4,6.4 Q-11.2,5.4 -11.8,1.6Z',
+  'M7,-11.4 C9.8,-9.6 11.7,-6.6 11.6,-3 L10,-4.2 L9.4,-2.6 L7.8,-5.2 Q9.8,-7.4 7,-11.4Z',
+  'M-3,-11.8 Q-7.2,-8 -8,-2 M2,-12.2 Q4.4,-10.2 4.8,-7',
+]
 
 // Lô B's VIPs. Mây Chiều: a fluffy pink boa round the shoulders, and a small silver microphone pinned on the chest
 const LOTUS = '#F28CA0'
@@ -742,20 +856,129 @@ const parts: Record<string, Part> = {
   'hairpin-up': hairpinDown,
   'mask-face': maskFace,
   'towel-wrap': towelWrap,
-  'hair0-down': hair(path(bobDown) + path(bobSideLocks), strandsFront),
-  'hair0-up': hair(path(bobUp), strandsBack),
-  'hair0-side': hair(path(bobSide), strandsFront),
-  'hair1-down': hair(path(longLocks) + path(bobDown), strandsFront),
-  'hair1-up': hair(path(longUp), strandsBack),
-  'hair1-side': hair(path(longSide), strandsFront),
-  'hair2-down': hair(path(cropDown), strandsFront),
-  'hair2-up': hair(path(cropUp), strandsBack),
-  'hair2-side': hair(path(cropSide), strandsFront),
-  'hair3-down': hair(bunDown + path(bobDown) + path(bobSideLocks), strandsFront, -18),
-  'hair3-up': hair(bunDown + path(bobUp), strandsBack, -18),
-  'hair3-side': hair(bunSide + path(bobSide), strandsFront, -18),
+  'hair0-down': hair(lock(bobDown)),
+  'hair0-up': hair(lock(bobUp)),
+  'hair0-side': hair(lock(bobSide)),
+  'hair1-down': hair(lock(longDown)),
+  'hair1-up': hair(lock(longUp)),
+  'hair1-side': hair(lock(longSide)),
+  'hair2-down': hair(lock(cropDown)),
+  'hair2-up': hair(lock(cropUp)),
+  'hair2-side': hair(lock(cropSide)),
+  'hair3-down': hair(bun(0, -12) + lock(bobDown), -18),
+  'hair3-up': hair(bun(0, -12) + lock(bobUp), -18),
+  'hair3-side': hair(bun(-8.5, -9) + lock(bobSide), -18),
   ...OUTFIT_PARTS,
   ...IDOL_PARTS,
+}
+
+/** The box round a path's end and control points, walking its commands; an arc adds its radii either side. */
+function bounds(d: string): [number, number, number, number] {
+  const toks = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)(?:e-?\d+)?/g) ?? []
+  const xs: number[] = []
+  const ys: number[] = []
+  let i = 0
+  let cmd = 'M'
+  let x = 0
+  let y = 0
+  let sx = 0
+  let sy = 0
+  const num = () => parseFloat(toks[i++])
+  while (i < toks.length) {
+    if (/[a-zA-Z]/.test(toks[i])) cmd = toks[i++]
+    const up = cmd.toUpperCase()
+    const ox = cmd === up ? 0 : x
+    const oy = cmd === up ? 0 : y
+    if (up === 'Z') {
+      x = sx
+      y = sy
+      continue
+    }
+    if (up === 'H') x = num() + ox
+    else if (up === 'V') y = num() + oy
+    else if (up === 'A') {
+      const rx = num()
+      const ry = num()
+      i += 3
+      const nx = num() + ox
+      const ny = num() + oy
+      xs.push(Math.min(x, nx) - rx, Math.max(x, nx) + rx)
+      ys.push(Math.min(y, ny) - ry, Math.max(y, ny) + ry)
+      x = nx
+      y = ny
+    } else {
+      const pairs = up === 'C' ? 3 : up === 'Q' || up === 'S' ? 2 : 1
+      for (let k = 0; k < pairs; k++) {
+        const px = num() + ox
+        const py = num() + oy
+        xs.push(px)
+        ys.push(py)
+        if (k === pairs - 1) {
+          x = px
+          y = py
+        }
+      }
+      if (up === 'M') {
+        sx = x
+        sy = y
+        cmd = cmd === 'M' ? 'L' : 'l'
+      }
+    }
+    xs.push(x)
+    ys.push(y)
+  }
+  const x0 = Math.min(...xs)
+  const y0 = Math.min(...ys)
+  return [x0, y0, Math.max(...xs) - x0, Math.max(...ys) - y0]
+}
+
+const SHAPE_EL = /<(?:rect|circle|ellipse|path)\b[^>]*\/>/g
+const attr = (el: string, name: string) => el.match(new RegExp(` ${name}="([^"]*)"`))?.[1]
+/** A self-closing shape's outline as a path. */
+function shapeD(el: string): string {
+  const tag = el.slice(1, el.search(/[\s/]/))
+  const a = (k: string) => parseFloat(attr(el, k) ?? '0')
+  if (tag === 'rect') return rr(a('x'), a('y'), a('width'), a('height'), Math.min(a('rx'), a('width') / 2, a('height') / 2))
+  if (tag === 'circle') return ell(a('cx'), a('cy'), a('r'))
+  if (tag === 'ellipse') return ell(a('cx'), a('cy'), a('rx'), a('ry'))
+  return attr(el, 'd') ?? ''
+}
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
+
+/**
+ * A+ for an untinted part: every solid shape with an ink outline gets its hard-edged shade at the lower right, and
+ * the largest one a highlight at its upper left. A fill whose outline is drawn later on its own (the outfits) gets
+ * the shade alone. See-through, faded and turned shapes stay as they are.
+ */
+function lift(body: string): string {
+  const els = body.match(SHAPE_EL) ?? []
+  const plain = (el: string) => /^#[0-9a-fA-F]{3,6}$/.test(attr(el, 'fill') ?? '') && !/ (transform|opacity|fill-opacity)=/.test(el)
+  const kinds = els.map((el, i) => {
+    if (!plain(el)) return null
+    if (el.includes(`stroke="${INK}" stroke-width="1.3"`)) return 'whole'
+    const d = attr(el, 'd')
+    if (d && !el.includes('stroke=') && els.slice(i + 1).some(o => o.includes(`d="${d}"`) && o.includes('fill="none"') && o.includes(`stroke="${INK}"`))) return 'fill'
+    return null
+  })
+  const boxes = els.map((el, i) => (kinds[i] ? bounds(shapeD(el)) : null))
+  let biggest = -1
+  boxes.forEach((b, i) => {
+    if (b && b[2] >= 4 && b[3] >= 3 && (biggest < 0 || b[2] * b[3] > boxes[biggest]![2] * boxes[biggest]![3])) biggest = i
+  })
+  let i = -1
+  return body.replace(SHAPE_EL, el => {
+    i++
+    const kind = kinds[i]
+    if (!kind) return el
+    const [bx, by, bw, bh] = boxes[i]!
+    const d = shapeD(el)
+    const fill = attr(el, 'fill')!
+    const cx = n(bx + bw * 0.3)
+    const cy = n(by + bh * 0.28)
+    const hi = i === biggest ? `<ellipse cx="${cx}" cy="${cy}" rx="${n(Math.max(0.5, bw * 0.14))}" ry="${n(Math.max(0.35, bh * 0.08))}" transform="rotate(-20 ${cx} ${cy})" ${HIGHLIGHT}/>` : ''
+    const lit = solid(d, fill, hi, n(clamp(bw * 0.14, 0.35, 1.3)), n(clamp(bh * 0.12, 0.3, 1.1)))
+    return kind === 'whole' ? lit : lit.slice(0, lit.lastIndexOf('<path'))
+  })
 }
 
 /** Parts that are tinted; their brown lines go in a separate `<key>-line` texture, drawn untinted on top. Whole names, so `headphones` stays untinted. */
@@ -768,7 +991,7 @@ const textures: Record<string, Part> = Object.fromEntries(
           [key, { viewBox: p.viewBox, body: fillsOnly(p.body) }],
           [`${key}-line`, { viewBox: p.viewBox, body: linesOnly(p.body) }],
         ]
-      : [[key, p]],
+      : [[key, { viewBox: p.viewBox, body: lift(p.body) }]],
   ),
 )
 

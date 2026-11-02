@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { HIGHLIGHT } from '../../src/art/aplus'
 import { PET_POSES, petKey, petTextures } from '../../src/art/pets'
 import { BREED_IDS } from '../../src/sim/pets'
 
@@ -26,5 +27,15 @@ describe('pet art', () => {
 
   it('swings the tail over when wagging', () => {
     for (const breed of BREED_IDS) expect(textures[petKey(breed, 'wag')]).not.toBe(textures[petKey(breed, 'sit')])
+  })
+
+  it('shades and lights every pet in A+, on an 18% ground shadow', () => {
+    for (const breed of BREED_IDS)
+      for (const pose of PET_POSES) {
+        const svg = textures[petKey(breed, pose)]
+        expect(svg).toContain('clip-path="url(#')
+        expect(svg).toContain(HIGHLIGHT)
+        expect(svg).toContain('opacity=".18"')
+      }
   })
 })

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { HIGHLIGHT } from '../../src/art/aplus'
 import { fillsOnly, linesOnly } from '../../src/art/outline'
 
 const SHAPE = '<rect x="0" y="0" width="5" height="11" rx="2.3" fill="#ffffff" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>'
@@ -25,5 +26,11 @@ describe('outline split', () => {
         '<circle cx="-11" cy="1.5" r="2.6" fill="none" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round" mask="url(#m0)"/>' +
         '<circle cx="0" cy="0" r="11" fill="none" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>',
     )
+  })
+
+  it('puts a highlight with the lines, where tinting cannot turn it into the fill colour, and lets it hide no line', () => {
+    const shine = `<ellipse cx="-2" cy="-4" rx="3" ry="1.5" ${HIGHLIGHT}/>`
+    expect(fillsOnly(HEAD + shine)).toBe('<circle cx="0" cy="0" r="11" fill="#ffffff"/>')
+    expect(linesOnly(HEAD + shine)).toBe('<circle cx="0" cy="0" r="11" fill="none" stroke="#4A2E22" stroke-width="1.3" stroke-linejoin="round"/>' + shine)
   })
 })

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { HIGHLIGHT, TINT_SHADE } from '../../src/art/aplus'
 import { chibiTextures, PART_ANCHORS } from '../../src/art/chibi'
 import { fxTextures } from '../../src/art/fx'
 
@@ -161,6 +162,24 @@ describe('chibi and fx art', () => {
         expect(PART_ANCHORS[key], key).toBeDefined()
       }
       expect(keys).not.toContain(`${part}-up`)
+    }
+  })
+
+  it('draws the tinted parts in A+: the shade in the fills, the highlight with the lines', () => {
+    const tex = chibiTextures()
+    for (const key of ['leg', 'arm', 'body', 'head', 'hair0-down', 'hair1-up', 'hair2-side', 'hair3-down']) {
+      expect(tex[key]).toContain(TINT_SHADE)
+      expect(tex[key]).not.toContain(HIGHLIGHT)
+    }
+    for (const key of ['body', 'head', 'hair0-down', 'hair2-side']) expect(tex[`${key}-line`]).toContain(HIGHLIGHT)
+  })
+
+  it('shades every worn piece and lights its largest shape, keeping each clip inside its own texture', () => {
+    const tex = chibiTextures()
+    for (const key of ['backpack-up', 'hat-down', 'helmet-side', 'cap-down', 'blanket', 'outfit-teal-down', 'chefHat-up']) {
+      expect(tex[key]).toContain('clip-path="url(#')
+      expect(tex[key]).toContain(HIGHLIGHT)
+      for (const [, id] of tex[key].matchAll(/url\(#([^)]+)\)/g)) expect(tex[key]).toContain(`id="${id}"`)
     }
   })
 })
