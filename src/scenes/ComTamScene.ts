@@ -33,8 +33,8 @@ const PART_BTN = { y: 1500, w: 205, h: 110, iconDx: -64, textDx: 34, textW: 136,
 const DONE = { x: 880, y: 1330, w: 240, h: 120 }
 /** The sides lesson's box stops this far left of the Xong button. */
 const LESSON_GAP = 20
-/** The chop on the grill: its middle and size; and the coals' glow along the stove's top, brighter as the heat rises. */
-const CHOP = { x: 440, y: 1105, rx: 175, ry: 85, ink: 5 }
+/** The chop on the grill: its middle; and the coals' glow along the stove's top, brighter as the heat rises. */
+const CHOP = { x: 440, y: 1105 }
 const COALS = { x: 140, y: 1205, w: 600, h: 60, alpha: 0.75 }
 /** Where a finger fans: over the stove and the fan under it; the fan picture and how far it swings with each fan. */
 const FAN_AREA = { left: 90, right: 790, top: 830, bottom: 1600 }
@@ -71,7 +71,8 @@ export class ComTamScene extends Phaser.Scene {
   /** Everything of the station on the card, and its buttons, which go at the reveal. */
   private station: Phaser.GameObjects.GameObject[] = []
   private buttons: Phaser.GameObjects.GameObject[] = []
-  private chop: Phaser.GameObjects.Graphics | null = null
+  /** The chop on the grill: its meat, tinted as it browns, and its grill marks, which show as it cooks. */
+  private chop: { meat: Phaser.GameObjects.Image; marks: Phaser.GameObjects.Image } | null = null
   private coals: Phaser.GameObjects.Graphics | null = null
   private needle: Phaser.GameObjects.Graphics | null = null
   private fan: Phaser.GameObjects.Image | null = null
@@ -168,7 +169,8 @@ export class ComTamScene extends Phaser.Scene {
     if (s === 'grill') {
       keep(this.add.image(BC_BOX.stove[0], BC_BOX.stove[1], 'bc-stove').setOrigin(0))
       this.coals = keep(this.add.graphics())
-      this.chop = keep(this.add.graphics())
+      this.chop = { meat: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop')), marks: keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-marks')) }
+      keep(this.add.image(CHOP.x, CHOP.y, 'ct-grill-chop-line'))
       keep(this.add.image(PHO_BOX.dial[0], PHO_BOX.dial[1], 'pho-dial').setOrigin(0))
       const h = ctHeat(this.params.hard)
       const marks = keep(this.add.graphics())
@@ -233,20 +235,13 @@ export class ComTamScene extends Phaser.Scene {
     }
   }
 
-  /** The coals glow with the heat, the chop browns as it grills and darkens as it burns, and the needle shows the heat. */
+  /** The coals glow with the heat, the chop browns and takes its grill marks as it grills and darkens as it burns, and the needle shows the heat. */
   private drawGrill(): void {
     const { heat, done, burnMs } = this.rules
     this.coals?.clear().fillStyle(hex(C.stoneHot), COALS.alpha * heat).fillRoundedRect(COALS.x, COALS.y, COALS.w, COALS.h, COALS.h / 2)
     const colour = mix(mix(hex(BROWN[0]), hex(BROWN[1]), done), hex(C.deepBrown), burnMs / CT_BURN_MS.near)
-    this.chop
-      ?.clear()
-      .fillStyle(colour, 1)
-      .fillEllipse(CHOP.x, CHOP.y, CHOP.rx * 2, CHOP.ry * 2)
-      .lineStyle(CHOP.ink, hex(C.ink))
-      .strokeEllipse(CHOP.x, CHOP.y, CHOP.rx * 2, CHOP.ry * 2)
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(CHOP.x + CHOP.rx - 20, CHOP.y - 14, 70, 28, 14)
-      .strokeRoundedRect(CHOP.x + CHOP.rx - 20, CHOP.y - 14, 70, 28, 14)
+    this.chop?.meat.setTint(colour)
+    this.chop?.marks.setAlpha(done)
     const y = this.dialY(heat)
     this.needle
       ?.clear()
