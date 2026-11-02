@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="slab"><path d="M120,150 C150,115 260,108 340,118 C420,126 480,140 488,190 C496,245 470,300 420,318 C340,345 220,340 150,318 C105,302 92,250 98,205 C100,180 106,165 120,150 Z"/></clipPath>
+  </defs>
+  <!-- thớt có độ dày: mép trước đậm hơn mặt trên -->
+  <rect x="40" y="62" width="520" height="372" rx="36" fill="#A86E45" stroke="#4A2E22" stroke-width="7"/>
+  <rect x="40" y="40" width="520" height="364" rx="36" fill="#C99A6A" stroke="#4A2E22" stroke-width="7"/>
+  <path d="M74,58 H526" stroke="#DDB487" stroke-width="5" stroke-linecap="round"/>
+  <!-- vân gỗ dài ngắn khác nhau, một mắt gỗ -->
+  <path d="M70,110 C150,100 200,118 270,108 M80,372 C170,360 260,384 360,370 C420,362 470,378 530,368 M330,90 C400,82 460,96 520,88 M66,250 C76,280 72,320 84,350 M520,230 C532,270 528,310 536,340" fill="none" stroke="#A87A4E" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="478" cy="352" rx="22" ry="10" fill="none" stroke="#A87A4E" stroke-width="4"/>
+  <ellipse cx="478" cy="352" rx="9" ry="4" fill="#A87A4E"/>
+  <!-- lỗ treo -->
+  <circle cx="520" cy="80" r="15" fill="#6B4027" stroke="#4A2E22" stroke-width="5"/>
+  <!-- miếng bò: viền hữu cơ, không phải hình chữ nhật bo góc -->
+  <path d="M120,150 C150,115 260,108 340,118 C420,126 480,140 488,190 C496,245 470,300 420,318 C340,345 220,340 150,318 C105,302 92,250 98,205 C100,180 106,165 120,150 Z" fill="#C9503F"/>
+  <g clip-path="url(#slab)">
+    <!-- bóng phẳng nửa dưới -->
+    <path d="M60,300 C200,330 380,320 520,230 L520,400 L60,400 Z" fill="#A8302A" opacity="0.55"/>
+    <!-- mảng thịt sáng hơn -->
+    <path d="M140,200 C190,180 280,176 340,186 C300,200 220,206 150,232 Z" fill="#DB6B57"/>
+    <!-- vân mỡ phân nhánh -->
+    <path d="M140,214 C190,200 222,228 262,212 S332,188 364,204 C392,216 420,210 452,226" fill="none" stroke="#F3C9C0" stroke-width="6" stroke-linecap="round"/>
+    <path d="M262,212 C272,232 266,248 282,262 M364,204 C372,226 392,236 396,256" fill="none" stroke="#F3C9C0" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M168,276 C208,262 240,288 292,274 C330,264 368,282 432,266" fill="none" stroke="#F3C9C0" stroke-width="5" stroke-linecap="round"/>
+    <path d="M232,282 C238,296 250,304 252,316 M380,276 C388,292 404,298 410,310" fill="none" stroke="#F3C9C0" stroke-width="3" stroke-linecap="round"/>
+    <!-- dải mỡ dọc mép trên -->
+    <path d="M100,160 C150,124 260,116 340,126 C420,134 470,146 490,184 C466,166 420,158 340,152 C260,146 160,150 100,176 Z" fill="#F6E3D3"/>
+    <path d="M100,176 C160,150 260,146 340,152 C420,158 466,166 490,184" fill="none" stroke="#E2B8A8" stroke-width="3"/>
+  </g>
+  <path d="M120,150 C150,115 260,108 340,118 C420,126 480,140 488,190 C496,245 470,300 420,318 C340,345 220,340 150,318 C105,302 92,250 98,205 C100,180 106,165 120,150 Z" fill="none" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <!-- ánh ướt trên mặt thịt -->
+  <path d="M146,196 C160,186 180,182 198,184 M412,180 C424,182 436,188 444,196" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.55"/>
+  <!-- bốn vạch thái (giữ cho luật chơi) -->
+  <path d="M200,96 V362 M270,96 V362 M340,96 V362 M410,96 V362" stroke="#FBF7EE" stroke-width="7" stroke-dasharray="12 14" stroke-linecap="round" opacity="0.92"/>
+  <!-- dao: lưỡi thép có gờ sáng, cán gỗ đinh tán -->
+  <g transform="translate(318 446) rotate(-7)">
+    <path d="M0,-10 L196,-16 C222,-16 236,2 220,16 L0,18 Z" fill="#C9CFD3" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+    <path d="M6,-2 L204,-7" stroke="#FFFFFF" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
+    <path d="M0,10 L214,8" stroke="#8C8580" stroke-width="3" stroke-linecap="round"/>
+    <rect x="-124" y="-14" width="128" height="34" rx="13" fill="#6B4027" stroke="#4A2E22" stroke-width="6"/>
+    <path d="M-112,-4 H-6" stroke="#8A5634" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="-94" cy="4" r="5" fill="#E3A73B" stroke="#4A2E22" stroke-width="2.5"/>
+    <circle cx="-56" cy="4" r="5" fill="#E3A73B" stroke="#4A2E22" stroke-width="2.5"/>
+    <circle cx="-18" cy="4" r="5" fill="#E3A73B" stroke="#4A2E22" stroke-width="2.5"/>
+  </g>
+</svg>

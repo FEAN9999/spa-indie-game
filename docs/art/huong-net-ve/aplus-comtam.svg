@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 460" width="600" height="460">
+  <defs>
+    <clipPath id="chop"><path d="M140,190 C170,130 300,115 390,135 C470,152 505,210 480,270 C455,330 360,350 270,340 C190,332 120,300 115,250 C112,225 125,205 140,190 Z"/></clipPath>
+    <clipPath id="bed"><rect x="40" y="80" width="520" height="330" rx="26"/></clipPath>
+  </defs>
+  <!-- lò than: lòng than đỏ có vết nứt -->
+  <rect x="40" y="80" width="520" height="330" rx="26" fill="#2B201C" stroke="#4A2E22" stroke-width="7"/>
+  <g clip-path="url(#bed)">
+    <ellipse cx="110" cy="160" rx="62" ry="38" fill="#A8302A"/>
+    <ellipse cx="250" cy="130" rx="70" ry="40" fill="#D8463A"/>
+    <ellipse cx="420" cy="150" rx="80" ry="44" fill="#A8302A"/>
+    <ellipse cx="520" cy="230" rx="60" ry="46" fill="#D8463A"/>
+    <ellipse cx="100" cy="300" rx="70" ry="46" fill="#D8463A"/>
+    <ellipse cx="300" cy="380" rx="90" ry="44" fill="#A8302A"/>
+    <ellipse cx="480" cy="370" rx="70" ry="40" fill="#D8463A"/>
+    <ellipse cx="250" cy="130" rx="34" ry="16" fill="#EE8A2E"/>
+    <ellipse cx="520" cy="230" rx="28" ry="16" fill="#EE8A2E"/>
+    <ellipse cx="100" cy="300" rx="30" ry="16" fill="#EE8A2E"/>
+    <ellipse cx="480" cy="370" rx="30" ry="14" fill="#F7C531"/>
+    <path d="M90,150 l20,10 l-6,16 M240,120 l18,14 M410,140 l24,6 l4,14 M510,222 l-14,16 M300,372 l26,-6" fill="none" stroke="#2B201C" stroke-width="4" stroke-linecap="round"/>
+  </g>
+  <!-- vỉ nướng: song thép có gờ sáng -->
+  <g stroke-linecap="round">
+    <path d="M52,110 H548 M52,150 H548 M52,190 H548 M52,230 H548 M52,270 H548 M52,310 H548 M52,350 H548 M52,390 H548" stroke="#5B5450" stroke-width="9"/>
+    <path d="M52,107 H548 M52,147 H548 M52,187 H548 M52,227 H548 M52,267 H548 M52,307 H548 M52,347 H548 M52,387 H548" stroke="#C9CFD3" stroke-width="2.5"/>
+  </g>
+  <!-- bóng phẳng dưới miếng sườn -->
+  <ellipse cx="310" cy="300" rx="200" ry="70" fill="#2B201C" opacity="0.35"/>
+  <!-- xương sườn ló ra -->
+  <path d="M124,232 C88,220 58,226 50,244 C44,262 62,276 82,268 C98,262 110,262 124,268 Z" fill="#F3E3C4" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M62,246 C70,240 82,240 90,246" fill="none" stroke="#D9C4A0" stroke-width="3" stroke-linecap="round"/>
+  <!-- miếng sườn: nền cánh gián, bóng nửa dưới, viền mỡ cháy cạnh -->
+  <path d="M140,190 C170,130 300,115 390,135 C470,152 505,210 480,270 C455,330 360,350 270,340 C190,332 120,300 115,250 C112,225 125,205 140,190 Z" fill="#B8642E"/>
+  <g clip-path="url(#chop)">
+    <path d="M90,300 C220,350 400,330 520,240 L520,400 L90,400 Z" fill="#8A4422" opacity="0.7"/>
+    <path d="M120,200 C170,138 300,124 390,144 C460,160 494,206 486,246 C470,196 430,172 390,166 C300,150 190,160 130,214 Z" fill="#E9B66B"/>
+    <circle cx="210" cy="152" r="5" fill="#5A2E17" opacity="0.8"/>
+    <circle cx="350" cy="140" r="6" fill="#5A2E17" opacity="0.8"/>
+    <circle cx="452" cy="182" r="5" fill="#5A2E17" opacity="0.8"/>
+    <!-- vết vỉ cháy chéo -->
+    <path d="M150,360 L262,110 M218,370 L330,120 M286,372 L398,122 M354,366 L466,130 M422,350 L520,150" stroke="#5A2E17" stroke-width="15" stroke-linecap="round" opacity="0.75"/>
+    <!-- lớp nước ướp bóng -->
+    <path d="M178,226 C200,212 226,208 252,210 M312,196 C330,192 350,194 366,200 M404,214 C420,220 432,232 438,246" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity="0.45"/>
+  </g>
+  <path d="M140,190 C170,130 300,115 390,135 C470,152 505,210 480,270 C455,330 360,350 270,340 C190,332 120,300 115,250 C112,225 125,205 140,190 Z" fill="none" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <!-- khói nướng -->
+  <path d="M220,96 C200,74 236,58 218,34 M330,92 C310,66 350,52 332,22 M440,104 C424,84 452,70 438,50" fill="none" stroke="#9FB8BF" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+</svg>

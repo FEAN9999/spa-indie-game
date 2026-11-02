@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 560" width="600" height="560">
+  <!-- gối: nền kem, viền khâu xanh ngọc -->
+  <rect x="30" y="20" width="540" height="470" rx="64" fill="#FBF7EE" stroke="#4A2E22" stroke-width="7"/>
+  <rect x="52" y="42" width="496" height="426" rx="48" fill="none" stroke="#7CC4AE" stroke-width="4" stroke-dasharray="12 10"/>
+  <!-- tóc phía sau -->
+  <path d="M78,280 C58,130 168,46 300,46 C432,46 542,130 522,280 C500,210 440,170 300,170 C160,170 100,210 78,280 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <!-- tai -->
+  <ellipse cx="100" cy="290" rx="26" ry="42" fill="#EBC3A0" stroke="#4A2E22" stroke-width="6"/>
+  <path d="M96,272 C110,280 110,300 98,310" fill="none" stroke="#C98F6C" stroke-width="4" stroke-linecap="round"/>
+  <ellipse cx="500" cy="290" rx="26" ry="42" fill="#DDAF88" stroke="#4A2E22" stroke-width="6"/>
+  <path d="M504,272 C490,280 490,300 502,310" fill="none" stroke="#B97E5C" stroke-width="4" stroke-linecap="round"/>
+  <!-- cổ -->
+  <path d="M242,450 L242,540 L358,540 L358,450 Z" fill="#DDAF88" stroke="#4A2E22" stroke-width="6"/>
+  <!-- khăn đắp vai: đất nung, hai sọc kem -->
+  <path d="M40,560 C90,500 200,488 300,496 C400,488 510,500 560,560 Z" fill="#C65D3B" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M110,530 C190,512 410,512 490,530" fill="none" stroke="#FBF7EE" stroke-width="6" stroke-linecap="round"/>
+  <path d="M150,548 C220,535 380,535 450,548" fill="none" stroke="#FBF7EE" stroke-width="4" stroke-linecap="round"/>
+  <!-- mặt: cằm thon, không phải hình elip -->
+  <path d="M104,240 C104,160 192,118 300,118 C408,118 496,160 496,240 C496,336 468,402 410,446 C372,474 336,490 300,490 C264,490 228,474 190,446 C132,402 104,336 104,240 Z" fill="#EBC3A0"/>
+  <!-- bóng phẳng nét cứng: má phải, dưới khăn, dưới cằm -->
+  <path d="M440,168 C484,198 500,256 494,320 C484,392 448,432 404,452 C440,404 464,344 462,286 C460,232 452,196 440,168 Z" fill="#DDAF88"/>
+  <path d="M112,214 C190,182 410,182 488,214 L486,236 C410,206 190,206 114,236 Z" fill="#DDAF88"/>
+  <path d="M226,468 C262,486 338,486 374,468 C340,478 260,478 226,468 Z" fill="#DDAF88"/>
+  <path d="M104,240 C104,160 192,118 300,118 C408,118 496,160 496,240 C496,336 468,402 410,446 C372,474 336,490 300,490 C264,490 228,474 190,446 C132,402 104,336 104,240 Z" fill="none" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <!-- băng đô spa: kem, nếp gấp -->
+  <path d="M84,214 C104,124 196,86 300,86 C404,86 496,124 516,214 C480,186 400,162 300,162 C200,162 120,186 84,214 Z" fill="#FBF7EE" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+  <path d="M120,190 C180,168 240,160 300,160 C360,160 420,168 480,190 C420,176 360,170 300,170 C240,170 180,176 120,190 Z" fill="#E2D3BC"/>
+  <path d="M170,128 C180,140 182,152 178,164 M250,104 C256,122 256,140 252,158 M352,104 C346,122 346,140 350,158 M430,128 C420,140 418,152 422,164" fill="none" stroke="#E2D3BC" stroke-width="4" stroke-linecap="round"/>
+  <!-- chân mày thuôn -->
+  <path d="M162,222 C190,202 238,198 266,212 C242,210 200,214 166,232 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+  <path d="M438,222 C410,202 362,198 334,212 C358,210 400,214 434,232 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+  <!-- mắt nhắm có mi -->
+  <path d="M170,266 C196,288 240,288 264,266" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round"/>
+  <path d="M182,276 L175,289 M200,282 L196,296 M220,284 L219,298 M240,281 L243,295 M256,274 L264,286" stroke="#4A2E22" stroke-width="4" stroke-linecap="round"/>
+  <path d="M430,266 C404,288 360,288 336,266" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round"/>
+  <path d="M418,276 L425,289 M400,282 L404,296 M380,284 L381,298 M360,281 L357,295 M344,274 L336,286" stroke="#4A2E22" stroke-width="4" stroke-linecap="round"/>
+  <!-- mũi: một nét móc, bóng cánh mũi -->
+  <ellipse cx="312" cy="344" rx="16" ry="7" fill="#DDAF88"/>
+  <path d="M304,282 C300,312 290,332 284,342 C294,352 312,352 322,344" fill="none" stroke="#4A2E22" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- miệng thư giãn -->
+  <path d="M266,398 C284,412 316,412 334,398" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linecap="round"/>
+  <path d="M288,418 C296,422 304,422 312,418" fill="none" stroke="#C98F6C" stroke-width="3.5" stroke-linecap="round"/>
+  <!-- má hồng và điểm sáng gò má -->
+  <ellipse cx="184" cy="338" rx="52" ry="26" fill="#F28CA0" opacity="0.32"/>
+  <ellipse cx="416" cy="338" rx="52" ry="26" fill="#F28CA0" opacity="0.32"/>
+  <ellipse cx="168" cy="304" rx="22" ry="9" fill="#FFFFFF" opacity="0.5" transform="rotate(-14 168 304)"/>
+  <!-- mụn đầu trắng: chân hồng nổi, nhân trắng, chấm sáng -->
+  <g transform="translate(150 372)">
+    <circle r="22" fill="#F28CA0" opacity="0.35"/>
+    <circle r="15" fill="#F4A7A9" stroke="#E8708A" stroke-width="3"/>
+    <circle r="7.5" fill="#FFF8EC" stroke="#E8C9B5" stroke-width="1.5"/>
+    <circle cx="-3" cy="-3" r="2.6" fill="#FFFFFF"/>
+  </g>
+  <g transform="translate(436 300)">
+    <circle r="22" fill="#F28CA0" opacity="0.35"/>
+    <circle r="15" fill="#F4A7A9" stroke="#E8708A" stroke-width="3"/>
+    <circle r="7.5" fill="#FFF8EC" stroke="#E8C9B5" stroke-width="1.5"/>
+    <circle cx="-3" cy="-3" r="2.6" fill="#FFFFFF"/>
+  </g>
+  <g transform="translate(398 388)">
+    <circle r="22" fill="#F28CA0" opacity="0.35"/>
+    <circle r="15" fill="#F4A7A9" stroke="#E8708A" stroke-width="3"/>
+    <circle r="7.5" fill="#FFF8EC" stroke="#E8C9B5" stroke-width="1.5"/>
+    <circle cx="-3" cy="-3" r="2.6" fill="#FFFFFF"/>
+  </g>
+  <!-- mụn đỏ: không được nặn -->
+  <g transform="translate(214 414)">
+    <circle r="24" fill="#F28CA0" opacity="0.4"/>
+    <circle r="13" fill="#D8463A" stroke="#A8302A" stroke-width="3"/>
+    <ellipse cx="-4" cy="-5" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+  <g transform="translate(462 360)">
+    <circle r="22" fill="#F28CA0" opacity="0.4"/>
+    <circle r="12" fill="#D8463A" stroke="#A8302A" stroke-width="3"/>
+    <ellipse cx="-4" cy="-5" rx="4" ry="2.5" fill="#FFFFFF" opacity="0.6"/>
+  </g>
+</svg>
