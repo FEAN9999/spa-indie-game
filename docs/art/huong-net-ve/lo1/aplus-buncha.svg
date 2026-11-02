@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="face"><path d="M38,290 A192,46 0 0 0 422,290 L398,458 Q396,470 384,470 L76,470 Q64,470 62,458 Z"/></clipPath>
+    <clipPath id="mouth"><ellipse cx="230" cy="290" rx="172" ry="36"/></clipPath>
+    <clipPath id="bowl"><path d="M421,368 C424,428 466,458 505,458 C544,458 586,428 589,368 Z"/></clipPath>
+    <clipPath id="sauce"><ellipse cx="505" cy="370" rx="74" ry="17"/></clipPath>
+    <!-- miếng chả viên: nền nâu cánh gián, bóng dưới-phải, sáng trên-trái, vết cháy -->
+    <g id="cha">
+      <ellipse cx="0" cy="0" rx="40" ry="18" fill="#A86E45"/>
+      <path d="M40,0 A40,18 0 0 1 -30,12 C-6,12 24,8 40,0 Z" fill="#8A5634"/>
+      <ellipse cx="-10" cy="-6" rx="22" ry="7" fill="#D2A27A"/>
+      <ellipse cx="-16" cy="-8" rx="9" ry="3" fill="#FFFFFF" opacity=".45"/>
+      <g fill="#2B201C" opacity=".75"><circle cx="14" cy="-4" r="2.4"/><circle cx="-24" cy="4" r="2"/><circle cx="24" cy="6" r="1.8"/><circle cx="2" cy="9" r="2"/></g>
+      <ellipse cx="0" cy="0" rx="40" ry="18" fill="none" stroke="#4A2E22" stroke-width="3.5"/>
+    </g>
+    <!-- lát ba chỉ nướng: nạc, mỡ vàng, bì cháy cạnh -->
+    <g id="bachi">
+      <path d="M-56,-10 C-30,-16 30,-14 56,-8 C58,0 57,6 54,10 C28,15 -28,15 -54,10 C-58,4 -58,-4 -56,-10 Z" fill="#A86E45"/>
+      <path d="M-56,-10 C-30,-16 30,-14 56,-8 L56,-2 C30,-8 -30,-9 -57,-4 Z" fill="#F3D99A"/>
+      <path d="M-50,4 C-20,0 20,1 50,4" fill="none" stroke="#F3D99A" stroke-width="3.5" stroke-linecap="round"/>
+      <path d="M-54,10 C-28,15 28,15 54,10 L55,6 C28,11 -28,11 -55,6 Z" fill="#8A5634"/>
+      <path d="M-34,-6 l6,10 M-4,-7 l6,10 M26,-6 l6,10" stroke="#2B201C" stroke-width="3" stroke-linecap="round" opacity=".55"/>
+      <path d="M-56,-10 C-30,-16 30,-14 56,-8 C58,0 57,6 54,10 C28,15 -28,15 -54,10 C-58,4 -58,-4 -56,-10 Z" fill="none" stroke="#4A2E22" stroke-width="3.5" stroke-linejoin="round"/>
+      <path d="M-55,-11 C-30,-17 30,-15 55,-9" fill="none" stroke="#6B4027" stroke-width="3" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <!-- bóng sàn -->
+  <ellipse cx="244" cy="474" rx="200" ry="14" fill="#4A2E22" opacity=".18"/>
+  <ellipse cx="512" cy="462" rx="76" ry="10" fill="#4A2E22" opacity=".18"/>
+
+  <!-- lò than đất nung: thân, vòng trang trí, cửa lò có than đỏ -->
+  <path d="M38,290 A192,46 0 0 0 422,290 L398,458 Q396,470 384,470 L76,470 Q64,470 62,458 Z" fill="#C98062"/>
+  <g clip-path="url(#face)">
+    <path d="M336,300 L430,300 L404,470 L318,470 C332,420 340,360 336,300 Z" fill="#B27156"/>
+    <path d="M58,350 Q230,382 402,350" fill="none" stroke="#B27156" stroke-width="6" stroke-linecap="round"/>
+    <path d="M66,404 Q230,432 394,404" fill="none" stroke="#B27156" stroke-width="4" stroke-linecap="round"/>
+    <path d="M60,330 L80,452" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity=".3"/>
+    <g stroke="#B27156" stroke-width="2.5" stroke-linecap="round"><path d="M110,380 l6,4 M150,440 l8,-2 M330,388 l-6,6 M300,440 l7,2 M96,430 l4,6"/></g>
+    <path d="M176,470 L176,428 Q230,390 284,428 L284,470 Z" fill="#2B201C" stroke="#4A2E22" stroke-width="4"/>
+    <ellipse cx="206" cy="462" rx="22" ry="10" fill="#D8463A"/><ellipse cx="248" cy="460" rx="24" ry="11" fill="#EE8A2E"/><ellipse cx="230" cy="468" rx="14" ry="6" fill="#F7C531"/>
+  </g>
+  <path d="M38,290 A192,46 0 0 0 422,290 L398,458 Q396,470 384,470 L76,470 Q64,470 62,458 Z" fill="none" stroke="#4A2E22" stroke-width="6.5" stroke-linejoin="round"/>
+
+  <!-- miệng lò và lớp than hồng -->
+  <ellipse cx="230" cy="290" rx="192" ry="46" fill="#DB9677" stroke="#4A2E22" stroke-width="6"/>
+  <path d="M50,280 A182,40 0 0 1 300,246" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".4"/>
+  <ellipse cx="230" cy="290" rx="172" ry="36" fill="#2B201C"/>
+  <g clip-path="url(#mouth)">
+    <path d="M58,276 A172,36 0 0 1 402,276 L402,262 L58,262 Z" fill="#000000" opacity=".25"/>
+    <g stroke="#4A2E22" stroke-width="2">
+      <ellipse cx="86" cy="296" rx="26" ry="12" fill="#A8302A"/><ellipse cx="132" cy="308" rx="28" ry="12" fill="#D8463A"/><ellipse cx="184" cy="318" rx="30" ry="11" fill="#EE8A2E"/>
+      <ellipse cx="238" cy="314" rx="30" ry="12" fill="#D8463A"/><ellipse cx="292" cy="318" rx="28" ry="11" fill="#A8302A"/><ellipse cx="340" cy="306" rx="28" ry="12" fill="#EE8A2E"/>
+      <ellipse cx="380" cy="292" rx="24" ry="11" fill="#D8463A"/><ellipse cx="110" cy="276" rx="26" ry="10" fill="#EE8A2E"/><ellipse cx="164" cy="282" rx="28" ry="11" fill="#A8302A"/>
+      <ellipse cx="220" cy="284" rx="30" ry="11" fill="#EE8A2E"/><ellipse cx="276" cy="286" rx="28" ry="11" fill="#D8463A"/><ellipse cx="330" cy="278" rx="28" ry="10" fill="#A8302A"/>
+      <ellipse cx="150" cy="262" rx="24" ry="9" fill="#D8463A"/><ellipse cx="250" cy="262" rx="26" ry="9" fill="#A8302A"/><ellipse cx="320" cy="262" rx="22" ry="8" fill="#EE8A2E"/>
+    </g>
+    <g fill="#F7C531"><ellipse cx="184" cy="316" rx="12" ry="4"/><ellipse cx="340" cy="304" rx="10" ry="4"/><ellipse cx="220" cy="282" rx="11" ry="4"/><ellipse cx="110" cy="275" rx="9" ry="3"/></g>
+    <g fill="#8C8580"><ellipse cx="94" cy="292" rx="6" ry="2.5"/><ellipse cx="296" cy="314" rx="7" ry="2.5"/><ellipse cx="256" cy="260" rx="6" ry="2"/></g>
+    <path d="M124,306 l10,-4 M232,312 l8,4 M336,276 l-8,4" stroke="#2B201C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <path d="M38,290 A192,46 0 0 0 422,290" fill="none" stroke="#4A2E22" stroke-width="6"/>
+
+  <!-- vỉ kẹp tre: khung, nan, chả viên hàng sau, ba chỉ hàng trước -->
+  <use href="#cha" transform="translate(140 252) scale(1.12)"/>
+  <use href="#cha" transform="translate(232 248) scale(1.06)"/>
+  <use href="#cha" transform="translate(322 252) scale(1.12)"/>
+  <use href="#bachi" transform="translate(160 289) rotate(-3) scale(1.08)"/>
+  <use href="#bachi" transform="translate(302 289) rotate(4) scale(1.08)"/>
+  <g fill="none" stroke-linecap="round">
+    <path d="M113.4,224 L90.8,310 M142.8,224 L125.6,310 M172.2,224 L160.4,310 M201.6,224 L195.2,310 M231,224 L230,310 M260.4,224 L264.8,310 M289.8,224 L299.6,310 M319.2,224 L334.4,310 M348.6,224 L369.2,310 M74.6,253 L386.8,253 M65.4,281 L395.2,281" stroke="#4A2E22" stroke-width="6"/>
+    <path d="M113.4,224 L90.8,310 M142.8,224 L125.6,310 M172.2,224 L160.4,310 M201.6,224 L195.2,310 M231,224 L230,310 M260.4,224 L264.8,310 M289.8,224 L299.6,310 M319.2,224 L334.4,310 M348.6,224 L369.2,310 M74.6,253 L386.8,253 M65.4,281 L395.2,281" stroke="#E4C77A" stroke-width="3"/>
+    <path d="M84,224 L378,224 L404,310 L56,310 Z" stroke="#4A2E22" stroke-width="12" stroke-linejoin="round"/>
+    <path d="M84,224 L378,224 L404,310 L56,310 Z" stroke="#E4C77A" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M60,306 L400,306" stroke="#AE8E48" stroke-width="2.5"/>
+    <path d="M90,227 L372,227" stroke="#F4E2A6" stroke-width="2.5"/>
+    <!-- hai cán tre chụm lại, buộc dây thép -->
+    <path d="M391,232 L566,168 M402,300 L572,182" stroke="#4A2E22" stroke-width="12"/>
+    <path d="M391,232 L566,168 M402,300 L572,182" stroke="#E4C77A" stroke-width="7"/>
+    <path d="M400,236 L560,177" stroke="#F4E2A6" stroke-width="2.5"/>
+  </g>
+  <ellipse cx="532" cy="186" rx="8" ry="14" transform="rotate(-25 532 186)" fill="none" stroke="#4A2E22" stroke-width="7"/>
+  <ellipse cx="532" cy="186" rx="8" ry="14" transform="rotate(-25 532 186)" fill="none" stroke="#C9CFD3" stroke-width="3.5"/>
+
+  <!-- khói than -->
+  <path d="M120,212 C104,190 132,176 118,150 C108,132 124,118 116,100 M228,206 C212,182 244,168 228,140 C218,120 238,104 228,84 M332,212 C318,192 344,178 332,154 C324,138 340,126 332,110" fill="none" stroke="#9FB8BF" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+
+  <!-- bát nước chấm: sứ xanh trắng, nước mắm pha có đu đủ, cà rốt, tỏi, ớt -->
+  <ellipse cx="505" cy="458" rx="32" ry="7" fill="#E2D3BC" stroke="#4A2E22" stroke-width="4"/>
+  <path d="M421,368 C424,428 466,458 505,458 C544,458 586,428 589,368 Z" fill="#FBF7EE"/>
+  <g clip-path="url(#bowl)">
+    <path d="M589,368 C586,428 544,458 505,458 C540,446 572,420 576,368 Z" fill="#DCD5CC"/>
+    <path d="M426,396 C462,414 548,414 584,396" fill="none" stroke="#2D5FA8" stroke-width="7"/>
+    <path d="M444,420 C476,432 534,432 566,420" fill="none" stroke="#2D5FA8" stroke-width="3"/>
+    <g fill="#2D5FA8"><circle cx="462" cy="427" r="3"/><circle cx="505" cy="433" r="3"/><circle cx="548" cy="427" r="3"/></g>
+    <path d="M436,380 C440,404 452,422 466,434" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+  </g>
+  <path d="M421,368 C424,428 466,458 505,458 C544,458 586,428 589,368" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  <ellipse cx="505" cy="368" rx="84" ry="22" fill="#FBF7EE" stroke="#4A2E22" stroke-width="5"/>
+  <ellipse cx="505" cy="370" rx="74" ry="17" fill="#F4B86A" stroke="#4A2E22" stroke-width="2.5"/>
+  <g clip-path="url(#sauce)">
+    <path d="M431,370 A74,17 0 0 1 579,370 L579,358 L431,358 Z" fill="#DE9E4F"/>
+    <g stroke="#4A2E22" stroke-width="1.5">
+      <path d="M452,374 q12,-8 26,-2 q-12,2 -26,2 Z" fill="#DCEFB4"/>
+      <path d="M522,378 q14,-7 28,-1 q-14,2 -28,1 Z" fill="#DCEFB4"/>
+      <path d="M490,366 q10,-6 22,-1 q-10,2 -22,1 Z" fill="#DCEFB4"/>
+      <ellipse cx="476" cy="364" rx="7" ry="3.5" fill="#EE8A2E"/>
+      <ellipse cx="540" cy="366" rx="7" ry="3.5" fill="#EE8A2E"/>
+      <ellipse cx="510" cy="380" rx="6" ry="3" fill="#EE8A2E"/>
+      <ellipse cx="560" cy="376" rx="4.5" ry="2.5" fill="none" stroke="#D8463A" stroke-width="2.5"/>
+      <ellipse cx="462" cy="383" rx="4.5" ry="2.5" fill="none" stroke="#D8463A" stroke-width="2.5"/>
+    </g>
+    <g fill="#FBF7EE"><ellipse cx="498" cy="374" rx="2.5" ry="1.6"/><ellipse cx="530" cy="372" rx="2.5" ry="1.6"/><ellipse cx="482" cy="378" rx="2" ry="1.4"/><ellipse cx="552" cy="370" rx="2.2" ry="1.5"/></g>
+    <g fill="#D8463A"><circle cx="520" cy="362" r="1.6"/><circle cx="470" cy="372" r="1.6"/><circle cx="545" cy="382" r="1.6"/></g>
+  </g>
+</svg>

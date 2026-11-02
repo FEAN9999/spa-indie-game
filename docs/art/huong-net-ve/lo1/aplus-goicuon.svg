@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="inside"><ellipse cx="258" cy="226" rx="218" ry="134"/></clipPath>
+    <clipPath id="paper"><ellipse cx="168" cy="212" rx="118" ry="76" transform="rotate(-8 168 212)"/></clipPath>
+    <clipPath id="roll"><rect x="-100" y="-34" width="200" height="68" rx="34"/></clipPath>
+    <!-- vân đan của bánh tráng -->
+    <pattern id="dan" width="11" height="11" patternUnits="userSpaceOnUse" patternTransform="rotate(40)">
+      <path d="M0,0 V11 M0,0 H11" stroke="#D9C9AE" stroke-width="1.6"/>
+    </pattern>
+    <!-- nửa con tôm luộc: mặt cắt hồng có sọc đỏ -->
+    <g id="tomnua">
+      <path d="M-20,6 C-22,-10 -6,-20 10,-16 C20,-13 24,-4 20,4 C14,0 4,-4 -4,0 C-10,3 -14,6 -20,6 Z" fill="#F2A48E" stroke="#4A2E22" stroke-width="2.2" stroke-linejoin="round"/>
+      <path d="M-14,-6 C-12,-10 -8,-12 -4,-13 M-2,-14 C2,-15 6,-15 10,-14 M12,-12 C16,-10 18,-6 19,-2" fill="none" stroke="#D8463A" stroke-width="3" stroke-linecap="round"/>
+      <path d="M-14,3 C-8,-2 2,-6 12,-2" fill="none" stroke="#FBF7EE" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+    </g>
+  </defs>
+
+  <!-- bóng sàn -->
+  <ellipse cx="270" cy="244" rx="240" ry="150" fill="#4A2E22" opacity=".18"/>
+  <ellipse cx="458" cy="438" rx="132" ry="22" fill="#4A2E22" opacity=".18"/>
+
+  <!-- thau men: vành xanh men, lòng men trắng, đáy vẽ bông hoa -->
+  <ellipse cx="258" cy="226" rx="236" ry="148" fill="#2D5FA8" stroke="#4A2E22" stroke-width="6.5"/>
+  <ellipse cx="258" cy="226" rx="226" ry="140" fill="none" stroke="#FBF7EE" stroke-width="2.5" opacity=".8"/>
+  <path d="M40,190 A236,148 0 0 1 180,84" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".45"/>
+  <ellipse cx="258" cy="226" rx="218" ry="134" fill="#FBF7EE" stroke="#4A2E22" stroke-width="4"/>
+  <g clip-path="url(#inside)">
+    <path d="M40,226 A218,134 0 0 1 476,226 L476,150 C400,110 120,110 40,150 Z" fill="#DCD5CC"/>
+    <ellipse cx="262" cy="244" rx="184" ry="108" fill="#F6ECDB"/>
+    <!-- bông hoa in trên đáy -->
+    <g transform="translate(318 260)">
+      <g fill="#D8463A" stroke="#A8302A" stroke-width="2">
+        <ellipse cx="0" cy="-16" rx="13" ry="10"/><ellipse cx="16" cy="-2" rx="13" ry="10"/><ellipse cx="9" cy="16" rx="13" ry="10"/><ellipse cx="-10" cy="14" rx="13" ry="10"/><ellipse cx="-16" cy="-4" rx="13" ry="10"/>
+      </g>
+      <circle r="8" fill="#F7C531" stroke="#C78A22" stroke-width="2"/>
+      <path d="M22,10 C40,6 52,16 56,26 C42,28 30,22 22,10 Z M-22,10 C-34,22 -34,34 -28,42 C-18,34 -16,22 -22,10 Z" fill="#4E9A6B" stroke="#2F7D6E" stroke-width="2"/>
+    </g>
+    <!-- nước -->
+    <ellipse cx="260" cy="236" rx="204" ry="122" fill="#BFE3F2" opacity=".6"/>
+    <path d="M60,236 A204,122 0 0 1 166,124" fill="none" stroke="#7FC4D8" stroke-width="4" opacity=".7"/>
+    <path d="M300,322 q24,-10 48,0 t48,0 M370,180 q20,-8 40,0 t40,0 M330,214 q16,-6 32,0" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+  </g>
+
+  <!-- bánh tráng đang nhúng: phần khô bên trái, phần ướt chìm dưới nước bên phải -->
+  <ellipse cx="168" cy="212" rx="118" ry="76" transform="rotate(-8 168 212)" fill="#F3E6D3"/>
+  <g clip-path="url(#paper)">
+    <rect x="40" y="120" width="260" height="190" fill="url(#dan)"/>
+    <path d="M40,150 C70,140 96,150 110,170 L40,200 Z" fill="#FFFFFF" opacity=".45"/>
+    <path d="M200,110 C196,170 204,230 214,310 L310,310 L310,110 Z" fill="#BFE3F2" opacity=".55"/>
+    <path d="M206,110 C202,170 210,230 220,310" fill="none" stroke="#FFFFFF" stroke-width="3" opacity=".8"/>
+    <path d="M226,150 C240,148 252,154 262,162 M232,240 C246,238 258,244 268,252" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".6"/>
+    <path d="M60,270 C120,300 220,290 290,250 L300,320 L50,320 Z" fill="#3A2418" opacity=".1"/>
+  </g>
+  <ellipse cx="168" cy="212" rx="112" ry="70" transform="rotate(-8 168 212)" fill="none" stroke="#E2D3BC" stroke-width="5"/>
+  <ellipse cx="168" cy="212" rx="118" ry="76" transform="rotate(-8 168 212)" fill="none" stroke="#4A2E22" stroke-width="4"/>
+  <!-- gợn nước quanh chỗ nhúng -->
+  <path d="M206,120 q-16,8 -14,22 M226,300 q16,-6 18,-20" fill="none" stroke="#7FC4D8" stroke-width="3.5" stroke-linecap="round"/>
+  <g fill="#BFE3F2" stroke="#4A2E22" stroke-width="1.8"><path d="M58,268 q4,8 0,12 q-4,-4 0,-12 Z"/><path d="M74,282 q3,6 0,9 q-3,-3 0,-9 Z"/></g>
+
+  <!-- lá chuối lót -->
+  <g transform="translate(454 414) rotate(-10)">
+    <path d="M-132,0 C-92,-46 60,-54 132,-6 C72,40 -80,48 -132,0 Z" fill="#4E9A6B"/>
+    <path d="M-132,0 C-80,48 72,40 132,-6 C60,22 -60,26 -132,0 Z" fill="#4B875E"/>
+    <path d="M-110,-14 l14,12 M-80,-26 l18,22 M-46,-34 l20,30 M-10,-38 l20,34 M26,-38 l18,32 M62,-32 l16,26 M96,-22 l12,16 M-100,14 l16,-12 M-66,24 l18,-22 M-30,28 l20,-26 M8,28 l20,-26 M46,24 l18,-22 M82,14 l14,-14" stroke="#5FAE7B" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+    <path d="M-128,0 C-40,-6 60,-8 128,-6" fill="none" stroke="#5FAE7B" stroke-width="4" stroke-linecap="round"/>
+    <path d="M-132,0 C-92,-46 60,-54 132,-6 C72,40 -80,48 -132,0 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M40,30 l4,-10 M-60,34 l3,-9" stroke="#4A2E22" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- cuốn đã cuốn: nhìn qua lớp bánh tráng thấy bún, xà lách, rau thơm, tôm, thịt -->
+  <ellipse cx="456" cy="428" rx="118" ry="15" fill="#2B201C" opacity=".22"/>
+  <g transform="translate(452 392) rotate(-8) scale(1.15)">
+    <rect x="-100" y="-34" width="200" height="68" rx="34" fill="#FBF7EE"/>
+    <g clip-path="url(#roll)">
+      <path d="M-100,14 q12,-8 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 M-100,24 q12,-8 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0" fill="none" stroke="#E2D3BC" stroke-width="6"/>
+      <path d="M-100,14 q12,-8 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 M-100,24 q12,-8 24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0 t24,0" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+      <path d="M-104,8 L-104,-8 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 q8,-12 16,-2 L104,8 Z" fill="#5FAE7B" stroke="#4A2E22" stroke-width="2"/>
+      <path d="M-80,0 l6,-8 M-40,2 l6,-8 M0,0 l6,-8 M40,2 l6,-8 M80,0 l6,-8" stroke="#4E9A6B" stroke-width="2" stroke-linecap="round"/>
+      <g fill="#4E9A6B" stroke="#4A2E22" stroke-width="1.5">
+        <ellipse cx="-70" cy="-22" rx="9" ry="4.5" transform="rotate(-20 -70 -22)"/><ellipse cx="-28" cy="-24" rx="9" ry="4.5" transform="rotate(15 -28 -24)"/><ellipse cx="18" cy="-22" rx="9" ry="4.5" transform="rotate(-10 18 -22)"/><ellipse cx="62" cy="-24" rx="9" ry="4.5" transform="rotate(25 62 -24)"/>
+      </g>
+      <g fill="#F2C4C0" stroke="#4A2E22" stroke-width="1.5"><rect x="-48" y="-14" width="20" height="7" rx="3"/><rect x="34" y="-14" width="20" height="7" rx="3"/></g>
+      <use href="#tomnua" transform="translate(-66 -4)"/>
+      <use href="#tomnua" transform="translate(-2 -6) scale(1.05)"/>
+      <use href="#tomnua" transform="translate(66 -4)"/>
+      <!-- lớp bánh tráng trong mờ phủ lên trên -->
+      <rect x="-100" y="-34" width="200" height="68" fill="#FBF3E4" opacity=".25"/>
+      <rect x="-100" y="-34" width="200" height="68" fill="url(#dan)" opacity=".35"/>
+      <path d="M-100,18 C-40,30 40,30 100,18 L100,40 L-100,40 Z" fill="#3A2418" opacity=".1"/>
+      <path d="M-80,-24 C-30,-30 30,-30 80,-24" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".6"/>
+      <path d="M-60,-14 C-30,-17 0,-17 20,-15" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".5"/>
+    </g>
+    <rect x="-100" y="-34" width="200" height="68" rx="34" fill="none" stroke="#4A2E22" stroke-width="5"/>
+    <path d="M-76,-30 C-84,-16 -84,14 -76,30 M78,-30 C86,-16 86,14 78,30" fill="none" stroke="#E2D3BC" stroke-width="2.5"/>
+    <!-- cọng hẹ thò ra đầu cuốn -->
+    <path d="M-98,-8 C-124,-18 -146,-6 -170,-24" fill="none" stroke="#4A2E22" stroke-width="7" stroke-linecap="round"/>
+    <path d="M-98,-8 C-124,-18 -146,-6 -170,-24" fill="none" stroke="#6DB36A" stroke-width="3.5" stroke-linecap="round"/>
+  </g>
+</svg>

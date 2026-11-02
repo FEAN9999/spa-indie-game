@@ -1,0 +1,101 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="sole"><path d="M252,396 C244,360 248,320 262,284 C272,258 262,226 246,196 C234,172 230,130 244,104 C258,80 300,70 340,76 C366,80 376,106 372,140 C368,180 358,230 356,280 C354,330 360,372 344,398 C326,424 266,428 252,396 Z"/></clipPath>
+    <clipPath id="tub"><path d="M80,396 A220,40 0 0 0 520,396 L494,468 A194,24 0 0 1 106,468 Z"/></clipPath>
+  </defs>
+
+  <!-- bóng sàn dưới chậu -->
+  <ellipse cx="306" cy="486" rx="206" ry="12" fill="#4A2E22" opacity="0.18"/>
+
+  <!-- vành sau và lòng chậu -->
+  <ellipse cx="300" cy="396" rx="220" ry="40" fill="#6B4027"/>
+  <path d="M80,396 A220,40 0 0 1 520,396" fill="none" stroke="#4A2E22" stroke-width="16"/>
+  <path d="M80,396 A220,40 0 0 1 520,396" fill="none" stroke="#A86E45" stroke-width="9"/>
+  <!-- nước thuốc -->
+  <ellipse cx="300" cy="404" rx="204" ry="32" fill="#7FA86A" stroke="#4A2E22" stroke-width="3.5"/>
+  <path d="M130,398 C170,388 220,386 250,388 M360,388 C400,386 440,390 470,398" fill="none" stroke="#A9C29A" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- ngón chân, có mép móng nhô ở đầu -->
+  <g stroke="#4A2E22" stroke-width="5">
+    <ellipse cx="264" cy="66" rx="25" ry="31" fill="#EBC3A0"/>
+    <ellipse cx="306" cy="50" rx="15" ry="20" fill="#EBC3A0"/>
+    <ellipse cx="334" cy="54" rx="13" ry="17" fill="#EBC3A0"/>
+    <ellipse cx="356" cy="66" rx="12" ry="15" fill="#DDAF88"/>
+    <ellipse cx="371" cy="84" rx="10" ry="12" fill="#DDAF88"/>
+  </g>
+  <g fill="#F6D9D2" stroke="#4A2E22" stroke-width="2.5">
+    <path d="M250,42 C256,34 272,34 278,42 C270,40 258,40 250,42 Z"/>
+    <path d="M298,34 C302,29 310,29 314,34 C308,33 304,33 298,34 Z"/>
+    <path d="M327,40 C330,35 338,35 341,40 C336,39 332,39 327,40 Z"/>
+  </g>
+  <ellipse cx="256" cy="58" rx="7" ry="10" fill="#FFFFFF" opacity="0.45"/>
+  <ellipse cx="301" cy="45" rx="4" ry="6" fill="#FFFFFF" opacity="0.45"/>
+
+  <!-- lòng bàn chân: vòm hõm bên trong, bóng mép ngoài, đệm hồng ở mu và gót -->
+  <path d="M252,396 C244,360 248,320 262,284 C272,258 262,226 246,196 C234,172 230,130 244,104 C258,80 300,70 340,76 C366,80 376,106 372,140 C368,180 358,230 356,280 C354,330 360,372 344,398 C326,424 266,428 252,396 Z" fill="#EBC3A0"/>
+  <g clip-path="url(#sole)">
+    <path d="M354,90 C380,120 372,190 362,250 C356,300 362,360 344,400 L400,400 L400,80 Z" fill="#DDAF88"/>
+    <path d="M262,284 C276,256 266,224 250,196 C262,214 286,250 282,290 C278,320 268,330 262,284 Z" fill="#DDAF88"/>
+    <ellipse cx="300" cy="118" rx="58" ry="30" fill="#F28CA0" opacity="0.22"/>
+    <ellipse cx="302" cy="372" rx="44" ry="28" fill="#F28CA0" opacity="0.22"/>
+    <path d="M250,128 C252,112 262,100 276,94 C268,108 262,122 262,138 Z" fill="#FFFFFF" opacity="0.45"/>
+    <path d="M268,350 C272,340 280,334 290,332 C282,340 278,348 278,358 Z" fill="#FFFFFF" opacity="0.45"/>
+  </g>
+  <path d="M252,396 C244,360 248,320 262,284 C272,258 262,226 246,196 C234,172 230,130 244,104 C258,80 300,70 340,76 C366,80 376,106 372,140 C368,180 358,230 356,280 C354,330 360,372 344,398 C326,424 266,428 252,396 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  <!-- nếp da -->
+  <path d="M258,96 C280,88 320,86 352,94 M278,166 C296,174 320,174 340,166 M300,240 C306,250 312,256 322,258 M284,318 C300,326 318,326 332,318" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- huyệt phản xạ -->
+  <g>
+    <circle cx="282" cy="132" r="22" fill="#F8DE96" opacity="0.6"/>
+    <circle cx="338" cy="140" r="22" fill="#F8DE96" opacity="0.6"/>
+    <circle cx="286" cy="208" r="22" fill="#F8DE96" opacity="0.6"/>
+    <circle cx="334" cy="222" r="22" fill="#F8DE96" opacity="0.6"/>
+    <circle cx="300" cy="292" r="22" fill="#F8DE96" opacity="0.6"/>
+    <circle cx="314" cy="360" r="22" fill="#F8DE96" opacity="0.6"/>
+  </g>
+  <g fill="#FBF7EE" stroke="#4A2E22" stroke-width="3.5">
+    <circle cx="282" cy="132" r="13"/><circle cx="338" cy="140" r="13"/><circle cx="286" cy="208" r="13"/>
+    <circle cx="334" cy="222" r="13"/><circle cx="300" cy="292" r="13"/><circle cx="314" cy="360" r="13"/>
+  </g>
+  <g fill="#2F7D6E">
+    <circle cx="282" cy="132" r="6.5"/><circle cx="338" cy="140" r="6.5"/><circle cx="286" cy="208" r="6.5"/>
+    <circle cx="334" cy="222" r="6.5"/><circle cx="300" cy="292" r="6.5"/><circle cx="314" cy="360" r="6.5"/>
+  </g>
+
+  <!-- mặt nước phía trước che gót, gợn quanh chân -->
+  <path d="M96,404 A204,32 0 0 0 504,404 Z" fill="#7FA86A" opacity="0.9"/>
+  <ellipse cx="300" cy="408" rx="62" ry="10" fill="none" stroke="#DCEFB4" stroke-width="3"/>
+  <ellipse cx="300" cy="410" rx="84" ry="15" fill="none" stroke="#A9C29A" stroke-width="2.5"/>
+  <!-- lá và cánh hoa nổi -->
+  <path d="M160,396 q12,-12 28,-4 q-12,12 -28,4 Z M410,398 q12,-12 28,-4 q-12,12 -28,4 Z M206,410 q10,-10 22,-4 q-10,10 -22,4 Z" fill="#4E9A6B" stroke="#4A2E22" stroke-width="2.5"/>
+  <path d="M172,394 l12,-2 M422,396 l12,-2" stroke="#5FAE7B" stroke-width="2" stroke-linecap="round"/>
+  <path d="M372,406 q4,-10 12,-8 q2,8 -12,8 Z M386,414 q8,-6 14,0 q-6,6 -14,0 Z M236,396 q6,-8 12,-4 q0,8 -12,4 Z M452,410 q6,-8 12,-4 q0,8 -12,4 Z" fill="#F28CA0" stroke="#E8708A" stroke-width="2"/>
+
+  <!-- thân chậu gỗ: ván dọc, hai đai đồng -->
+  <path d="M80,396 A220,40 0 0 0 520,396 L494,468 A194,24 0 0 1 106,468 Z" fill="#8A5634"/>
+  <g clip-path="url(#tub)">
+    <path d="M420,430 L540,390 L540,500 L380,500 Z" fill="#6B4027" opacity="0.7"/>
+    <path d="M126,428 L134,486 M176,434 L180,494 M228,438 L230,498 M282,440 L282,500 M336,440 L336,500 M390,436 L388,496 M440,432 L436,492 M482,426 L476,486" stroke="#6B4027" stroke-width="3"/>
+    <path d="M86,410 A214,38 0 0 0 514,410" fill="none" stroke="#4A2E22" stroke-width="11"/>
+    <path d="M86,410 A214,38 0 0 0 514,410" fill="none" stroke="#C78A22" stroke-width="6"/>
+    <path d="M100,452 A200,32 0 0 0 500,452" fill="none" stroke="#4A2E22" stroke-width="11"/>
+    <path d="M100,452 A200,32 0 0 0 500,452" fill="none" stroke="#C78A22" stroke-width="6"/>
+    <path d="M118,440 C126,454 134,464 146,472" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.4"/>
+  </g>
+  <path d="M80,396 A220,40 0 0 0 520,396 L494,468 A194,24 0 0 1 106,468 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  <path d="M80,396 A220,40 0 0 0 520,396" fill="none" stroke="#4A2E22" stroke-width="16"/>
+  <path d="M80,396 A220,40 0 0 0 520,396" fill="none" stroke="#A86E45" stroke-width="9"/>
+  <path d="M110,412 C140,424 180,430 220,434" fill="none" stroke="#C99A6A" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- cuộn khăn đặt trên mép chậu -->
+  <g transform="translate(92 398) rotate(-10)">
+    <rect x="0" y="-20" width="104" height="40" rx="20" fill="#FBF7EE" stroke="#4A2E22" stroke-width="5"/>
+    <path d="M20,10 H92 Q100,10 102,4 L102,14 Q98,20 84,20 H20 Z" fill="#E2D3BC"/>
+    <path d="M40,-20 V20 M76,-20 V20" stroke="#2F7D6E" stroke-width="5"/>
+    <path d="M30,-14 H70" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity="0.6"/>
+    <rect x="0" y="-20" width="104" height="40" rx="20" fill="none" stroke="#4A2E22" stroke-width="5"/>
+    <ellipse cx="6" cy="0" rx="13" ry="20" fill="#FBF7EE" stroke="#4A2E22" stroke-width="4.5"/>
+    <path d="M6,0 m0,-4 a4,4 0 1,1 -3,6 a8,9 0 1,1 9,-12 a12,14 0 0,1 -2,26" fill="none" stroke="#C9B9A0" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+</svg>

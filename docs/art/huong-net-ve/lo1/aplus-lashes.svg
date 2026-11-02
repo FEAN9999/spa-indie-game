@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="lens"><circle cx="300" cy="250" r="206"/></clipPath>
+  </defs>
+  <!-- bóng sàn của đèn lúp -->
+  <ellipse cx="306" cy="476" rx="200" ry="14" fill="#4A2E22" opacity=".18"/>
+
+  <!-- cận cảnh qua đèn lúp: da, tóc mai, sống mũi, chân mày, mí -->
+  <g clip-path="url(#lens)">
+    <rect x="80" y="30" width="440" height="440" fill="#EBC3A0"/>
+    <!-- bóng phẳng: hốc mắt dưới chân mày, cạnh sống mũi -->
+    <path d="M176,252 C240,220 360,220 424,252 C420,236 410,222 396,212 C330,196 260,198 200,218 C190,228 182,240 176,252 Z" fill="#DDAF88"/>
+    <path d="M470,120 C462,200 466,280 484,350 C500,330 520,260 520,200 L520,100 Z" fill="#DDAF88"/>
+    <path d="M470,120 C462,200 466,280 484,350" fill="none" stroke="#4A2E22" stroke-width="4" stroke-linecap="round"/>
+    <!-- tóc mai -->
+    <path d="M60,20 L340,20 C280,44 226,76 190,116 C160,150 142,196 140,250 C138,300 122,360 84,430 L60,430 Z" fill="#5B3A29"/>
+    <path d="M60,20 L340,20 C300,36 262,56 230,80 L60,80 Z" fill="#4A3226"/>
+    <path d="M340,20 C280,44 226,76 190,116 C160,150 142,196 140,250 C138,300 122,360 84,430" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linecap="round"/>
+    <path d="M290,40 C240,62 200,94 176,130 M250,40 C206,62 172,94 152,132 M210,46 C176,70 150,104 136,146 M124,200 C122,250 116,300 100,350" fill="none" stroke="#7A4A2F" stroke-width="3" stroke-linecap="round"/>
+    <!-- điểm sáng: xương chân mày, gò má -->
+    <path d="M220,138 C270,124 330,124 380,134 C330,132 270,134 226,146 Z" fill="#FFFFFF" opacity=".45"/>
+    <ellipse cx="210" cy="420" rx="34" ry="12" fill="#FFFFFF" opacity=".45" transform="rotate(-10 210 420)"/>
+    <ellipse cx="300" cy="438" rx="90" ry="26" fill="#F28CA0" opacity=".3"/>
+    <!-- chân mày thuôn, có sợi -->
+    <path d="M182,210 C214,174 262,152 312,148 C360,144 402,154 426,166 C432,170 430,180 422,182 C392,174 352,170 312,172 C266,174 222,188 186,214 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M200,196 L212,184 M222,182 L236,170 M246,172 L262,160 M272,166 L290,154 M302,164 L320,152 M334,164 L352,154 M366,166 L384,158 M396,170 L414,164" stroke="#7A4A2F" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- nếp mí -->
+    <path d="M182,262 C240,236 360,236 418,262" fill="none" stroke="#C98F6C" stroke-width="4" stroke-linecap="round"/>
+    <!-- mí dưới phồng nhẹ khi nhắm -->
+    <path d="M196,334 C250,362 350,362 404,334" fill="none" stroke="#C98F6C" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- mi thật ngắn dọc chân mi -->
+    <path d="M186,304 L183,314 M196,310 L194,320 M226,318 L225,329 M238,321 L238,332 M272,325 L272,336 M286,326 L287,337 M314,326 L315,337 M328,325 L330,336 M362,321 L364,332 M374,318 L377,329 M404,310 L407,320 M414,304 L418,314" stroke="#2B201C" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- chân mi -->
+    <path d="M170,296 C230,336 370,336 430,296" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round"/>
+    <!-- ba sợi mi đã nối: cong, dài dần ra đuôi mắt -->
+    <path d="M170,296 C166,318 156,336 140,348 M206,313 C204,338 196,356 182,368 M251,323 C251,346 246,364 238,378" fill="none" stroke="#2B201C" stroke-width="4" stroke-linecap="round"/>
+    <g fill="#2B201C"><circle cx="170" cy="296" r="4"/><circle cx="206" cy="313" r="4"/><circle cx="251" cy="323" r="4"/></g>
+    <!-- chỗ gắn còn trống -->
+    <g fill="#FFFFFF" stroke="#4A2E22" stroke-width="4"><circle cx="300" cy="326" r="9"/><circle cx="349" cy="323" r="9"/><circle cx="394" cy="313" r="9"/><circle cx="430" cy="296" r="9"/></g>
+  </g>
+
+  <!-- vành đèn lúp: kem, đèn nhỏ quanh vành -->
+  <circle cx="300" cy="250" r="218" fill="none" stroke="#4A2E22" stroke-width="32"/>
+  <circle cx="300" cy="250" r="218" fill="none" stroke="#FBF7EE" stroke-width="20"/>
+  <path d="M146,96 A218,218 0 0 1 300,32" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".7"/>
+  <path d="M470,388 A218,218 0 0 1 340,464" fill="none" stroke="#E6DED3" stroke-width="10" stroke-linecap="round"/>
+  <g fill="#F8DE96" stroke="#4A2E22" stroke-width="2">
+    <circle cx="300" cy="32" r="5"/><circle cx="454" cy="96" r="5"/><circle cx="518" cy="250" r="5"/><circle cx="454" cy="404" r="5"/>
+    <circle cx="300" cy="468" r="5"/><circle cx="146" cy="404" r="5"/><circle cx="82" cy="250" r="5"/><circle cx="146" cy="96" r="5"/>
+  </g>
+  <!-- tay đèn -->
+  <path d="M500,380 L560,440 L600,440" fill="none" stroke="#4A2E22" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M500,380 L560,440 L600,440" fill="none" stroke="#C9CFD3" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- nhíp thép kẹp một sợi mi tới chỗ gắn kế tiếp -->
+  <path d="M308,300 C304,318 298,332 288,344" fill="none" stroke="#2B201C" stroke-width="4" stroke-linecap="round"/>
+  <path d="M552,20 L576,36 L320,298 L312,300 Z" fill="#C9CFD3" stroke="#4A2E22" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M536,34 L560,50 L314,306 L306,304 Z" fill="#AEB6BC" stroke="#4A2E22" stroke-width="4" stroke-linejoin="round"/>
+  <path d="M558,28 L330,282" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+  <path d="M530,58 L550,40 M520,68 L540,50" stroke="#4A2E22" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,123 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="cush"><rect x="56" y="316" width="488" height="168" rx="84"/></clipPath>
+    <clipPath id="hand"><path d="M214,388 C212,356 236,342 262,344 L372,352 C394,356 402,376 398,406 C394,446 384,480 370,500 L238,500 C222,470 214,430 214,388 Z"/></clipPath>
+    <g id="bottle">
+      <ellipse cx="2" cy="198" rx="44" ry="7" fill="#4A2E22" opacity="0.18"/>
+      <rect x="-15" y="30" width="30" height="54" rx="9" fill="#2B201C" stroke="#4A2E22" stroke-width="5"/>
+      <path d="M-6,38 V76 M2,38 V76 M10,38 V76" stroke="#5B5450" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M-9,40 V70" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.35"/>
+    </g>
+  </defs>
+
+  <!-- bốn lọ sơn thủy tinh: hồng, đỏ, xanh ngọc, vàng -->
+  <g transform="translate(120 0)">
+    <use href="#bottle"/>
+    <rect x="-13" y="80" width="26" height="16" rx="4" fill="#E8708A" stroke="#4A2E22" stroke-width="3.5"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="#F28CA0"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L34.6,110 H-34.6 Z" fill="#CFE8F0"/>
+    <path d="M20,110 L38,180 C38,190 32,196 22,196 H8 C20,180 24,140 20,110 Z" fill="#D47A8D"/>
+    <path d="M-26,114 C-28,140 -28,160 -24,182 L-18,182 C-20,160 -20,140 -18,114 Z" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="-20" y="138" width="40" height="28" rx="6" fill="#FBF7EE" stroke="#4A2E22" stroke-width="2.5"/>
+    <path d="M-12,148 H12 M-8,156 H8" stroke="#E8708A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(240 0)">
+    <use href="#bottle"/>
+    <rect x="-13" y="80" width="26" height="16" rx="4" fill="#A8302A" stroke="#4A2E22" stroke-width="3.5"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="#D8463A"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L34.6,110 H-34.6 Z" fill="#CFE8F0"/>
+    <path d="M20,110 L38,180 C38,190 32,196 22,196 H8 C20,180 24,140 20,110 Z" fill="#B63B32"/>
+    <path d="M-26,114 C-28,140 -28,160 -24,182 L-18,182 C-20,160 -20,140 -18,114 Z" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="-20" y="138" width="40" height="28" rx="6" fill="#FBF7EE" stroke="#4A2E22" stroke-width="2.5"/>
+    <path d="M-12,148 H12 M-8,156 H8" stroke="#D8463A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(360 0)">
+    <use href="#bottle"/>
+    <rect x="-13" y="80" width="26" height="16" rx="4" fill="#2A6B5C" stroke="#4A2E22" stroke-width="3.5"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="#2F7D6E"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L34.6,110 H-34.6 Z" fill="#CFE8F0"/>
+    <path d="M20,110 L38,180 C38,190 32,196 22,196 H8 C20,180 24,140 20,110 Z" fill="#2E6A5D"/>
+    <path d="M-26,114 C-28,140 -28,160 -24,182 L-18,182 C-20,160 -20,140 -18,114 Z" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="-20" y="138" width="40" height="28" rx="6" fill="#FBF7EE" stroke="#4A2E22" stroke-width="2.5"/>
+    <path d="M-12,148 H12 M-8,156 H8" stroke="#2F7D6E" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+  <g transform="translate(480 0)">
+    <use href="#bottle"/>
+    <rect x="-13" y="80" width="26" height="16" rx="4" fill="#C78A22" stroke="#4A2E22" stroke-width="3.5"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="#E3A73B"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L34.6,110 H-34.6 Z" fill="#CFE8F0"/>
+    <path d="M20,110 L38,180 C38,190 32,196 22,196 H8 C20,180 24,140 20,110 Z" fill="#C48E35"/>
+    <path d="M-26,114 C-28,140 -28,160 -24,182 L-18,182 C-20,160 -20,140 -18,114 Z" fill="#FFFFFF" opacity="0.45"/>
+    <rect x="-20" y="138" width="40" height="28" rx="6" fill="#FBF7EE" stroke="#4A2E22" stroke-width="2.5"/>
+    <path d="M-12,148 H12 M-8,156 H8" stroke="#C78A22" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M-34,100 C-34,94 -30,92 -24,92 H24 C30,92 34,94 34,100 L38,180 C38,190 32,196 22,196 H-22 C-32,196 -38,190 -38,180 Z" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linejoin="round"/>
+  </g>
+
+  <!-- gối nệm hồng có đường may -->
+  <ellipse cx="306" cy="488" rx="236" ry="11" fill="#4A2E22" opacity="0.18"/>
+  <rect x="56" y="316" width="488" height="168" rx="84" fill="#F7C6D0"/>
+  <g clip-path="url(#cush)">
+    <path d="M40,440 C200,476 420,476 560,420 L560,500 L40,500 Z" fill="#D9ACB3"/>
+    <path d="M110,336 C150,326 200,322 240,322" fill="none" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.45"/>
+  </g>
+  <rect x="72" y="332" width="456" height="136" rx="68" fill="none" stroke="#E8708A" stroke-width="3" stroke-dasharray="10 9"/>
+  <rect x="56" y="316" width="488" height="168" rx="84" fill="none" stroke="#4A2E22" stroke-width="6"/>
+
+  <!-- bóng bàn tay trên gối -->
+  <path d="M224,398 C222,366 246,352 272,354 L382,362 C404,366 412,386 408,416 C404,456 394,490 380,510 L248,510 C232,480 224,440 224,398 Z" fill="#4A2E22" opacity="0.18"/>
+
+  <!-- ngón tay: thuôn dần, khép sát, có đốt; móng bo tròn, trỏ và giữa đã sơn hồng có ánh -->
+  <g transform="translate(232 404) rotate(-40)">
+    <path d="M-20.0,10 L-17.0,-75.0 A17.0,17.0 0 0 1 17.0,-75.0 L20.0,10 Z" fill="#EBC3A0"/>
+    <path d="M7.65,-90 A17.0,17.0 0 0 1 17.0,-75.0 L20.0,10 L10.0,10 Z" fill="#DDAF88"/>
+    <path d="M-20.0,10 L-17.0,-75.0 A17.0,17.0 0 0 1 17.0,-75.0 L20.0,10 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M-11.0,-75.0 C-11.0,-88 11.0,-88 11.0,-75.0 L11.0,-67.92 C11.0,-60.92 -11.0,-60.92 -11.0,-67.92 Z" fill="#F6D9D2" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-14.0,-53.36 C-4,-49.36 4,-49.36 14.0,-53.36 M-15.0,-25.760000000000005 C-4,-21.760000000000005 4,-21.760000000000005 15.0,-25.760000000000005" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(374 372) rotate(13)">
+    <path d="M-16.0,10 L-13.5,-80.5 A13.5,13.5 0 0 1 13.5,-80.5 L16.0,10 Z" fill="#EBC3A0"/>
+    <path d="M6.075,-92 A13.5,13.5 0 0 1 13.5,-80.5 L16.0,10 L8.0,10 Z" fill="#DDAF88"/>
+    <path d="M-16.0,10 L-13.5,-80.5 A13.5,13.5 0 0 1 13.5,-80.5 L16.0,10 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M-7.5,-80.5 C-7.5,-90 7.5,-90 7.5,-80.5 L7.5,-69.44 C7.5,-62.44 -7.5,-62.44 -7.5,-69.44 Z" fill="#F6D9D2" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-10.0,-54.52 C-4,-50.52 4,-50.52 10.0,-54.52 M-11.0,-26.320000000000007 C-4,-22.320000000000007 4,-22.320000000000007 11.0,-26.320000000000007" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(338 358) rotate(4)">
+    <path d="M-20.0,10 L-17.0,-107.0 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 Z" fill="#EBC3A0"/>
+    <path d="M7.65,-122 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 L10.0,10 Z" fill="#DDAF88"/>
+    <path d="M-20.0,10 L-17.0,-107.0 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M-11.0,-107.0 C-11.0,-120 11.0,-120 11.0,-107.0 L11.0,-92.24000000000001 C11.0,-85.24000000000001 -11.0,-85.24000000000001 -11.0,-92.24000000000001 Z" fill="#F6D9D2" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M-14.0,-71.92 C-4,-67.92 4,-67.92 14.0,-71.92 M-15.0,-34.72 C-4,-30.72 4,-30.72 15.0,-34.72" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(296 352) rotate(0)">
+    <path d="M-21.0,10 L-17.5,-118.5 A17.5,17.5 0 0 1 17.5,-118.5 L21.0,10 Z" fill="#EBC3A0"/>
+    <path d="M7.875,-134 A17.5,17.5 0 0 1 17.5,-118.5 L21.0,10 L10.5,10 Z" fill="#DDAF88"/>
+    <path d="M-21.0,10 L-17.5,-118.5 A17.5,17.5 0 0 1 17.5,-118.5 L21.0,10 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M-11.5,-118.5 C-11.5,-132 11.5,-132 11.5,-118.5 L11.5,-104 C11.5,-97 -11.5,-97 -11.5,-104 Z" fill="#F28CA0" stroke="#4A2E22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M-7.5,-120.5 V-108" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <path d="M-15.0,-78.88 C-4,-74.88 4,-74.88 15.0,-78.88 M-16.0,-38.08 C-4,-34.08 4,-34.08 16.0,-38.08" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(254 358) rotate(-5)">
+    <path d="M-20.0,10 L-17.0,-107.0 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 Z" fill="#EBC3A0"/>
+    <path d="M7.65,-122 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 L10.0,10 Z" fill="#DDAF88"/>
+    <path d="M-20.0,10 L-17.0,-107.0 A17.0,17.0 0 0 1 17.0,-107.0 L20.0,10 Z" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linejoin="round"/>
+    <path d="M-11.0,-107.0 C-11.0,-120 11.0,-120 11.0,-107.0 L11.0,-92.24000000000001 C11.0,-85.24000000000001 -11.0,-85.24000000000001 -11.0,-92.24000000000001 Z" fill="#F28CA0" stroke="#4A2E22" stroke-width="3" stroke-linejoin="round"/>
+    <path d="M-7.0,-109.0 V-96.24000000000001" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity="0.7"/>
+    <path d="M-14.0,-71.92 C-4,-67.92 4,-67.92 14.0,-71.92 M-15.0,-34.72 C-4,-30.72 4,-30.72 15.0,-34.72" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- mu bàn tay: phủ gốc ngón, viền chỉ ở hai bên -->
+  <path d="M214,388 C212,356 236,342 262,344 L372,352 C394,356 402,376 398,406 C394,446 384,480 370,500 L238,500 C222,470 214,430 214,388 Z" fill="#EBC3A0"/>
+  <g clip-path="url(#hand)">
+    <path d="M370,350 C404,370 404,430 392,470 C386,488 378,500 370,500 L340,500 C364,460 376,410 370,350 Z" fill="#DDAF88"/>
+    <path d="M232,392 C236,372 248,362 264,360 C254,372 248,386 246,402 Z" fill="#FFFFFF" opacity="0.45"/>
+    <path d="M244,350 C252,356 266,358 274,354 M284,348 C292,354 304,356 312,350 M322,352 C330,358 342,360 350,354 M356,360 C362,366 372,368 380,364" fill="none" stroke="#C98F6C" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M270,400 C280,420 284,440 282,470 M318,404 C322,428 322,452 318,480" fill="none" stroke="#DDAF88" stroke-width="3" stroke-linecap="round"/>
+  </g>
+  <path d="M244,350 C232,352 214,366 214,388 C214,430 222,470 238,500 M370,500 C384,480 394,446 398,406 C402,378 394,362 380,356" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- cổ tay áo -->
+  <rect x="226" y="476" width="156" height="40" rx="12" fill="#2D5FA8" stroke="#4A2E22" stroke-width="6"/>
+  <path d="M236,486 H372" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity="0.45"/>
+</svg>

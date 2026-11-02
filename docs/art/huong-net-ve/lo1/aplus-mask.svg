@@ -1,0 +1,85 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 500" width="600" height="500">
+  <defs>
+    <clipPath id="face"><path d="M104,240 C104,160 192,118 300,118 C408,118 496,160 496,240 C496,336 468,402 410,446 C372,474 336,490 300,490 C264,490 228,474 190,446 C132,402 104,336 104,240 Z"/></clipPath>
+    <clipPath id="plate"><ellipse cx="300" cy="454" rx="128" ry="36"/></clipPath>
+  </defs>
+  <!-- khách nằm trên gối: cùng cách vẽ mặt với màn nặn mụn, thu nhỏ cho vừa thẻ -->
+  <g transform="translate(84 2) scale(0.72)">
+    <rect x="30" y="20" width="540" height="470" rx="64" fill="#FBF7EE" stroke="#4A2E22" stroke-width="7"/>
+    <rect x="52" y="42" width="496" height="426" rx="48" fill="none" stroke="#7CC4AE" stroke-width="4" stroke-dasharray="12 10"/>
+    <path d="M78,280 C58,130 168,46 300,46 C432,46 542,130 522,280 C500,210 440,170 300,170 C160,170 100,210 78,280 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+    <ellipse cx="100" cy="290" rx="26" ry="42" fill="#EBC3A0" stroke="#4A2E22" stroke-width="6"/>
+    <path d="M96,272 C110,280 110,300 98,310" fill="none" stroke="#C98F6C" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="500" cy="290" rx="26" ry="42" fill="#DDAF88" stroke="#4A2E22" stroke-width="6"/>
+    <path d="M504,272 C490,280 490,300 502,310" fill="none" stroke="#B97E5C" stroke-width="4" stroke-linecap="round"/>
+    <path d="M242,450 L242,540 L358,540 L358,450 Z" fill="#DDAF88" stroke="#4A2E22" stroke-width="6"/>
+    <path d="M40,560 C90,500 200,488 300,496 C400,488 510,500 560,560 Z" fill="#C65D3B" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M110,530 C190,512 410,512 490,530" fill="none" stroke="#FBF7EE" stroke-width="6" stroke-linecap="round"/>
+    <path d="M150,548 C220,535 380,535 450,548" fill="none" stroke="#FBF7EE" stroke-width="4" stroke-linecap="round"/>
+    <path d="M104,240 C104,160 192,118 300,118 C408,118 496,160 496,240 C496,336 468,402 410,446 C372,474 336,490 300,490 C264,490 228,474 190,446 C132,402 104,336 104,240 Z" fill="#EBC3A0"/>
+    <path d="M440,168 C484,198 500,256 494,320 C484,392 448,432 404,452 C440,404 464,344 462,286 C460,232 452,196 440,168 Z" fill="#DDAF88"/>
+    <path d="M226,468 C262,486 338,486 374,468 C340,478 260,478 226,468 Z" fill="#DDAF88"/>
+    <ellipse cx="416" cy="338" rx="52" ry="26" fill="#F28CA0" opacity="0.32"/>
+    <!-- mặt nạ bùn xanh phủ nửa mặt, chừa vùng mắt và chân mày, vệt cọ -->
+    <g clip-path="url(#face)">
+      <path fill-rule="evenodd" d="M80,100 L300,100 C318,170 298,222 314,272 C328,322 302,352 272,382 C254,402 258,436 272,500 L80,500 Z M150,258 a66,52 0 1,0 132,0 a66,52 0 1,0 -132,0 Z" fill="#A9C29A"/>
+      <path d="M80,380 C150,420 220,440 272,440 C262,462 262,480 272,500 L80,500 Z" fill="#8FAA80"/>
+      <path d="M120,330 C160,312 206,316 246,340 M128,382 C170,368 214,374 250,398 M200,170 C230,160 262,162 290,172 M110,240 C118,214 128,196 140,184 M170,440 C200,452 230,458 262,456" fill="none" stroke="#CBE6C9" stroke-width="6" stroke-linecap="round"/>
+      <path d="M136,350 C170,338 206,342 236,358 M140,404 C176,394 212,400 240,416" fill="none" stroke="#8FAA80" stroke-width="3" stroke-linecap="round"/>
+      <path fill-rule="evenodd" d="M300,100 C318,170 298,222 314,272 C328,322 302,352 272,382 C254,402 258,436 272,500 M150,258 a66,52 0 1,0 132,0 a66,52 0 1,0 -132,0 Z" fill="none" stroke="#4A2E22" stroke-width="4" stroke-linejoin="round"/>
+      <path d="M440,168 C484,198 500,256 494,320 C484,392 448,432 404,452" fill="none"/>
+    </g>
+    <path d="M104,240 C104,160 192,118 300,118 C408,118 496,160 496,240 C496,336 468,402 410,446 C372,474 336,490 300,490 C264,490 228,474 190,446 C132,402 104,336 104,240 Z" fill="none" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+    <!-- băng đô spa -->
+    <path d="M84,214 C104,124 196,86 300,86 C404,86 496,124 516,214 C480,186 400,162 300,162 C200,162 120,186 84,214 Z" fill="#FBF7EE" stroke="#4A2E22" stroke-width="7" stroke-linejoin="round"/>
+    <path d="M120,190 C180,168 240,160 300,160 C360,160 420,168 480,190 C420,176 360,170 300,170 C240,170 180,176 120,190 Z" fill="#E2D3BC"/>
+    <path d="M170,128 C180,140 182,152 178,164 M250,104 C256,122 256,140 252,158 M352,104 C346,122 346,140 350,158 M430,128 C420,140 418,152 422,164" fill="none" stroke="#E2D3BC" stroke-width="4" stroke-linecap="round"/>
+    <!-- chân mày, mắt nhắm, mũi, miệng -->
+    <path d="M162,222 C190,202 238,198 266,212 C242,210 200,214 166,232 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M438,222 C410,202 362,198 334,212 C358,210 400,214 434,232 Z" fill="#5B3A29" stroke="#4A2E22" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M170,266 C196,288 240,288 264,266" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round"/>
+    <path d="M182,276 L175,289 M200,282 L196,296 M220,284 L219,298 M240,281 L243,295 M256,274 L264,286" stroke="#4A2E22" stroke-width="4" stroke-linecap="round"/>
+    <path d="M430,266 C404,288 360,288 336,266" fill="none" stroke="#4A2E22" stroke-width="6" stroke-linecap="round"/>
+    <path d="M418,276 L425,289 M400,282 L404,296 M380,284 L381,298 M360,281 L357,295 M344,274 L336,286" stroke="#4A2E22" stroke-width="4" stroke-linecap="round"/>
+    <ellipse cx="312" cy="344" rx="16" ry="7" fill="#DDAF88"/>
+    <path d="M304,282 C300,312 290,332 284,342 C294,352 312,352 322,344" fill="none" stroke="#4A2E22" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M276,398 C290,410 316,410 334,398" fill="none" stroke="#4A2E22" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="404" cy="304" rx="22" ry="9" fill="#FFFFFF" opacity="0.45" transform="rotate(-14 404 304)"/>
+  </g>
+
+  <!-- đĩa sứ: bóng sàn, viền xanh men -->
+  <ellipse cx="306" cy="470" rx="132" ry="22" fill="#4A2E22" opacity=".18"/>
+  <ellipse cx="300" cy="454" rx="128" ry="36" fill="#FBF7EE"/>
+  <g clip-path="url(#plate)">
+    <path d="M428,454 C428,474 372,490 300,490 C228,490 172,474 172,454 C200,476 400,476 428,454 Z" fill="#E6DED3"/>
+  </g>
+  <ellipse cx="300" cy="452" rx="104" ry="25" fill="none" stroke="#2D5FA8" stroke-width="4"/>
+  <ellipse cx="300" cy="454" rx="128" ry="36" fill="none" stroke="#4A2E22" stroke-width="6"/>
+  <!-- hai lát dưa leo: vỏ, ruột, hạt, có độ dày -->
+  <g>
+    <ellipse cx="258" cy="452" rx="44" ry="24" fill="#2A6B5C" stroke="#4A2E22" stroke-width="4"/>
+    <ellipse cx="258" cy="446" rx="44" ry="24" fill="#4E9A6B" stroke="#4A2E22" stroke-width="4"/>
+    <ellipse cx="258" cy="446" rx="37" ry="19" fill="#DCEFB4"/>
+    <ellipse cx="258" cy="446" rx="20" ry="10" fill="none" stroke="#BFE8D2" stroke-width="4"/>
+    <g fill="#FBF7EE" stroke="#9DB65A" stroke-width="1.2"><ellipse cx="244" cy="442" rx="3" ry="2"/><ellipse cx="256" cy="438" rx="3" ry="2"/><ellipse cx="270" cy="442" rx="3" ry="2"/><ellipse cx="272" cy="451" rx="3" ry="2"/><ellipse cx="258" cy="455" rx="3" ry="2"/><ellipse cx="244" cy="451" rx="3" ry="2"/></g>
+    <path d="M232,440 C238,434 246,432 254,431" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  </g>
+  <g>
+    <ellipse cx="344" cy="452" rx="44" ry="24" fill="#2A6B5C" stroke="#4A2E22" stroke-width="4"/>
+    <ellipse cx="344" cy="446" rx="44" ry="24" fill="#4E9A6B" stroke="#4A2E22" stroke-width="4"/>
+    <ellipse cx="344" cy="446" rx="37" ry="19" fill="#DCEFB4"/>
+    <ellipse cx="344" cy="446" rx="20" ry="10" fill="none" stroke="#BFE8D2" stroke-width="4"/>
+    <g fill="#FBF7EE" stroke="#9DB65A" stroke-width="1.2"><ellipse cx="330" cy="442" rx="3" ry="2"/><ellipse cx="342" cy="438" rx="3" ry="2"/><ellipse cx="356" cy="442" rx="3" ry="2"/><ellipse cx="358" cy="451" rx="3" ry="2"/><ellipse cx="344" cy="455" rx="3" ry="2"/><ellipse cx="330" cy="451" rx="3" ry="2"/></g>
+    <path d="M318,440 C324,434 332,432 340,431" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" opacity=".6"/>
+  </g>
+
+  <!-- cọ quét mặt nạ: cán gỗ, đai thép, lông cọ dính bùn xanh -->
+  <g transform="translate(470 420) rotate(-32)">
+    <rect x="-8" y="-6" width="96" height="16" rx="8" fill="#8A5634" stroke="#4A2E22" stroke-width="4"/>
+    <path d="M0,0 H80" stroke="#A86E45" stroke-width="3" stroke-linecap="round"/>
+    <rect x="-30" y="-9" width="26" height="22" rx="4" fill="#C9CFD3" stroke="#4A2E22" stroke-width="4"/>
+    <path d="M-28,-4 H-8" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity=".8"/>
+    <path d="M-30,-11 L-66,-16 C-74,-6 -74,10 -66,20 L-30,15 Z" fill="#FBF3E4" stroke="#4A2E22" stroke-width="4" stroke-linejoin="round"/>
+    <path d="M-50,-14 L-66,-16 C-74,-6 -74,10 -66,20 L-50,18 Z" fill="#A9C29A" stroke="#4A2E22" stroke-width="3" stroke-linejoin="round"/>
+  </g>
+</svg>
