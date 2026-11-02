@@ -88,21 +88,25 @@ const GINGER = (() => {
 
 /** Sả: ba cây bó lại, gốc trắng, lá mảnh xoè ra, có dây buộc. Cây mảnh nên nét mảnh hơn các thứ khác. */
 const LEMONGRASS = (() => {
-  const k = 0.19
-  const o = ink(1.4 / k)
-  const i = ink(1 / k)
-  const stalk = (y: number) => `<rect x="0" y="${y}" width="96" height="13" rx="6.5" fill="${C.bambooLight}" ${i}/>`
+  // to và rõ hơn khi rơi: ba thân mập, gốc kem cắt chéo, lá xanh xoè ngắn, dây đất nung buộc ngang
+  const k = 0.2
+  const o = ink(1.6 / k)
+  const i = ink(1.1 / k)
+  const stalk = (y: number) =>
+    `<rect x="0" y="${y}" width="96" height="19" rx="9.5" fill="${C.bambooLight}" ${i}/>` +
+    `<path d="M10,${y + 14} H88" stroke="${shade(C.bambooLight)}" stroke-width="${0.9 / k}" stroke-linecap="round"/>`
   return (
-    `<g transform="translate(19 21) rotate(-45) scale(${k}) translate(-101 -17)">` +
-    `<path d="M90,1 Q140,-10 196,-24 Q146,4 90,12 Z" fill="${C.cane}" ${o}/>` +
-    `<path d="M90,15 Q150,12 204,18 Q150,26 90,26 Z" fill="${C.caneLight}" ${o}/>` +
-    `<path d="M90,29 Q144,36 196,58 Q140,44 90,40 Z" fill="${C.cane}" ${o}/>` +
-    line('M94,6 Q140,-2 186,-18 M94,20 Q150,18 196,19 M94,34 Q142,40 186,52', C.cucumber, 0.6 / k) +
-    stalk(0) + stalk(14) + stalk(28) +
-    line('M60,3 h34 M60,17 h34 M60,31 h34', C.caneLight, 5) +
-    line('M8,9 h40 M8,23 h40 M8,37 h40', C.bamboo, 0.6 / k) +
-    [6.5, 20.5, 34.5].map(y => `<ellipse cx="2" cy="${y}" rx="3" ry="5" fill="${C.cream}" ${ink(0.7 / k)}/>`).join('') +
-    line('M40,-3 C46,14 34,30 42,45', C.terracotta, 1 / k) +
+    `<g transform="translate(20 21) rotate(-45) scale(${k}) translate(-92 -29)">` +
+    `<path d="M86,6 Q130,0 176,-6 Q136,14 86,20 Z" fill="${C.cane}" ${o}/>` +
+    `<path d="M86,52 Q130,58 176,64 Q136,44 86,38 Z" fill="${C.cane}" ${o}/>` +
+    `<path d="M86,20 Q140,14 186,29 Q140,44 86,38 Z" fill="${C.caneLight}" ${o}/>` +
+    line('M92,13 Q130,7 166,0 M92,29 Q140,28 176,29 M92,45 Q130,51 166,58', C.cucumber, 0.7 / k) +
+    stalk(0) + stalk(19.5) + stalk(39) +
+    line('M64,5 h26 M64,24.5 h26 M64,44 h26', C.caneLight, 0.9 / k) +
+    [9.5, 29, 48.5].map(y => `<ellipse cx="2" cy="${y}" rx="4" ry="8.5" fill="${C.cream}" ${ink(0.8 / k)}/>`).join('') +
+    line('M22,6 h22 M22,25.5 h22 M22,45 h22', '#FFFFFF', 0.8 / k).replace('stroke-linecap="round"', 'stroke-linecap="round" opacity=".45"') +
+    `<path d="M46,-4 C54,18 40,40 50,62" fill="none" stroke="${C.ink}" stroke-width="${2.2 / k}" stroke-linecap="round"/>` +
+    `<path d="M46,-4 C54,18 40,40 50,62" fill="none" stroke="${C.terracotta}" stroke-width="${1.2 / k}" stroke-linecap="round"/>` +
     `</g>`
   )
 })()

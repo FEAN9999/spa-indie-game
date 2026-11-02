@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
+import { ST_POT_MOUTH_UNITS, ST_POT_PX, ST_TRAY_BOX } from '../art/steamArt'
 import { GAME_W, STEAM_LIMIT_MS, STEAM_NEED } from '../config'
 import type { Stars } from '../sim/economy'
 import { createRng } from '../sim/rng'
@@ -16,10 +17,10 @@ const LABEL = { dy: 88, size: 38, stroke: 10 }
 /** The tap box round an icon centre: wider than the icon, and down over the name. */
 const HIT = { halfW: 85, top: -85, bottom: 120 }
 /**
- * The pot at the card's foot, its bottom just over the time bar; a caught thing drops into its leaves, which sit 130 px
- * above the bottom of the pot art at scale 1 (A+: the clay pot on its stove is drawn a little larger).
+ * The pot at the card's foot, its bottom just over the time bar; a caught thing drops into its leaves, which sit
+ * ST_POT_MOUTH_UNITS of the art's units above its bottom (A+: the clay pot on its stove is drawn larger).
  */
-const POT = { x: GAME_W / 2, bottom: 1592, scale: 1.3, mouthY: 1592 - 130 * 1.3, bumpScale: 1.06, bumpMs: 90 }
+const POT = { x: GAME_W / 2, bottom: 1592, scale: 1, mouthY: 1592 - ST_POT_MOUTH_UNITS * ST_POT_PX, bumpScale: 1.06, bumpMs: 90 }
 /** Things drift side to side as they fall, and fade in and out over this share of the fall at each end. */
 const SWAY = { px: 14, perMs: 1 / 450 }
 const FADE = 0.08
@@ -66,6 +67,8 @@ export class SteamScene extends Phaser.Scene {
     this.press = { k: 0 }
 
     this.instruction = addMiniGameCard(this, t('steamTap'))
+    // the bamboo tray the leaves are sprinkled from, behind them
+    this.add.image(ST_TRAY_BOX[0], ST_TRAY_BOX[1], 'st-tray').setOrigin(0)
     this.pot = this.add.image(POT.x, POT.bottom, 'st-pot').setOrigin(0.5, 1).setScale(POT.scale)
     this.wrong = this.add
       .text(GAME_W / 2, WRONG.y, '', textStyle(WRONG.size, '800', C.lantern))

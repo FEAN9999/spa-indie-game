@@ -50,9 +50,47 @@ const BODY =
   `<path d="M240,350 C262,342 300,340 330,344" fill="none" stroke="${C.cucumber}" stroke-width="3" stroke-linecap="round" opacity=".7"/>` +
   `<path d="M268,357 q8,-9 20,-3 q-8,8 -20,3 Z M318,350 q10,-7 20,1 q-10,7 -20,-1 Z" fill="${C.leaf}" ${W(2)}/>`
 
-/** The Xông lá pot: a clay pot of herb water on a clay stove with its fire, steam curling up; the herb water sits at y 36. */
+/** Nồi vẽ trong hộp [0, −6, 132, 106], mỗi đơn vị ra ST_POT_PX điểm ảnh; mặt nước lá ở y 36, cách đáy hộp 64 đơn vị. */
+export const ST_POT_PX = 3.2
+export const ST_POT_MOUTH_UNITS = 64
+
+/** Cái nong tre treo ở mép trên chỗ lá rơi, như lá được rắc từ nong xuống; vẽ bằng điểm ảnh của thẻ, đặt ở góc trên trái hộp. */
+export const ST_TRAY_BOX: [number, number, number, number] = [120, 458, 840, 132]
+const TRAY = { cx: 540, cy: 514, rx: 400, ry: 48 }
+const TRAY_IN = { rx: 370, ry: 37 }
+const TRAY_INNER_D = `M${TRAY.cx - TRAY_IN.rx},${TRAY.cy} a${TRAY_IN.rx},${TRAY_IN.ry} 0 1,0 ${2 * TRAY_IN.rx},0 a${TRAY_IN.rx},${TRAY_IN.ry} 0 1,0 ${-2 * TRAY_IN.rx},0 Z`
+/** Nan đan chéo hai chiều trên mặt nong. */
+const WEAVE = Array.from({ length: 44 }, (_, i) => 120 + i * 20)
+  .map(x => `M${x},450 l70,130 M${x + 70},450 l-70,130`)
+  .join(' ')
+const TRAY_ART =
+  `<g transform="rotate(-2 ${TRAY.cx} ${TRAY.cy})">` +
+  // độ dày của vành ở mép gần
+  `<ellipse cx="${TRAY.cx}" cy="${TRAY.cy + 10}" rx="${TRAY.rx}" ry="${TRAY.ry}" fill="${C.bambooDark}" ${ink(6)}/>` +
+  // vành tre trên, mặt nong đan có mảng bóng phía dưới phải
+  `<ellipse cx="${TRAY.cx}" cy="${TRAY.cy}" rx="${TRAY.rx}" ry="${TRAY.ry}" fill="${C.bamboo}" ${ink(6)}/>` +
+  `<path d="${TRAY_INNER_D}" fill="${C.weave}"/>` +
+  clip(
+    'st-tray',
+    TRAY_INNER_D,
+    `<path d="${WEAVE}" stroke="${C.weaveLine}" stroke-width="3.5"/>` +
+      `<path d="M${TRAY.cx - 40},${TRAY.cy + TRAY_IN.ry} C${TRAY.cx + 160},${TRAY.cy + 20} ${TRAY.cx + 320},${TRAY.cy + 6} ${TRAY.cx + TRAY_IN.rx},${TRAY.cy - 6} L${TRAY.cx + TRAY_IN.rx},${TRAY.cy + 60} L${TRAY.cx - 40},${TRAY.cy + 60} Z" fill="${shade(C.weave)}" opacity=".75"/>`,
+  ) +
+  `<path d="${TRAY_INNER_D}" fill="none" ${ink(3.5)}/>` +
+  // dây mây buộc vành, điểm sáng trên vành phía trên trái
+  [-330, -230, -120, 0, 120, 230, 330]
+    .map(dx => {
+      const y = TRAY.cy + TRAY.ry * Math.sqrt(1 - (dx / TRAY.rx) ** 2) - 5
+      return `<path d="M${TRAY.cx + dx - 6},${y - 7} l12,10" stroke="${C.bambooDark}" stroke-width="5" stroke-linecap="round"/>`
+    })
+    .join('') +
+  `<path d="M${TRAY.cx - 330},${TRAY.cy - 20} C${TRAY.cx - 260},${TRAY.cy - 40} ${TRAY.cx - 160},${TRAY.cy - 46} ${TRAY.cx - 60},${TRAY.cy - 47}" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-linecap="round" opacity=".45"/>` +
+  `</g>`
+
+/** The Xông lá pictures: the bamboo tray the leaves fall from, and a clay pot of herb water on a clay stove with its fire, steam curling up. */
 export function steamTextures(): Record<string, string> {
   return {
-    'st-pot': svgDoc([0, -6, 132, 106], 2, `<g transform="translate(66 36) scale(.45) translate(-300 -352)">${BODY}</g>`),
+    'st-pot': svgDoc([0, -6, 132, 106], ST_POT_PX, `<g transform="translate(66 36) scale(.45) translate(-300 -352)">${BODY}</g>`),
+    'st-tray': svgDoc(ST_TRAY_BOX, 1, TRAY_ART),
   }
 }
