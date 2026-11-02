@@ -134,6 +134,8 @@ export class AcupressureScene extends Phaser.Scene {
       const p = POINTS[i]
       const result = doneAt.get(i)
       if (i === current) continue
+      // huyệt đang chờ có quầng vàng nhạt như bản A+
+      if (!result) g.fillStyle(hex(C.glow), 0.55).fillCircle(p.x, p.y, DOT.r + 10)
       g.fillStyle(hex(result ? DONE_COLOR[result] : C.cream), result ? 1 : 0.7).fillCircle(p.x, p.y, DOT.r)
       g.lineStyle(4, hex(C.ink), result ? 1 : 0.5).strokeCircle(p.x, p.y, DOT.r)
     }
@@ -149,6 +151,8 @@ export class AcupressureScene extends Phaser.Scene {
       if (this.rules.pressure > 0) g.lineStyle(DOT.ringW, hex(C.lantern), 1).beginPath().arc(p.x, p.y, DOT.ring, ringAngle(0), ringAngle(this.rules.pressure)).strokePath()
     }
     g.fillStyle(hex(C.lantern), 1).fillCircle(p.x, p.y, DOT.r).lineStyle(4, hex(C.ink)).strokeCircle(p.x, p.y, DOT.r)
+    // điểm sáng trắng trên huyệt đỏ
+    g.fillStyle(0xffffff, 0.45).fillCircle(p.x - DOT.r * 0.35, p.y - DOT.r * 0.35, DOT.r * 0.3)
   }
 
   private onDown(p: Phaser.Input.Pointer): void {
