@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { setStillPictures } from '../view/bakeGraphics'
 import { BUILD_ID } from './update'
 
 /** One frame as the ?perf overlay sees it. */
@@ -44,7 +45,8 @@ export function summarize(frames: readonly FrameSample[]): FrameSummary {
 
 /**
  * Developer timing over the game, for measuring on a phone: the frame rate, the slow frames, Phaser's update and draw time and the draw
- * calls, with switches that skip drawing Graphics and circles, stop Text redrawing, and bring in ten customers.
+ * calls, with switches that skip drawing Graphics and circles, draw still Graphics from their commands instead of their pictures,
+ * stop Text redrawing, and bring in ten customers.
  */
 export function showPerf(game: Phaser.Game): void {
   const frames: FrameSample[] = []
@@ -75,7 +77,7 @@ export function showPerf(game: Phaser.Game): void {
     }
   }
 
-  const skip = { shapes: false, text: false }
+  const skip = { shapes: false, text: false, pictures: false }
   for (const cls of [Phaser.GameObjects.Graphics, Phaser.GameObjects.Arc]) {
     const proto = cls.prototype as unknown as { renderWebGLStep: (...a: unknown[]) => void }
     const step = proto.renderWebGLStep
@@ -109,6 +111,10 @@ export function showPerf(game: Phaser.Game): void {
   button(
     () => `Hình vẽ: ${skip.shapes ? 'TẮT' : 'bật'}`,
     () => (skip.shapes = !skip.shapes),
+  )
+  button(
+    () => `Ảnh tĩnh: ${skip.pictures ? 'TẮT' : 'bật'}`,
+    () => setStillPictures(!(skip.pictures = !skip.pictures)),
   )
   button(
     () => `Chữ: ${skip.text ? 'ĐỨNG' : 'chạy'}`,

@@ -59,6 +59,8 @@ import type { BustleListData } from './BustleScene'
 import { DOOR_X, doorWalk, restaurantHouseRect, restaurantSaleAt, restaurantTileAt, restaurantX, rideX, shopAt, streetBounds, stripBlocks, ticketDots } from '../view/street'
 import { HandPointer } from '../view/HandPointer'
 import { MapCamera } from '../view/MapCamera'
+import { HeadBar } from '../view/HeadBar'
+import { setPictureScale } from '../view/bakeGraphics'
 import { MapGestures } from '../view/MapGestures'
 import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
@@ -161,7 +163,7 @@ const VISIT_PROBLEM: Record<VisitProblem, StringKey> = { notFound: 'visitNotFoun
 
 interface CustomerSprite {
   view: CharacterView
-  bar: Phaser.GameObjects.Graphics
+  bar: HeadBar
   /** The service the customer wants, over the patience bar. */
   badge: Phaser.GameObjects.Image
   ripple: Phaser.GameObjects.Image
@@ -343,6 +345,8 @@ export class SpaScene extends Phaser.Scene {
     this.showFloor(inRestaurant ? this.lastRestOwnerFloor : this.lastOwnerFloor)
     // at normal size on the owner, in the restaurant if she is there; the view is never saved
     this.cam = new MapCamera(this, MAP_VIEW, this.mapRect())
+    // the map zooms in past normal size, so its still Graphics are pictured at twice their size
+    setPictureScale(this, 2)
     const next = inRestaurant?.owner.pos ?? null
     // the map's top at the area's top, as at the start of a day, though the open street runs it further down
     this.cam.jump({ zoom: 1, cx: next ? restaurantX(next.x + 0.5) : this.room.tileToWorld(this.sim.owner.pos).x, cy: MAP_VIEW.y + MAP_VIEW.h / 2 })
@@ -2089,7 +2093,7 @@ export class SpaScene extends Phaser.Scene {
   private addCustomerSprite(c: Customer): void {
     this.customers.set(c.id, {
       view: new CharacterView(this, customerColors(c.look, c.kind, c.regular, c.vip, c.kol, c.idol)),
-      bar: this.add.graphics(),
+      bar: new HeadBar(this).setDepth(FX_DEPTH),
       badge: this.add.image(0, 0, `svc-${c.service}`).setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       ripple: this.add.image(0, 0, 'ripple').setVisible(false),
       heart: this.add.image(0, 0, 'heart-full').setScale(0.5).setDepth(FX_DEPTH).setVisible(false),
@@ -2121,7 +2125,7 @@ export class SpaScene extends Phaser.Scene {
       // on a floor that is not in view: nothing of them shows
       const gone = [s.view.container, s.badge, s.ripple, s.heart, s.vipStar, s.steam, s.stones, s.bubble]
       for (const g of gone) g?.setVisible(false)
-      s.bar.clear()
+      s.bar.hide()
       this.bubbleSpots.set(c.id, { x: 0, y: 0, floor })
       return
     }
@@ -2190,11 +2194,8 @@ export class SpaScene extends Phaser.Scene {
       s.stones.setPosition(back.x, back.y).setRotation(lieAngle(lie)).setDepth(depth + 0.5)
     }
 
-    s.bar.clear()
-    if (c.state === 'waiting') {
-      drawPatienceBar(s.bar, p.x + markDx, p.y, c.patienceMs / c.patienceMaxMs)
-      s.bar.setDepth(FX_DEPTH)
-    }
+    if (c.state === 'waiting') drawPatienceBar(s.bar, p.x + markDx, p.y, c.patienceMs / c.patienceMaxMs)
+    else s.bar.hide()
     const badge = c.state === 'waiting' && badges
     s.badge.setVisible(badge)
     if (badge) {

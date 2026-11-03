@@ -16,6 +16,7 @@ import type { Facing, Tile, Vec } from '../sim/types'
 import { CHARACTER_HEIGHT_PX, CharacterView, drawPatienceBar, PATIENCE_BAR_TOP } from './CharacterView'
 import { daylight, type Span } from './daylight'
 import { climbPose, stairsParts } from './floors'
+import { HeadBar } from './HeadBar'
 import { forSale, houseRect, housesBetween } from './houses'
 import { LAMPS } from './lamps'
 import { addDoorLight, addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, ITEM_DEPTH_BIAS, LAMP_DEPTH, PART_DEPTH, placeItemBody } from './RoomView'
@@ -64,7 +65,7 @@ const litPane = (lot: number, pane: number): boolean => (lot + pane) % 3 !== 2
 
 interface DinerSprite {
   view: CharacterView
-  bar: Phaser.GameObjects.Graphics
+  bar: HeadBar
   ticket: Phaser.GameObjects.Image
 }
 
@@ -358,7 +359,7 @@ export class RestaurantLayer {
       if (!s) {
         s = {
           view: new CharacterView(this.scene, customerColors(d.look, d.kind)),
-          bar: this.scene.add.graphics().setDepth(MARK_DEPTH),
+          bar: new HeadBar(this.scene).setDepth(MARK_DEPTH),
           ticket: this.scene.add.image(0, 0, ticketKey(d.dish)).setOrigin(0.5, 1).setDepth(MARK_DEPTH).setVisible(false),
         }
         this.diners.set(d.id, s)
@@ -372,8 +373,8 @@ export class RestaurantLayer {
       s.view.container.setPosition(p.x, p.y).setDepth(seated ? p.y + 1 : p.y).setAlpha(p.alpha).setVisible(shown)
       s.view.update(dt)
       const ordering = d.state === 'ordering' && shown
-      s.bar.clear()
       if (ordering) drawPatienceBar(s.bar, p.x, p.y, d.patienceMs / d.patienceMaxMs)
+      else s.bar.hide()
       s.ticket.setTexture(ticketKey(d.dish)).setVisible(ordering && d.chefId === null).setPosition(p.x, p.y + TICKET_BOTTOM)
     }
   }

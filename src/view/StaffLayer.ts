@@ -8,6 +8,7 @@ import type { SimEvent } from '../sim/types'
 import { t } from '../strings/vi'
 import { CHARACTER_HEIGHT_PX, CharacterView } from './CharacterView'
 import { climbPose } from './floors'
+import { BAR, HeadBar } from './HeadBar'
 import type { RoomView } from './RoomView'
 import { textStyle } from './text'
 import { aplusFrame } from './ui'
@@ -20,7 +21,6 @@ const HEAD_TOP = -CHARACTER_HEIGHT_PX - 10
 const HEAD_MID = -CHARACTER_HEIGHT_PX * 0.7
 const CUP_BOB_PX = 5
 const CUP_BOB_MS = 1600
-const BAR_W = 72
 const PILL_H = 56
 const GREET_MS = 1500
 const POP_MS = 200
@@ -40,7 +40,7 @@ const isHidden = (sim: SpaSim, s: Staff): boolean => s.task?.kind === 'late' && 
 
 interface StaffSprite {
   view: CharacterView
-  bar: Phaser.GameObjects.Graphics
+  bar: HeadBar
   cup: Phaser.GameObjects.Image
   clock: Phaser.GameObjects.Image
   /** The "…" over someone chatting; never shown with a greeting. */
@@ -93,7 +93,7 @@ export class StaffLayer {
   private add(s: Staff): StaffSprite {
     const sp: StaffSprite = {
       view: new CharacterView(this.scene, staffColors(s.look)),
-      bar: this.scene.add.graphics().setDepth(FX_DEPTH),
+      bar: new HeadBar(this.scene).setDepth(FX_DEPTH),
       cup: this.scene.add.image(0, 0, 'tea-cup').setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       clock: this.scene.add.image(0, 0, 'icon-clock').setOrigin(0.5, 1).setDepth(FX_DEPTH).setVisible(false),
       chat: null,
@@ -113,7 +113,7 @@ export class StaffLayer {
     if (!this.room.onFloor(s.pos.y) && !isHidden(sim, s)) {
       // on another floor: out of sight, with whatever is over their head
       sp.view.container.setVisible(false)
-      sp.bar.clear()
+      sp.bar.hide()
       sp.cup.setVisible(false)
       sp.clock.setVisible(false)
       sp.chat?.setVisible(false)
@@ -124,7 +124,7 @@ export class StaffLayer {
     if (isHidden(sim, s)) {
       // a deft technician not in yet: nobody stands here
       sp.view.container.setVisible(false)
-      sp.bar.clear()
+      sp.bar.hide()
       sp.cup.setVisible(false)
       sp.clock.setVisible(false)
       this.dropPills(sp)
@@ -154,15 +154,9 @@ export class StaffLayer {
     sp.cup.setVisible(resting)
     if (resting) sp.cup.setPosition(at.x, at.y + HEAD_TOP + CUP_BOB_PX * Math.sin((this.clockMs / CUP_BOB_MS) * Math.PI * 2))
 
-    sp.bar.clear()
     if (task?.kind === 'serve' && still && sim.customers.find(c => c.id === task.customerId)?.state === 'inService') {
-      const f = 1 - task.leftMs / task.totalMs
-      const x = at.x - BAR_W / 2
-      const y = at.y + HEAD_TOP - 16
-      sp.bar.fillStyle(hex(C.paper), 1).fillRoundedRect(x - 4, y - 4, BAR_W + 8, 20, 10)
-      sp.bar.lineStyle(3, hex(C.ink)).strokeRoundedRect(x - 4, y - 4, BAR_W + 8, 20, 10)
-      sp.bar.fillStyle(hex(C.teal), 1).fillRoundedRect(x, y, Math.max(12, BAR_W * f), 12, 6)
-    }
+      sp.bar.show(at.x - BAR.w / 2, at.y + HEAD_TOP - 16, 1 - task.leftMs / task.totalMs, hex(C.teal))
+    } else sp.bar.hide()
 
     const late = task?.kind === 'late'
     sp.clock.setVisible(late)
