@@ -1,4 +1,5 @@
 import { C } from './palette'
+import { liftPiece } from './lift'
 import { svgDoc } from './svg'
 
 const ink = (w: number) => `stroke="${C.ink}" stroke-width="${w}" stroke-linejoin="round"`
@@ -132,20 +133,20 @@ const HERBS =
 /** The menu's pictures: a dish each at 90×90, and each restaurant stock item at 60×60. */
 export function menuTextures(): Record<string, string> {
   return {
-    'dish-pho': svgDoc([0, 0, 90, 90], 1, PHO),
-    'dish-banhXeo': svgDoc([0, 0, 90, 90], 1, BANH_XEO),
-    'dish-che': svgDoc([0, 0, 90, 90], 1, CHE),
-    'dish-bunCha': svgDoc([0, 0, 90, 90], 1, BUN_CHA),
-    'dish-goiCuon': svgDoc([0, 0, 90, 90], 1, GOI_CUON),
-    'dish-comTam': svgDoc([0, 0, 90, 90], 1, COM_TAM),
-    'dish-caPhe': svgDoc([0, 0, 90, 90], 1, CA_PHE),
-    'rstock-phoKit': svgDoc([0, 0, 60, 60], 1, PHO_KIT),
-    'rstock-batter': svgDoc([0, 0, 60, 60], 1, BATTER),
-    'rstock-cheKit': svgDoc([0, 0, 60, 60], 1, CHE_KIT),
-    'rstock-chaKit': svgDoc([0, 0, 60, 60], 1, CHA_KIT),
-    'rstock-cuonKit': svgDoc([0, 0, 60, 60], 1, CUON_KIT),
-    'rstock-tamKit': svgDoc([0, 0, 60, 60], 1, TAM_KIT),
-    'rstock-cafeKit': svgDoc([0, 0, 60, 60], 1, CAFE_KIT),
-    'rstock-herbs': svgDoc([0, 0, 60, 60], 1, HERBS),
+    'dish-pho': svgDoc([0, 0, 90, 90], 1, liftPiece(PHO, 1)),
+    'dish-banhXeo': svgDoc([0, 0, 90, 90], 1, liftPiece(BANH_XEO, 1)),
+    'dish-che': svgDoc([0, 0, 90, 90], 1, liftPiece(CHE, 1)),
+    'dish-bunCha': svgDoc([0, 0, 90, 90], 1, liftPiece(BUN_CHA, 1)),
+    'dish-goiCuon': svgDoc([0, 0, 90, 90], 1, liftPiece(GOI_CUON, 1)),
+    'dish-comTam': svgDoc([0, 0, 90, 90], 1, liftPiece(COM_TAM, 1)),
+    'dish-caPhe': svgDoc([0, 0, 90, 90], 1, liftPiece(CA_PHE, 1)),
+    'rstock-phoKit': svgDoc([0, 0, 60, 60], 1, liftPiece(PHO_KIT, 1)),
+    'rstock-batter': svgDoc([0, 0, 60, 60], 1, liftPiece(BATTER, 1)),
+    'rstock-cheKit': svgDoc([0, 0, 60, 60], 1, liftPiece(CHE_KIT, 1)),
+    'rstock-chaKit': svgDoc([0, 0, 60, 60], 1, liftPiece(CHA_KIT, 1)),
+    'rstock-cuonKit': svgDoc([0, 0, 60, 60], 1, liftPiece(CUON_KIT, 1)),
+    'rstock-tamKit': svgDoc([0, 0, 60, 60], 1, liftPiece(TAM_KIT, 1)),
+    'rstock-cafeKit': svgDoc([0, 0, 60, 60], 1, liftPiece(CAFE_KIT, 1)),
+    'rstock-herbs': svgDoc([0, 0, 60, 60], 1, liftPiece(HERBS, 1)),
   }
 }

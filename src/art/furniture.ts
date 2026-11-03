@@ -2,6 +2,7 @@ import { TILE } from '../config'
 import { canTurn, type ItemKind } from '../sim/items'
 import { silkLantern } from './lantern'
 import { DINING_FURNITURE } from './dining'
+import { liftPiece } from './lift'
 import { MORE_DECOR } from './moreDecor'
 import { NEW_DECOR } from './newDecor'
 import { C, SKIN } from './palette'
@@ -1416,5 +1417,5 @@ export function itemTexture(kind: ItemKind, turned = false): string {
 }
 
 export function furnitureTextures(): Record<string, string> {
-  return Object.fromEntries(Object.entries(FURNITURE).map(([key, piece]) => [key, svgDoc([0, 0, piece.w, piece.h], TILE, piece.body)]))
+  return Object.fromEntries(Object.entries(FURNITURE).map(([key, piece]) => [key, svgDoc([0, 0, piece.w, piece.h], TILE, liftPiece(piece.body, TILE))]))
 }
