@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { LS_CARD_INSET, LS_PAD, LS_SAMPLE, LS_TOPLEFT } from '../art/lashesArt'
+import { lashesTextures, LS_CARD_INSET, LS_PAD, LS_SAMPLE, LS_TOPLEFT } from '../art/lashesArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { LASHES_LID, LASHES_LIMIT_MS } from '../config'
 import type { Stars } from '../sim/economy'
 import { LASH_LENS, LashesGame, lashSlots, type LashDrop, type LashLen, type LashStyle } from '../sim/lashes'
@@ -82,6 +83,10 @@ export class LashesScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, lashesTextures())
   }
 
   create() {

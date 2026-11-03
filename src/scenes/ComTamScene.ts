@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser'
-import { BC_BOX } from '../art/bunChaArt'
-import { CT_BOX, CT_RICE } from '../art/comTamArt'
+import { BC_BOX, bunChaTextures } from '../art/bunChaArt'
+import { comTamTextures, CT_BOX, CT_RICE } from '../art/comTamArt'
 import { C } from '../art/palette'
-import { PHO_BOX, PHO_DIAL } from '../art/phoArt'
+import { PHO_BOX, PHO_DIAL, phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { CT_BURN_MS, CT_OIL_AT } from '../config'
 import { ComTamGame, ctHeat, type ComTamPhase, type ComTamTicket, type CtPart } from '../sim/comTam'
@@ -85,6 +86,11 @@ export class ComTamScene extends Phaser.Scene {
 
   init(data: CookData<ComTamTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the stove is the bún chả's, its dial and the ticket the phở stove's
+    preloadSvgTextures(this, { ...comTamTextures(), ...bunChaTextures(), ...phoTextures() })
   }
 
   create() {

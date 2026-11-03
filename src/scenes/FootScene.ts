@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { FOOT_BOX } from '../art/footArt'
+import { FOOT_BOX, footTextures } from '../art/footArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { FOOT_LIMIT_MS, FOOT_POINT_R, FOOT_POINTS, FOOT_WRONG_MS } from '../config'
 import type { Stars } from '../sim/economy'
@@ -47,6 +48,10 @@ export class FootScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, footTextures())
   }
 
   create() {

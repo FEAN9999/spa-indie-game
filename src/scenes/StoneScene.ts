@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
-import { MS_ORIGIN } from '../art/massageArt'
+import { massageTextures, MS_ORIGIN } from '../art/massageArt'
 import { C, customerColors } from '../art/palette'
-import { SN_POT_STONES } from '../art/stoneArt'
+import { SN_POT_STONES, stoneTextures } from '../art/stoneArt'
+import { preloadSvgTextures } from '../art/svg'
 import { GAME_W, STONE_GOOD, STONE_LIMIT_MS, STONE_SPOTS } from '../config'
 import type { Stars } from '../sim/economy'
 import { createRng } from '../sim/rng'
@@ -76,6 +77,11 @@ export class StoneScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    // on the massage close-up's bed and back
+    preloadSvgTextures(this, { ...stoneTextures(), ...massageTextures() })
   }
 
   create() {

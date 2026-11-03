@@ -1,6 +1,10 @@
 import * as Phaser from 'phaser'
-import { GC_BOX, GC_PAPER, GC_WATER, GC_WET_TOP } from '../art/goiCuonArt'
+import { banhXeoTextures } from '../art/banhXeoArt'
+import { bunChaTextures } from '../art/bunChaArt'
+import { GC_BOX, GC_PAPER, GC_WATER, GC_WET_TOP, goiCuonTextures } from '../art/goiCuonArt'
 import { C } from '../art/palette'
+import { phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { GC_ROLLS } from '../config'
 import type { Stars } from '../sim/economy'
@@ -87,6 +91,11 @@ export class GoiCuonScene extends Phaser.Scene {
 
   init(data: CookData<GoiCuonTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the shrimp and pork are the bánh xèo's, the herbs the bún chả's, the ticket the phở stove's
+    preloadSvgTextures(this, { ...goiCuonTextures(), ...banhXeoTextures(), ...bunChaTextures(), ...phoTextures() })
   }
 
   create() {

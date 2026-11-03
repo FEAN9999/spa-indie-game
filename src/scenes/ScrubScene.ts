@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser'
-import { MS_ORIGIN } from '../art/massageArt'
+import { massageTextures, MS_ORIGIN } from '../art/massageArt'
 import { C, customerColors } from '../art/palette'
+import { scrubTextures } from '../art/scrubArt'
+import { preloadSvgTextures } from '../art/svg'
 import { SCRUB_LIMIT_MS, SCRUB_PATCH_R, SCRUB_RING_R } from '../config'
 import type { Stars } from '../sim/economy'
 import { ScrubGame, type ScrubSpot } from '../sim/scrub'
@@ -54,6 +56,11 @@ export class ScrubScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    // on the massage close-up's bed and back
+    preloadSvgTextures(this, { ...scrubTextures(), ...massageTextures() })
   }
 
   create() {

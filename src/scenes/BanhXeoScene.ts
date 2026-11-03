@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
-import { BX_PAN_BOX, BX_PAN_R } from '../art/banhXeoArt'
+import { banhXeoTextures, BX_PAN_BOX, BX_PAN_R } from '../art/banhXeoArt'
 import { C } from '../art/palette'
-import { PHO_BOX, PHO_DIAL } from '../art/phoArt'
+import { PHO_BOX, PHO_DIAL, phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { BX_PAN, BX_RING, BX_SECTORS } from '../config'
 import { BanhXeoGame, foldBand, spreadSectors, type BanhXeoPhase, type BanhXeoTicket, type BxTopping } from '../sim/banhXeo'
@@ -88,6 +89,11 @@ export class BanhXeoScene extends Phaser.Scene {
 
   init(data: CookData<BanhXeoTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the stove dial and the ticket are the phở stove's
+    preloadSvgTextures(this, { ...banhXeoTextures(), ...phoTextures() })
   }
 
   create() {

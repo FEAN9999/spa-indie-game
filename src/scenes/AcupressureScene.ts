@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { MS_ORIGIN } from '../art/massageArt'
+import { massageTextures, MS_ORIGIN } from '../art/massageArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { ACU_LIMIT_MS, GAME_W } from '../config'
 import { acuBand, AcupressureGame, type AcuResult } from '../sim/acupressure'
 import type { Stars } from '../sim/economy'
@@ -67,6 +68,11 @@ export class AcupressureScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    // the back on the massage bed is the massage close-up's
+    preloadSvgTextures(this, massageTextures())
   }
 
   create() {

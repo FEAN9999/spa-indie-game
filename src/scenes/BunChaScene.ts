@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
-import { BC_BASKET, BC_BOWL, BC_BOX, BC_PATTIES, BC_PATTY, BC_PLATE } from '../art/bunChaArt'
+import { BC_BASKET, BC_BOWL, BC_BOX, BC_PATTIES, BC_PATTY, BC_PLATE, bunChaTextures } from '../art/bunChaArt'
 import { C } from '../art/palette'
-import { PHO_BOX, PHO_DIAL } from '../art/phoArt'
+import { PHO_BOX, PHO_DIAL, phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { BunChaGame, grillBand, sauceBand, type BcResult, type BcSide, type BunChaPhase, type BunChaTicket } from '../sim/bunCha'
 import type { Stars } from '../sim/economy'
@@ -92,6 +93,11 @@ export class BunChaScene extends Phaser.Scene {
 
   init(data: CookData<BunChaTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the stove dial and the ticket are the phở stove's
+    preloadSvgTextures(this, { ...bunChaTextures(), ...phoTextures() })
   }
 
   create() {

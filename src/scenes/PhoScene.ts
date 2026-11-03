@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { PHO_BOX, PHO_BROTH, PHO_DIAL, PHO_LINES } from '../art/phoArt'
+import { PHO_BOX, PHO_BROTH, PHO_DIAL, PHO_LINES, phoTextures } from '../art/phoArt'
 import { C } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { GAME_W, PHO_CUT_X } from '../config'
 import type { Stars } from '../sim/economy'
@@ -78,6 +79,10 @@ export class PhoScene extends Phaser.Scene {
 
   init(data: CookData<PhoTicket>) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, phoTextures())
   }
 
   create() {

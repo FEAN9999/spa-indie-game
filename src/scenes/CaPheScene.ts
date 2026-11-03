@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser'
-import { CF_GLASS } from '../art/caPheArt'
+import { caPheTextures, CF_GLASS } from '../art/caPheArt'
 import { C } from '../art/palette'
+import { phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { CaPheGame, dripBand, milkBand, type CaPhePhase, type CaPheTicket, type CfResult } from '../sim/caPhe'
 import type { Stars } from '../sim/economy'
@@ -89,6 +91,11 @@ export class CaPheScene extends Phaser.Scene {
 
   init(data: CookData<CaPheTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the ticket is drawn with the phở stove's pictures
+    preloadSvgTextures(this, { ...caPheTextures(), ...phoTextures() })
   }
 
   create() {

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { customerColors } from '../art/palette'
-import { SH_ORIGIN } from '../art/shampooArt'
+import { SH_ORIGIN, shampooTextures } from '../art/shampooArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import type { Stars } from '../sim/economy'
 import { ShampooGame, type ShampooPhase } from '../sim/shampoo'
@@ -46,6 +47,10 @@ export class ShampooScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, shampooTextures())
   }
 
   create() {

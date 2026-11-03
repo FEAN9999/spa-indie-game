@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { AC_TOPLEFT } from '../art/acneArt'
+import { AC_TOPLEFT, acneTextures } from '../art/acneArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { ACNE_AT, ACNE_LIFT_MS, ACNE_LIFT_MS_HARD, ACNE_LIMIT_MS, ACNE_POP_MS } from '../config'
 import { AcneGame, type AcneSpot } from '../sim/acne'
 import type { Stars } from '../sim/economy'
@@ -54,6 +55,10 @@ export class AcneScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, acneTextures())
   }
 
   create() {

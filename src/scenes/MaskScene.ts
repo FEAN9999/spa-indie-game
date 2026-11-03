@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { MK_FACE_R, MK_ORIGIN } from '../art/maskArt'
+import { maskTextures, MK_FACE_R, MK_ORIGIN } from '../art/maskArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { MASK_BRUSH_R } from '../config'
 import type { Stars } from '../sim/economy'
 import { MaskGame, type MaskPhase } from '../sim/mask'
@@ -72,6 +73,10 @@ export class MaskScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, maskTextures())
   }
 
   create() {

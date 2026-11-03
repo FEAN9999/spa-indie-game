@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
-import { CP_TRAY_CUPS } from '../art/cuppingArt'
-import { MS_ORIGIN } from '../art/massageArt'
+import { CP_TRAY_CUPS, cuppingTextures } from '../art/cuppingArt'
+import { massageTextures, MS_ORIGIN } from '../art/massageArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { CUPPING_CUPS, CUPPING_GOOD, CUPPING_LIMIT_MS, CUPPING_MARKS, GAME_W } from '../config'
 import { CuppingGame, cupGradeOf, type CupGrade } from '../sim/cupping'
 import type { Stars } from '../sim/economy'
@@ -69,6 +70,11 @@ export class CuppingScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    // on the massage close-up's bed and back
+    preloadSvgTextures(this, { ...cuppingTextures(), ...massageTextures() })
   }
 
   create() {

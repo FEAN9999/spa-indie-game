@@ -1,7 +1,8 @@
 import * as Phaser from 'phaser'
 import { shade } from '../art/aplus'
-import { NAILS_BOX, NAILS_FINGERS, NAILS_LENS } from '../art/nailsArt'
+import { NAILS_BOX, NAILS_FINGERS, NAILS_LENS, nailsTextures } from '../art/nailsArt'
 import { C, customerColors, teacherColors, type CharacterColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { NAILS_BOTTLE_X, NAILS_BOTTLE_Y, NAILS_COAT_MS, NAILS_COUNT, NAILS_LIMIT_MS, NAILS_NAIL, NAILS_SHAKE_MS, NAILS_SHAPE } from '../config'
 import type { Stars } from '../sim/economy'
 import { NailsGame, nailsBottleAt, nailsClosed, type NailsPhase, type NailsPt } from '../sim/nails'
@@ -144,6 +145,10 @@ export class NailsScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, nailsTextures())
   }
 
   create() {

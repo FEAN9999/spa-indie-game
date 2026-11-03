@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser'
-import { CHE_GLASS, CHE_GLASS_BOX, CHE_ICE_BLOCK } from '../art/cheArt'
+import { CHE_GLASS, CHE_GLASS_BOX, CHE_ICE_BLOCK, cheTextures } from '../art/cheArt'
 import { C } from '../art/palette'
+import { phoTextures } from '../art/phoArt'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { CHE_LAYERS, CheGame, layerMarks, type ChePhase, type CheTicket } from '../sim/che'
 import type { Stars } from '../sim/economy'
@@ -93,6 +95,11 @@ export class CheScene extends Phaser.Scene {
 
   init(data: CookData<CheTicket>) {
     this.params = data
+  }
+
+  preload() {
+    // the ticket is drawn with the phở stove's pictures
+    preloadSvgTextures(this, { ...cheTextures(), ...phoTextures() })
   }
 
   create() {

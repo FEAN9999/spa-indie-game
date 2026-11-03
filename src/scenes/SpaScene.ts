@@ -1,7 +1,9 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
+import { branchTextures } from '../art/branchArt'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
+import { loadSvgTextures } from '../art/svg'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
 import { AUTOSAVE_MS, BUBBLE_MS, BUSTLE_PIECES, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
@@ -160,6 +162,8 @@ const VISIT_EVENTS: ReadonlySet<SimEvent['type']> = new Set<SimEvent['type']>(['
 const VISIT_STARS = 3
 /** Why a friend's shop could not be found, for its card. */
 const VISIT_PROBLEM: Record<VisitProblem, StringKey> = { notFound: 'visitNotFound', noLink: 'visitNoLink', tooNew: 'visitTooNew', bad: 'visitBad' }
+/** The branches whose own room and houses are textures already: each is made the first time it shows, as together they are a third of the game's pictures. */
+const drawnPlaces = new Set<PlaceId>()
 
 interface CustomerSprite {
   view: CharacterView
@@ -250,6 +254,8 @@ export class SpaScene extends Phaser.Scene {
   private tooNew = false
   /** The page is finding a friend's shop: only its card shows, and no shop runs yet. */
   private finding = false
+  /** The branch's own pictures are being made: only the loading line shows, and the scene starts again once they are. */
+  private drawing = false
   /** Looking round a friend's shop: a copy that runs here and is never saved; nothing in it is bought, served or answered. */
   private visit = false
   private pointer!: HandPointer
@@ -289,6 +295,7 @@ export class SpaScene extends Phaser.Scene {
     this.pendingCook = null
     this.riding = false
     this.tooNew = false
+    this.drawing = false
     this.finding = false
     this.visit = switched?.visit ?? false
     this.bannerOnResume = false
@@ -324,6 +331,14 @@ export class SpaScene extends Phaser.Scene {
     }
     this.chain = switched?.chain ?? this.openChain(saved)
     this.sim = this.chain.active()
+    // a branch opened straight from the save or a friend's link is drawn first, and the scene starts again on its pictures
+    const place = this.sim.place
+    if (place !== null && !drawnPlaces.has(place)) {
+      this.drawing = true
+      this.add.text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600')).setOrigin(0.5)
+      void this.drawPlace(place).then(() => this.scene.restart(data))
+      return
+    }
     if (!this.visit) this.meetFriends()
     // back at the main shop, its cards come out from where they were kept; at a branch they stay aside
     this.attention = new Attention(this.sim.place === null, switched?.held ?? [], () => this.shopState())
@@ -484,13 +499,23 @@ export class SpaScene extends Phaser.Scene {
     // nothing is tapped or played while it closes: a mini-game opened now would be left behind
     this.attention.cover('shutter')
     sound.play('chime')
-    this.shutter(place, true, () => {
+    // a branch's pictures are made while the shutter rolls down, and it stays down until they are
+    const drawn = this.drawPlace(place)
+    this.shutter(place, true, () => void drawn.then(() => {
       this.chain.goTo(place)
       this.session.saveNow()
       // another page saved first: the session has closed and the page is reloading, so no new scene may open a session on that save
       if (!this.session.open) return
       const data: SpaSceneData = { chain: this.chain, held: this.attention.carry(), arrived: true, visit: this.visit }
       this.scene.restart(data)
+    }))
+  }
+
+  /** Makes the textures only the branch at `place` shows, the first time it shows; the main shop's are made at boot. */
+  private drawPlace(place: PlaceId | null): Promise<void> {
+    if (place === null || drawnPlaces.has(place)) return Promise.resolve()
+    return loadSvgTextures(this, branchTextures(place)).then(() => {
+      drawnPlaces.add(place)
     })
   }
 
@@ -1591,7 +1616,7 @@ export class SpaScene extends Phaser.Scene {
   }
 
   update(time: number, delta: number) {
-    if (this.tooNew || this.finding) return
+    if (this.tooNew || this.finding || this.drawing) return
     if (!this.attention.covered()) {
       this.chain.update(delta)
       // at the main shop, the cards it kept while the owner was away come first

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { MUD_ORIGIN } from '../art/mudArt'
+import { MUD_ORIGIN, mudTextures } from '../art/mudArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { GAME_W, MUD_LIMIT_MS, MUD_STARS } from '../config'
 import type { Stars } from '../sim/economy'
 import { MudGame, type MudFeel } from '../sim/mud'
@@ -81,6 +82,10 @@ export class MudScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, mudTextures())
   }
 
   create() {

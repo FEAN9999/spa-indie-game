@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
-import { MS_BACK_PX, MS_ORIGIN, MS_POINT_R, MS_RING_R } from '../art/massageArt'
+import { massageTextures, MS_BACK_PX, MS_ORIGIN, MS_POINT_R, MS_RING_R } from '../art/massageArt'
 import { C, customerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { MASSAGE_HOLD_MS, MASSAGE_POINTS, MASSAGE_SCORE } from '../config'
 import type { Stars } from '../sim/economy'
 import { MassageGame, type Judgement, type MassagePoint } from '../sim/massage'
@@ -52,6 +53,10 @@ export class MassageScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, massageTextures())
   }
 
   create() {

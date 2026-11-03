@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
-import { ST_POT_MOUTH_UNITS, ST_POT_PX, ST_TRAY_BOX } from '../art/steamArt'
+import { ST_POT_MOUTH_UNITS, ST_POT_PX, ST_TRAY_BOX, steamTextures } from '../art/steamArt'
+import { preloadSvgTextures } from '../art/svg'
 import { GAME_W, STEAM_LIMIT_MS, STEAM_NEED } from '../config'
 import type { Stars } from '../sim/economy'
 import { createRng } from '../sim/rng'
@@ -56,6 +57,10 @@ export class SteamScene extends Phaser.Scene {
 
   init(data: MiniGameData) {
     this.params = data
+  }
+
+  preload() {
+    preloadSvgTextures(this, steamTextures())
   }
 
   create() {
