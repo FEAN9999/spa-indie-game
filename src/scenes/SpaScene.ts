@@ -83,7 +83,7 @@ import { StaffLayer } from '../view/StaffLayer'
 import { PetLayer } from '../view/PetLayer'
 import { courseName } from '../view/staffCard'
 import { textStyle } from '../view/text'
-import { addButton, addCard, whenTapped } from '../view/ui'
+import { addButton, addCard, aplusFrame, whenTapped } from '../view/ui'
 import { TOP_BAR } from '../view/topBar'
 import { addVisitBar } from '../view/visitBar'
 import { ZoomButtons } from '../view/ZoomButtons'
@@ -499,7 +499,7 @@ export class SpaScene extends Phaser.Scene {
     for (let s = SHUTTER.slat; s < GAME_H; s += SHUTTER.slat) art.lineBetween(0, s, GAME_W, s)
     const signX = (GAME_W - sign.w) / 2
     const signY = (GAME_H - sign.h) / 2
-    art.fillStyle(hex(C.goldPale), 1).fillRoundedRect(signX, signY, sign.w, sign.h, sign.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(signX, signY, sign.w, sign.h, sign.r)
+    aplusFrame(art, C.goldPale, signX, signY, sign.w, sign.h, sign.r, 5)
     const name = this.ui.add.text(GAME_W / 2, y + GAME_H / 2, placeName(place), textStyle(64)).setOrigin(0.5)
     const parts = [sheet, art, name]
     for (const p of parts) p.setDepth(SHUTTER.depth)
@@ -1067,12 +1067,7 @@ export class SpaScene extends Phaser.Scene {
   /** A cream bar with the phone, "Phây · vừa xong" and one line of the post slides down from the top for NOTICE_MS; a tap opens Phây at the post. It holds the shop's cards back like a gold card. */
   private showPhayNotice(post: Post): void {
     const n = NOTICE
-    const bg = this.ui.add
-      .graphics()
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(-n.w / 2, -n.h / 2, n.w, n.h, n.r)
-      .lineStyle(5, hex(C.ink))
-      .strokeRoundedRect(-n.w / 2, -n.h / 2, n.w, n.h, n.r)
+    const bg = aplusFrame(this.ui.add.graphics(), C.cream, -n.w / 2, -n.h / 2, n.w, n.h, n.r, 5)
     const icon = this.ui.add.image(n.iconX, 0, 'icon-phone').setScale(0.9)
     const head = this.ui.add.text(n.textX, n.headY, t('phayNoticeHead'), textStyle(26, '800', C.soft)).setOrigin(0, 0.5)
     const line = this.ui.add.text(n.textX, n.lineY, noticeLine(post), textStyle(34, '800')).setOrigin(0, 0.5)
@@ -1161,12 +1156,7 @@ export class SpaScene extends Phaser.Scene {
     line.setY(400 - line.height / line.getWrappedText().length / 2)
     const h = Math.max(BADGE_CARD.h, line.y + line.height + BADGE_CARD.bottomPad - BADGE_CARD.y)
     const iconY = BADGE_CARD.y + h / 2
-    const bg = this.ui.add
-      .graphics()
-      .fillStyle(hex(C.goldPale), 1)
-      .fillRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
-      .lineStyle(5, hex(C.ink))
-      .strokeRoundedRect(BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r)
+    const bg = aplusFrame(this.ui.add.graphics(), C.goldPale, BADGE_CARD.x, BADGE_CARD.y, BADGE_CARD.w, h, BADGE_CARD.r, 5)
     const icon: Phaser.GameObjects.GameObject[] = []
     if (typeof next === 'string') icon.push(addMedal(this.ui, next, BADGE_CARD.medalX, iconY, { got: true, ring: null }))
     else {

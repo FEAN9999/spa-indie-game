@@ -10,7 +10,7 @@ import { HandPointer } from '../view/HandPointer'
 import { addMiniGameCard, drawBars, revealStars, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 type Station = Exclude<CaPhePhase, 'done'>
 const STATIONS: Station[] = ['milk', 'drip', 'ice']
@@ -161,12 +161,7 @@ export class CaPheScene extends Phaser.Scene {
     if (s === 'milk') {
       this.stream = keep(this.add.graphics().setDepth(DEPTH.stream))
       this.can = keep(this.add.image(CAN.x, CAN.y, 'cf-can'))
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.teal), 1)
-        .fillRoundedRect(-BUTTON.w / 2, -BUTTON.h / 2, BUTTON.w, BUTTON.h, BUTTON.h / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-BUTTON.w / 2, -BUTTON.h / 2, BUTTON.w, BUTTON.h, BUTTON.h / 2)
+      const bg = aplusFrame(this.add.graphics(), C.teal, -BUTTON.w / 2, -BUTTON.h / 2, BUTTON.w, BUTTON.h, BUTTON.h / 2)
       const label = this.add.text(0, 0, t('cfHold'), textStyle(56, '800', C.paper)).setOrigin(0.5)
       this.holdButton = keep(this.add.container(BUTTON.x, BUTTON.y, [bg, label]).setSize(BUTTON.w, BUTTON.h).setInteractive())
       this.buttons.push(this.holdButton)

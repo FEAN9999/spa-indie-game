@@ -7,7 +7,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { bustlePercentText } from '../view/bustle'
 import { textStyle } from '../view/text'
-import { addButton, whenTapped } from '../view/ui'
+import { addButton, aplusFrame, whenTapped } from '../view/ui'
 import { sound } from '../audio/engine'
 
 export interface BustleListData {
@@ -53,12 +53,7 @@ export class BustleScene extends Phaser.Scene {
     const rowsH = BUSTLE_IDS.length * ROW.step - (ROW.step - ROW.h)
     const h = ROWS_Y + rowsH + GAP + BUTTON.h + GAP
     const top = Math.round((GAME_H - h) / 2)
-    this.add
-      .graphics()
-      .fillStyle(hex(C.goldPale), 1)
-      .fillRoundedRect(CARD.x, top, CARD.w, h, CARD.r)
-      .lineStyle(5, hex(C.ink))
-      .strokeRoundedRect(CARD.x, top, CARD.w, h, CARD.r)
+    aplusFrame(this.add.graphics(), C.goldPale, CARD.x, top, CARD.w, h, CARD.r, 5)
     const score = bustleScore(bought)
     this.add.text(MID, top + KICKER_Y, t('bustleKicker'), textStyle(34, '800', C.terracotta)).setOrigin(0.5)
     this.add.text(MID, top + TITLE_Y, t('bustleChip', { score, max: BUSTLE_SCORE_MAX }), textStyle(52)).setOrigin(0.5)
@@ -74,12 +69,7 @@ export class BustleScene extends Phaser.Scene {
       const y = top + ROWS_Y + i * ROW.step + ROW.h / 2
       const owned = bought.includes(id)
       const text = BUSTLE_TEXT[id]
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.paper), 1)
-        .fillRoundedRect(-rowW / 2, -ROW.h / 2, rowW, ROW.h, ROW.r)
-        .lineStyle(3, hex(C.tileSeam))
-        .strokeRoundedRect(-rowW / 2, -ROW.h / 2, rowW, ROW.h, ROW.r)
+      const bg = aplusFrame(this.add.graphics(), C.paper, -rowW / 2, -ROW.h / 2, rowW, ROW.h, ROW.r, 3, C.tileSeam)
       const left = -rowW / 2 + ROW.padX
       const name = this.add.text(left, -18, text.name, textStyle(36, '800')).setOrigin(0, 0.5)
       const sub = this.add.text(left, 24, t('bustleRowSub', { where: text.where, score: BUSTLE_PIECES[id].score }), textStyle(26, '600', C.soft)).setOrigin(0, 0.5)

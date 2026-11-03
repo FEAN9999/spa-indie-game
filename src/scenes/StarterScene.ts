@@ -6,7 +6,7 @@ import { STARTER_GOAL_IDS, starterRunning } from '../sim/starter'
 import { t } from '../strings/vi'
 import { chainRows, GOAL_ICON } from '../view/starter'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 
 export interface StarterData {
   sim: SpaSim
@@ -51,12 +51,7 @@ export class StarterScene extends Phaser.Scene {
       const current = row.state === 'current'
       const parts: (Phaser.GameObjects.Graphics | Phaser.GameObjects.Text | Phaser.GameObjects.Image)[] = []
       parts.push(
-        this.add
-          .graphics()
-          .fillStyle(hex(current ? C.goldPale : C.cream), 1)
-          .fillRoundedRect(ROW_X, top, ROW_W, ROW_H, 24)
-          .lineStyle(current ? 4 : 3, hex(current ? C.ink : C.tileSeam))
-          .strokeRoundedRect(ROW_X, top, ROW_W, ROW_H, 24),
+        aplusFrame(this.add.graphics(), current ? C.goldPale : C.cream, ROW_X, top, ROW_W, ROW_H, 24, current ? 4 : 3, current ? C.ink : C.tileSeam),
       )
       // a teal tick for a done goal, the flag for the current one, a plain ring for a later one
       const markX = ROW_X + 30 + MARK_R

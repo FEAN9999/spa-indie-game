@@ -11,6 +11,7 @@ import { starterNotes } from '../view/starter'
 import { chainSummaryRows, restaurantRows, summaryLayout, summaryRows, type SummaryRow } from '../view/summary'
 import { signedMoney } from '../view/chain'
 import { textStyle } from '../view/text'
+import { aplusFrame } from '../view/ui'
 import { summaryNotes } from '../view/vip'
 
 export interface SummaryData {
@@ -74,12 +75,7 @@ export class SummaryScene extends Phaser.Scene {
     const { top: cardTop, buttonY, cardH } = L
 
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    const card = this.add
-      .graphics()
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(90, cardTop, 900, cardH, 60)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(90, cardTop, 900, cardH, 60)
+    const card = aplusFrame(this.add.graphics(), C.paper, 90, cardTop, 900, cardH, 60)
     const name = this.add.text(GAME_W / 2, L.nameY, sim.shopName, textStyle(44, '600')).setOrigin(0.5)
     if (name.width > 760) name.setScale(760 / name.width)
     this.add.text(GAME_W / 2, L.titleY, t('summaryTitle', { day: sim.day }), textStyle(60)).setOrigin(0.5)
@@ -103,11 +99,7 @@ export class SummaryScene extends Phaser.Scene {
       // the whole chain, in a pale block under the rows: a heading, a line per shop, a rule and the total
       const lines = chainSummaryRows(chain)
       const h = (lines.length + 1) * L.chainRowH + 20
-      card
-        .fillStyle(hex(C.tealPale), 1)
-        .fillRoundedRect(120, L.chainTop, 840, h, 34)
-        .lineStyle(4, hex(C.teal))
-        .strokeRoundedRect(120, L.chainTop, 840, h, 34)
+      aplusFrame(card, C.tealPale, 120, L.chainTop, 840, h, 34, 4, C.teal)
       let y = L.chainTop + 10 + L.chainRowH / 2
       this.add.text(GAME_W / 2, y, t('summaryChain'), textStyle(38, '800', C.tealDark)).setOrigin(0.5)
       y += L.chainRowH
@@ -123,11 +115,7 @@ export class SummaryScene extends Phaser.Scene {
     if (restaurantLines.length > 0) {
       // the restaurant's own block under the chain's: a heading and a line each for diners, dish money, tips and, when there are any, wages and stock; or, when the card is too tall for that, one line
       const h = (L.restaurantOneLine ? 1 : restaurantLines.length + 1) * L.chainRowH + 20
-      card
-        .fillStyle(hex(C.tealPale), 1)
-        .fillRoundedRect(120, L.restaurantTop, 840, h, 34)
-        .lineStyle(4, hex(C.teal))
-        .strokeRoundedRect(120, L.restaurantTop, 840, h, 34)
+      aplusFrame(card, C.tealPale, 120, L.restaurantTop, 840, h, 34, 4, C.teal)
       let y = L.restaurantTop + 10 + L.chainRowH / 2
       if (L.restaurantOneLine) {
         this.add.text(160, y, t('summaryRestaurant'), textStyle(38, '800', C.tealDark)).setOrigin(0, 0.5)
@@ -154,12 +142,7 @@ export class SummaryScene extends Phaser.Scene {
 
     const button = this.add.container(GAME_W / 2, buttonY)
     button.add(
-      this.add
-        .graphics()
-        .fillStyle(hex(C.teal), 1)
-        .fillRoundedRect(-300, -75, 600, 150, 75)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-300, -75, 600, 150, 75),
+      aplusFrame(this.add.graphics(), C.teal, -300, -75, 600, 150, 75),
     )
     button.add(this.add.text(0, 0, t('newDay'), textStyle(60, '800', C.paper)).setOrigin(0.5))
     button.setSize(600, 150).setInteractive().on('pointerup', () => {

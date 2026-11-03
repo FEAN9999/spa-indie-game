@@ -9,7 +9,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { lessonAction, panelPage, type Tab } from '../view/servicesPanel'
 import { textStyle } from '../view/text'
-import { addButton, addCard, addToast } from '../view/ui'
+import { addButton, addCard, addToast, aplusFrame } from '../view/ui'
 import type { LessonData } from './LessonScene'
 import type { RecipeData } from './RecipeScene'
 
@@ -192,7 +192,7 @@ export class ServicesScene extends Phaser.Scene {
   private festivalTag(x: number, y: number): void {
     const label = this.add.text(0, 0, t('serviceFestivalTag'), textStyle(24, '800', C.paper)).setOrigin(0.5)
     const w = label.width + 2 * TAG_PAD
-    const bg = this.add.graphics().fillStyle(hex(C.lantern), 1).fillRoundedRect(-w / 2, -TAG_H / 2, w, TAG_H, TAG_H / 2).lineStyle(3, hex(C.ink)).strokeRoundedRect(-w / 2, -TAG_H / 2, w, TAG_H, TAG_H / 2)
+    const bg = aplusFrame(this.add.graphics(), C.lantern, -w / 2, -TAG_H / 2, w, TAG_H, TAG_H / 2, 3)
     this.keep(this.add.container(x + w / 2, y, [bg, label]))
   }
 
@@ -291,12 +291,7 @@ export class ServicesScene extends Phaser.Scene {
   private pill(x: number, y: number, text: string): void {
     const label = this.add.text(0, 0, text, textStyle(30, '800')).setOrigin(0.5)
     const w = label.width + 56
-    const pill = this.add
-      .graphics()
-      .fillStyle(hex(C.mustard), 1)
-      .fillRoundedRect(-w / 2, -30, w, 60, 30)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -30, w, 60, 30)
+    const pill = aplusFrame(this.add.graphics(), C.mustard, -w / 2, -30, w, 60, 30)
     this.keep(this.add.container(x, y, [pill, label]))
   }
 

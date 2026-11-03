@@ -22,7 +22,7 @@ import { carryTo, clampToFloor, pills, restaurantPills, showPills } from '../vie
 import type { MapCamera } from '../view/MapCamera'
 import { MapGestures } from '../view/MapGestures'
 import { textStyle } from '../view/text'
-import { addButton, addCard, addToast } from '../view/ui'
+import { addButton, addCard, addToast, aplusFrame } from '../view/ui'
 import { ZoomButtons } from '../view/ZoomButtons'
 import type { PetGiveData } from './PetGiveScene'
 import type { PetNameData } from './PetNameScene'
@@ -369,7 +369,7 @@ export class BuildScene extends Phaser.Scene {
 
   /** A card of the given fill, from `top` to the cards' bottom. */
   private petBox(x: number, top: number, fill: string): void {
-    this.keep(this.add.graphics().fillStyle(hex(fill), 1).fillRoundedRect(x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top, 24).lineStyle(4, hex(C.ink)).strokeRoundedRect(x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top, 24))
+    this.keep(aplusFrame(this.add.graphics(), fill, x - CARD_W / 2, top, CARD_W, CARD_BOTTOM - top, 24))
   }
 
   /** A name or a breed on a card, shrunk to fit its width. */

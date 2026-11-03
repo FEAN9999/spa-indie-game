@@ -14,7 +14,7 @@ import { formatMoney } from '../strings/format'
 import { t } from '../strings/vi'
 import { codeBox, copyText, domButton, nameInput, type CodeBox } from '../view/dom'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 
 export type PausePanel = 'menu' | 'install'
 
@@ -155,11 +155,7 @@ export class PauseScene extends Phaser.Scene {
 
   private slotRow(slot: SlotId, y: number, playing: boolean, store: SaveStore): void {
     const left = MID - ROW_W / 2
-    this.keep(this.add.graphics())
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
-      .lineStyle(playing ? 6 : 4, hex(playing ? C.teal : C.ink))
-      .strokeRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
+    aplusFrame(this.keep(this.add.graphics()), C.cream, left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2, playing ? 6 : 4, playing ? C.teal : C.ink)
     const info = playing ? null : store.info(slot)
     const name = playing ? this.params.sim.shopName : info?.name
     const first = this.keep(this.add.text(left + 50, y - 22, name ?? t('slotEmpty'), textStyle(40, '800')).setOrigin(0, 0.5))
@@ -303,11 +299,7 @@ export class PauseScene extends Phaser.Scene {
   /** A friend's shop in the list: its name, its code with a dot for its door, Ghé to visit and a cross to take it off. Returns what shows the door once it is known. */
   private friendRow(f: Friend, y: number, onRemove: () => void): (open: boolean) => void {
     const left = MID - ROW_W / 2
-    this.keep(this.add.graphics())
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
+    aplusFrame(this.keep(this.add.graphics()), C.cream, left, y - ROW_H / 2, ROW_W, ROW_H, ROW_H / 2)
     fitWidth(this.keep(this.add.text(left + 50, y - 22, f.name, textStyle(40, '800')).setOrigin(0, 0.5)), 400)
     const dot = this.keep(this.add.circle(left + 62, y + 28, 11, hex(C.mustard)).setStrokeStyle(3, hex(C.ink)))
     const line = (status: string) => `${showVisitCode(f.code)} · ${status}`

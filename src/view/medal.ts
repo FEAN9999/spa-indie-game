@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser'
+import { shade } from '../art/aplus'
 import { C } from '../art/palette'
 import type { BadgeId } from '../sim/badges'
 import { BADGE_ICON } from './badges'
@@ -26,7 +27,11 @@ export function addMedal(
   const g = scene.add.graphics()
   const icon = scene.add.image(0, 0, BADGE_ICON[id])
   if (opts.got) {
-    g.fillStyle(hex(C.mustard), 1).fillCircle(0, 0, R).lineStyle(5, hex(C.ink)).strokeCircle(0, 0, R)
+    // A+: an 18% shadow cast to the lower right, the hard shade there inside the rim, a white shine at the top left
+    g.fillStyle(hex(C.ink), 0.18).fillCircle(6, 6, R)
+    g.fillStyle(hex(shade(C.mustard)), 1).fillCircle(0, 0, R).fillStyle(hex(C.mustard), 1).fillCircle(-3, -3, R - 5)
+    g.fillStyle(0xffffff, 0.45).fillRoundedRect(-32, -46, 28, 7, 3.5)
+    g.lineStyle(5, hex(C.ink)).strokeCircle(0, 0, R)
     g.lineStyle(4, hex(C.mustardDark)).strokeCircle(0, 0, INNER_R)
     icon.setTint(hex(C.ink))
   } else {

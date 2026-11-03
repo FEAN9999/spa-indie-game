@@ -20,6 +20,7 @@ import { LAMPS } from './lamps'
 import { starPoints } from './rankDraw'
 import { textStyle } from './text'
 import { daylight, litBands, type Daylight, type Span } from './daylight'
+import { aplusFrame } from './ui'
 
 /** Rugs lie on the floor and the bought houses, under the mats, the bed slots and the stairs. */
 const RUG_DEPTH = 0.8
@@ -398,7 +399,7 @@ export class RoomView {
     for (const [side, color] of [[-1, C.lotus], [1, C.water]] as const) {
       g.fillStyle(hex(color), 1).fillEllipse((edge - 32) * side, top - 68, 40, 48).lineStyle(3, hex(C.ink)).strokeEllipse((edge - 32) * side, top - 68, 40, 48)
     }
-    g.fillStyle(hex(C.cream), 1).fillRoundedRect(-edge, top, w, h, 18).lineStyle(4, hex(C.ink)).strokeRoundedRect(-edge, top, w, h, 18)
+    aplusFrame(g, C.cream, -edge, top, w, h, 18)
     const name = this.scene.add.text(0, top + 32, t('rivalSignName'), textStyle(36, '800', C.terracotta)).setOrigin(0.5)
     const line = this.scene.add.text(0, top + 72, t('rivalSignLine'), textStyle(24, '600', C.soft)).setOrigin(0.5)
     line.setScale(Math.min(1, (w - 28) / line.width))
@@ -419,15 +420,7 @@ export class RoomView {
 
   /** A light-wood board on two dark-wood hangers with five star slots; setRank fills the stars. */
   private plaqueBoard(): Phaser.GameObjects.Container {
-    const g = this.scene.add
-      .graphics()
-      .lineStyle(4, hex(C.woodDark))
-      .lineBetween(-52, -40, -40, -26)
-      .lineBetween(52, -40, 40, -26)
-      .fillStyle(hex(C.woodLight), 1)
-      .fillRoundedRect(-86, -28, 172, 56, 12)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-86, -28, 172, 56, 12)
+    const g = aplusFrame(this.scene.add.graphics().lineStyle(4,hex(C.woodDark)).lineBetween(-52,-40,-40,-26).lineBetween(52,-40,40,-26), C.woodLight, -86, -28, 172, 56, 12)
       .fillStyle(hex(C.woodDark), 0.35)
       .fillRoundedRect(-78, -20, 156, 40, 8)
     const at = { x: MAP_X + PLAQUE.x * TILE, y: MAP_Y + PLAQUE.y * TILE }

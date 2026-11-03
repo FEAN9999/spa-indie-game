@@ -85,7 +85,20 @@ export function shapeD(el: string): string {
   return attr(el, 'd') ?? ''
 }
 
-const WOODS = new Set([C.wood, C.woodDark, C.woodLight, C.bambooDark].map(c => c.toUpperCase()))
+/**
+ * Copies the stroke of an unturned `<g>` onto each shape inside it that has no stroke of its own, so a picture drawn
+ * with one shared outline can be lifted shape by shape; it draws the same.
+ */
+export function inheritStroke(body: string): string {
+  return body.replace(/<g( [^>]*)>((?:(?!<\/?g[\s>]).)*)<\/g>/gs, (g, attrs: string, inner: string) => {
+    if (/ transform=/.test(attrs) || !/ stroke="/.test(attrs)) return g
+    const stroke = attrs.match(/ stroke(?:-width|-linejoin|-linecap)?="[^"]*"/g) ?? []
+    const add = (el: string) => stroke.filter(a => !el.includes(a.slice(0, a.indexOf('=') + 1))).join('')
+    return `<g${attrs}>${inner.replace(SHAPE_EL, el => (/ stroke="/.test(el) ? el : el.replace(/\/>$/, `${add(el)}/>`)))}</g>`
+  })
+}
+
+const WOODS =new Set([C.wood, C.woodDark, C.woodLight, C.bambooDark].map(c => c.toUpperCase()))
 const FABRICS = new Set([C.teal, C.tealLight, C.tealDark, C.terracotta, C.lotus, C.mustard].map(c => c.toUpperCase()))
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 /** A short hash of a body, so its clip ids come out the same each time it is drawn and apart from other bodies'. */

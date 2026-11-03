@@ -9,7 +9,7 @@ import { t } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { awayLines, awayTime } from '../view/away'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface AwayData {
   sim: SpaSim
@@ -82,7 +82,7 @@ export class AwayScene extends Phaser.Scene {
       y += text.height + 14
     }
     const h = y + 200 - CARD_Y
-    card.fillStyle(hex(C.paper), 1).fillRoundedRect(90, CARD_Y, 900, h, 60).lineStyle(5, hex(C.ink)).strokeRoundedRect(90, CARD_Y, 900, h, 60).setDepth(-1)
+    aplusFrame(card, C.paper, 90, CARD_Y, 900, h, 60, 5).setDepth(-1)
     // stop first: the callback may open another card, and a stop queued after that would kill it
     addButton(this, MID, y + 80, 560, 130, t('awayTake'), 'primary', () => {
       this.scene.stop()

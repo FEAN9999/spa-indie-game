@@ -8,7 +8,7 @@ import { t } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { OUTFIT_NAME, outfitStatus, outfitTileTag, wardrobeHead } from '../view/outfits'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 
 export interface WardrobeData {
   sim: SpaSim
@@ -202,7 +202,7 @@ export class WardrobeScene extends Phaser.Scene {
 
   /** A button that does nothing: sand with a soft edge, for an outfit that is locked or already worn. */
   private inertButton(x: number, y: number, w: number, h: number, label: string, size: number): Phaser.GameObjects.Container {
-    const bg = this.add.graphics().fillStyle(hex(C.sand), 1).fillRoundedRect(-w / 2, -h / 2, w, h, h / 2).lineStyle(4, hex(C.soft)).strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    const bg = aplusFrame(this.add.graphics(), C.sand, -w / 2, -h / 2, w, h, h / 2, 4, C.soft)
     const text = this.add.text(0, 0, label, textStyle(size, '800', C.soft)).setOrigin(0.5)
     return this.add.container(x, y, [bg, text])
   }

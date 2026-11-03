@@ -12,6 +12,7 @@ import { daylight } from './daylight'
 import { CharacterView } from './CharacterView'
 import { addGlow, DARK, DARK_DEPTH, NIGHT_DEPTH } from './RoomView'
 import { textStyle } from './text'
+import { aplusFrame } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** The open street's ground lies over the old road, on the ground with the shop fronts; its pieces stand among people by their foot. */
@@ -214,12 +215,7 @@ export class BustleLayer {
         .setOrigin(0.5)
         .setDepth(MARK_DEPTH + 1)
       const w = label.width + 2 * LABEL.padX
-      const pill = add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(-w / 2, -LABEL.h / 2, w, LABEL.h, LABEL.h / 2)
-        .lineStyle(3, hex(C.ink))
-        .strokeRoundedRect(-w / 2, -LABEL.h / 2, w, LABEL.h, LABEL.h / 2)
+      const pill = aplusFrame(add.graphics(), C.cream, -w / 2, -LABEL.h / 2, w, LABEL.h, LABEL.h / 2, 3)
         .setPosition(x, y)
         .setDepth(MARK_DEPTH)
       this.parts.push(pill, label)

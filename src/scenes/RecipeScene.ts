@@ -8,7 +8,7 @@ import type { SpaSim } from '../sim/spa'
 import { formatMoney } from '../strings/format'
 import { INGREDIENT_NAME, RECIPE_HINT_TEXT, t } from '../strings/vi'
 import { textStyle } from '../view/text'
-import { addButton, addCard, addToast } from '../view/ui'
+import { addButton, addCard, addToast, aplusFrame } from '../view/ui'
 
 export interface RecipeData {
   sim: SpaSim
@@ -126,12 +126,7 @@ export class RecipeScene extends Phaser.Scene {
     })
     let x = MID - (chips.reduce((sum, c) => sum + c.w, 0) + (chips.length - 1) * CHIP.gap) / 2
     for (const { id, label, w } of chips) {
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(id === this.recipe ? C.mustard : C.cream), 1)
-        .fillRoundedRect(-w / 2, -CHIP.h / 2, w, CHIP.h, CHIP.h / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-w / 2, -CHIP.h / 2, w, CHIP.h, CHIP.h / 2)
+      const bg = aplusFrame(this.add.graphics(), id === this.recipe ? C.mustard : C.cream, -w / 2, -CHIP.h / 2, w, CHIP.h, CHIP.h / 2)
       this.keep(this.tappable(this.add.container(x + w / 2, CHIP.y, [bg, label]), w, CHIP.h, () => this.pick(id)))
       x += w + CHIP.gap
     }
@@ -141,12 +136,7 @@ export class RecipeScene extends Phaser.Scene {
   private bowlView(solved: boolean): void {
     const radius = { tl: BOWL.top, tr: BOWL.top, bl: BOWL.bottom, br: BOWL.bottom }
     this.keep(
-      this.add
-        .graphics()
-        .fillStyle(hex(C.clayLight), 1)
-        .fillRoundedRect(BOWL.x, BOWL.y, BOWL.w, BOWL.h, radius)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(BOWL.x, BOWL.y, BOWL.w, BOWL.h, radius),
+      aplusFrame(this.add.graphics(), C.clayLight, BOWL.x, BOWL.y, BOWL.w, BOWL.h, radius),
     )
     const items = solved ? RECIPES[this.recipe].ingredients : this.bowl
     for (let i = 0; i < 3; i++) {
@@ -201,12 +191,7 @@ export class RecipeScene extends Phaser.Scene {
   /** The 8 ingredients; one already in the bowl, or any once the recipe is solved, is faded and does nothing. */
   private shelf(solved: boolean): void {
     INGREDIENTS.forEach((item, i) => {
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(-SHELF.w / 2, -SHELF.h / 2, SHELF.w, SHELF.h, SHELF.r)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-SHELF.w / 2, -SHELF.h / 2, SHELF.w, SHELF.h, SHELF.r)
+      const bg = aplusFrame(this.add.graphics(), C.cream, -SHELF.w / 2, -SHELF.h / 2, SHELF.w, SHELF.h, SHELF.r)
       const x = SHELF_LEFT + (i % 4) * (SHELF.w + SHELF.gap) + SHELF.w / 2
       const y = SHELF.top + Math.floor(i / 4) * (SHELF.h + SHELF.gap) + SHELF.h / 2
       const cell = this.keep(
@@ -229,7 +214,7 @@ export class RecipeScene extends Phaser.Scene {
       )
       const h = text.height + 2 * HINT.padY
       const radius = { tl: HINT.r, tr: HINT.r, br: HINT.r, bl: HINT.tail }
-      bg.fillStyle(hex(C.cream), 1).fillRoundedRect(HINT.x, y, HINT.w, h, radius).lineStyle(4, hex(C.ink)).strokeRoundedRect(HINT.x, y, HINT.w, h, radius)
+      aplusFrame(bg, C.cream, HINT.x, y, HINT.w, h, radius)
       y += h + HINT.gap
     }
     return y

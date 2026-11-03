@@ -18,7 +18,7 @@ import { questCount, questIcon, questTitle } from '../view/quests'
 import { judgeDayOf, partRows, starsLine, totalLine, yearRows } from '../view/rank'
 import { addPartRow, starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 import type { WardrobeData } from './WardrobeScene'
 
 export interface QuestsData {
@@ -234,12 +234,7 @@ export class QuestsScene extends Phaser.Scene {
     })
 
     this.keep(
-      this.add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(ROW_X, DETAIL_TOP, ROW_W, DETAIL_H, ROW_R)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(ROW_X, DETAIL_TOP, ROW_W, DETAIL_H, ROW_R),
+      aplusFrame(this.add.graphics(), C.cream, ROW_X, DETAIL_TOP, ROW_W, DETAIL_H, ROW_R),
     )
     const status = badgeStatus(this.picked, sim.badges, shop)
     this.keep(this.label(DETAIL_TEXT_X, DETAIL_NAME_Y, t(BADGE_TEXT[this.picked].name), 40))
@@ -283,7 +278,7 @@ export class QuestsScene extends Phaser.Scene {
       const cy = top + TABLE_ROW_H / 2
       if (row.me) {
         this.keep(
-          this.add.graphics().fillStyle(hex(C.tealPale), 1).fillRoundedRect(TABLE_X, top, TABLE_W, TABLE_ROW_H, TABLE_ROW_H / 2).lineStyle(3, hex(C.teal)).strokeRoundedRect(TABLE_X, top, TABLE_W, TABLE_ROW_H, TABLE_ROW_H / 2),
+          aplusFrame(this.add.graphics(), C.tealPale, TABLE_X, top, TABLE_W, TABLE_ROW_H, TABLE_ROW_H / 2, 3, C.teal),
         )
       }
       this.keep(this.label(PLACE_X, cy, String(i + 1), 32, '800', i === 0 ? C.mustardDark : C.soft).setOrigin(0.5))
@@ -306,12 +301,7 @@ export class QuestsScene extends Phaser.Scene {
     const fill = q.state === 'done' ? C.tealPale : monthly ? C.goldPale : C.cream
     const cy = top + h / 2
     row.add(
-      this.add
-        .graphics()
-        .fillStyle(hex(fill), 1)
-        .fillRoundedRect(ROW_X, top, ROW_W, h, ROW_R)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(ROW_X, top, ROW_W, h, ROW_R)
+      aplusFrame(this.add.graphics(), fill, ROW_X, top, ROW_W, h, ROW_R)
         .fillStyle(hex(q.festival ? FESTIVAL_COLORS[q.festival][0] : monthly ? C.mustard : C.sand), 1)
         .fillCircle(DISC_X, cy, DISC_R)
         .strokeCircle(DISC_X, cy, DISC_R),
@@ -330,12 +320,7 @@ export class QuestsScene extends Phaser.Scene {
       row.add(this.label(TEXT_X, lineY, t(key), 28, '600', C.soft))
     } else {
       const k = progressOf(q, sim.progress.total) / q.target
-      const bar = this.add
-        .graphics()
-        .fillStyle(hex(C.paper), 1)
-        .fillRoundedRect(TEXT_X, lineY - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(TEXT_X, lineY - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
+      const bar = aplusFrame(this.add.graphics(), C.paper, TEXT_X, lineY - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
       if (k > 0) bar.fillStyle(hex(C.teal), 1).fillRoundedRect(TEXT_X + 4, lineY - BAR_H / 2 + 4, Math.max(BAR_H - 8, (BAR_W - 8) * k), BAR_H - 8, (BAR_H - 8) / 2)
       row.add(bar)
       row.add(this.label(COUNT_X, lineY, questCount(q, sim.progress.total), 30))
@@ -355,12 +340,7 @@ export class QuestsScene extends Phaser.Scene {
 
   /** A teal "Xong" pill with a tick, where the swap button would be. */
   private stamp(y: number): Phaser.GameObjects.Container {
-    const g = this.add
-      .graphics()
-      .fillStyle(hex(C.teal), 1)
-      .fillRoundedRect(-SIDE_W / 2, -SIDE_H / 2, SIDE_W, SIDE_H, SIDE_H / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-SIDE_W / 2, -SIDE_H / 2, SIDE_W, SIDE_H, SIDE_H / 2)
+    const g = aplusFrame(this.add.graphics(), C.teal, -SIDE_W / 2, -SIDE_H / 2, SIDE_W, SIDE_H, SIDE_H / 2)
       .lineStyle(7, hex(C.paper))
       .beginPath()
       .moveTo(-58, 0)

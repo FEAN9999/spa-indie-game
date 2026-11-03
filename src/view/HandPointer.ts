@@ -2,6 +2,7 @@ import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { DEPTH as HUD_DEPTH } from './Hud'
 import { textStyle } from './text'
+import { aplusFrame } from './ui'
 
 /** Over the HUD, under its toasts and the morning banner. */
 const DEPTH = HUD_DEPTH + 40
@@ -10,7 +11,6 @@ const BOB_MS = 700
 /** Space between the hand at the top of its bob and the text box. */
 const GAP = 8
 const BOX = { left: 40, right: 1040, padX: 36, padY: 10, radius: 12, wrap: 900 }
-const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
 /** The guide's hand pointing at one spot, with a line of text beside it. Never takes a tap. */
 export class HandPointer {
@@ -47,12 +47,7 @@ export class HandPointer {
       const label = add.text(0, 0, text, { ...textStyle(38, '600'), align: 'center', wordWrap: { width: Math.min(BOX.wrap, this.boxRight - BOX.left - BOX.padX * 2) } }).setOrigin(0.5)
       const w = label.width + BOX.padX * 2
       const h = label.height + BOX.padY * 2
-      const bg = add
-        .graphics()
-        .fillStyle(hex(C.paper), 1)
-        .fillRoundedRect(-w / 2, -h / 2, w, h, BOX.radius)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-w / 2, -h / 2, w, h, BOX.radius)
+      const bg = aplusFrame(add.graphics(), C.paper, -w / 2, -h / 2, w, h, BOX.radius)
       this.box = add.container(0, 0, [bg, label]).setDepth(DEPTH)
       this.boxW = w
       this.boxH = h

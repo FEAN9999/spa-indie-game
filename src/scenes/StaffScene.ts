@@ -12,7 +12,7 @@ import { CharacterView } from '../view/CharacterView'
 import { placeName } from '../view/chain'
 import { courseName, moveOptions, specialtyOf, studyButton, traitLines, type StudyButton } from '../view/staffCard'
 import { textStyle } from '../view/text'
-import { addButton, addCard, addToast } from '../view/ui'
+import { addButton, addCard, addToast, aplusFrame } from '../view/ui'
 
 export interface StaffData {
   sim: SpaSim
@@ -289,12 +289,7 @@ export class StaffScene extends Phaser.Scene {
       return
     }
     const w = ACTION_X - PAIR_W / 2 - 20 - ROW_LEFT
-    const bg = this.add
-      .graphics()
-      .fillStyle(hex(C.mustard), 1)
-      .fillRoundedRect(-w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
+    const bg = aplusFrame(this.add.graphics(), C.mustard, -w / 2, -PAIR_H / 2, w, PAIR_H, PAIR_H / 2)
     const text = this.add.text(0, 0, t('moveTomorrow', { place: placeName(move.to) }), textStyle(32, '600')).setOrigin(0.5)
     this.keep(this.add.container(ROW_LEFT + w / 2, y, [bg, text]))
     this.keep(addButton(this, ACTION_X, y, PAIR_W, PAIR_H, t('moveStay'), 'plain', move.stay, PAIR_SIZE))
@@ -320,12 +315,7 @@ export class StaffScene extends Phaser.Scene {
   /** The study button: tonight's course with a book when one is booked, else a button that is faded when it does nothing. */
   private studyButtonView(state: StudyButton, y: number, onTap: () => void): void {
     if (state.kind === 'booked') {
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(-PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
+      const bg = aplusFrame(this.add.graphics(), C.cream, -PAIR_W / 2, -PAIR_H / 2, PAIR_W, PAIR_H, PAIR_H / 2)
       const book = this.add.image(BOOK_X, 0, 'icon-book').setScale(BOOK_SCALE)
       const text = this.add.text(BOOKED_TEXT_X, 0, t('studyTonight', { course: courseName(state.course) }), textStyle(BOOKED_SIZE, '600')).setOrigin(0, 0.5)
       this.keep(this.add.container(ACTION_X, y, [bg, book, text]))
@@ -351,12 +341,7 @@ export class StaffScene extends Phaser.Scene {
   private rarePill(x: number, y: number): number {
     const label = this.add.text(0, 0, t('rare'), textStyle(26, '800')).setOrigin(0.5)
     const w = label.width + 28
-    const pill = this.add
-      .graphics()
-      .fillStyle(hex(C.mustard), 1)
-      .fillRoundedRect(-w / 2, -21, w, 42, 21)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -21, w, 42, 21)
+    const pill = aplusFrame(this.add.graphics(), C.mustard, -w / 2, -21, w, 42, 21)
     this.keep(this.add.container(x + w / 2, y, [pill, label]))
     return w
   }
@@ -367,12 +352,7 @@ export class StaffScene extends Phaser.Scene {
     const top = this.add.text(0, TRAIT_TEXT_DY - 13, good, textStyle(TRAIT_SIZE, '800')).setOrigin(0.5)
     const bottom = this.add.text(0, TRAIT_TEXT_DY + 13, flaw, textStyle(TRAIT_SIZE, '600')).setOrigin(0.5)
     const w = Math.max(top.width, bottom.width) + 24
-    const pill = this.add
-      .graphics()
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(-w / 2, -TRAIT_TOP, w, TRAIT_H, 18)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -TRAIT_TOP, w, TRAIT_H, 18)
+    const pill = aplusFrame(this.add.graphics(), C.cream, -w / 2, -TRAIT_TOP, w, TRAIT_H, 18)
     this.keep(this.add.container(x + w / 2, y, [pill, top, bottom]))
   }
 

@@ -10,6 +10,7 @@ import { HandPointer } from '../view/HandPointer'
 import { addMiniGameCard, drawBars, revealStars, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
+import { aplusFrame } from '../view/ui'
 
 type Station = Exclude<ChePhase, 'done'>
 type Layer = (typeof CHE_LAYERS)[number]
@@ -194,7 +195,7 @@ export class CheScene extends Phaser.Scene {
       for (let i = 0; i < CUBE.n; i++) {
         const x = GLASS_L + ((i + 0.5) * (GLASS_R - GLASS_L)) / CUBE.n - CUBE.w / 2
         const y = top - CUBE.rise - (i % 2) * (CUBE.h / 3)
-        cubes.fillStyle(hex(C.glass), 1).fillRoundedRect(x, y, CUBE.w, CUBE.h, 10).lineStyle(3, hex(C.ink)).strokeRoundedRect(x, y, CUBE.w, CUBE.h, 10)
+        aplusFrame(cubes, C.glass, x, y, CUBE.w, CUBE.h, 10, 3)
         cubes.fillStyle(hex(C.cloud), 0.75).fillRoundedRect(x + 8, y + 6, CUBE.w * 0.4, 6, 3)
       }
       this.drizzle = keep(this.add.graphics())
@@ -206,12 +207,7 @@ export class CheScene extends Phaser.Scene {
       .fillRoundedRect(GLINT_RIGHT.x, CHE_GLASS.top + GLINT_RIGHT.inset, GLINT_RIGHT.w, CHE_GLASS.bottom - CHE_GLASS.top - GLINT_RIGHT.inset * 2, GLINT_RIGHT.w / 2)
 
     if (s === 'layer') {
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.teal), 1)
-        .fillRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
+      const bg = aplusFrame(this.add.graphics(), C.teal, -HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
       this.holdLabel = this.add.text(0, 0, '', textStyle(HOLD.size, '800', C.paper)).setOrigin(0.5)
       this.holdButton = keep(this.add.container(HOLD.x, HOLD.y, [bg, this.holdLabel]).setSize(HOLD.w, HOLD.h).setInteractive())
       this.buttons.push(this.holdButton)

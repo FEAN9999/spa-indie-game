@@ -12,7 +12,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from '../view/CharacterView'
 import { BOOST_NAME, boostButtonShown, boostGain, boostLabel, clampScroll, dragTo, inWindow, postTime, replyButtonShown, shortCount, stackPosts, type Hold } from '../view/phay'
 import { starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
-import { addButton, addToast, whenTapped } from '../view/ui'
+import { addButton, addToast, aplusFrame, whenTapped } from '../view/ui'
 
 export interface PhayData {
   feed: FeedBook
@@ -138,12 +138,7 @@ export class PhayScene extends Phaser.Scene {
 
   create() {
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add
-      .graphics()
-      .fillStyle(hex(C.deepBrown), 1)
-      .fillRoundedRect(FRAME.x, FRAME.y, FRAME.w, FRAME.h, FRAME.r)
-      .lineStyle(5, hex(C.ink))
-      .strokeRoundedRect(FRAME.x, FRAME.y, FRAME.w, FRAME.h, FRAME.r)
+    aplusFrame(this.add.graphics(), C.deepBrown, FRAME.x, FRAME.y, FRAME.w, FRAME.h, FRAME.r, 5)
       .fillStyle(hex(C.paper), 1)
       .fillRoundedRect(SCREEN.x, SCREEN.y, SCREEN.w, SCREEN.h, SCREEN.r)
       .lineStyle(4, hex(C.tileSeam))
@@ -167,12 +162,7 @@ export class PhayScene extends Phaser.Scene {
   /** The logo, "Phây" and the close button. */
   private head(): void {
     const { logoX, logoY, logo, y } = HEAD
-    this.add
-      .graphics()
-      .fillStyle(hex(C.teal), 1)
-      .fillRoundedRect(logoX, logoY, logo, logo, 22)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(logoX, logoY, logo, logo, 22)
+    aplusFrame(this.add.graphics(), C.teal, logoX, logoY, logo, logo, 22)
     this.add.image(logoX + logo / 2, logoY + logo / 2 + 2, 'icon-heart').setScale(0.8)
     this.add.text(HEAD.titleX, y, t('phayTitle'), textStyle(60, '800', C.teal)).setOrigin(0, 0.5)
     const cross = this.add
@@ -288,23 +278,14 @@ export class PhayScene extends Phaser.Scene {
     }
 
     const h = y - y0 + 6
-    card
-      ?.fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(x, y0, POST_W, h, 36)
-      .lineStyle(unanswered ? 6 : 4, hex(unanswered ? C.terracotta : C.ink))
-      .strokeRoundedRect(x, y0, POST_W, h, 36)
+    if (card) aplusFrame(card, C.cream, x, y0, POST_W, h, 36, unanswered ? 6 : 4, unanswered ? C.terracotta : C.ink)
     return y0 + h
   }
 
   /** The terracotta Trả lời pill centred on x, y; a tap opens the reply card. */
   private replyButton(p: Post, x: number, y: number): Phaser.GameObjects.Container {
     const { w, h } = REPLY_BUTTON
-    const bg = this.add
-      .graphics()
-      .fillStyle(hex(C.terracotta), 1)
-      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    const bg = aplusFrame(this.add.graphics(), C.terracotta, -w / 2, -h / 2, w, h, h / 2)
     const label = this.add.text(0, 0, t('phayReply'), textStyle(32, '800', C.paper)).setOrigin(0.5)
     return whenTapped(this.add.container(x, y, [bg, label]).setSize(w, h).setInteractive(), () => {
       sound.play('tap')
@@ -316,12 +297,7 @@ export class PhayScene extends Phaser.Scene {
   private boostLabel(label: string, x: number, y: number): Phaser.GameObjects.GameObject[] {
     const { w, h, size } = BOOST_LABEL
     const running = label === t('phayBoosting')
-    const g = this.add
-      .graphics()
-      .fillStyle(hex(running ? C.goldPale : C.sand), 1)
-      .fillRoundedRect(x, y, w, h, h / 2)
-      .lineStyle(3, hex(running ? C.mustardDark : C.soft))
-      .strokeRoundedRect(x, y, w, h, h / 2)
+    const g = aplusFrame(this.add.graphics(), running ? C.goldPale : C.sand, x, y, w, h, h / 2, 3, running ? C.mustardDark : C.soft)
     const text = fit(this.add.text(x + w / 2, y + h / 2, label, textStyle(size, '800', running ? C.mustardDark : C.soft)).setOrigin(0.5), w - 24)
     return [g, text]
   }
@@ -330,12 +306,7 @@ export class PhayScene extends Phaser.Scene {
   private boostButton(p: Post, x: number, y: number): Phaser.GameObjects.Container {
     const { w, h } = REPLY_BUTTON
     const done = boostedToday(this.params.feed, this.params.day)
-    const bg = this.add
-      .graphics()
-      .fillStyle(hex(done ? C.sand : C.teal), 1)
-      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
-      .lineStyle(4, hex(done ? C.soft : C.ink))
-      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    const bg = aplusFrame(this.add.graphics(), done ? C.sand : C.teal, -w / 2, -h / 2, w, h, h / 2, 4, done ? C.soft : C.ink)
     const label = this.add.text(0, 0, t('phayBoost'), textStyle(32, '800', done ? C.soft : C.paper)).setOrigin(0.5)
     return whenTapped(this.add.container(x, y, [bg, label]).setSize(w, h).setInteractive(), () => {
       sound.play('tap')
@@ -359,7 +330,7 @@ export class PhayScene extends Phaser.Scene {
     const L = CARD.later
     body.add(addButton(this, mid, y + L.h / 2, L.w, L.h, t('phayReplyLater'), 'plain', () => this.closeCard(), L.size))
     const cardH = y + L.h + CARD.bottom
-    bg.fillStyle(hex(C.paper), 1).fillRoundedRect(mid - CARD.w / 2, 0, CARD.w, cardH, CARD.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(mid - CARD.w / 2, 0, CARD.w, cardH, CARD.r)
+    aplusFrame(bg, C.paper, mid - CARD.w / 2, 0, CARD.w, cardH, CARD.r, 5)
     body.y = Math.round((GAME_H - cardH) / 2)
     this.card = card
     this.drag = null
@@ -419,12 +390,7 @@ export class PhayScene extends Phaser.Scene {
           .text(-R.replyW / 2 + R.replyPad, 0, this.params.replyLine(p.id, reply), { ...textStyle(32, '800'), wordWrap: { width: R.replyTextW } })
           .setOrigin(0, 0.5)
         const h = Math.max(R.replyMinH, line.height + R.replyPad)
-        const box = this.add
-          .graphics()
-          .fillStyle(hex(C.cream), 1)
-          .fillRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
-          .lineStyle(4, hex(C.ink))
-          .strokeRoundedRect(-R.replyW / 2, -h / 2, R.replyW, h, 32)
+        const box = aplusFrame(this.add.graphics(), C.cream, -R.replyW / 2, -h / 2, R.replyW, h, 32)
         body.add(whenTapped(this.add.container(mid, y + h / 2, [box, line]).setSize(R.replyW, h).setInteractive(), () => this.answer(p, reply)))
         y += h + R.replyGap
       }
@@ -452,12 +418,7 @@ export class PhayScene extends Phaser.Scene {
         const price = this.params.boostPrice(tier)
         const can = this.params.money() >= price
         const ink = can ? C.ink : C.soft
-        const bg = this.add
-          .graphics()
-          .fillStyle(hex(!can ? C.sand : tier === 'medium' ? C.goldPale : C.cream), 1)
-          .fillRoundedRect(-B.rowW / 2, -B.rowH / 2, B.rowW, B.rowH, B.rowR)
-          .lineStyle(4, hex(ink))
-          .strokeRoundedRect(-B.rowW / 2, -B.rowH / 2, B.rowW, B.rowH, B.rowR)
+        const bg = aplusFrame(this.add.graphics(), !can ? C.sand : tier === 'medium' ? C.goldPale : C.cream, -B.rowW / 2, -B.rowH / 2, B.rowW, B.rowH, B.rowR, 4, ink)
         const left = -B.rowW / 2 + B.rowPad
         const top = -B.rowH / 2
         const name = this.add.text(left, top + B.nameY, t(BOOST_NAME[tier]), textStyle(38, '800', ink)).setOrigin(0, 0.5)
@@ -557,12 +518,7 @@ export class PhayScene extends Phaser.Scene {
     const feet = top + PIC_H - 30
     const kind = p.pic!
     box.add(
-      this.add
-        .graphics()
-        .fillStyle(hex(PIC_BG[kind]), 1)
-        .fillRoundedRect(x, top, w, PIC_H, 28)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(x, top, w, PIC_H, 28),
+      aplusFrame(this.add.graphics(), PIC_BG[kind], x, top, w, PIC_H, 28),
     )
     const caption = (text: string) => box.add(fit(this.add.text(cx, top + PIC_H - 60, text, textStyle(36, '800', C.mustardDark)).setOrigin(0.5), w - 60))
     if (kind === 'idol') {
@@ -572,12 +528,7 @@ export class PhayScene extends Phaser.Scene {
       if (f) box.add(this.figure(customerColors(f.look, f.kind ?? 'office', f.regular, f.vip, false, f.idol), cx - 80, feet, PIC_FIGURE))
       box.add(this.figure(ownerColors(this.params.ownerLook, this.params.ownerOutfit), cx + 80, feet, PIC_FIGURE))
       box.add(
-        this.add
-          .graphics()
-          .fillStyle(hex(C.cream), 1)
-          .fillRoundedRect(cx - 170, top + 22, 340, 64, 16)
-          .lineStyle(4, hex(C.ink))
-          .strokeRoundedRect(cx - 170, top + 22, 340, 64, 16),
+        aplusFrame(this.add.graphics(), C.cream, cx - 170, top + 22, 340, 64, 16),
       )
       box.add(fit(this.add.text(cx, top + 54, this.params.shopName, textStyle(34)).setOrigin(0.5), 310))
     } else if (kind === 'video') {
@@ -591,13 +542,7 @@ export class PhayScene extends Phaser.Scene {
       // the grade plaque by the door, larger, with one big star for the new grade
       const g = this.add.graphics()
       const by = cy - 30
-      g.lineStyle(8, hex(C.woodDark))
-        .lineBetween(cx - 120, by - 96, cx - 92, by - 62)
-        .lineBetween(cx + 120, by - 96, cx + 92, by - 62)
-        .fillStyle(hex(C.woodLight), 1)
-        .fillRoundedRect(cx - 200, by - 66, 400, 132, 24)
-        .lineStyle(5, hex(C.ink))
-        .strokeRoundedRect(cx - 200, by - 66, 400, 132, 24)
+      aplusFrame(g.lineStyle(8,hex(C.woodDark)).lineBetween(cx-120,by-96,cx-92,by-62).lineBetween(cx+120,by-96,cx+92,by-62), C.woodLight, cx - 200, by - 66, 400, 132, 24, 5)
         .fillStyle(hex(C.woodDark), 0.35)
         .fillRoundedRect(cx - 182, by - 48, 364, 96, 16)
       const star = starPoints(cx, by + 4, 44, 0.43)
@@ -610,12 +555,7 @@ export class PhayScene extends Phaser.Scene {
       caption(t('yearTitle'))
     } else {
       box.add(
-        this.add
-          .graphics()
-          .fillStyle(hex(C.cream), 1)
-          .fillRoundedRect(cx - 230, top + 40, 460, PIC_H - 80, 10)
-          .lineStyle(8, hex(C.mustardDark))
-          .strokeRoundedRect(cx - 230, top + 40, 460, PIC_H - 80, 10),
+        aplusFrame(this.add.graphics(), C.cream, cx - 230, top + 40, 460, PIC_H - 80, 10, 8, C.mustardDark),
       )
       box.add(this.add.text(cx, top + 110, t('phayPicCert'), textStyle(46, '800', C.lanternDark)).setOrigin(0.5))
       box.add(this.add.text(cx, top + 170, t('phayPicCertLine'), textStyle(36, '600')).setOrigin(0.5))

@@ -8,7 +8,7 @@ import { REGULARS } from '../sim/regulars'
 import { BREED_NAME, t } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface LitterData {
   onPick: (breed: BreedId) => void
@@ -43,7 +43,7 @@ export class LitterScene extends Phaser.Scene {
       then()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add.graphics().fillStyle(hex(C.goldPale), 1).fillRoundedRect(110, 330, 860, 1420, 60).lineStyle(5, hex(C.ink)).strokeRoundedRect(110, 330, 860, 1420, 60)
+    aplusFrame(this.add.graphics(), C.goldPale, 110, 330, 860, 1420, 60, 5)
     const sau = REGULARS.sau
     this.figure = new CharacterView(this, customerColors(sau.look, sau.kind, 'sau'))
     this.figure.container.setPosition(MID, 800).setScale(2.6)
@@ -51,7 +51,7 @@ export class LitterScene extends Phaser.Scene {
     this.add.text(MID, 950, t('litterLine'), { ...textStyle(34, '600', C.soft), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0)
     FREE_BREEDS.forEach((breed, i) => {
       const x = MID + (i ? 210 : -210)
-      this.add.graphics().fillStyle(hex(C.cream), 1).fillRoundedRect(x - TILE_W / 2, TILE_TOP, TILE_W, TILE_H, 36).lineStyle(5, hex(C.ink)).strokeRoundedRect(x - TILE_W / 2, TILE_TOP, TILE_W, TILE_H, 36)
+      aplusFrame(this.add.graphics(), C.cream, x - TILE_W / 2, TILE_TOP, TILE_W, TILE_H, 36, 5)
       this.add.image(x, TILE_TOP + 230, petKey(breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y).setScale(1.7)
       this.add.text(x, TILE_TOP + 280, BREED_NAME[breed], textStyle(36, '800')).setOrigin(0.5)
       this.add

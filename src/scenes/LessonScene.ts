@@ -11,7 +11,7 @@ import { CharacterView } from '../view/CharacterView'
 import { lessonHowTo, lessonPassLine, lessonTitle } from '../view/lesson'
 import type { MiniGameData } from '../view/miniGame'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface LessonData {
   sim: SpaSim
@@ -65,7 +65,7 @@ export class LessonScene extends Phaser.Scene {
     const bottom = build(content) + BOTTOM_PAD
     const x = MID - w / 2
     const y = Math.round((GAME_H - bottom) / 2)
-    const bg = this.add.graphics().fillStyle(hex(fill), 1).fillRoundedRect(x, 0, w, bottom, 60).lineStyle(4, hex(C.ink)).strokeRoundedRect(x, 0, w, bottom, 60)
+    const bg = aplusFrame(this.add.graphics(), fill, x, 0, w, bottom, 60)
     content.addAt(bg, 0)
     content.setY(y)
     this.shown = [content]

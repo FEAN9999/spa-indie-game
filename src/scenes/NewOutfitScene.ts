@@ -8,7 +8,7 @@ import { t } from '../strings/vi'
 import { CharacterView } from '../view/CharacterView'
 import { OUTFIT_NAME, newOutfitHead, newOutfitMore } from '../view/outfits'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface NewOutfitData {
   sim: SpaSim
@@ -45,7 +45,7 @@ export class NewOutfitScene extends Phaser.Scene {
       then()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add.graphics().fillStyle(hex(C.goldPale), 1).fillRoundedRect(110, 380, 860, 1300, 60).lineStyle(5, hex(C.ink)).strokeRoundedRect(110, 380, 860, 1300, 60)
+    aplusFrame(this.add.graphics(), C.goldPale, 110, 380, 860, 1300, 60, 5)
     this.add.text(MID, 470, newOutfitHead(id), textStyle(34, '800', C.terracotta)).setOrigin(0.5)
     this.add.ellipse(MID, 1040, 380, 72, hex(C.gold), 0.35)
     this.figure = new CharacterView(this, ownerColors(sim.ownerLook, id))

@@ -11,7 +11,7 @@ import { HandPointer } from '../view/HandPointer'
 import { addMiniGameCard, drawBars, revealStars, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 type Station = Exclude<PhoPhase, 'done'>
 const STATIONS: Station[] = ['cut', 'boil', 'top']
@@ -166,12 +166,7 @@ export class PhoScene extends Phaser.Scene {
       const band = keep(this.add.graphics()).fillStyle(hex(C.mustard), 1)
       band.fillRect(PHO_DIAL.x - PHO_DIAL.inner, this.dialY(hi), PHO_DIAL.inner * 2, this.dialY(lo) - this.dialY(hi))
       this.needle = keep(this.add.graphics())
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.teal), 1)
-        .fillRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
+      const bg = aplusFrame(this.add.graphics(), C.teal, -HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
       const label = this.add.text(0, 0, t('phoHold'), textStyle(56, '800', C.paper)).setOrigin(0.5)
       this.holdButton = keep(this.add.container(HOLD.x, HOLD.y, [bg, label]).setSize(HOLD.w, HOLD.h).setInteractive())
       this.buttons.push(this.holdButton)

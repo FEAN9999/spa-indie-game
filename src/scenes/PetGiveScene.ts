@@ -5,7 +5,7 @@ import { GAME_H, GAME_W } from '../config'
 import type { Pet } from '../sim/pets'
 import { t } from '../strings/vi'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface PetGiveData {
   pet: Pet
@@ -35,7 +35,7 @@ export class PetGiveScene extends Phaser.Scene {
       then()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add.graphics().fillStyle(hex(C.goldPale), 1).fillRoundedRect(110, 400, 860, 860, 60).lineStyle(5, hex(C.ink)).strokeRoundedRect(110, 400, 860, 860, 60)
+    aplusFrame(this.add.graphics(), C.goldPale, 110, 400, 860, 860, 60, 5)
     this.add.text(MID, 500, t('petGiveHead', { name: pet.name }), textStyle(50)).setOrigin(0.5)
     this.add.image(MID, 830, petKey(pet.breed, 'sit')).setOrigin(PET_ORIGIN.x, PET_ORIGIN.y).setScale(2)
     this.add.text(MID, 880, t('petGiveLine', { name: pet.name }), { ...textStyle(34, '600', C.soft), align: 'center', wordWrap: { width: 720 } }).setOrigin(0.5, 0)

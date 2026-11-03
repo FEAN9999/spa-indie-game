@@ -7,7 +7,7 @@ import { VIP_KIND, VIPS } from '../sim/vips'
 import type { ChoiceFigure, ChoiceText } from '../view/chain'
 import { CharacterView } from '../view/CharacterView'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface ChoiceData {
   card: ChoiceText
@@ -64,7 +64,7 @@ export class ChoiceScene extends Phaser.Scene {
     const buttonsTop = linesY + lines.height + GAP
     const h = buttonsTop + (card.buttons.length - 1) * BUTTON.step + BUTTON.h + GAP
     const top = Math.round((GAME_H - h) / 2)
-    bg.fillStyle(hex(C.goldPale), 1).fillRoundedRect(CARD.x, top, CARD.w, h, CARD.r).lineStyle(5, hex(C.ink)).strokeRoundedRect(CARD.x, top, CARD.w, h, CARD.r)
+    aplusFrame(bg, C.goldPale, CARD.x, top, CARD.w, h, CARD.r, 5)
     this.add.text(MID, top + KICKER_Y, card.kicker, textStyle(34, '800', C.terracotta)).setOrigin(0.5)
     const title = this.add.text(MID, top + TITLE_Y, card.title, textStyle(56)).setOrigin(0.5)
     title.setScale(Math.min(1, TITLE_W / title.width))

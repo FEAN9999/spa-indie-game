@@ -11,7 +11,7 @@ import { HandPointer } from '../view/HandPointer'
 import { addMiniGameCard, drawBars, revealStars, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 type Station = Exclude<BunChaPhase, 'done'>
 const STATIONS: Station[] = ['grill', 'sides', 'pour']
@@ -205,12 +205,7 @@ export class BunChaScene extends Phaser.Scene {
       const band = keep(this.add.graphics()).fillStyle(hex(C.mustard), SAUCE.bandAlpha)
       band.fillPoints(this.slab(bowlY(lo), bowlY(hi)), true)
       band.lineStyle(SAUCE.ink, hex(C.ink), 0.6).strokePoints(this.slab(bowlY(lo), bowlY(hi)), true)
-      const bg = this.add
-        .graphics()
-        .fillStyle(hex(C.teal), 1)
-        .fillRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
-        .lineStyle(4, hex(C.ink))
-        .strokeRoundedRect(-HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
+      const bg = aplusFrame(this.add.graphics(), C.teal, -HOLD.w / 2, -HOLD.h / 2, HOLD.w, HOLD.h, HOLD.h / 2)
       const label = this.add.text(0, 0, t('bcHold'), textStyle(56, '800', C.paper)).setOrigin(0.5)
       this.holdButton = keep(this.add.container(HOLD.x, HOLD.y, [bg, label]).setSize(HOLD.w, HOLD.h).setInteractive())
       this.buttons.push(this.holdButton)

@@ -1,6 +1,7 @@
 import * as Phaser from 'phaser'
 import { C } from '../art/palette'
 import { textStyle } from './text'
+import { aplusFrame } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
@@ -40,12 +41,7 @@ export function addPartRow(
   const disc = scene.add.graphics().fillStyle(hex(C.sand), 1).fillCircle(DISC_X, cy, DISC_R).lineStyle(4, hex(C.ink)).strokeCircle(DISC_X, cy, DISC_R)
   const icon = scene.add.image(DISC_X, cy, row.icon)
   icon.setScale(ICON_W / Math.max(icon.width, icon.height))
-  const bar = scene.add
-    .graphics()
-    .fillStyle(hex(C.paper), 1)
-    .fillRoundedRect(BAR_X, cy - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
-    .lineStyle(4, hex(C.ink))
-    .strokeRoundedRect(BAR_X, cy - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
+  const bar = aplusFrame(scene.add.graphics(), C.paper, BAR_X, cy - BAR_H / 2, BAR_W, BAR_H, BAR_H / 2)
   const fillG = scene.add.graphics()
   const pts = label(PTS_X, cy, `${row.pts}/20`, 32, '800').setOrigin(1, 0.5)
   const objects = [disc, icon, fit(label(TEXT_X, top + 8, row.name, 30, '800')), fit(label(TEXT_X, top + 48, row.value, 26, '600', C.soft)), bar, fillG, pts]

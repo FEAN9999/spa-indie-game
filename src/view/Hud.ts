@@ -15,7 +15,7 @@ import { textStyle } from './text'
 import { todayShown } from './today'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { lockedText } from './starter'
-import { addToast, whenTapped } from './ui'
+import { addToast, aplusFrame, whenTapped } from './ui'
 import { clockStar } from './vip'
 
 export const DEPTH = 10000
@@ -126,13 +126,7 @@ export class Hud {
     const add = scene.add
 
     // top bar on two rows: money, star and rating, then the day, month and time; it ends above the room (MAP_Y 210)
-    add
-      .graphics()
-      .setDepth(DEPTH)
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(24, 30, GAME_W - 48, 170, 52)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(24, 30, GAME_W - 48, 170, 52)
+    aplusFrame(add.graphics().setDepth(DEPTH), C.paper, 24, 30, GAME_W - 48, 170, 52)
     add.zone(24, 30, GAME_W - 48, 170).setOrigin(0).setInteractive().setDepth(DEPTH)
     add.image(95, 84, 'coin').setScale(1.25).setDepth(DEPTH)
     // star and rating x are set each frame by layoutTopBar
@@ -179,13 +173,7 @@ export class Hud {
     })
 
     // bottom bar
-    add
-      .graphics()
-      .setDepth(DEPTH)
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(0, 1940, GAME_W, 260, 48)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(0, 1940, GAME_W, 260, 48)
+    aplusFrame(add.graphics().setDepth(DEPTH), C.paper, 0, 1940, GAME_W, 260, 48)
     add.zone(0, 1940, GAME_W, 220).setOrigin(0).setInteractive().setDepth(DEPTH)
     this.buildNav()
   }
@@ -307,12 +295,7 @@ export class Hud {
     const label = add.text(0, 0, t('ribbonAt', { shop: this.sim.shopName, place: placeName(place) }), textStyle(RIBBON.font, '800', C.cream)).setOrigin(0.5)
     if (label.width > RIBBON.textW) label.setScale(RIBBON.textW / label.width)
     const w = label.displayWidth + RIBBON.pad
-    const bg = add
-      .graphics()
-      .fillStyle(hex(C.teal), 1)
-      .fillRoundedRect(-w / 2, 0, w, RIBBON.h, RIBBON.h / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, 0, w, RIBBON.h, RIBBON.h / 2)
+    const bg = aplusFrame(add.graphics(), C.teal, -w / 2, 0, w, RIBBON.h, RIBBON.h / 2)
     const pin = add.image(-w / 2 + 40, RIBBON.h / 2, 'icon-chain').setScale(0.7)
     label.setPosition(RIBBON.textX, RIBBON.h / 2)
     this.ribbon = add.container(GAME_W / 2, RIBBON.y, [bg, pin, label]).setDepth(DEPTH)
@@ -330,7 +313,7 @@ export class Hud {
     const label = add.text(0, h / 2, t(side === 'spa' ? 'shopLabelSpa' : 'shopLabelRestaurant'), textStyle(font, '800')).setOrigin(1, 0.5)
     const w = label.width + 2 * pad
     label.setX(-pad)
-    const bg = add.graphics().fillStyle(hex(C.cream), 1).fillRoundedRect(-w, 0, w, h, h / 2).lineStyle(4, hex(C.ink)).strokeRoundedRect(-w, 0, w, h, h / 2)
+    const bg = aplusFrame(add.graphics(), C.cream, -w, 0, w, h, h / 2)
     this.shopLabel = add.container(SHOP_LABEL.right, SHOP_LABEL.top, [bg, label]).setDepth(DEPTH)
   }
 
@@ -347,12 +330,7 @@ export class Hud {
     const w = label.width + 2 * pad
     const barW = w - 2 * pad
     const barY = h / 2 - pad / 2 - barH
-    const bg = add
-      .graphics()
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    const bg = aplusFrame(add.graphics(), C.cream, -w / 2, -h / 2, w, h, h / 2)
       .fillStyle(hex(C.tileSeam), 1)
       .fillRoundedRect(-barW / 2, barY, barW, barH, barH / 2)
     if (score > 0) bg.fillStyle(hex(C.teal), 1).fillRoundedRect(-barW / 2, barY, Math.max(barH, (barW * score) / max), barH, barH / 2)
@@ -373,12 +351,7 @@ export class Hud {
     const add = this.scene.add
     const label = add.text(0, 0, t('newBadge'), textStyle(26, '800', C.paper)).setOrigin(0.5)
     const w = label.width + 28
-    const pill = add
-      .graphics()
-      .fillStyle(hex(C.lantern), 1)
-      .fillRoundedRect(-w / 2, -21, w, 42, 21)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -21, w, 42, 21)
+    const pill = aplusFrame(add.graphics(), C.lantern, -w / 2, -21, w, 42, 21)
     return add.container(-44, -44, [pill, label])
   }
 
@@ -387,12 +360,7 @@ export class Hud {
     const label = this.scene.add.text(0, 0, text, textStyle(46)).setOrigin(0.5)
     if (label.width > BANNER_TEXT_W) label.setScale(BANNER_TEXT_W / label.width)
     const w = label.displayWidth + 80
-    const bg = this.scene.add
-      .graphics()
-      .fillStyle(hex(C.paper), 1)
-      .fillRoundedRect(-w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
+    const bg = aplusFrame(this.scene.add.graphics(), C.paper, -w / 2, -BANNER_H / 2, w, BANNER_H, BANNER_H / 2)
     const box = this.scene.add.container(GAME_W / 2, BANNER_Y - 40, [bg, label]).setDepth(DEPTH + 60).setAlpha(0)
     this.lastBannerAt = this.scene.time.now
     this.scene.tweens.chain({
@@ -419,12 +387,7 @@ export class Hud {
         const left = -w / 2
         const discX = left + TODAY.pad + TODAY.discR
         text.setX(discX + TODAY.discR + TODAY.gap)
-        const bg = add
-          .graphics()
-          .fillStyle(hex(C.cream), 1)
-          .fillRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
-          .lineStyle(4, hex(C.ink))
-          .strokeRoundedRect(left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
+        const bg = aplusFrame(add.graphics(), C.cream, left, -TODAY.h / 2, w, TODAY.h, TODAY.h / 2)
           .fillStyle(hex(line.icon.disc), 1)
           .fillCircle(discX, 0, TODAY.discR)
           .lineStyle(3, hex(C.ink))

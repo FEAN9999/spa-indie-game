@@ -7,7 +7,7 @@ import type { SimEvent } from '../sim/types'
 import { t } from '../strings/vi'
 import { EVENT_ICON, inspectResult, inspectRows } from '../view/events'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 
 export interface InspectData {
   result: Extract<SimEvent, { type: 'inspected' }>
@@ -50,12 +50,7 @@ export class InspectScene extends Phaser.Scene {
     inspectRows(result).forEach((row, i) => {
       const top = ROW_Y + ROW_STEP * i
       const mid = top + ROW_H / 2
-      this.add
-        .graphics()
-        .fillStyle(hex(C.cream), 1)
-        .fillRoundedRect(ROW_X, top, ROW_W, ROW_H, 24)
-        .lineStyle(3, hex(C.tileSeam))
-        .strokeRoundedRect(ROW_X, top, ROW_W, ROW_H, 24)
+      aplusFrame(this.add.graphics(), C.cream, ROW_X, top, ROW_W, ROW_H, 24, 3, C.tileSeam)
       fit(this.add.text(ROW_X + 30, mid - 22, row.name, textStyle(38)).setOrigin(0, 0.5), 620)
       fit(this.add.text(ROW_X + 30, mid + 24, row.detail, textStyle(30, '600', C.soft)).setOrigin(0, 0.5), 620)
       // a teal tick or a terracotta cross, one row after the other

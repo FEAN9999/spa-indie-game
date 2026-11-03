@@ -1,5 +1,9 @@
+import { inheritStroke, liftPiece } from './lift'
 import { C, SKIN } from './palette'
 import { svgDoc } from './svg'
+
+/** Every picture here goes through the A+ pass: each inked shape gets its hard shade, the top big one its shine. */
+const aplusDoc = (viewBox: [number, number, number, number], px: number, body: string) => svgDoc(viewBox, px, liftPiece(inheritStroke(body), px))
 
 const STAR_PATH = 'M50,6 L62,36 L94,38 L69,58 L78,90 L50,72 L22,90 L31,58 L6,38 L38,36Z'
 const HEART_PATH = 'M28,47 C14,38 5,29 5,19 C5,11 11,6 17.5,6 C22,6 26,9 28,13 C30,9 34,6 38.5,6 C45,6 51,11 51,19 C51,29 42,38 28,47Z'
@@ -9,7 +13,7 @@ const ICON = `stroke="${C.ink}" stroke-width="2.6"`
 const EVENT = `stroke="${C.ink}" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"`
 
 const bubble = (inner: string) =>
-  svgDoc(
+  aplusDoc(
     [0, 0, 70, 64],
     1,
     `<path d="M8,4 H62 Q68,4 68,10 V40 Q68,46 62,46 H42 L35,58 L28,46 H8 Q2,46 2,40 V10 Q2,4 8,4Z" fill="${C.cream}" ${OUTLINE}/>${inner}`,
@@ -40,19 +44,19 @@ const PIN_ICONS = {
 }
 
 /** A round 56 px service badge on its own color. */
-const badge = (fill: string, inner: string) => svgDoc([0, 0, 56, 56], 1, `<circle cx="28" cy="28" r="25" fill="${fill}" ${OUTLINE}/>${inner}`)
+const badge = (fill: string, inner: string) => aplusDoc([0, 0, 56, 56], 1, `<circle cx="28" cy="28" r="25" fill="${fill}" ${OUTLINE}/>${inner}`)
 
 export function fxTextures(): Record<string, string> {
   return {
     // a coin with a square hole, like the old xu
-    coin: svgDoc(
+    coin: aplusDoc(
       [0, 0, 48, 48],
       1,
       `<circle cx="24" cy="24" r="20" fill="${C.mustard}" ${OUTLINE}/>` +
         `<circle cx="24" cy="24" r="14.5" fill="none" stroke="${C.mustardDark}" stroke-width="2.5"/>` +
         `<rect x="18.5" y="18.5" width="11" height="11" fill="${C.paper}" ${INNER}/>`,
     ),
-    shadow: svgDoc([0, 0, 60, 20], 1, `<ellipse cx="30" cy="10" rx="28" ry="8" fill="${C.ink}" opacity="0.18"/>`),
+    shadow: aplusDoc([0, 0, 60, 20], 1, `<ellipse cx="30" cy="10" rx="28" ry="8" fill="${C.ink}" opacity="0.18"/>`),
     'bubble-happy': bubble(
       `<path d="M35,38 C22,29 20,22 24,17 C28,13 33,15 35,19 C37,15 42,13 46,17 C50,22 48,29 35,38Z" fill="${C.lotusDark}" ${INNER}/>`,
     ),
@@ -66,7 +70,7 @@ export function fxTextures(): Record<string, string> {
         `<path d="M29,33 Q35,28 41,33" stroke="${C.cream}" stroke-width="2.2" fill="none" stroke-linecap="round"/>`,
     ),
     // a cup of tea on a saucer with two curls of steam, shown above a resting staff member
-    'tea-cup': svgDoc(
+    'tea-cup': aplusDoc(
       [0, 0, 56, 56],
       1,
       `<path d="M19,14 Q15,8 19,4 M31,14 Q27,8 31,4" fill="none" stroke="${C.ink}" stroke-width="3" stroke-linecap="round"/>` +
@@ -76,7 +80,7 @@ export function fxTextures(): Record<string, string> {
         `<path d="M8.5,26 H41.5 V31 H8.5Z" fill="${C.teal}" ${INNER}/>`,
     ),
     // a round wall clock, shown above a technician who walks in late
-    'icon-clock': svgDoc(
+    'icon-clock': aplusDoc(
       [0, 0, 56, 56],
       1,
       `<circle cx="28" cy="30" r="21" fill="${C.cream}" ${OUTLINE}/>` +
@@ -85,77 +89,77 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="28" cy="30" r="2.5" fill="${C.ink}"/>`,
     ),
     // a blue sweat drop, for a sloppy service
-    'icon-sweat': svgDoc(
+    'icon-sweat': aplusDoc(
       [0, 0, 56, 56],
       1,
       `<path d="M28,5 Q44,26 44,36 A16,16 0 0 1 12,36 Q12,26 28,5Z" fill="${C.water}" ${OUTLINE}/>` +
         `<path d="M20,37 Q20,31 24,27" fill="none" stroke="${C.cream}" stroke-width="3.5" stroke-linecap="round"/>`,
     ),
     // a four-point sparkle, drawn white so it can be tinted
-    spark: svgDoc(
+    spark: aplusDoc(
       [0, 0, 24, 24],
       1,
       `<path d="M12,1.5 Q13.5,10.5 22.5,12 Q13.5,13.5 12,22.5 Q10.5,13.5 1.5,12 Q10.5,10.5 12,1.5Z" fill="#ffffff" stroke="${C.ink}" stroke-width="1.5" stroke-linejoin="round"/>`,
     ),
-    ripple: svgDoc([0, 0, 80, 80], 1, `<circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff" stroke-width="6"/>`),
-    star: svgDoc([0, 0, 100, 96], 0.9, `<path d="${STAR_PATH}" fill="${C.mustard}" stroke="${C.ink}" stroke-width="6" stroke-linejoin="round"/>`),
-    'star-empty': svgDoc(
+    ripple: aplusDoc([0, 0, 80, 80], 1, `<circle cx="40" cy="40" r="34" fill="none" stroke="#ffffff" stroke-width="6"/>`),
+    star: aplusDoc([0, 0, 100, 96], 0.9, `<path d="${STAR_PATH}" fill="${C.mustard}" stroke="${C.ink}" stroke-width="6" stroke-linejoin="round"/>`),
+    'star-empty': aplusDoc(
       [0, 0, 100, 96],
       0.9,
       `<path d="${STAR_PATH}" fill="${C.tileSeam}" stroke="${C.ink}" stroke-opacity="0.35" stroke-width="6" stroke-linejoin="round"/>`,
     ),
     // bottom bar icons, from the board
-    'icon-build': svgDoc(
+    'icon-build': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g transform="rotate(-40 32 32)" ${ICON}><rect x="28.5" y="22" width="7" height="36" rx="3.5" fill="${C.wood}"/><rect x="16" y="9" width="32" height="15" rx="5" fill="${C.terracotta}"/></g>`,
     ),
-    'icon-staff': svgDoc(
+    'icon-staff': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><circle cx="43" cy="22" r="7" fill="${C.mustard}"/><rect x="33" y="31" width="20" height="21" rx="9" fill="${C.mustard}"/>` +
         `<circle cx="23" cy="21" r="8" fill="${C.teal}"/><rect x="12" y="31" width="23" height="23" rx="10" fill="${C.teal}"/></g>`,
     ),
     // the events' pictures, on their coloured discs: Mi Mi's phone with a video, the inspector's clipboard with a tick, the hot days' sparkle
-    'event-phone': svgDoc(
+    'event-phone': aplusDoc(
       [-32, -32, 64, 64],
       1,
       `<g ${EVENT}><rect x="-13" y="-23" width="26" height="46" rx="5" fill="${C.cream}"/><path d="M-5,-8 L7,0 L-5,8Z" fill="${C.lotus}"/></g>`,
     ),
-    'event-clip': svgDoc(
+    'event-clip': aplusDoc(
       [-32, -32, 64, 64],
       1,
       `<g ${EVENT}><rect x="-17" y="-17" width="34" height="40" rx="4" fill="${C.cream}"/><rect x="-8" y="-23" width="16" height="10" rx="2" fill="${C.woodLight}"/>` +
         `<path d="M-9,2 l6,6 l12,-12" fill="none" stroke="${C.teal}" stroke-width="5"/></g>`,
     ),
-    'event-spark': svgDoc([-32, -32, 64, 64], 1, `<path d="M0,-22 Q3,-3 22,0 Q3,3 0,22 Q-3,3 -22,0 Q-3,-3 0,-22Z" fill="${C.cream}" ${EVENT}/>`),
+    'event-spark': aplusDoc([-32, -32, 64, 64], 1, `<path d="M0,-22 Q3,-3 22,0 Q3,3 0,22 Q-3,3 -22,0 Q-3,-3 0,-22Z" fill="${C.cream}" ${EVENT}/>`),
     // the rival's shop with its awning and door, and the power cut's bolt
-    'event-shop': svgDoc(
+    'event-shop': aplusDoc(
       [-32, -32, 64, 64],
       1,
       `<g ${EVENT}><path d="M-19,-6 V22 H19 V-6Z" fill="${C.cream}"/><path d="M-23,-6 L-17,-21 H17 L23,-6Z" fill="${C.terracotta}"/><path d="M-6,22 V8 H6 V22Z" fill="${C.woodLight}"/></g>`,
     ),
-    'event-bolt': svgDoc([-32, -32, 64, 64], 1, `<path d="M5,-24 L-13,3 H1 L-4,24 L14,-4 H0Z" fill="${C.cream}" ${EVENT}/>`),
+    'event-bolt': aplusDoc([-32, -32, 64, 64], 1, `<path d="M5,-24 L-13,3 H1 L-4,24 L14,-4 H0Z" fill="${C.cream}" ${EVENT}/>`),
     // the power cut: a candle, the warm glow round it, and the off mark over an idle machine
-    'fx-candle': svgDoc(
+    'fx-candle': aplusDoc(
       [-10, -31, 20, 54],
       1,
       `<rect x="-7" y="-6" width="14" height="26" rx="3" fill="${C.cream}" stroke="${C.ink}" stroke-width="3"/><path d="M0,-8 q-6,-10 0,-20 q6,10 0,20" fill="${C.mustard}"/>`,
     ),
-    'fx-glow': svgDoc(
+    'fx-glow': aplusDoc(
       [-110, -110, 220, 220],
       1,
       `<defs><radialGradient id="glow"><stop offset="0" stop-color="${C.glow}" stop-opacity="0.75"/><stop offset="1" stop-color="${C.glow}" stop-opacity="0"/></radialGradient></defs><circle r="110" fill="url(#glow)"/>`,
     ),
     // a lit door's light on the ground before it: widening and fading as it goes, soft at the sides; its origin is the doorway's middle
-    'fx-doorLight': svgDoc(
+    'fx-doorLight': aplusDoc(
       [-130, -10, 260, 170],
       1,
       `<defs><linearGradient id="spill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.glow}" stop-opacity="0.6"/><stop offset="1" stop-color="${C.glow}" stop-opacity="0"/></linearGradient>` +
         `<filter id="soft" x="-0.2" y="-0.2" width="1.4" height="1.4"><feGaussianBlur stdDeviation="7"/></filter></defs>` +
         `<path d="M-42,0 H42 L105,145 H-105Z" fill="url(#spill)" filter="url(#soft)"/>`,
     ),
-    'power-off': svgDoc(
+    'power-off': aplusDoc(
       [-38, -38, 76, 76],
       1,
       `<circle r="34" fill="${C.cream}" stroke="${C.ink}" stroke-width="4"/>` +
@@ -163,14 +167,14 @@ export function fxTextures(): Record<string, string> {
         `<path d="M-22,-22 L22,22" stroke="${C.terracotta}" stroke-width="7" stroke-linecap="round"/>`,
     ),
     // one customer, for the "serve" quests
-    'quest-guest': svgDoc([0, 0, 64, 64], 1, `<g ${ICON}><circle cx="32" cy="21" r="10" fill="${C.lotus}"/><rect x="17" y="34" width="30" height="22" rx="11" fill="${C.lotus}"/></g>`),
-    'icon-services': svgDoc(
+    'quest-guest': aplusDoc([0, 0, 64, 64], 1, `<g ${ICON}><circle cx="32" cy="21" r="10" fill="${C.lotus}"/><rect x="17" y="34" width="30" height="22" rx="11" fill="${C.lotus}"/></g>`),
+    'icon-services': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><ellipse cx="21" cy="36" rx="7" ry="15" fill="${C.lotus}" transform="rotate(-38 21 36)"/><ellipse cx="43" cy="36" rx="7" ry="15" fill="${C.lotus}" transform="rotate(38 43 36)"/>` +
         `<ellipse cx="32" cy="31" rx="8" ry="18" fill="${C.lotusDark}"/><rect x="14" y="49" width="36" height="5" rx="2.5" fill="${C.teal}"/></g>`,
     ),
-    'icon-quests': svgDoc(
+    'icon-quests': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><rect x="13" y="10" width="38" height="47" rx="6" fill="${C.terracotta}"/><rect x="18" y="16" width="28" height="36" rx="3" fill="${C.cream}"/>` +
@@ -178,7 +182,7 @@ export function fxTextures(): Record<string, string> {
         `<path d="M23,27 H41 M23,35 H41 M23,43 H34" stroke="${C.terracotta}" stroke-width="3" stroke-linecap="round"/></g>`,
     ),
     // the chain: a map pin on the ground
-    'icon-chain': svgDoc(
+    'icon-chain': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><ellipse cx="32" cy="57" rx="12" ry="4" fill="${C.sand}"/>` +
@@ -188,11 +192,11 @@ export function fxTextures(): Record<string, string> {
     ...Object.fromEntries(
       Object.entries(PIN_ICONS).map(([place, d]) => [
         `pin-${place}`,
-        svgDoc([-32, -32, 64, 64], 0.8, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round"/>`),
+        aplusDoc([-32, -32, 64, 64], 0.8, `<path d="${d}" fill="none" stroke="${C.ink}" stroke-width="5.6" stroke-linecap="round" stroke-linejoin="round"/>`),
       ]),
     ),
     // the owner's scooter on the closing card, from the sketch: standing on the origin, facing right
-    'fx-scooter': svgDoc(
+    'fx-scooter': aplusDoc(
       SCOOTER_BOX,
       1,
       `<path d="M-112,-34 Q-116,-100 -44,-102 L4,-102 L4,-34Z" fill="${C.teal}" stroke="${C.ink}" stroke-width="5" stroke-linejoin="round"/>` +
@@ -204,20 +208,20 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="-78" cy="-24" r="9" fill="${C.silver}"/><circle cx="68" cy="-24" r="9" fill="${C.silver}"/>`,
     ),
     // the starter goals' flag: a pole with a red pennant
-    'icon-flag': svgDoc(
+    'icon-flag': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><rect x="16" y="8" width="6" height="50" rx="3" fill="${C.wood}"/><path d="M22,10 L52,20 L22,31 Z" fill="${C.lantern}"/></g>`,
     ),
     // Safari's share button, for the install steps: an open box with an arrow out of the top
-    'icon-share': svgDoc(
+    'icon-share': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g fill="none" stroke="${C.ink}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">` +
         `<path d="M24,26 H19 Q15,26 15,30 V52 Q15,56 19,56 H45 Q49,56 49,52 V30 Q49,26 45,26 H40"/><path d="M32,40 V7 M23,16 L32,7 L41,16"/></g>`,
     ),
     // the guide's hand: points down with the index finger, fingertip at the bottom centre
-    hand: svgDoc(
+    hand: aplusDoc(
       [0, 0, 100, 130],
       1,
       `<ellipse cx="70" cy="56" rx="8.5" ry="17" transform="rotate(14 70 56)" fill="${C.cream}" ${OUTLINE}/>` +
@@ -433,13 +437,13 @@ export function fxTextures(): Record<string, string> {
         `<path d="M43,30 Q47,36 43,40 Q39,36 43,30Z" fill="${C.leafLight}" ${INNER}/>`,
     ),
     // two curls of steam, blue-grey, drawn over a steaming customer
-    'fx-steam': svgDoc(
+    'fx-steam': aplusDoc(
       [0, 0, 56, 64],
       1,
       `<g stroke="${C.steamBlue}" stroke-width="6" fill="none" stroke-linecap="round"><path d="M18,60 q10,-12 0,-24 q-10,-12 0,-24"/><path d="M38,56 q10,-12 0,-24 q-10,-12 0,-24"/></g>`,
     ),
     // a row of three hot stones, laid across a face-down customer's back
-    'fx-stones': svgDoc(
+    'fx-stones': aplusDoc(
       [0, 0, 64, 28],
       1,
       hotStones(
@@ -451,22 +455,22 @@ export function fxTextures(): Record<string, string> {
         2.4,
       ),
     ),
-    'icon-dice': svgDoc(
+    'icon-dice': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<rect x="7" y="7" width="50" height="50" rx="12" fill="${C.cream}" ${ICON}/>` +
         `<g fill="${C.terracotta}"><circle cx="21" cy="21" r="4.5"/><circle cx="43" cy="21" r="4.5"/><circle cx="32" cy="32" r="4.5"/><circle cx="21" cy="43" r="4.5"/><circle cx="43" cy="43" r="4.5"/></g>`,
     ),
     // a regular's hearts, earned and not yet
-    'heart-full': svgDoc(
+    'heart-full': aplusDoc(
       [0, 0, 56, 52],
       1,
       `<path d="${HEART_PATH}" fill="${C.lantern}" ${OUTLINE}/>` +
         `<path d="M12,20 Q12,13.5 18,12.5" fill="none" stroke="${C.cream}" stroke-opacity="0.7" stroke-width="3.5" stroke-linecap="round"/>`,
     ),
-    'heart-empty': svgDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.cream}" ${OUTLINE}/>`),
+    'heart-empty': aplusDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.cream}" ${OUTLINE}/>`),
     // a regular's member card: teal with a gold stripe and a line for the name
-    'icon-card': svgDoc(
+    'icon-card': aplusDoc(
       [0, 0, 56, 40],
       1,
       `<rect x="3" y="3" width="50" height="34" rx="6" fill="${C.teal}" ${OUTLINE}/>` +
@@ -474,7 +478,7 @@ export function fxTextures(): Record<string, string> {
         `<rect x="10" y="25" width="20" height="5" rx="2.5" fill="${C.cream}"/>`,
     ),
     // the guest book, for the top-bar button: a closed brown book with a gạch bông tile on its cover
-    'icon-book': svgDoc(
+    'icon-book': aplusDoc(
       [0, 0, 64, 64],
       1,
       `<g ${ICON}><rect x="15" y="9" width="40" height="50" rx="4" fill="${C.cream}"/><rect x="10" y="5" width="40" height="50" rx="4" fill="${C.wood}"/>` +
@@ -485,7 +489,7 @@ export function fxTextures(): Record<string, string> {
         `<ellipse cx="29.2" cy="29" rx="3.6" ry="2.4" fill="${C.terracotta}"/><ellipse cx="38.8" cy="29" rx="3.6" ry="2.4" fill="${C.terracotta}"/>` +
         `<circle cx="34" cy="29" r="2.4" fill="${C.mustard}"/></g>`,
     ),
-    'icon-lock': svgDoc(
+    'icon-lock': aplusDoc(
       [0, 0, 40, 46],
       1,
       `<path d="M10,22 V14 Q10,4 20,4 Q30,4 30,14 V22" fill="none" stroke="${C.ink}" stroke-width="7" stroke-linecap="round"/>` +
@@ -494,20 +498,20 @@ export function fxTextures(): Record<string, string> {
         `<circle cx="20" cy="29.5" r="3.2" fill="${C.ink}"/><rect x="18.6" y="30" width="2.8" height="7" rx="1.2" fill="${C.ink}"/>`,
     ),
     // Phây, from the sketch: the phone on its button with a heart on the screen; the tick in a checked name's disc; a like's heart; a comment's bubble; the video's play mark
-    'icon-phone': svgDoc(
+    'icon-phone': aplusDoc(
       [-32, -32, 64, 64],
       1,
       `<path d="M-15,-26 H15 Q21,-26 21,-20 V20 Q21,26 15,26 H-15 Q-21,26 -21,20 V-20 Q-21,-26 -15,-26Z" fill="${C.tealPale}" ${EVENT}/>` +
         `<path d="M-6,17 H6" ${EVENT}/>` +
         `<path d="M0,6 C-11,-1 -10,-10 -4,-9.5 C-2,-9 0,-7 0,-5.5 C0,-7 2,-9 4,-9.5 C10,-10 11,-1 0,6Z" fill="${C.lotus}" stroke="${C.ink}" stroke-width="2.5" stroke-linejoin="round"/>`,
     ),
-    'icon-tick': svgDoc([-16, -16, 32, 32], 1, `<path d="M-8,0 L-2.5,6 L9,-6" fill="none" stroke="${C.paper}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`),
-    'icon-heart': svgDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.lotus}" ${OUTLINE}/>`),
-    'icon-comment': svgDoc(
+    'icon-tick': aplusDoc([-16, -16, 32, 32], 1, `<path d="M-8,0 L-2.5,6 L9,-6" fill="none" stroke="${C.paper}" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>`),
+    'icon-heart': aplusDoc([0, 0, 56, 52], 1, `<path d="${HEART_PATH}" fill="${C.lotus}" ${OUTLINE}/>`),
+    'icon-comment': aplusDoc(
       [0, 0, 56, 52],
       1,
       `<path d="M10,5 H46 Q52,5 52,11 V33 Q52,39 46,39 H24 L13,48 L15,39 H10 Q4,39 4,33 V11 Q4,5 10,5Z" fill="${C.cream}" ${OUTLINE}/>`,
     ),
-    'icon-play': svgDoc([-24, -24, 48, 48], 1, `<path d="M-9,-16 L16,0 L-9,16Z" fill="${C.paper}" stroke="${C.paper}" stroke-width="3" stroke-linejoin="round"/>`),
+    'icon-play': aplusDoc([-24, -24, 48, 48], 1, `<path d="M-9,-16 L16,0 L-9,16Z" fill="${C.paper}" stroke="${C.paper}" stroke-width="3" stroke-linejoin="round"/>`),
   }
 }

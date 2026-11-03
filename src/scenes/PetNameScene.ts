@@ -7,7 +7,7 @@ import { formatMoney } from '../strings/format'
 import { BREED_NAME, PET_NAME_IDEAS, t } from '../strings/vi'
 import { nameInput } from '../view/dom'
 import { textStyle } from '../view/text'
-import { addButton } from '../view/ui'
+import { addButton, aplusFrame } from '../view/ui'
 
 export interface PetNameData {
   breed: BreedId
@@ -46,7 +46,7 @@ export class PetNameScene extends Phaser.Scene {
       then()
     }
     this.add.rectangle(0, 0, GAME_W, GAME_H, hex(C.ink), 0.6).setOrigin(0).setInteractive()
-    this.add.graphics().fillStyle(hex(C.goldPale), 1).fillRoundedRect(110, 200, 860, 1120, 60).lineStyle(5, hex(C.ink)).strokeRoundedRect(110, 200, 860, 1120, 60)
+    aplusFrame(this.add.graphics(), C.goldPale, 110, 200, 860, 1120, 60, 5)
     const head = renaming ? t('petRenameHead', { name: current }) : t(BREEDS[breed].kind === 'cat' ? 'petNameHeadCat' : 'petNameHeadDog')
     this.add.text(MID, 290, head, textStyle(46, '800')).setOrigin(0.5)
     this.add.text(MID, 360, BREED_NAME[breed], textStyle(32, '600', C.soft)).setOrigin(0.5)

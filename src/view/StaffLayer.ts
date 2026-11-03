@@ -10,6 +10,7 @@ import { CHARACTER_HEIGHT_PX, CharacterView } from './CharacterView'
 import { climbPose } from './floors'
 import type { RoomView } from './RoomView'
 import { textStyle } from './text'
+import { aplusFrame } from './ui'
 
 /** SpaScene's effects depth, over every character. */
 const FX_DEPTH = 9000
@@ -188,12 +189,7 @@ export class StaffLayer {
   private makePill(text: string, x: number, y: number): Phaser.GameObjects.Container {
     const label = this.scene.add.text(0, -PILL_H / 2, text, textStyle(30, '800')).setOrigin(0.5)
     const w = Math.max(label.width + 44, PILL_H)
-    const bg = this.scene.add
-      .graphics()
-      .fillStyle(hex(C.cream), 1)
-      .fillRoundedRect(-w / 2, -PILL_H, w, PILL_H, PILL_H / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -PILL_H, w, PILL_H, PILL_H / 2)
+    const bg = aplusFrame(this.scene.add.graphics(), C.cream, -w / 2, -PILL_H, w, PILL_H, PILL_H / 2)
     // over a level-up's sparks, which come with a greeting
     return this.scene.add.container(x, y, [bg, label]).setDepth(FX_DEPTH + 20)
   }

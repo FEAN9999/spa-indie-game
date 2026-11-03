@@ -9,6 +9,7 @@ import { t, type StringKey } from '../strings/vi'
 import { addMiniGameCard, drawBars, revealStars, type MiniGameData, setInstruction } from '../view/miniGame'
 import { oneFinger } from '../view/oneFinger'
 import { textStyle } from '../view/text'
+import { aplusFrame } from '../view/ui'
 
 /** The heat column at the card's left: the mark runs from 0 at `bottom` to 1 at `top`, and the round ends reach half the width past them. */
 const COLUMN = { x: 200, w: 110, top: 560, bottom: 1300, ink: 5, stripPx: 4 }
@@ -190,12 +191,7 @@ export class MudScene extends Phaser.Scene {
   /** Teal at rest; held, it turns terracotta and sinks. */
   private drawButton(): void {
     const { w, h } = HOLD
-    this.buttonFill
-      .clear()
-      .fillStyle(hex(this.held ? C.terracotta : C.teal), 1)
-      .fillRoundedRect(-w / 2, -h / 2, w, h, h / 2)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(-w / 2, -h / 2, w, h, h / 2)
+    aplusFrame(this.buttonFill.clear(), this.held ? C.terracotta : C.teal, -w / 2, -h / 2, w, h, h / 2)
     this.button.setY(HOLD.y + (this.held ? HOLD.sinkPx : 0))
   }
 

@@ -6,8 +6,9 @@ import { branchHouseTextures } from '../../src/art/branchHouses'
 import { bustleTextures } from '../../src/art/bustle'
 import { floorTextures } from '../../src/art/floors'
 import { furnitureTextures } from '../../src/art/furniture'
+import { fxTextures } from '../../src/art/fx'
 import { houseTextures } from '../../src/art/houses'
-import { liftPiece, liftScene } from '../../src/art/lift'
+import { inheritStroke, liftPiece, liftScene } from '../../src/art/lift'
 import { mapTexture } from '../../src/art/map'
 import { menuTextures } from '../../src/art/menuArt'
 import { oldTownRoomTexture } from '../../src/art/oldTown'
@@ -102,5 +103,27 @@ describe('A+ pass for rooms, houses and the street', () => {
     }
     for (const key of ['room', 'room-oldTown', 'chain-map']) expect(all[key], key).toContain('clip-path=')
     for (const [key, doc] of Object.entries(all)) expect(urlsResolve(doc), key).toBe(true)
+  })
+})
+
+describe('A+ pass for the effect and button pictures', () => {
+  const tags = (doc: string) => doc.match(/<[a-zA-Z][^>]*>/g) ?? []
+  const names = (tag: string) => [...tag.matchAll(/ ([\w:-]+)=/g)].map(m => m[1])
+
+  it("hands a group's stroke to the shapes inside that lack one, and leaves turned groups alone", () => {
+    expect(inheritStroke(`<g ${ink(2.6)}><circle cx="1" cy="1" r="1" fill="${C.teal}"/><rect width="2" height="2" fill="${C.cream}" stroke-width="2"/></g>`)).toBe(
+      `<g ${ink(2.6)}><circle cx="1" cy="1" r="1" fill="${C.teal}" ${ink(2.6)}/><rect width="2" height="2" fill="${C.cream}" stroke-width="2" stroke="${C.ink}"/></g>`,
+    )
+    const turned = `<g transform="rotate(-40 32 32)" ${ink(2.6)}><rect width="2" height="2" fill="${C.wood}"/></g>`
+    expect(inheritStroke(turned)).toBe(turned)
+  })
+
+  it('lifts the badges, bubbles and buttons into well-formed pictures whose clip ids resolve', () => {
+    const all = fxTextures()
+    for (const key of ['coin', 'bubble-happy', 'svc-massage', 'stock-oil', 'icon-staff', 'icon-book', 'fx-scooter']) expect(all[key], key).toContain('clip-path=')
+    for (const [key, doc] of Object.entries(all)) {
+      expect(urlsResolve(doc), key).toBe(true)
+      for (const tag of tags(doc)) expect(new Set(names(tag)).size, `${key}: ${tag}`).toBe(names(tag).length)
+    }
   })
 })

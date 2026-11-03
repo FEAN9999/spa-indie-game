@@ -20,6 +20,7 @@ import { forSale, houseRect, housesBetween } from './houses'
 import { LAMPS } from './lamps'
 import { addDoorLight, addGlow, addSaleSign, DOOR_LIGHT, frontmostAt, ITEM_DEPTH_BIAS, LAMP_DEPTH, PART_DEPTH, placeItemBody } from './RoomView'
 import { DOOR_X, doorWalk, restaurantHouseImageX, restaurantHouseRect, restaurantTileAt, restaurantX, rideX, walkerX, type StreetPlacement } from './street'
+import { aplusFrame } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 /** A bought restaurant house's texture on `floor`. */
@@ -142,7 +143,7 @@ export class RestaurantLayer {
       if (scene.textures.exists(key)) continue
       const { w, h } = TICKET
       const g = scene.make.graphics({}, false)
-      g.fillStyle(hex(C.paper), 1).fillRoundedRect(2, 2, w - 4, h - 4, 6).lineStyle(3, hex(C.ink)).strokeRoundedRect(2, 2, w - 4, h - 4, 6)
+      aplusFrame(g, C.paper, 2, 2, w - 4, h - 4, 6, 3)
       g.fillStyle(hex(TICKET_HEADER[dish]), 1).fillRect(5, 5, w - 10, 9)
       g.lineStyle(3, hex(C.soft))
       for (const y of [22, 30, 38]) g.lineBetween(9, y, y === 38 ? w - 18 : w - 9, y)

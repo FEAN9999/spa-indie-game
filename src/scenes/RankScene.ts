@@ -10,7 +10,7 @@ import { t } from '../strings/vi'
 import { learnLine, monthOutcome, partRows, yearLines } from '../view/rank'
 import { addPartRow, starPoints } from '../view/rankDraw'
 import { textStyle } from '../view/text'
-import { addButton, addCard } from '../view/ui'
+import { addButton, addCard, aplusFrame } from '../view/ui'
 
 export interface RankData {
   sim: SpaSim
@@ -99,7 +99,7 @@ export class RankScene extends Phaser.Scene {
     })
 
     const { head, sub } = monthOutcome(r)
-    this.add.graphics().fillStyle(hex(up ? C.goldPale : C.cream), 1).fillRoundedRect(120, 1330, 840, 300, 44).lineStyle(4, hex(C.ink)).strokeRoundedRect(120, 1330, 840, 300, 44)
+    aplusFrame(this.add.graphics(), up ? C.goldPale : C.cream, 120, 1330, 840, 300, 44)
     fit(this.add.text(MID, 1395, head, textStyle(50, '800', up ? C.mustardDark : C.ink)).setOrigin(0.5), 760)
     const body = this.add.text(0, 0, sub, { ...textStyle(32, '600', C.soft), align: 'center', wordWrap: { width: 740 } }).setOrigin(0.5, 0)
     const parts: Phaser.GameObjects.Text[] = [body]
@@ -130,12 +130,7 @@ export class RankScene extends Phaser.Scene {
     const medals = [C.gold, C.silver, C.plank]
     text.rows.forEach((row, i) => {
       const y = 740 + i * 84
-      this.add
-        .graphics()
-        .fillStyle(hex(row.me ? C.tealPale : C.cream), 1)
-        .fillRoundedRect(120, y, 840, 72, 36)
-        .lineStyle(row.me ? 5 : 3, hex(row.me ? C.teal : C.ink))
-        .strokeRoundedRect(120, y, 840, 72, 36)
+      aplusFrame(this.add.graphics(), row.me ? C.tealPale : C.cream, 120, y, 840, 72, 36, row.me ? 5 : 3, row.me ? C.teal : C.ink)
         .fillStyle(hex(medals[i] ?? C.sand), 1)
         .fillCircle(168, y + 36, 26)
         .lineStyle(3, hex(C.ink))
@@ -151,11 +146,7 @@ export class RankScene extends Phaser.Scene {
       const body = this.add.text(MID, y, line, { ...textStyle(32, k === 0 ? '800' : '600', k === 0 ? C.ink : C.soft), align: 'center', wordWrap: { width: 760 } }).setOrigin(0.5, 0)
       y += body.height + 10
     })
-    card
-      .fillStyle(hex(r.place === 1 ? C.goldPale : C.paper), 1)
-      .fillRoundedRect(70, 220, 940, y + 210 - 220, 60)
-      .lineStyle(4, hex(C.ink))
-      .strokeRoundedRect(70, 220, 940, y + 210 - 220, 60)
+    aplusFrame(card, r.place === 1 ? C.goldPale : C.paper, 70, 220, 940, y + 210 - 220, 60)
     // the card is drawn last, so it goes under everything already placed
     card.setDepth(-1)
     addButton(this, MID, y + 90, 560, 130, text.button, 'primary', done, 50)
