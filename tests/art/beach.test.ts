@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { shade } from '../../src/art/aplus'
 import { beachRoomTexture } from '../../src/art/beach'
 import { mapTexture } from '../../src/art/map'
 import { C } from '../../src/art/palette'
@@ -10,7 +11,7 @@ import { BRANCH_LAYOUT } from '../../src/sim/places'
 vi.mock('phaser', () => ({}))
 
 const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)?.[1]
-const palette = Object.values(C).map(c => c.toLowerCase())
+const palette = Object.values(C).flatMap(c => [c, shade(c), shade(c, 0.3)]).map(c => c.toLowerCase())
 const inGameColours = (svg: string) => {
   for (const colour of svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []) expect(palette).toContain(colour.toLowerCase())
 }

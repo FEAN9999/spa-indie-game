@@ -10,6 +10,7 @@ import { PHO_PLANKS, PHO_TILES, shutters } from './oldTown'
 import { C } from './palette'
 import { f } from './round'
 import { glassPane, outline, rect, STREET_TILES, street } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 import { CAO_PLANKS, marble } from './uptown'
 
@@ -106,7 +107,7 @@ function branchHouse(grid: Grid, place: PlaceId, key: HouseKey): string {
   out.push(rect(IN, 0, 0.2, rows, place === 'oldTown' ? C.phoWood : dark, outline(0.04)))
   out.push(glassPane(0, IN + 0.2, rows))
   out.push(street(W, rows))
-  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Floor 2 of a branch's house: the place's floor 2 (uptown's marble seamed in the house's colour), its back wall in the house's colour, a glass door onto the place's balcony, the road. */
@@ -124,7 +125,7 @@ function branchHouse2(place: PlaceId, key: HouseKey): string {
   out.push(rect(IN, 0, 0.2, rows, wall, outline(0.04)))
   out.push(frontWall(0, IN + 0.2, wall, [2]))
   out.push(balcony(place, 0, IN + 0.2), rect(0, rows + 1.88, W, STREET_TILES - 1.88, C.road))
-  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The rooftop of a branch's house: sky and what lies beyond, the place's rooftop floor, low walls in the house's colour (the old town's) or capped in it, the neighbour's roof below. */
@@ -141,7 +142,7 @@ function branchHouse3(place: PlaceId, key: HouseKey): string {
   out.push(rect(IN, 1.45, 0.2, rows - 1.45, parapet, outline(0.04)))
   out.push(roofBelow(place, 0, W))
   out.push(rect(0, rows - 0.45, IN + 0.2, 0.5, parapet, outline(0.045)), rect(0, rows - 0.5, IN + 0.2, 0.12, cap, outline(0.035)))
-  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Every branch's four houses on each floor, 'house-<place>-<key>-<floor>', drawn for a right-hand house on `grid` (the branch room), and its roof for sale, 'sale-<place>'. */

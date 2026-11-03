@@ -6,6 +6,7 @@ import { silkLantern } from './lantern'
 import { C } from './palette'
 import { FINE, GACH_BONG, glassPane, outline, PLANKS, rect, shopFront, street, STREET_TILES } from './room'
 import { f } from './round'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 // The restaurant's street art, in room.ts's flat, ink-outlined style: a warm street restaurant with a red-and-yellow awning,
@@ -134,7 +135,7 @@ function restRoom(): string {
   out.push(shopFront(COLS, ROWS, DOOR_X))
   out.push(street(COLS, ROWS))
   out.push(awning())
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /**
@@ -156,7 +157,7 @@ function restRoom2(): string {
   for (let x = 0.55; x < COLS - 0.3; x += 0.3) bars.push(`M${x.toFixed(2)},${ROWS + 1.12} V${ROWS + 1.8}`)
   out.push(`<path d="${bars.join(' ')}" stroke="${C.ink}" stroke-width="0.045"/>`, rect(0.3, ROWS + 1, COLS - 0.6, 0.12, C.ink), rect(0.3, ROWS + 1.8, COLS - 0.6, 0.08, C.ink))
   out.push(rect(0, ROWS + 1.88, COLS, STREET_TILES - 1.88, C.road))
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The silk of a rooftop lantern, in silkLantern's pixels (78 to a tile). */
@@ -217,7 +218,7 @@ function restRoom3(): string {
   for (const x of POST_X) out.push(rect(x - 0.06, 2.4, 0.12, 2.6, C.wood, `rx="0.04" ${outline(0.035)}`))
   for (const s of ROOF_STRINGS) out.push(`<path d="M${POST_X[0]},${s.y} Q${COLS / 2},${2 * s.low - s.y} ${POST_X[1]},${s.y}" fill="none" ${outline(0.035)}/>`)
   LANTERN_HOOKS.forEach((h, i) => out.push(silkLantern(h.x, h.y + 14 / 78, i % 2 === 0 ? C.lantern : C.gold, LANTERN_R)))
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Each restaurant house's warm wall, its dark band, and its roof while it is for sale. */
@@ -250,7 +251,7 @@ function houseFloor1(look: (typeof REST_HOUSE_LOOK)[HouseKey]): string {
   out.push(glassPane(0, HOUSE_IN + 0.2, ROWS))
   out.push(street(HOUSE_W, ROWS))
   out.push(stripedAwning(HOUSE_W, C.terracotta, C.cream))
-  return svgDoc([0, 0, HOUSE_W, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, HOUSE_W, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The sign across the old house's shutter. */
@@ -267,7 +268,7 @@ function restOld(): string {
   out.push(SANG_NHUONG)
   out.push(rect(0.3, front, COLS - 0.6, 0.45, C.sidewalkLine, outline(0.04)))
   out.push(street(COLS, ROWS))
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** An empty lot's front: a closed street front 6 columns wide, faded paint over a rolled-down shutter, with the street. */
@@ -278,21 +279,21 @@ function lotFront(): string {
   out.push(rollShutter(1, cols - 1, ROWS - 3.4, front))
   out.push(rect(0.3, front, cols - 0.6, 0.45, C.sidewalkLine, outline(0.04)))
   out.push(street(cols, ROWS))
-  return svgDoc([0, 0, cols, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, cols, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** A closed upper floor of the restaurant's block: the same faded wall, shuttered windows, a plain glass front. */
 function restUpper(): string {
   const out = [closedWall(COLS, ROWS, [3.3, 9.7], C.paper, C.sand)]
   out.push(glassPane(0.3, COLS - 0.3, ROWS))
-  return svgDoc([0, 0, COLS, ROWS], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The spa's main shop on a floor it has not opened: the closed wall in the spa's own yellow, shuttered windows, a plain glass front. */
 function spaUpper(): string {
   const out = [closedWall(COLS, ROWS, [3.3, 9.7], C.wall, C.wallDark)]
   out.push(glassPane(0.3, COLS - 0.3, ROWS))
-  return svgDoc([0, 0, COLS, ROWS], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The owner's bicycle in SCOOTER_BOX's units, standing on the origin and facing right: two spoked wheels, a frame, a basket and a seat. */
@@ -327,7 +328,7 @@ export function restaurantTextures(): Record<string, string> {
     'lot-front': lotFront(),
     'rest-upper': restUpper(),
     'spa-upper': spaUpper(),
-    'fx-bike': svgDoc(SCOOTER_BOX, 1, bike()),
+    'fx-bike': svgDoc(SCOOTER_BOX, 1, liftScene(bike(), 1)),
   }
   for (const [key, look] of Object.entries(REST_HOUSE_LOOK) as [HouseKey, (typeof REST_HOUSE_LOOK)[HouseKey]][]) {
     out[`rest-house-${key}-1`] = houseFloor1(look)

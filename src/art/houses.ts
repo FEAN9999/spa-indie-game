@@ -3,6 +3,7 @@ import type { House } from '../sim/layout'
 import { pot, shutterWindow } from './floors'
 import { C } from './palette'
 import { FINE, GACH_BONG, gachBongTile, glassPane, outline, PLANKS, rect, street, STREET_TILES } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 export type HouseKey = 'left1' | 'left2' | 'right1' | 'right2'
@@ -39,7 +40,7 @@ function floor1(look: (typeof HOUSE_LOOK)[HouseKey]): string {
   out.push(rect(IN, 0, 0.2, ROWS, look.wallDark, outline(0.04)))
   out.push(glassPane(0, IN + 0.2, ROWS))
   out.push(street(W, ROWS))
-  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Floor 2: planks, a shuttered window in the house's wall, one glass door onto the shop's balcony, the road below. */
@@ -56,7 +57,7 @@ export function floor2(look: { wall: string; wallDark: string }): string {
   for (let x = 0.25; x < IN + 0.2; x += 0.3) bars.push(`M${x.toFixed(2)},${ROWS + 1.12} V${ROWS + 1.8}`)
   out.push(`<path d="${bars.join(' ')}" stroke="${C.ink}" stroke-width="0.045"/>`, rect(0, ROWS + 1, IN + 0.2, 0.12, C.ink), rect(0, ROWS + 1.8, IN + 0.2, 0.08, C.ink))
   out.push(rect(0, ROWS + 1.88, W, STREET_TILES - 1.88, C.road))
-  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The rooftop: sky, gạch tàu, parapets in the house's wall with a terracotta cap, tin over the street. */
@@ -75,7 +76,7 @@ export function floor3(look: { wall: string }): string {
   for (let x = 0.15; x < W; x += 0.3) corrugation.push(`M${x.toFixed(2)},${ROWS} V${ROWS + STREET_TILES}`)
   out.push(`<path d="${corrugation.join(' ')}" stroke="${C.tinRib}" stroke-width="0.05"/>`)
   out.push(rect(0, ROWS - 0.45, IN + 0.2, 0.5, look.wall, outline(0.045)), rect(0, ROWS - 0.5, IN + 0.2, 0.12, C.terracotta, outline(0.035)))
-  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, W, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Where a house for sale's roof ends and its roller shutter starts. */
@@ -118,7 +119,7 @@ export function saleTexture(roof: Roof): string {
   for (let y = EAVE + 0.14; y < ROWS; y += 0.14) slats.push(`M0.1,${y.toFixed(2)} H${w - 0.1}`)
   out.push(`<path d="${slats.join(' ')}" stroke="${C.tankRib}" stroke-width="0.035"/>`)
   out.push(street(w, ROWS))
-  return svgDoc([0, 0, w, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, w, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Every house's three floors, 'house-<key>-<floor>', drawn for a right-hand house, and its roof for sale, 'sale-<key>'. */

@@ -1,4 +1,4 @@
-import { HIGHLIGHT, shade } from './aplus'
+import { GROUND, HIGHLIGHT, shade } from './aplus'
 import { C } from './palette'
 
 // Lượt A+ tự động cho hình đã vẽ phẳng: mỗi mảng có viền nâu được thêm mảng bóng mép cứng ở dưới phải,
@@ -88,7 +88,12 @@ export function shapeD(el: string): string {
 const WOODS = new Set([C.wood, C.woodDark, C.woodLight, C.bambooDark].map(c => c.toUpperCase()))
 const FABRICS = new Set([C.teal, C.tealLight, C.tealDark, C.terracotta, C.lotus, C.mustard].map(c => c.toUpperCase()))
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
-let clips = 0
+/** A short hash of a body, so its clip ids come out the same each time it is drawn and apart from other bodies'. */
+function tagOf(s: string): string {
+  let h = 5381
+  for (let k = 0; k < s.length; k++) h = (h * 33 + s.charCodeAt(k)) | 0
+  return (h >>> 0).toString(36)
+}
 
 /**
  * A+ for a flat picture drawn at `px` canvas pixels per unit. Each solid shape with an ink outline of at least about
@@ -98,6 +103,20 @@ let clips = 0
  * faded, patterned and transformed shapes stay as they are.
  */
 export function liftPiece(body: string, px: number): string {
+  return lift(body, px, false)
+}
+
+/**
+ * A+ for a room, a house front or the street, drawn at `px` canvas pixels per unit: the floors, walls and other
+ * shapes wider or taller than 3 tiles stay flat, as on the approved shop corner. Each thing on them that `liftPiece`
+ * would shade (a window, a clock, a lantern, a cart, a tree) gets its shade and its own shine, no seams, and casts an
+ * 18% shadow a few pixels to its lower right. The thin ink band under a back wall becomes an 18% shadow 0.22 tile deep.
+ */
+export function liftScene(body: string, px: number): string {
+  return lift(body, px, true)
+}
+
+function lift(body: string, px: number, scene: boolean): string {
   const els = body.match(SHAPE_EL) ?? []
   const solidShape = (el: string) => {
     if (!/^#[0-9a-fA-F]{3,6}$/.test(attr(el, 'fill') ?? '') || / (transform|opacity|fill-opacity|stroke-dasharray)=/.test(el)) return false
@@ -106,7 +125,7 @@ export function liftPiece(body: string, px: number): string {
   const boxes = els.map(el => {
     if (!solidShape(el)) return null
     const b = bounds(shapeD(el))
-    return b[2] * px >= 10 && b[3] * px >= 8 ? b : null
+    return b[2] * px >= 10 && b[3] * px >= 8 && (!scene || Math.max(b[2], b[3]) * px <= 3 * 78) ? b : null
   })
   const area = (b: [number, number, number, number]) => b[2] * b[3]
   const biggest = Math.max(0, ...boxes.map(b => (b && b[2] * px >= 14 && b[3] * px >= 12 ? area(b) : 0)))
@@ -115,11 +134,22 @@ export function liftPiece(body: string, px: number): string {
   boxes.forEach((b, i) => {
     if (b && b[2] * px >= 14 && b[3] * px >= 12 && area(b) >= biggest * 0.3 && (lit < 0 || b[1] <= boxes[lit]![1] + 2 / px)) lit = i
   })
+  const shines = (i: number) => (scene ? !!boxes[i] && boxes[i]![2] * px >= 20 && boxes[i]![3] * px >= 16 : i === lit)
+  const tag = tagOf(body)
+  let clips = 0
   let i = -1
   return body.replace(SHAPE_EL, el => {
     i++
     const b = boxes[i]
-    if (!b) return attr(el, 'fill') === C.ink && /^0?\.(1[5-9]|2)$/.test(attr(el, 'opacity') ?? '') ? el.replace(/ opacity="[^"]*"/, ' opacity=".18"') : el
+    if (!b) {
+      if (attr(el, 'fill') !== C.ink) return el
+      const o = attr(el, 'opacity') ?? ''
+      if (scene && el.startsWith('<rect') && /^0?\.1[0-4]$/.test(o) && parseFloat(attr(el, 'width') ?? '0') * px >= 150) {
+        const h = Math.max(parseFloat(attr(el, 'height') ?? '0'), 17 / px)
+        return el.replace(/ opacity="[^"]*"/, ' opacity=".18"').replace(/ height="[^"]*"/, ` height="${n(h)}"`)
+      }
+      return /^0?\.(1[5-9]|2)$/.test(o) ? el.replace(/ opacity="[^"]*"/, ' opacity=".18"') : el
+    }
     const [bx, by, bw, bh] = b
     const d = shapeD(el)
     const fill = attr(el, 'fill')!
@@ -134,13 +164,13 @@ export function liftPiece(body: string, px: number): string {
           : `M${n(bx + bw * t)},${n(by + bh * 0.08)} Q${n(bx + bw * (t - 0.08))},${n(by + bh * 0.35)} ${n(bx + bw * t)},${n(by + bh * 0.55)} T${n(bx + bw * t)},${n(by + bh * 0.9)}`
       inner += `<path d="${grain(0.36)} ${grain(0.7)}" fill="none" stroke="${shade(fill, 0.3)}" stroke-width="${n(1.1 / px)}" stroke-linecap="round"/>`
     }
-    if (FABRICS.has(fill.toUpperCase()) && el.startsWith('<rect') && bw * px >= 22 && bh * px >= 16) {
+    if (!scene && FABRICS.has(fill.toUpperCase()) && el.startsWith('<rect') && bw * px >= 22 && bh * px >= 16) {
       // a cushion or a sheet: a stitched seam just inside its edge
       const g = 3.5 / px
       const r = Math.max(0, Math.min(parseFloat(attr(el, 'rx') ?? '0'), bw / 2, bh / 2) - g)
       inner += `<path d="${rr(bx + g, by + g, bw - 2 * g, bh - 2 * g, r)}" fill="none" stroke="${shade(fill, 0.35)}" stroke-width="${n(1 / px)}" stroke-dasharray="${n(3 / px)} ${n(2 / px)}"/>`
     }
-    if (i === lit) {
+    if (shines(i)) {
       // a thin shine just inside the lit edge: along the top, or down the left of a tall shape
       const t = 2.6 / px
       const gap = Math.min(4 / px, (bh > bw * 1.6 ? bw : bh) * 0.12)
@@ -149,9 +179,11 @@ export function liftPiece(body: string, px: number): string {
           ? `<path d="${rr(bx + gap, by + bh * 0.1, t, bh * 0.26, t / 2)}" ${HIGHLIGHT}/>`
           : `<path d="${rr(bx + Math.max(gap * 2, bw * 0.07), by + gap, bw * 0.26, t, t / 2)}" ${HIGHLIGHT}/>`
     }
-    const id = `l${clips++}`
+    const id = `l${tag}-${clips++}`
     const outline = el.replace(/ fill="[^"]*"/, ' fill="none"')
+    const cast = scene ? `<path d="${d}" transform="translate(${n(4 / px)} ${n(4 / px)})" ${GROUND}/>` : ''
     return (
+      cast +
       `<clipPath id="${id}"><path d="${d}"/></clipPath><path d="${d}" fill="${shade(fill)}"/>` +
       `<g clip-path="url(#${id})"><path d="${d}" transform="translate(${-dx} ${-dy})" fill="${fill}"/>${inner}</g>${outline}`
     )

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { shade } from '../../src/art/aplus'
 import { floorTextures } from '../../src/art/floors'
 import { C } from '../../src/art/palette'
 import { GACH_BONG_TILE, roomTexture, STREET_TILES } from '../../src/art/room'
@@ -40,7 +41,7 @@ describe('floor art', () => {
   it('lays floor 2 with planks inside and gạch bông on the balcony, in the game colours', () => {
     expect(textures['room-2']).toContain(GACH_BONG_TILE)
     expect(textures['room-2']).toContain('fill="url(#planks)"')
-    const palette = Object.values(C).map(c => c.toLowerCase())
+    const palette = Object.values(C).flatMap(c => [c, shade(c), shade(c, 0.3)]).map(c => c.toLowerCase())
     for (const svg of Object.values(textures))
       for (const colour of svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []) expect(palette).toContain(colour.toLowerCase())
   })

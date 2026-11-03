@@ -2,6 +2,7 @@ import { TILE } from '../config'
 import type { Grid } from '../sim/grid'
 import { C } from './palette'
 import { FINE, outline, rect, shopFront, STREET_TILES, street } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 const f = (v: number) => +v.toFixed(3)
@@ -84,5 +85,5 @@ export function beachRoomTexture(grid: Grid): string {
 
   out.push(shopFront(cols, rows, grid.door.x))
   out.push(street(cols, rows))
-  return svgDoc([0, 0, cols, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, cols, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }

@@ -7,6 +7,7 @@ import { lanternString, PHO_PLANKS, PHO_TILES, shutters } from './oldTown'
 import { C } from './palette'
 import { f } from './round'
 import { FINE, outline, rect, STREET_TILES } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 import { CAO_PLANKS, glassWall, landscape, MARBLE } from './uptown'
 
@@ -157,7 +158,7 @@ function floor2Room(place: PlaceId): string {
   out.push(balcony(place, 0.3, COLS - 0.6))
   if (place !== 'uptown') for (const x of [1.3, 11.7]) out.push(pot(x, ROWS + 0.35))
   else for (const x of [1.3, 11.7]) out.push(rect(x - 0.25, ROWS + 0.4, 0.5, 0.4, C.silver, outline(0.03)), `<circle cx="${x}" cy="${ROWS + 0.25}" r="0.3" fill="${C.leaf}" ${outline(0.035)}/>`)
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /**
@@ -190,7 +191,7 @@ function roofRoom(place: PlaceId): string {
     // a clipped tree in a silver planter on each back corner
     for (const x of [1.2, COLS - 1.2]) out.push(rect(x - 0.3, 0.95, 0.6, 0.45, C.silver, outline(0.03)), `<circle cx="${x}" cy="0.7" r="0.36" fill="${C.leaf}" ${outline(0.035)}/>`)
   }
-  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Every branch's upper floors: 'room-<place>-2' and 'room-<place>-3'. */

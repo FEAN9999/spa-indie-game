@@ -1,6 +1,7 @@
 import { TILE } from '../config'
 import { C, SKIN } from './palette'
 import { FINE, outline, rect } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 /**
@@ -51,7 +52,7 @@ export const BUS_SHELTER = { from: 1.6, to: 7.45 }
 /** The middle of the bus sign's pole, just right of the shelter's roof. */
 const BUS_SIGN_X = 7.05
 
-const doc = (key: BustleArtKey, body: string) => svgDoc([0, 0, BUSTLE_ART[key].w, BUSTLE_ART[key].h], TILE, body)
+const doc = (key: BustleArtKey, body: string) => svgDoc([0, 0, BUSTLE_ART[key].w, BUSTLE_ART[key].h], TILE, liftScene(body, TILE))
 
 /** A chibi like the game's customers, the middle of their body at (x, y), with a nón lá when `hat`. */
 function chibi(x: number, y: number, shirt: string, hair: string, hat = false): string {

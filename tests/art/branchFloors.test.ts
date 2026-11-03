@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { shade } from '../../src/art/aplus'
 import { BRANCH_UPPER, branchFloorTextures } from '../../src/art/branchFloors'
 import { floorTextures } from '../../src/art/floors'
 import { C } from '../../src/art/palette'
@@ -41,7 +42,7 @@ describe('branch floor art', () => {
   })
 
   it('is drawn in the game colours', () => {
-    const palette = Object.values(C).map(c => c.toLowerCase())
+    const palette = Object.values(C).flatMap(c => [c, shade(c), shade(c, 0.3)]).map(c => c.toLowerCase())
     for (const svg of Object.values(textures))
       for (const colour of svg.match(/#[0-9a-fA-F]{6}\b/g) ?? []) expect(palette).toContain(colour.toLowerCase())
   })

@@ -1,6 +1,7 @@
 import { FLOOR_ROWS, TILE } from '../config'
 import { C } from './palette'
 import { FINE, GACH_BONG, outline, PLANKS, rect, STREET_TILES } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 const COLS = 13
@@ -59,7 +60,7 @@ function floor2Room(): string {
   for (let x = 0.55; x < COLS - 0.3; x += 0.3) bars.push(`M${x.toFixed(2)},${rows + 1.12} V${rows + 1.8}`)
   out.push(`<path d="${bars.join(' ')}" stroke="${C.ink}" stroke-width="0.045"/>`, rect(0.3, rows + 1, COLS - 0.6, 0.12, C.ink), rect(0.3, rows + 1.8, COLS - 0.6, 0.08, C.ink))
   out.push(rect(0, rows + 1.88, COLS, STREET_TILES - 1.88, C.road))
-  return svgDoc([0, 0, COLS, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Step tops from the lowest (light) to the highest (dark). */
@@ -75,7 +76,7 @@ function stairs(): string {
   out.push(rect(0.04, 0, 0.92, 0.55, C.ink, 'opacity="0.3"'))
   out.push(`<path d="M0.38,2.1 L0.53,1.93 L0.68,2.1 M0.38,1.6 L0.53,1.43 L0.68,1.6" fill="none" stroke="${C.cream}" stroke-width="0.06" stroke-linecap="round" stroke-linejoin="round"/>`)
   out.push(rect(0.02, 0, 0.13, 3, C.wood, `rx="0.05" ${outline(0.035)}`), `<circle cx="0.085" cy="2.93" r="0.09" fill="${C.woodDark}" ${outline(FINE)}/>`)
-  return svgDoc([0, 0, 1, 3], TILE, out.join(''))
+  return svgDoc([0, 0, 1, 3], TILE, liftScene(out.join(''), TILE))
 }
 
 /**
@@ -90,7 +91,7 @@ function stairsRope(): string {
   out.push(`<path d="${rope}" fill="none" stroke="${C.cream}" stroke-width="0.08" stroke-linecap="round"/>`)
   out.push(`<path d="${rope}" fill="none" stroke="${C.lantern}" stroke-width="0.08" stroke-linecap="butt" stroke-dasharray="0.08 0.08"/>`)
   out.push(`<path d="M0.5,0.53 V0.62" ${outline(FINE)}/>`, rect(0.38, 0.62, 0.24, 0.17, C.cream, `rx="0.02" ${outline(FINE)}`))
-  return svgDoc([0, 0, 1, 1], TILE, out.join(''))
+  return svgDoc([0, 0, 1, 1], TILE, liftScene(out.join(''), TILE))
 }
 
 /** Hanging bougainvillea: a row of leaves with pink and lotus flowers, seeded so it looks the same on every load. */
@@ -136,7 +137,7 @@ function roofRoom(): string {
   out.push(`<path d="${corrugation.join(' ')}" stroke="${C.tinRib}" stroke-width="0.05"/>`)
   out.push(rect(0.3, rows - 0.45, COLS - 0.6, 0.5, C.cream, outline(0.045)), rect(0.3, rows - 0.5, COLS - 0.6, 0.12, C.terracotta, outline(0.035)))
   out.push(bougainvillea(0.6, 4.6, rows - 0.5, 7), bougainvillea(8.4, 12.4, rows - 0.5, 31), bougainvillea(0.6, 2.2, 1.25, 11))
-  return svgDoc([0, 0, COLS, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, COLS, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
 /**
@@ -150,7 +151,7 @@ function coop(): string {
   out.push(`<path d="M-0.02,1.3 L0.75,0.25 L1.52,1.3Z" fill="${C.terracotta}" ${outline()}/>`)
   out.push(`<path d="M0.32,1.02 H1.18 M0.52,0.74 H0.98" stroke="${C.lanternDark}" stroke-width="0.045"/>`)
   out.push(rect(-0.04, 1.22, 1.58, 0.14, C.woodDark, outline(0.035)))
-  return svgDoc([0, 0, 1.5, 4], TILE, out.join(''))
+  return svgDoc([0, 0, 1.5, 4], TILE, liftScene(out.join(''), TILE))
 }
 
 /** The textures for the upper floors: 'room-2', 'room-3', 'coop', 'stairs' and 'stairsRope'. */

@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { shade } from '../../src/art/aplus'
 import { beachRoomTexture } from '../../src/art/beach'
 import { oldTownRoomTexture } from '../../src/art/oldTown'
 import { C } from '../../src/art/palette'
@@ -11,7 +12,7 @@ import { BRANCH_LAYOUT } from '../../src/sim/places'
 vi.mock('phaser', () => ({}))
 
 const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)?.[1]
-const palette = Object.values(C).map(c => c.toLowerCase())
+const palette = Object.values(C).flatMap(c => [c, shade(c), shade(c, 0.3)]).map(c => c.toLowerCase())
 
 describe.each([
   ['the old town', oldTownRoomTexture],

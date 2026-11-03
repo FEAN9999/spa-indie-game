@@ -2,6 +2,7 @@ import { STREET_TILES, TILE } from '../config'
 import type { Grid } from '../sim/grid'
 import { MAT } from './furniture'
 import { C } from './palette'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 export { STREET_TILES }
@@ -130,5 +131,5 @@ function roomBody(grid: Grid): string {
 }
 
 export function roomTexture(grid: Grid): string {
-  return svgDoc([0, 0, grid.cols, grid.rows + STREET_TILES], TILE, roomBody(grid))
+  return svgDoc([0, 0, grid.cols, grid.rows + STREET_TILES], TILE, liftScene(roomBody(grid), TILE))
 }

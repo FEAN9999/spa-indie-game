@@ -3,6 +3,7 @@ import type { Grid } from '../sim/grid'
 import { C } from './palette'
 import { f } from './round'
 import { outline, rect, shopFront, STREET_TILES, street } from './room'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 /** Light wood planks a quarter tile tall, with staggered joints. */
@@ -82,5 +83,5 @@ export function uptownRoomTexture(grid: Grid): string {
 
   out.push(shopFront(cols, rows, grid.door.x))
   out.push(street(cols, rows))
-  return svgDoc([0, 0, cols, rows + STREET_TILES], TILE, out.join(''))
+  return svgDoc([0, 0, cols, rows + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }

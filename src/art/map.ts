@@ -1,4 +1,5 @@
 import { C } from './palette'
+import { liftScene } from './lift'
 import { svgDoc } from './svg'
 
 /** The map's size in pixels, drawn one to one. */
@@ -72,5 +73,5 @@ export function mapTexture(): string {
       `<path d="M10,-30 q-40,-12 -56,8 q26,-4 56,-8 q-20,-34 -50,-30 q34,10 50,30 q8,-36 40,-40 q-26,18 -40,40 q40,-16 56,6 q-32,-6 -56,-6Z" fill="${C.leaf}" ${ink(3.5)}/></g>`,
   )
   out.push('</g>')
-  return svgDoc([0, 0, W, H], 1, out.join(''))
+  return svgDoc([0, 0, W, H], 1, liftScene(out.join(''), 1))
 }
