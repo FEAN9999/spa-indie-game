@@ -7,7 +7,7 @@ import { drawFace } from './FloorBar'
 import type { StripLot } from './houses'
 import { STRIP, stripX } from './strip'
 import type { StripBlock } from './street'
-import { whenTapped } from './ui'
+import { addDisc, whenTapped } from './ui'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 const TICK_H = 44
@@ -46,7 +46,7 @@ export class PositionStrip {
   /** The look the face was drawn with. */
   private faceLook = ''
   /** Every dot made so far; those past the waiting count are hidden. */
-  private dots: Phaser.GameObjects.Arc[] = []
+  private dots: Phaser.GameObjects.Graphics[] = []
   /** What the strip on screen was drawn from, so an unchanged frame draws nothing. */
   private drawn = ''
 
@@ -126,8 +126,8 @@ export class PositionStrip {
     return this.box
   }
 
-  private addDot(box: Phaser.GameObjects.Container): Phaser.GameObjects.Arc {
-    const dot = this.scene.add.circle(0, 0, DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink))
+  private addDot(box: Phaser.GameObjects.Container): Phaser.GameObjects.Graphics {
+    const dot = addDisc(this.scene.add, 0, 0, DOT_R, hex(C.lantern), 4, hex(C.ink))
     box.addAt(dot, box.length - 1)
     this.dots.push(dot)
     return dot

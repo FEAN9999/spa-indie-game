@@ -15,7 +15,7 @@ import { textStyle } from './text'
 import { todayShown } from './today'
 import { dayTimeText, layoutTopBar, TOP_BAR } from './topBar'
 import { lockedText } from './starter'
-import { addToast, aplusFrame, whenTapped } from './ui'
+import { addDisc, addToast, aplusFrame, whenTapped } from './ui'
 import { clockStar } from './vip'
 
 export const DEPTH = 10000
@@ -66,7 +66,7 @@ interface NavPlate {
   lock: Phaser.GameObjects.Image
   badge: Phaser.GameObjects.Container | null
   /** The red dot: on the services plate while something runs low, on the quests plate while new quests wait. */
-  dot: Phaser.GameObjects.Arc | null
+  dot: Phaser.GameObjects.Graphics | null
   /** Everything the plate is made of, to take it down when the row changes. */
   parts: Phaser.GameObjects.GameObject[]
   /** Where the hand points: the top of the plate. */
@@ -137,7 +137,7 @@ export class Hud {
     this.clockStar = add.image(0, 152, 'star').setScale(0.4).setDepth(DEPTH).setVisible(false)
 
     const pause = add.container(995, 115).setDepth(DEPTH)
-    pause.add(add.circle(0, 0, 44, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
+    pause.add(addDisc(add, 0, 0, 44, hex(C.teal), 4, hex(C.ink)))
     pause.add(add.rectangle(-11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     pause.add(add.rectangle(11, 0, 10, 35, hex(C.paper)).setOrigin(0.5))
     // thumb-sized hit area, larger than the drawn circle
@@ -150,7 +150,7 @@ export class Hud {
 
     // the guest book, once the first regular has come; its "Mới" stays until the book is first opened
     this.book = add.container(BOOK_BUTTON.x, BOOK_BUTTON.y).setDepth(DEPTH).setVisible(false)
-    this.book.add(add.circle(0, 0, BOOK_R, hex(C.teal)).setStrokeStyle(4, hex(C.ink)))
+    this.book.add(addDisc(add, 0, 0, BOOK_R, hex(C.teal), 4, hex(C.ink)))
     this.book.add(add.image(0, 0, 'icon-book').setScale(0.7))
     this.bookBadge = this.badge()
     this.bookBadge.setPosition(-BOOK_R, -BOOK_R)
@@ -162,10 +162,10 @@ export class Hud {
 
     // the Phây phone, once Phây opens; SpaScene shows it and sets its count each frame
     this.phay = add.container(PHAY_BUTTON.x, PHAY_BUTTON.y).setDepth(DEPTH).setVisible(false)
-    this.phay.add(add.circle(0, 0, PHAY_BUTTON.r, hex(C.cream)).setStrokeStyle(4, hex(C.ink)))
+    this.phay.add(addDisc(add, 0, 0, PHAY_BUTTON.r, hex(C.cream), 4, hex(C.ink)))
     this.phay.add(add.image(0, 0, 'icon-phone'))
     this.phayCount = add.text(0, 1, '', textStyle(PHAY_DOT.font, '800', C.paper)).setOrigin(0.5)
-    this.phayDot = add.container(PHAY_DOT.dx, PHAY_DOT.dy, [add.circle(0, 0, PHAY_DOT.r, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)), this.phayCount])
+    this.phayDot = add.container(PHAY_DOT.dx, PHAY_DOT.dy, [addDisc(add, 0, 0, PHAY_DOT.r, hex(C.lantern), 4, hex(C.ink)), this.phayCount])
     this.phay.add(this.phayDot)
     whenTapped(this.phay.setSize(120, 120).setInteractive(), () => {
       sound.play('tap')
@@ -199,8 +199,8 @@ export class Hud {
       const isChain = id === 'chain'
       const btn = add.container(x, NAV_Y).setDepth(DEPTH)
       // a blue-and-white plate: cobalt double ring; the chain's is pale gold with a mustard ring
-      btn.add(add.circle(0, 0, r, hex(isChain ? C.goldPale : C.cream)).setStrokeStyle(5, hex(isChain ? C.mustardDark : C.cobalt)))
-      if (!isChain) btn.add(add.circle(0, 0, r - 10).setStrokeStyle(2, hex(C.cobalt)))
+      btn.add(addDisc(add, 0, 0, r, hex(isChain ? C.goldPale : C.cream), 5, hex(isChain ? C.mustardDark : C.cobalt)))
+      if (!isChain) btn.add(addDisc(add, 0, 0, r - 10, null, 2, hex(C.cobalt)))
       const icon = add.image(0, 0, spec.icon).setScale(n === 5 ? 1.2 : 1.3)
       // a padlock on the plate's top-right while the feature waits for its day
       const lock = add.image(r - 18, -(r - 18), 'icon-lock')
@@ -212,7 +212,7 @@ export class Hud {
         btn.add(badge)
       }
       // and, on the services and quests plates, a red dot on the top-right
-      const dot = spec.feature === 'services' || spec.feature === 'quests' ? add.circle(r - 18, -(r - 18), DOT_R, hex(C.lantern)).setStrokeStyle(4, hex(C.ink)) : null
+      const dot = spec.feature === 'services' || spec.feature === 'quests' ? addDisc(add, r - 18, -(r - 18), DOT_R, hex(C.lantern), 4, hex(C.ink)) : null
       if (dot) btn.add(dot)
       const label = add.text(x, 2112, t(spec.key), textStyle(n === 5 ? 30 : 34, '600')).setOrigin(0.5).setDepth(DEPTH)
       // a label never passes its plate's width

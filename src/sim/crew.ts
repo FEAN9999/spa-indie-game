@@ -34,13 +34,41 @@ function groundFloor({ sim }: CrewHost): Tile[] {
   return tiles
 }
 
-/** Where the receptionist stands: the first floor tile beside a desk, nearest the owner's start, but not on it or one tile straight above or below it, where she would hide behind the owner; an upright desk's top end first; the owner's start itself if there is none. */
-export function receptionSpot(h: CrewHost): Tile {
+/** Where the receptionist stands and where each technician in turn waits. */
+interface Homes {
+  spot: Tile
+  technicians: Tile[]
+}
+
+/** layOutHomes's answer for each laid-out room: every idle technician asks every frame. */
+const roomHomes = new WeakMap<Grid, Homes>()
+
+function homes(h: CrewHost): Homes {
+  let known = roomHomes.get(h.sim.grid)
+  if (!known) roomHomes.set(h.sim.grid, (known = layOutHomes(h)))
+  return known
+}
+
+function layOutHomes(h: CrewHost): Homes {
   const { sim } = h
   const start = sim.ownerStart()
   const spots = groundFloor(h).filter(t => !(t.x === start.x && Math.abs(t.y - start.y) <= 1) && sim.grid.desks.some(d => manhattan(d, t) === 1))
   const upright = sim.items.find(i => i.kind === 'desk' && i.turned && tileEq(deskSpot(i)!, start))
-  return (upright && spots.find(t => t.x === upright.x && t.y === upright.y - 1)) || spots[0] || start
+  const spot = (upright && spots.find(t => t.x === upright.x && t.y === upright.y - 1)) || spots[0] || start
+  const floor = groundFloor(h).filter(t => !sim.grid.feet.some(f => tileEq(f, t)))
+  const taken: Tile[] = [start, spot]
+  const technicians: Tile[] = []
+  for (;;) {
+    const next = floor.find(t => !taken.some(home => home.x === t.x && Math.abs(home.y - t.y) <= 1))
+    if (!next) return { spot, technicians }
+    taken.push(next)
+    technicians.push(next)
+  }
+}
+
+/** Where the receptionist stands: the first floor tile beside a desk, nearest the owner's start, but not on it or one tile straight above or below it, where she would hide behind the owner; an upright desk's top end first; the owner's start itself if there is none. */
+export function receptionSpot(h: CrewHost): Tile {
+  return homes(h).spot
 }
 
 /**
@@ -49,18 +77,9 @@ export function receptionSpot(h: CrewHost): Tile {
  * since the lower of two people one tile apart hides the upper one.
  */
 export function homeOf(h: CrewHost, s: Staff): Tile {
-  const { sim } = h
-  const spot = receptionSpot(h)
+  const { spot, technicians } = homes(h)
   if (s.role === 'receptionist') return spot
-  const k = sim.staff.filter(x => x.role === 'technician').indexOf(s)
-  const floor = groundFloor(h).filter(t => !sim.grid.feet.some(f => tileEq(f, t)))
-  const homes: Tile[] = [sim.ownerStart(), spot]
-  for (let i = 0; i <= k; i++) {
-    const next = floor.find(t => !homes.some(home => home.x === t.x && Math.abs(home.y - t.y) <= 1))
-    if (!next) return spot
-    homes.push(next)
-  }
-  return homes[homes.length - 1]
+  return technicians[h.sim.staff.filter(x => x.role === 'technician').indexOf(s)] ?? spot
 }
 
 /** Idle, not leaving and standing on the spot. */

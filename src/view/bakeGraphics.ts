@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser'
 import { drawCommands, MAX_PICTURE_PX, pictureBox, sameCommands, Settle, type Box } from './bake'
+import { inDepthOrder } from './depthOrder'
 
 /** Canvas pixels per unit for a scene's pictures; the map zooms in up to ZOOM_MAX, so it asks for more to stay sharp. */
 const scales = new WeakMap<Phaser.Scene, number>()
@@ -91,6 +92,19 @@ export function pictureTexture(scene: Phaser.Scene, key: string, k: number, draw
   g.destroy()
   madeBoxes.set(key, box)
   return box
+}
+
+/**
+ * Skips sorting a display list that is already in order. Phaser asks for a sort whenever a depth is set, even to the same value, and
+ * everyone on the map is given a depth every frame, while what they walk past changes the order only now and then.
+ */
+export function skipNeedlessSorts(): void {
+  const proto = Phaser.GameObjects.DisplayList.prototype as unknown as { depthSort(): void; sortChildrenFlag: boolean; list: { _depth: number }[] }
+  const sort = proto.depthSort
+  proto.depthSort = function (this: typeof proto) {
+    if (this.sortChildrenFlag && inDepthOrder(this.list)) this.sortChildrenFlag = false
+    sort.call(this)
+  }
 }
 
 /**

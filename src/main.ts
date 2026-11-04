@@ -53,7 +53,7 @@ import { SteamScene } from './scenes/SteamScene'
 import { StoneScene } from './scenes/StoneScene'
 import { SummaryScene } from './scenes/SummaryScene'
 import { WardrobeScene } from './scenes/WardrobeScene'
-import { bakeStillGraphics } from './view/bakeGraphics'
+import { bakeStillGraphics, skipNeedlessSorts } from './view/bakeGraphics'
 
 async function start() {
   // Canvas text never re-renders after a late font load, so load both weights, Vietnamese glyphs included, first.
@@ -61,6 +61,7 @@ async function start() {
   await Promise.all([document.fonts.load(`600 40px "Be Vietnam Pro"`, sample), document.fonts.load(`800 40px "Be Vietnam Pro"`, sample)])
   // a Graphics that keeps still is drawn from a picture of itself instead of replaying its commands every frame
   bakeStillGraphics()
+  skipNeedlessSorts()
   const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',

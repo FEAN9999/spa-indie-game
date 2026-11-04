@@ -122,14 +122,20 @@ export function saleTexture(roof: Roof): string {
   return svgDoc([0, 0, w, ROWS + STREET_TILES], TILE, liftScene(out.join(''), TILE))
 }
 
-/** Every house's three floors, 'house-<key>-<floor>', drawn for a right-hand house, and its roof for sale, 'sale-<key>'. */
-export function houseTextures(): Record<string, string> {
+/** Every house's three floors, 'house-<key>-<floor>', drawn for a right-hand house. */
+export function boughtHouseTextures(): Record<string, string> {
   const out: Record<string, string> = {}
   for (const [key, look] of Object.entries(HOUSE_LOOK) as [HouseKey, (typeof HOUSE_LOOK)[HouseKey]][]) {
     out[`house-${key}-1`] = floor1(look)
     out[`house-${key}-2`] = floor2(look)
     out[`house-${key}-3`] = floor3(look)
-    out[`sale-${key}`] = saleTexture(look.roof)
   }
+  return out
+}
+
+/** Every house's roof for sale, 'sale-<key>'. */
+export function saleRoofTextures(): Record<string, string> {
+  const out: Record<string, string> = {}
+  for (const [key, look] of Object.entries(HOUSE_LOOK) as [HouseKey, (typeof HOUSE_LOOK)[HouseKey]][]) out[`sale-${key}`] = saleTexture(look.roof)
   return out
 }

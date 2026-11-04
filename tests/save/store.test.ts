@@ -57,6 +57,16 @@ describe('save slots', () => {
     expect(mem.getItem('spa.slot.1')).toBe(raw)
   })
 
+  it('asks only the version whether a save is too new', () => {
+    const mem = new MemStorage()
+    // what parseSave would throw on is not too new
+    mem.setItem('spa.slot.1', '{oops')
+    mem.setItem('spa.slot.2', JSON.stringify({ v: 1, day: 'broken' }))
+    mem.setItem('spa.slot.3', JSON.stringify({ v: 99, day: 'broken' }))
+    const s = new SaveStore(mem)
+    expect([s.isTooNew(1), s.isTooNew(2), s.isTooNew(3)]).toEqual([false, false, true])
+  })
+
   it('keeps playing when the storage refuses to work', () => {
     const s = new SaveStore({
       getItem: () => {

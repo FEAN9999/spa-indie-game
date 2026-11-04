@@ -243,17 +243,24 @@ export class CharacterView {
     this.setFacing('down')
   }
 
-  /** Copies each tinted part's texture, place, turn, flip and visibility to its outline, and each arm's to its sleeve. */
+  /** Copies each tinted part's texture, place, flip and visibility to its outline, and each arm's to its sleeve, then what moves. */
   private syncLines(): void {
     this.sleeves.forEach((sleeve, i) => {
       const arm = this.arms[i]
-      sleeve.setPosition(arm.x, arm.y).setRotation(arm.rotation).setFlipX(this.facing === 'left').setVisible(arm.visible)
+      sleeve.setPosition(arm.x, arm.y).setFlipX(this.facing === 'left').setVisible(arm.visible)
     })
     for (const [fill, line] of this.lines) {
       const key = `${fill.texture.key}-line`
       if (line.texture.key !== key) line.setTexture(key)
-      line.setPosition(fill.x, fill.y).setRotation(fill.rotation).setScale(fill.scaleX, fill.scaleY).setFlipX(fill.flipX).setVisible(fill.visible)
+      line.setPosition(fill.x, fill.y).setFlipX(fill.flipX).setVisible(fill.visible)
     }
+    this.moveLines()
+  }
+
+  /** Copies what update changes, each tinted part's turn and scale, to its outline, and each arm's turn to its sleeve. */
+  private moveLines(): void {
+    this.sleeves.forEach((sleeve, i) => sleeve.setRotation(this.arms[i].rotation))
+    this.lines.forEach((line, fill) => line.setRotation(fill.rotation).setScale(fill.scaleX, fill.scaleY))
   }
 
   setFacing(f: Facing): void {
@@ -336,6 +343,8 @@ export class CharacterView {
 
   update(dtMs: number): void {
     this.timeMs += dtMs
+    // nobody sees a figure move that is hidden or off the camera (cull.ts); it catches up by its time when it shows
+    if (!this.container.visible || this.container.cameraFilter !== 0) return
     const t = this.timeMs / 1000
     if (this.pose === 'walk') {
       const s = Math.sin(t * Math.PI * 2 * STEP_HZ)
@@ -344,12 +353,13 @@ export class CharacterView {
       this.arms[0].setRotation(-s * SWING * 0.8)
       this.arms[1].setRotation(s * SWING * 0.8)
       this.upper.y = -Math.abs(s) * BOB_PX
+      this.moveLines()
     } else if (this.pose === 'stand') {
       const breath = 1 + 0.015 * Math.sin(t * Math.PI)
       this.body.setScale(1, breath)
       this.apron?.setScale(1, breath)
       for (const img of this.bodyWorn) img.setScale(1, breath)
+      this.moveLines()
     }
-    this.syncLines()
   }
 }

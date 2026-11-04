@@ -7,6 +7,13 @@ import { textStyle } from './text'
 
 const hex = (c: string) => Phaser.Display.Color.HexStringToColor(c).color
 
+/** A circle and its outline as a Graphics, which is drawn from a picture of itself; a circle shape rebuilds its ring and throws it away every frame. */
+export function addDisc(add: Phaser.GameObjects.GameObjectFactory, x: number, y: number, r: number, fill: number | null, lineW: number, line: number): Phaser.GameObjects.Graphics {
+  const g = add.graphics({ x, y })
+  if (fill !== null) g.fillStyle(fill, 1).fillCircle(0, 0, r)
+  return g.lineStyle(lineW, line, 1).strokeCircle(0, 0, r)
+}
+
 /**
  * A rounded frame in A+, drawn into `g`: an 18% ink shadow cast to its lower right, the fill with its hard-edged shade
  * along the bottom and right, a thin white shine inside the top left, then the `line` wide `edge` outline. Returns `g`.

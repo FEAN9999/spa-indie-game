@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { HOUSE_LOOK, houseKey, houseTextures } from '../../src/art/houses'
+import { boughtHouseTextures, HOUSE_LOOK, houseKey, saleRoofTextures } from '../../src/art/houses'
 import { C } from '../../src/art/palette'
 import { GACH_BONG_TILE, gachBongTile } from '../../src/art/room'
 import { FLOOR_ROWS, STREET_TILES } from '../../src/config'
@@ -11,7 +11,7 @@ const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)?.[1]
 const KEYS = ['left1', 'left2', 'right1', 'right2'] as const
 
 describe('house art', () => {
-  const textures = houseTextures()
+  const textures = { ...boughtHouseTextures(), ...saleRoofTextures() }
 
   it('draws three floors for each house and a roof for each house for sale', () => {
     const names = KEYS.flatMap(k => [`house-${k}-1`, `house-${k}-2`, `house-${k}-3`, `sale-${k}`]).sort()

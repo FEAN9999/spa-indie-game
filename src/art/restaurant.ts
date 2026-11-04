@@ -318,17 +318,23 @@ function bike(): string {
   )
 }
 
-/** The restaurant's textures: its floors, the old house, a closed lot, the closed upper fronts, the bike, and every house's three floors ('rest-house-<key>-<floor>', drawn for a right-hand house) and its roof for sale ('rest-sale-<key>'). */
-export function restaurantTextures(): Record<string, string> {
-  const out: Record<string, string> = {
-    'rest-room': restRoom(),
-    'rest-room-2': restRoom2(),
-    'rest-room-3': restRoom3(),
+/** What the street shows before the restaurant is bought: the old house, a closed lot, the closed upper fronts and the bike. */
+export function streetRestaurantTextures(): Record<string, string> {
+  return {
     'rest-old': restOld(),
     'lot-front': lotFront(),
     'rest-upper': restUpper(),
     'spa-upper': spaUpper(),
     'fx-bike': svgDoc(SCOOTER_BOX, 1, liftScene(bike(), 1)),
+  }
+}
+
+/** What only a bought restaurant shows: its floors, and every house's three floors ('rest-house-<key>-<floor>', drawn for a right-hand house) and its roof for sale ('rest-sale-<key>'). */
+export function boughtRestaurantTextures(): Record<string, string> {
+  const out: Record<string, string> = {
+    'rest-room': restRoom(),
+    'rest-room-2': restRoom2(),
+    'rest-room-3': restRoom3(),
   }
   for (const [key, look] of Object.entries(REST_HOUSE_LOOK) as [HouseKey, (typeof REST_HOUSE_LOOK)[HouseKey]][]) {
     out[`rest-house-${key}-1`] = houseFloor1(look)

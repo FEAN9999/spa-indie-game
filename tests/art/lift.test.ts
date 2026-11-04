@@ -7,13 +7,13 @@ import { bustleTextures } from '../../src/art/bustle'
 import { floorTextures } from '../../src/art/floors'
 import { furnitureTextures } from '../../src/art/furniture'
 import { fxTextures } from '../../src/art/fx'
-import { houseTextures } from '../../src/art/houses'
+import { boughtHouseTextures, saleRoofTextures } from '../../src/art/houses'
 import { inheritStroke, liftPiece, liftScene } from '../../src/art/lift'
 import { mapTexture } from '../../src/art/map'
 import { menuTextures } from '../../src/art/menuArt'
 import { oldTownRoomTexture } from '../../src/art/oldTown'
 import { C } from '../../src/art/palette'
-import { restaurantTextures } from '../../src/art/restaurant'
+import { boughtRestaurantTextures, streetRestaurantTextures } from '../../src/art/restaurant'
 import { roomTexture } from '../../src/art/room'
 import { uptownRoomTexture } from '../../src/art/uptown'
 import { parseLayout } from '../../src/sim/grid'
@@ -96,9 +96,11 @@ describe('A+ pass for rooms, houses and the street', () => {
       'chain-map': mapTexture(),
       ...floorTextures(),
       ...branchFloorTextures(),
-      ...houseTextures(),
+      ...boughtHouseTextures(),
+      ...saleRoofTextures(),
       ...branchHouseTextures(room),
-      ...restaurantTextures(),
+      ...streetRestaurantTextures(),
+      ...boughtRestaurantTextures(),
       ...bustleTextures(),
     }
     for (const key of ['room', 'room-oldTown', 'chain-map']) expect(all[key], key).toContain('clip-path=')

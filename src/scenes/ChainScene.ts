@@ -1,5 +1,7 @@
 import * as Phaser from 'phaser'
+import { mapTexture } from '../art/map'
 import { C, customerColors, ownerColors } from '../art/palette'
+import { preloadSvgTextures } from '../art/svg'
 import { sound } from '../audio/engine'
 import { GAME_H, GAME_W, PLACES } from '../config'
 import type { Chain } from '../sim/chain'
@@ -126,6 +128,10 @@ export class ChainScene extends Phaser.Scene {
     this.picked = data.chain.at
     this.shown = []
     this.toastBox = null
+  }
+
+  preload() {
+    preloadSvgTextures(this, { 'chain-map': mapTexture() })
   }
 
   create() {

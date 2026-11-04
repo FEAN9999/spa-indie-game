@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { REST_HOUSE_LOOK, restaurantTextures, ROOF_LANTERNS } from '../../src/art/restaurant'
+import { boughtRestaurantTextures, REST_HOUSE_LOOK, ROOF_LANTERNS, streetRestaurantTextures } from '../../src/art/restaurant'
 import { HOUSE_LOOK } from '../../src/art/houses'
 import { STREET_TILES } from '../../src/art/room'
 import { FLOOR_ROWS } from '../../src/config'
@@ -11,7 +11,7 @@ const viewBox = (svg: string) => /viewBox="([^"]+)"/.exec(svg)?.[1]
 const KEYS = ['left1', 'left2', 'right1', 'right2'] as const
 
 describe('restaurant art', () => {
-  const textures = restaurantTextures()
+  const textures = { ...streetRestaurantTextures(), ...boughtRestaurantTextures() }
 
   it('draws every restaurant texture as one svg', () => {
     const houses = KEYS.flatMap(k => [`rest-house-${k}-1`, `rest-house-${k}-2`, `rest-house-${k}-3`, `rest-sale-${k}`])

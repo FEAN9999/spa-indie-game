@@ -1,6 +1,6 @@
 import { FRIENDS_MAX } from '../config'
 import type { Friend } from '../sim/friends'
-import { parseSave, SaveTooNewError, type SaveData } from '../sim/save'
+import { isNewerSave, parseSave, SaveTooNewError, type SaveData } from '../sim/save'
 
 export type SlotId = 1 | 2 | 3
 export const SLOTS: SlotId[] = [1, 2, 3]
@@ -62,15 +62,14 @@ export class SaveStore {
     return this.read(slotKey(slot))
   }
 
-  /** The slot holds a shop saved by a newer version of the game. */
+  /** The slot holds a shop saved by a newer version of the game. Every autosave asks, so it reads only the version: repairing the whole shop stalled a frame. */
   isTooNew(slot: SlotId): boolean {
     const raw = this.read(slotKey(slot))
     if (raw === null) return false
     try {
-      parseSave(JSON.parse(raw))
+      return isNewerSave(JSON.parse(raw))
+    } catch {
       return false
-    } catch (e) {
-      return e instanceof SaveTooNewError
     }
   }
 

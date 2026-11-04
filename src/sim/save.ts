@@ -920,9 +920,14 @@ const repairMoveTo = (x: unknown): MoveTo => (x === 'main' || isPlaceId(x) ? x :
 
 const repairFacing = (x: unknown): Facing => (x === 'up' || x === 'left' || x === 'right' ? x : 'down')
 
+/** Whether the parsed save is from a newer version of the game, read without the repairs parseSave does. */
+export function isNewerSave(raw: unknown): boolean {
+  return isObject(raw) && typeof raw.v === 'number' && raw.v > SAVE_VERSION
+}
+
 function parseVersioned(raw: unknown): SaveData {
   if (!isObject(raw)) throw new SaveError('not a saved shop')
-  if (typeof raw.v === 'number' && raw.v > SAVE_VERSION) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
+  if (isNewerSave(raw)) throw new SaveTooNewError(`save version ${raw.v} is newer than ${SAVE_VERSION}`)
   if (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4 && raw.v !== 5 && raw.v !== 6 && raw.v !== 7 && raw.v !== 8 && raw.v !== 9 && raw.v !== 10 && raw.v !== 11 && raw.v !== 12 && raw.v !== 13 && raw.v !== 14 && raw.v !== 15 && raw.v !== 16 && raw.v !== 17 && raw.v !== 18 && raw.v !== 19 && raw.v !== 20 && raw.v !== 21 && raw.v !== 22 && raw.v !== 23 && raw.v !== 24 && raw.v !== 25 && raw.v !== 26 && raw.v !== 27 && raw.v !== 28 && raw.v !== 29 && raw.v !== 30 && raw.v !== 31 && raw.v !== 32 && raw.v !== 33 && raw.v !== 34 && raw.v !== 35 && raw.v !== 36 && raw.v !== 37 && raw.v !== 38 && raw.v !== 39 && raw.v !== 40 && raw.v !== 41 && raw.v !== 42 && raw.v !== SAVE_VERSION) throw new SaveError(`unknown save version ${String(raw.v)}`)
   for (const key of ['day', 'minutes', 'money', 'nextId', 'untilArrivalMs'])
     if (!isNumber(raw[key])) throw new SaveError(`${key} is not a number`)

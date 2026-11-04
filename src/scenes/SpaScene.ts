@@ -1,9 +1,8 @@
 import * as Phaser from 'phaser'
 import { currentInstallEnv, installPlatform } from '../app/install'
 import { BUILD_ID, latestVersion, onReturn, shouldReload } from '../app/update'
-import { branchTextures } from '../art/branchArt'
+import { artDrawn, drawArt, laterArtAt, type LaterArt } from '../art/laterArt'
 import { C, customerColors, inspectorColors, ownerColors } from '../art/palette'
-import { loadSvgTextures } from '../art/svg'
 import { cueFor } from '../audio/cues'
 import { sound } from '../audio/engine'
 import { AUTOSAVE_MS, BUBBLE_MS, BUSTLE_PIECES, FLOOR_PRICE, FOOT_SEAT_MS, GAME_H, GAME_W, HUM_MS, RESTAURANT_PRICE, SHOP_X0, TAP_SLOP_PX, TILE, UPDATE_WAIT_MS, VISIT_WAIT_MS } from '../config'
@@ -63,6 +62,7 @@ import { HandPointer } from '../view/HandPointer'
 import { MapCamera } from '../view/MapCamera'
 import { HeadBar } from '../view/HeadBar'
 import { setPictureScale } from '../view/bakeGraphics'
+import { cullOffCamera, type Cullable } from '../view/cull'
 import { MapGestures } from '../view/MapGestures'
 import { PositionStrip } from '../view/PositionStrip'
 import { offscreenWaiting, worldXAt } from '../view/strip'
@@ -162,8 +162,6 @@ const VISIT_EVENTS: ReadonlySet<SimEvent['type']> = new Set<SimEvent['type']>(['
 const VISIT_STARS = 3
 /** Why a friend's shop could not be found, for its card. */
 const VISIT_PROBLEM: Record<VisitProblem, StringKey> = { notFound: 'visitNotFound', noLink: 'visitNoLink', tooNew: 'visitTooNew', bad: 'visitBad' }
-/** The branches whose own room and houses are textures already: each is made the first time it shows, as together they are a third of the game's pictures. */
-const drawnPlaces = new Set<PlaceId>()
 
 interface CustomerSprite {
   view: CharacterView
@@ -331,14 +329,23 @@ export class SpaScene extends Phaser.Scene {
     }
     this.chain = switched?.chain ?? this.openChain(saved)
     this.sim = this.chain.active()
-    // a branch opened straight from the save or a friend's link is drawn first, and the scene starts again on its pictures
-    const place = this.sim.place
-    if (place !== null && !drawnPlaces.has(place)) {
-      this.drawing = true
-      this.add.text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600')).setOrigin(0.5)
-      void this.drawPlace(place).then(() => this.scene.restart(data))
+    // the pictures of a shop opened straight from the save or a friend's link are drawn first
+    const art = this.artAt(this.sim.place)
+    if (artDrawn(art)) {
+      this.enter(switched, saved)
       return
     }
+    this.drawing = true
+    const loading = this.add.text(GAME_W / 2, GAME_H / 2, t('loading'), textStyle(56, '600')).setOrigin(0.5)
+    void drawArt(this, art).then(() => {
+      loading.destroy()
+      this.drawing = false
+      this.enter(switched, saved)
+    })
+  }
+
+  /** Lays out the active shop and sets it going, with its pictures made. */
+  private enter(switched: SpaSceneData | null, saved: SaveData | null): void {
     if (!this.visit) this.meetFriends()
     // back at the main shop, its cards come out from where they were kept; at a branch they stay aside
     this.attention = new Attention(this.sim.place === null, switched?.held ?? [], () => this.shopState())
@@ -362,6 +369,9 @@ export class SpaScene extends Phaser.Scene {
     this.cam = new MapCamera(this, MAP_VIEW, this.mapRect())
     // the map zooms in past normal size, so its still Graphics are pictured at twice their size
     setPictureScale(this, 2)
+    const cull = () => cullOffCamera(this.children.list as unknown as Cullable[], this.cameras.main, this.game.getFrame())
+    this.events.on(Phaser.Scenes.Events.PRE_RENDER, cull)
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.events.off(Phaser.Scenes.Events.PRE_RENDER, cull))
     const next = inRestaurant?.owner.pos ?? null
     // the map's top at the area's top, as at the start of a day, though the open street runs it further down
     this.cam.jump({ zoom: 1, cx: next ? restaurantX(next.x + 0.5) : this.room.tileToWorld(this.sim.owner.pos).x, cy: MAP_VIEW.y + MAP_VIEW.h / 2 })
@@ -499,8 +509,8 @@ export class SpaScene extends Phaser.Scene {
     // nothing is tapped or played while it closes: a mini-game opened now would be left behind
     this.attention.cover('shutter')
     sound.play('chime')
-    // a branch's pictures are made while the shutter rolls down, and it stays down until they are
-    const drawn = this.drawPlace(place)
+    // the next shop's pictures are made while the shutter rolls down, and it stays down until they are
+    const drawn = drawArt(this, this.artAt(place))
     this.shutter(place, true, () => void drawn.then(() => {
       this.chain.goTo(place)
       this.session.saveNow()
@@ -511,12 +521,20 @@ export class SpaScene extends Phaser.Scene {
     }))
   }
 
-  /** Makes the textures only the branch at `place` shows, the first time it shows; the main shop's are made at boot. */
-  private drawPlace(place: PlaceId | null): Promise<void> {
-    if (place === null || drawnPlaces.has(place)) return Promise.resolve()
-    return loadSvgTextures(this, branchTextures(place)).then(() => {
-      drawnPlaces.add(place)
+  /** The pictures boot left out that the shop at `place` shows as it stands. */
+  private artAt(place: PlaceId | null): LaterArt[] {
+    return laterArtAt(place, this.chain.main.houses, this.chain.restaurant !== null)
+  }
+
+  /** Holds the shop still while `art` is made, the first time a card could buy it onto the map, then calls `then`; false when it is made already. */
+  private drawFirst(art: LaterArt, then: () => void): boolean {
+    if (artDrawn([art])) return false
+    const release = this.attention.cover('panel')
+    void drawArt(this, [art]).then(() => {
+      release()
+      then()
     })
+    return true
   }
 
   /** The roll-down shutter with the place's name on its sign: down over the shop, or up off it; `then` runs once it has rolled. Taps on it go nowhere. */
@@ -1475,6 +1493,7 @@ export class SpaScene extends Phaser.Scene {
       this.hud.toast(t('restaurantLater'))
       return
     }
+    if (problem === null && this.drawFirst('restaurant', () => this.offerRestaurant())) return
     const short = () => t('floorShort', { money: formatMoney(RESTAURANT_PRICE - this.sim.money) })
     const card: ChoiceText = {
       kicker: t('restaurantKicker'),
@@ -1543,6 +1562,7 @@ export class SpaScene extends Phaser.Scene {
     const sim = this.sim
     const problem = sim.houseProblem(side)
     if (problem !== null && problem !== 'money') return
+    if (problem === null && sim.place === null && this.drawFirst('houses', () => this.offerHouse(side))) return
     const price = sim.housePrice(side)
     const n = sim.houses[side] + 1
     const release = this.attention.cover('panel')
